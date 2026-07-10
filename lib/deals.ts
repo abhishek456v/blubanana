@@ -196,7 +196,9 @@ export async function updatePaymentRecord(
 export async function respondToReminder(
   deal: Deal,
   response: ReminderResponse
-): Promise<Pick<Deal, 'reminder_stage' | 'reminder_fire_at' | 'reminder_notification_id'>> {
+): Promise<
+  Pick<Deal, 'reminder_stage' | 'reminder_fire_at' | 'reminder_notification_id' | 'reminder_completed_through'>
+> {
   const fields = await respondToWorkflowReminder(deal, response)
   const { error } = await supabase.from('deals').update(fields).eq('id', deal.id)
   if (error) throw error

@@ -213,6 +213,7 @@ export default function DealDetailScreen() {
           reminder_stage: null,
           reminder_fire_at: null,
           reminder_notification_id: null,
+          reminder_completed_through: null,
           payment: prev.payment
             ? {
                 ...prev.payment,

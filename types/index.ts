@@ -70,6 +70,10 @@ export interface Deal {
   reminder_stage: ReminderStage | null
   reminder_fire_at: string | null
   reminder_notification_id: string | null
+  // Furthest stage explicitly marked Done — distinct from reminder_stage so
+  // a date added retroactively to an earlier, never-completed stage can
+  // still resurface it (see lib/reminders.ts rescheduleWorkflowReminder).
+  reminder_completed_through: ReminderStage | null
   created_at: string
   updated_at: string
   brand?: Brand // joined on fetch
