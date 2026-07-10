@@ -56,7 +56,10 @@ export async function scheduleAsync(
 ): Promise<string | null> {
   try {
     const granted = await ensurePermissionsAsync()
-    if (!granted) return null
+    if (!granted) {
+      console.warn('scheduleAsync: notification permission not granted, skipping schedule')
+      return null
+    }
 
     return await Notifications.scheduleNotificationAsync({
       content: { title: content.title, body: content.body, data: content.data },
@@ -65,7 +68,8 @@ export async function scheduleAsync(
         date: fireAt,
       },
     })
-  } catch {
+  } catch (err) {
+    console.error('scheduleAsync: scheduling failed', err)
     return null
   }
 }
