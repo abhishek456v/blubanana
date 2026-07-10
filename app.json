@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "CreatorDesk",
+    "slug": "creatordesk",
+    "scheme": "creatordesk",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "ai.automitra.creatordesk"
+    },
+    "android": {
+      "package": "ai.automitra.creatordesk"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-font",
+        {
+          "fonts": []
+        }
+      ],
+      "expo-asset",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "CreatorDesk uses your microphone to record voice notes for deal intake."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "CreatorDesk uses your photo library to read deal screenshots you choose to import."
+        }
+      ],
+      "expo-notifications"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
