@@ -30,7 +30,7 @@ import {
 } from '@/lib/deals'
 import { updateBrand } from '@/lib/brands'
 import type { ReminderResponse } from '@/lib/reminders'
-import { buildPaymentReminderMessage, buildWhatsAppLink } from '@/lib/whatsapp'
+import { buildPaymentReminderMessage, buildLiveLinkMessage, buildWhatsAppLink } from '@/lib/whatsapp'
 import { getPaymentAlertTone } from '@/lib/paymentReminders'
 import { PLATFORMS, STATUS_LABELS, REMINDER_STAGE_LABELS } from '@/constants/labels'
 import { Colors, Spacing, Radius, Typography, FontFamily } from '@/constants/design'
@@ -192,10 +192,65 @@ export default function DealDetailScreen() {
     notes,
   ])
 
+  // Moving off 'published' is special-cased (PRODUCT.md 2.5): it requires a
+  // live link, saves it, generates the brand-notification wa.me message, and
+  // clears the live-link-submission reminder if that's what's outstanding —
+  // all in one tap, since entering the link *is* what that reminder was for.
+  async function handlePublishedToPaymentAwaited() {
+    if (!deal || !deal.brand || advancing) return
+    const trimmedLink = liveLink.trim()
+    if (!trimmedLink) {
+      Alert.alert('Live link required', 'Enter the live link before marking this as live.')
+      return
+    }
+
+    setAdvancing(true)
+    try {
+      await updateDeal(deal.id, { live_link: trimmedLink })
+      await advanceDealStatus(deal)
+
+      let reminderFields: Partial<DealWithPayments> = {}
+      if (deal.reminder_stage === 'live_link_submission') {
+        reminderFields = await respondToReminder(deal, 'done')
+      }
+
+      setDeal((prev) =>
+        prev
+          ? { ...prev, status: 'payment_awaited', live_link: trimmedLink, ...reminderFields }
+          : prev
+      )
+
+      const message = buildLiveLinkMessage({
+        brandName: deal.brand.name,
+        contactPerson: deal.brand.contact_person,
+        deliverable: deal.deliverable_description,
+        liveLink: trimmedLink,
+      })
+      const link = deal.brand.contact_phone ? buildWhatsAppLink(deal.brand.contact_phone, message) : null
+      if (link) {
+        await Linking.openURL(link)
+      } else {
+        Alert.alert(
+          'No phone number on file',
+          "This brand has no phone number saved, so the live-link message couldn't be prepared. The deal was still moved to payment awaited."
+        )
+      }
+    } catch {
+      Alert.alert('Error', 'Could not advance status.')
+    } finally {
+      setAdvancing(false)
+    }
+  }
+
   async function handleAdvanceStatus() {
     if (!deal || advancing) return
     const next = getNextStatus(deal.status)
     if (!next) return
+
+    if (deal.status === 'published') {
+      await handlePublishedToPaymentAwaited()
+      return
+    }
 
     setAdvancing(true)
     try {
@@ -322,6 +377,7 @@ export default function DealDetailScreen() {
 
   const brandName = deal?.brand?.name ?? ''
   const nextStatus = deal ? getNextStatus(deal.status) : null
+  const needsLiveLinkFirst = deal?.status === 'published' && !liveLink.trim()
 
   const inputStyle = [
     styles.input,
@@ -411,9 +467,13 @@ export default function DealDetailScreen() {
                   <StatusPill status={deal.status} />
                   {nextStatus ? (
                     <TouchableOpacity
-                      style={[styles.advanceButton, { borderColor: c.borderStrong }]}
+                      style={[
+                        styles.advanceButton,
+                        { borderColor: c.borderStrong },
+                        needsLiveLinkFirst && styles.advanceButtonDisabled,
+                      ]}
                       onPress={handleAdvanceStatus}
-                      disabled={advancing}
+                      disabled={advancing || needsLiveLinkFirst}
                       activeOpacity={0.8}
                     >
                       {advancing ? (
@@ -434,6 +494,11 @@ export default function DealDetailScreen() {
                     </Text>
                   )}
                 </View>
+                {needsLiveLinkFirst ? (
+                  <Text style={[styles.statusCaption, { color: c.textMuted }]}>
+                    Add the live link below before marking this as live.
+                  </Text>
+                ) : null}
               </View>
 
               {/* ── Workflow reminder ────────────────────────────── */}
@@ -800,6 +865,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  advanceButtonDisabled: {
+    opacity: 0.4,
+  },
   advanceButtonText: {
     ...Typography.label,
     fontFamily: FontFamily.medium,
@@ -810,6 +878,11 @@ const styles = StyleSheet.create({
   completedNote: {
     ...Typography.caption,
     fontFamily: FontFamily.regular,
+  },
+  statusCaption: {
+    ...Typography.caption,
+    fontFamily: FontFamily.regular,
+    marginTop: Spacing.sm,
   },
   // Brand display (non-editable)
   brandDisplay: {

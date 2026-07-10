@@ -38,6 +38,18 @@ export function buildPaymentReminderMessage(params: {
   return `Hi ${greetingName}, following up — ${formatINR(amount)} for ${deliverable} was due on ${formatDate(dueDate)} and I haven't received it yet. Could you share an update?`
 }
 
+// Sent once, when the deal moves published → payment_awaited (PRODUCT.md 2.5).
+export function buildLiveLinkMessage(params: {
+  brandName: string
+  contactPerson: string | null
+  deliverable: string
+  liveLink: string
+}): string {
+  const { brandName, contactPerson, deliverable, liveLink } = params
+  const greetingName = contactPerson?.trim() || brandName
+  return `Hi ${greetingName}, ${deliverable} is live! Here's the link: ${liveLink}`
+}
+
 // Normalizes a stored phone number into digits-only, assuming an Indian
 // number when given a bare 10-digit local number (reasonable given the
 // schema is INR-only, but not something PRODUCT.md states explicitly).
