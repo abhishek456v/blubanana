@@ -23,14 +23,18 @@ export interface CreateDealInput {
 
 // RLS on deals restricts reads to the authenticated user's rows automatically.
 
-export async function getDeals(): Promise<Deal[]> {
+// Dashboard needs enough of the payment row to compute the payment-due filter
+// (lib/paymentReminders.ts getPaymentAlertTone) without a second round trip.
+export type DealWithPaymentSummary = Deal & { payment: Pick<Payment, 'due_date' | 'status'> | null }
+
+export async function getDeals(): Promise<DealWithPaymentSummary[]> {
   const { data, error } = await supabase
     .from('deals')
-    .select('*, brand:brands(*)')
+    .select('*, brand:brands(*), payment:payments(due_date, status)')
     .order('created_at', { ascending: false })
 
   if (error) throw error
-  return data as Deal[]
+  return data as DealWithPaymentSummary[]
 }
 
 export async function createDeal(input: CreateDealInput): Promise<Deal> {
