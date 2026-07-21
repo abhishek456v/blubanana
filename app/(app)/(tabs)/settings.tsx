@@ -6,8 +6,9 @@ import { useFocusEffect } from '@react-navigation/core'
 import { supabase } from '@/lib/supabase'
 import { getProfile } from '@/lib/profile'
 import { useAuth } from '@/hooks/useAuth'
+import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 import { BrandAvatar } from '@/components/BrandAvatar'
-import { Colors, Spacing, Radius, Typography, FontFamily } from '@/constants/design'
+import { Colors, Spacing, Radius, Typography, FontFamily, ContentMaxWidth } from '@/constants/design'
 import type { Creator } from '@/types'
 
 export default function SettingsScreen() {
@@ -15,6 +16,8 @@ export default function SettingsScreen() {
   const c = scheme === 'dark' ? Colors.dark : Colors.light
   const router = useRouter()
   const { session } = useAuth()
+
+  const isWide = useIsWideScreen()
 
   const [profile, setProfile] = useState<Creator | null>(null)
   const email = session?.user?.email ?? ''
@@ -47,6 +50,7 @@ export default function SettingsScreen() {
       style={[styles.container, { backgroundColor: c.bgPage }]}
       edges={['bottom']}
     >
+      <View style={[styles.inner, isWide && styles.innerWide]}>
       <TouchableOpacity
         style={[styles.profileCard, { backgroundColor: c.bgSurface }]}
         onPress={() => router.push('/(app)/profile/edit' as never)}
@@ -79,6 +83,7 @@ export default function SettingsScreen() {
       >
         <Text style={[styles.signOutText, { color: c.textPrimary }]}>Sign out</Text>
       </TouchableOpacity>
+      </View>
     </SafeAreaView>
   )
 }
@@ -88,6 +93,14 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: Spacing.md,
     paddingTop: Spacing.md,
+  },
+  inner: {
+    flex: 1,
+  },
+  innerWide: {
+    maxWidth: ContentMaxWidth,
+    width: '100%',
+    alignSelf: 'center',
   },
   profileCard: {
     flexDirection: 'row',

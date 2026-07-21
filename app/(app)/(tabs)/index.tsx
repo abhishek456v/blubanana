@@ -18,7 +18,8 @@ import { getPaymentAlertTone } from '@/lib/paymentReminders'
 import type { DealStatus, Platform } from '@/types'
 import { STATUS_LABELS, PLATFORMS } from '@/constants/labels'
 import { DealRow } from '@/components/DealRow'
-import { Colors, Spacing, Radius, Typography, FontFamily } from '@/constants/design'
+import { Colors, Spacing, Radius, Typography, FontFamily, ContentMaxWidth } from '@/constants/design'
+import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 
 type StatusFilter = DealStatus | 'all'
 type PlatformFilter = Platform | 'all'
@@ -60,6 +61,7 @@ function applyFilters(
 export default function DashboardScreen() {
   const scheme = useColorScheme()
   const c = scheme === 'dark' ? Colors.dark : Colors.light
+  const isWide = useIsWideScreen()
 
   const router = useRouter()
   const [deals, setDeals] = useState<DealWithPaymentSummary[]>([])
@@ -206,7 +208,7 @@ export default function DashboardScreen() {
             </Text>
           </View>
         }
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, isWide && styles.listWide]}
         showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>
@@ -248,6 +250,11 @@ const styles = StyleSheet.create({
   list: {
     paddingHorizontal: Spacing.md,
     paddingBottom: Spacing.xl,
+  },
+  listWide: {
+    maxWidth: ContentMaxWidth,
+    width: '100%',
+    alignSelf: 'center',
   },
   separator: {
     height: 10,

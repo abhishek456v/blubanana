@@ -13,7 +13,8 @@ import { useFocusEffect } from '@react-navigation/core'
 import { getBrands } from '@/lib/brands'
 import type { Brand } from '@/types'
 import { BrandAvatar } from '@/components/BrandAvatar'
-import { Colors, Spacing, Radius, Typography, FontFamily } from '@/constants/design'
+import { Colors, Spacing, Radius, Typography, FontFamily, ContentMaxWidth } from '@/constants/design'
+import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 
 function BrandRow({ brand }: { brand: Brand }) {
   const scheme = useColorScheme()
@@ -43,6 +44,7 @@ function BrandRow({ brand }: { brand: Brand }) {
 export default function BrandsScreen() {
   const scheme = useColorScheme()
   const c = scheme === 'dark' ? Colors.dark : Colors.light
+  const isWide = useIsWideScreen()
 
   const [brands, setBrands] = useState<Brand[]>([])
   const [loading, setLoading] = useState(true)
@@ -85,7 +87,7 @@ export default function BrandsScreen() {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <BrandRow brand={item} />}
         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, isWide && styles.listWide]}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyState}>
@@ -107,6 +109,11 @@ const styles = StyleSheet.create({
   list: {
     padding: Spacing.md,
     paddingBottom: Spacing.xl,
+  },
+  listWide: {
+    maxWidth: ContentMaxWidth,
+    width: '100%',
+    alignSelf: 'center',
   },
   row: {
     flexDirection: 'row',

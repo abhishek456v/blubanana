@@ -56,3 +56,17 @@ export const FontFamily = {
   medium: 'Inter_500Medium',
   semiBold: 'Inter_600SemiBold',
 } as const
+
+// Below `wide`, the app uses the mobile layout (bottom tab bar, edge-to-edge
+// content). At or above it, DESIGN.md 4 calls for a sidebar instead of a
+// bottom tab bar — 768 matches react-navigation's own tablet threshold, so
+// the sidebar switch and the library's internal label-layout switch agree.
+export const Breakpoints = {
+  wide: 768,
+} as const
+
+export const SidebarWidth = 240
+
+// Caps how wide list/form content gets next to the sidebar so text and
+// inputs don't stretch edge-to-edge on a desktop-size viewport.
+export const ContentMaxWidth = 720

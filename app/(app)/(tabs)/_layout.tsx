@@ -1,7 +1,8 @@
 import { TouchableOpacity, Text, useColorScheme } from 'react-native'
 import { Tabs, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { Colors, Typography, FontFamily, Spacing } from '@/constants/design'
+import { Colors, Typography, FontFamily, Spacing, SidebarWidth } from '@/constants/design'
+import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 
 // Defined as components (not inline JSX) so they can use hooks like useRouter.
 function AddDealButton() {
@@ -53,19 +54,40 @@ function AddBrandButton() {
 export default function TabsLayout() {
   const scheme = useColorScheme()
   const c = scheme === 'dark' ? Colors.dark : Colors.light
+  // DESIGN.md 4: bottom tab bar on mobile, sidebar at desktop widths.
+  // tabBarPosition: 'left' is a native react-navigation bottom-tabs v7
+  // feature — it lays the tab bar and scene content out as a real flex row,
+  // not an overlay, so this is the same navigator, not a bespoke sidebar.
+  const isWide = useIsWideScreen()
 
   return (
     <Tabs
       screenOptions={{
+        tabBarPosition: isWide ? 'left' : 'bottom',
         tabBarActiveTintColor: c.textPrimary,
         tabBarInactiveTintColor: c.textMuted,
-        tabBarStyle: {
-          backgroundColor: c.bgPage,
-          borderTopColor: c.border,
-          borderTopWidth: 1,
-          elevation: 0,
-          shadowOpacity: 0,
-        },
+        // The library's default active-item background is an accent blue —
+        // DESIGN.md 1 is monochrome only, so swap it for the same neutral
+        // surface tone used everywhere else (cards, rows). Bottom tab bar
+        // (mobile) doesn't render this block, so it's sidebar-only.
+        ...(isWide
+          ? { tabBarActiveBackgroundColor: c.bgSurface, tabBarInactiveBackgroundColor: 'transparent' }
+          : null),
+        tabBarStyle: isWide
+          ? {
+              backgroundColor: c.bgPage,
+              borderRightColor: c.border,
+              borderRightWidth: 1,
+              width: SidebarWidth,
+              paddingTop: Spacing.lg,
+            }
+          : {
+              backgroundColor: c.bgPage,
+              borderTopColor: c.border,
+              borderTopWidth: 1,
+              elevation: 0,
+              shadowOpacity: 0,
+            },
         tabBarLabelStyle: {
           fontFamily: FontFamily.medium,
           fontSize: Typography.label.fontSize,
