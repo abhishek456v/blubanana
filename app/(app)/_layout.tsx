@@ -28,6 +28,7 @@ export default function AppLayout() {
       {/* title for [id] is set dynamically inside the screen via Stack.Screen */}
       <Stack.Screen name="deal/[id]" options={{ title: 'Deal' }} />
       <Stack.Screen name="brand/new" options={{ title: 'Add brand' }} />
+      <Stack.Screen name="profile/edit" options={{ title: 'Edit profile' }} />
     </Stack>
   )
 }
