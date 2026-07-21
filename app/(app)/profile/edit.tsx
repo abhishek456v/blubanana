@@ -15,12 +15,15 @@ import {
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { getProfile, updateProfile } from '@/lib/profile'
-import { Colors, Spacing, Radius, Typography, FontFamily } from '@/constants/design'
+import { Colors, Spacing, Radius, Typography, FontFamily, ContentMaxWidth } from '@/constants/design'
+import { useIsWideScreen } from '@/hooks/useIsWideScreen'
+import { ModalSheet } from '@/components/ModalSheet'
 
 export default function EditProfileScreen() {
   const router = useRouter()
   const scheme = useColorScheme()
   const c = scheme === 'dark' ? Colors.dark : Colors.light
+  const isWide = useIsWideScreen()
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -80,17 +83,20 @@ export default function EditProfileScreen() {
 
   if (loading) {
     return (
+      <ModalSheet title="Edit profile">
       <SafeAreaView style={[styles.centered, { backgroundColor: c.bgPage }]} edges={['bottom']}>
         <ActivityIndicator color={c.textMuted} />
       </SafeAreaView>
+      </ModalSheet>
     )
   }
 
   return (
+    <ModalSheet title="Edit profile">
     <SafeAreaView style={[styles.safe, { backgroundColor: c.bgPage }]} edges={['bottom']}>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, isWide && styles.contentWide]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
@@ -139,6 +145,7 @@ export default function EditProfileScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+    </ModalSheet>
   )
 }
 
@@ -157,6 +164,11 @@ const styles = StyleSheet.create({
   content: {
     padding: Spacing.md,
     paddingBottom: Spacing.xl,
+  },
+  contentWide: {
+    maxWidth: ContentMaxWidth,
+    width: '100%',
+    alignSelf: 'center',
   },
   sectionLabel: {
     ...Typography.caption,

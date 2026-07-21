@@ -33,7 +33,9 @@ import type { ReminderResponse } from '@/lib/reminders'
 import { buildPaymentReminderMessage, buildLiveLinkMessage, buildWhatsAppLink } from '@/lib/whatsapp'
 import { getPaymentAlertTone } from '@/lib/paymentReminders'
 import { PLATFORMS, STATUS_LABELS, REMINDER_STAGE_LABELS } from '@/constants/labels'
-import { Colors, Spacing, Radius, Typography, FontFamily } from '@/constants/design'
+import { Colors, Spacing, Radius, Typography, FontFamily, ContentMaxWidth } from '@/constants/design'
+import { useIsWideScreen } from '@/hooks/useIsWideScreen'
+import { ModalSheet } from '@/components/ModalSheet'
 import { BrandAvatar } from '@/components/BrandAvatar'
 import { StatusPill } from '@/components/StatusPill'
 import { PaymentStatusBadge } from '@/components/PaymentStatusBadge'
@@ -54,6 +56,7 @@ export default function DealDetailScreen() {
   const router = useRouter()
   const scheme = useColorScheme()
   const c = scheme === 'dark' ? Colors.dark : Colors.light
+  const isWide = useIsWideScreen()
 
   const [deal, setDeal] = useState<DealWithPayments | null>(null)
   const [loadError, setLoadError] = useState(false)
@@ -392,17 +395,20 @@ export default function DealDetailScreen() {
 
   if (loading) {
     return (
+      <ModalSheet title="Deal">
       <>
         <Stack.Screen options={{ title: 'Deal' }} />
         <SafeAreaView style={[styles.centered, { backgroundColor: c.bgPage }]} edges={['bottom']}>
           <ActivityIndicator color={c.textMuted} />
         </SafeAreaView>
       </>
+      </ModalSheet>
     )
   }
 
   if (loadError || !deal) {
     return (
+      <ModalSheet title="Deal">
       <>
         <Stack.Screen options={{ title: 'Deal' }} />
         <SafeAreaView style={[styles.centered, { backgroundColor: c.bgPage }]} edges={['bottom']}>
@@ -414,12 +420,29 @@ export default function DealDetailScreen() {
           </TouchableOpacity>
         </SafeAreaView>
       </>
+      </ModalSheet>
     )
   }
 
   // ── Main screen ────────────────────────────────────────────────────────────
 
+  // Shared between the native Stack header (mobile) and ModalSheet's own
+  // header (desktop) — see app/(app)/_layout.tsx for which one is active.
+  const saveButton = (
+    <TouchableOpacity
+      onPress={handleSave}
+      disabled={saving}
+      style={styles.headerSaveButton}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 0 }}
+    >
+      <Text style={[styles.headerSaveText, { color: saving ? c.textMuted : c.textPrimary }]}>
+        {saving ? 'Saving…' : 'Save'}
+      </Text>
+    </TouchableOpacity>
+  )
+
   return (
+    <ModalSheet title={brandName || 'Deal'} headerRight={saveButton}>
     <>
       {/*
         Stack.Screen placed inside the component so headerRight closes over
@@ -428,23 +451,7 @@ export default function DealDetailScreen() {
       <Stack.Screen
         options={{
           title: brandName || 'Deal',
-          headerRight: () => (
-            <TouchableOpacity
-              onPress={handleSave}
-              disabled={saving}
-              style={styles.headerSaveButton}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 0 }}
-            >
-              <Text
-                style={[
-                  styles.headerSaveText,
-                  { color: saving ? c.textMuted : c.textPrimary },
-                ]}
-              >
-                {saving ? 'Saving…' : 'Save'}
-              </Text>
-            </TouchableOpacity>
-          ),
+          headerRight: () => saveButton,
         }}
       />
 
@@ -454,7 +461,7 @@ export default function DealDetailScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
           <ScrollView
-            contentContainerStyle={styles.content}
+            contentContainerStyle={[styles.content, isWide && styles.contentWide]}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
             showsVerticalScrollIndicator={false}
@@ -801,6 +808,7 @@ export default function DealDetailScreen() {
         </KeyboardAvoidingView>
       </SafeAreaView>
     </>
+    </ModalSheet>
   )
 }
 
@@ -838,6 +846,11 @@ const styles = StyleSheet.create({
   content: {
     padding: Spacing.md,
     paddingBottom: Spacing.xl,
+  },
+  contentWide: {
+    maxWidth: ContentMaxWidth,
+    width: '100%',
+    alignSelf: 'center',
   },
   sectionLabel: {
     ...Typography.caption,

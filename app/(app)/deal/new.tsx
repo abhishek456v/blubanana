@@ -32,7 +32,9 @@ import { createDeal } from '@/lib/deals'
 import { extractFromImage, extractFromTranscript, transcribeAudio } from '@/lib/aiIntake'
 import type { Brand, ExtractedDealFields, Platform as PlatformType } from '@/types'
 import { PLATFORMS } from '@/constants/labels'
-import { Colors, Spacing, Radius, Typography, FontFamily } from '@/constants/design'
+import { Colors, Spacing, Radius, Typography, FontFamily, ContentMaxWidth } from '@/constants/design'
+import { useIsWideScreen } from '@/hooks/useIsWideScreen'
+import { ModalSheet } from '@/components/ModalSheet'
 
 // Returns null for blank input; validates YYYY-MM-DD format before saving.
 function parseDate(input: string): string | null {
@@ -49,6 +51,7 @@ export default function NewDealScreen() {
   const router = useRouter()
   const scheme = useColorScheme()
   const c = scheme === 'dark' ? Colors.dark : Colors.light
+  const isWide = useIsWideScreen()
 
   const [brands, setBrands] = useState<Brand[]>([])
   const [brandsLoading, setBrandsLoading] = useState(true)
@@ -278,6 +281,7 @@ export default function NewDealScreen() {
   }
 
   return (
+    <ModalSheet title="Add deal">
     <SafeAreaView
       style={[styles.safe, { backgroundColor: c.bgPage }]}
       edges={['bottom']}
@@ -287,7 +291,7 @@ export default function NewDealScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, isWide && styles.contentWide]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
@@ -626,6 +630,7 @@ export default function NewDealScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+    </ModalSheet>
   )
 }
 
@@ -639,6 +644,11 @@ const styles = StyleSheet.create({
   content: {
     padding: Spacing.md,
     paddingBottom: Spacing.xl,
+  },
+  contentWide: {
+    maxWidth: ContentMaxWidth,
+    width: '100%',
+    alignSelf: 'center',
   },
   sectionLabel: {
     ...Typography.caption,

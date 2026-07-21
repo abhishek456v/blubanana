@@ -15,12 +15,15 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { createBrand } from '@/lib/brands'
-import { Colors, Spacing, Radius, Typography, FontFamily } from '@/constants/design'
+import { Colors, Spacing, Radius, Typography, FontFamily, ContentMaxWidth } from '@/constants/design'
+import { useIsWideScreen } from '@/hooks/useIsWideScreen'
+import { ModalSheet } from '@/components/ModalSheet'
 
 export default function NewBrandScreen() {
   const router = useRouter()
   const scheme = useColorScheme()
   const c = scheme === 'dark' ? Colors.dark : Colors.light
+  const isWide = useIsWideScreen()
   // Prefilled when arriving from AI deal intake with a brand name that
   // didn't match any existing brand (see deal/new.tsx).
   const { name: prefillName } = useLocalSearchParams<{ name?: string }>()
@@ -65,6 +68,7 @@ export default function NewBrandScreen() {
   }
 
   return (
+    <ModalSheet title="Add brand">
     <SafeAreaView
       style={[styles.safe, { backgroundColor: c.bgPage }]}
       edges={['bottom']}
@@ -74,7 +78,7 @@ export default function NewBrandScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, isWide && styles.contentWide]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
@@ -148,6 +152,7 @@ export default function NewBrandScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+    </ModalSheet>
   )
 }
 
@@ -161,6 +166,11 @@ const styles = StyleSheet.create({
   content: {
     padding: Spacing.md,
     paddingBottom: Spacing.xl,
+  },
+  contentWide: {
+    maxWidth: ContentMaxWidth,
+    width: '100%',
+    alignSelf: 'center',
   },
   sectionLabel: {
     ...Typography.caption,
