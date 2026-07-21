@@ -22,15 +22,22 @@ cp .env.example .env
 Fill in `.env` with your Supabase and OpenAI keys. See `.env.example` for where
 to find each value.
 
-### 3. Run the Supabase migration
+### 3. Run the Supabase migrations
 
 Open your [Supabase dashboard](https://supabase.com) → your project →
-**SQL Editor** → paste the contents of `supabase/migrations/001_initial_schema.sql`
-and click **Run**.
+**SQL Editor**, and run each file in `supabase/migrations/` **in order**:
 
-This creates the four tables (`profiles`, `brands`, `deals`, `payments`),
-enables Row Level Security, and sets up the trigger that auto-creates a profile
-whenever a new user signs up.
+1. `001_initial_schema.sql` — creates the four tables (`profiles`, `brands`,
+   `deals`, `payments`), enables Row Level Security, and sets up the trigger
+   that auto-creates a profile whenever a new user signs up.
+2. `002_reminders_and_payment_tracking.sql` — adds the reminder-scheduling
+   columns the app relies on for workflow and payment reminders (PRODUCT.md
+   2.3, 2.4). Skipping this breaks every deal/payment save.
+3. `003_reminder_completed_through.sql` — adds `reminder_completed_through`,
+   which the workflow-reminder rescheduling logic in `lib/reminders.ts`
+   requires.
+
+Paste each file's contents and click **Run** before moving to the next one.
 
 **Recommended for development:** in Supabase → **Authentication** → **Email**,
 toggle off **"Confirm email"**. This lets you sign up and sign in immediately
