@@ -13,11 +13,13 @@ import {
 } from 'react-native'
 import { Link } from 'expo-router'
 import { supabase } from '@/lib/supabase'
-import { Colors, Spacing, Radius, Typography, FontFamily } from '@/constants/design'
+import { Colors, Spacing, Radius, Typography, FontFamily, AuthFormMaxWidth } from '@/constants/design'
+import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 
 export default function SignUpScreen() {
   const scheme = useColorScheme()
   const c = scheme === 'dark' ? Colors.dark : Colors.light
+  const isWide = useIsWideScreen()
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -63,23 +65,25 @@ export default function SignUpScreen() {
   if (awaitingConfirmation) {
     return (
       <View style={[styles.container, styles.centered, { backgroundColor: c.bgPage }]}>
-        <Text style={[styles.wordmark, { color: c.textPrimary }]}>Check your email</Text>
-        <Text style={[styles.confirmText, { color: c.textSecondary }]}>
-          We sent a confirmation link to{'\n'}
-          <Text style={{ color: c.textPrimary, fontFamily: FontFamily.medium }}>{email}</Text>
-          {'\n\n'}
-          Open it to activate your account, then come back and sign in.
-        </Text>
-        <Link href="/(auth)/sign-in" asChild>
-          <TouchableOpacity
-            style={[styles.primaryButton, { backgroundColor: c.fillPrimary }]}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.primaryButtonText, { color: c.onFillPrimary }]}>
-              Go to sign in
-            </Text>
-          </TouchableOpacity>
-        </Link>
+        <View style={[styles.confirmInner, isWide && styles.innerWide]}>
+          <Text style={[styles.wordmark, { color: c.textPrimary }]}>Check your email</Text>
+          <Text style={[styles.confirmText, { color: c.textSecondary }]}>
+            We sent a confirmation link to{'\n'}
+            <Text style={{ color: c.textPrimary, fontFamily: FontFamily.medium }}>{email}</Text>
+            {'\n\n'}
+            Open it to activate your account, then come back and sign in.
+          </Text>
+          <Link href="/(auth)/sign-in" asChild>
+            <TouchableOpacity
+              style={[styles.primaryButton, { backgroundColor: c.fillPrimary }]}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.primaryButtonText, { color: c.onFillPrimary }]}>
+                Go to sign in
+              </Text>
+            </TouchableOpacity>
+          </Link>
+        </View>
       </View>
     )
   }
@@ -89,7 +93,7 @@ export default function SignUpScreen() {
       style={[styles.container, { backgroundColor: c.bgPage }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={styles.inner}>
+      <View style={[styles.inner, isWide && styles.innerWide]}>
         <Text style={[styles.wordmark, { color: c.textPrimary }]}>Create account</Text>
         <Text style={[styles.subtitle, { color: c.textSecondary }]}>
           Set up your CreatorDesk account
@@ -193,6 +197,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: Spacing.xl,
     paddingBottom: Spacing.xl,
+  },
+  innerWide: {
+    maxWidth: AuthFormMaxWidth,
+    width: '100%',
+    alignSelf: 'center',
+  },
+  confirmInner: {
+    width: '100%',
   },
   wordmark: {
     ...Typography.display,

@@ -70,3 +70,8 @@ export const SidebarWidth = 240
 // Caps how wide list/form content gets next to the sidebar so text and
 // inputs don't stretch edge-to-edge on a desktop-size viewport.
 export const ContentMaxWidth = 720
+
+// Sign-in/sign-up have no sidebar to sit next to — they're centered,
+// standalone screens — so they get their own, narrower cap instead of
+// ContentMaxWidth (which assumes a sidebar already ate ~240px).
+export const AuthFormMaxWidth = 400
