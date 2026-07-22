@@ -11,35 +11,47 @@ import {
   Alert,
   useColorScheme,
 } from 'react-native'
-import { Link } from 'expo-router'
+import { useRouter } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { Colors, Spacing, Radius, Typography, FontFamily, AuthFormMaxWidth } from '@/constants/design'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 
-export default function SignInScreen() {
+export default function ResetPasswordScreen() {
+  const router = useRouter()
   const scheme = useColorScheme()
   const c = scheme === 'dark' ? Colors.dark : Colors.light
   const isWide = useIsWideScreen()
 
-  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
 
-  async function handleSignIn() {
-    if (!email || !password) {
-      Alert.alert('Missing fields', 'Please enter your email and password.')
+  async function handleReset() {
+    if (password.length < 8) {
+      Alert.alert('Weak password', 'Password must be at least 8 characters.')
+      return
+    }
+    if (password !== confirmPassword) {
+      Alert.alert("Passwords don't match", 'Enter the same password in both fields.')
       return
     }
 
     setLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
-    setLoading(false)
+    const { error } = await supabase.auth.updateUser({ password })
 
     if (error) {
-      Alert.alert('Sign in failed', error.message)
+      setLoading(false)
+      Alert.alert('Could not update password', error.message)
+      return
     }
-    // On success, useAuth detects the new session and the root layout
-    // redirects to (app)/ automatically — no manual navigation needed here.
+
+    // Sign out of the recovery session and send the creator back to sign in
+    // with the new password — cleaner than silently treating a recovery
+    // session as a real login, and sidesteps app/_layout.tsx's redirect
+    // needing to know the reset "finished" from in here.
+    await supabase.auth.signOut()
+    setLoading(false)
+    router.replace('/(auth)/sign-in')
   }
 
   return (
@@ -48,59 +60,42 @@ export default function SignInScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={[styles.inner, isWide && styles.innerWide]}>
-        <Text style={[styles.wordmark, { color: c.textPrimary }]}>CreatorDesk</Text>
+        <Text style={[styles.wordmark, { color: c.textPrimary }]}>Set a new password</Text>
         <Text style={[styles.subtitle, { color: c.textSecondary }]}>
-          Sign in to your account
+          Choose a new password for your account.
         </Text>
 
         <View style={styles.form}>
           <TextInput
             style={[
               styles.input,
-              {
-                borderColor: c.borderStrong,
-                color: c.textPrimary,
-                backgroundColor: c.bgSurface,
-              },
+              { borderColor: c.borderStrong, color: c.textPrimary, backgroundColor: c.bgSurface },
             ]}
-            placeholder="Email"
-            placeholderTextColor={c.textMuted}
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            autoComplete="email"
-            textContentType="emailAddress"
-          />
-          <TextInput
-            style={[
-              styles.input,
-              {
-                borderColor: c.borderStrong,
-                color: c.textPrimary,
-                backgroundColor: c.bgSurface,
-              },
-            ]}
-            placeholder="Password"
+            placeholder="New password (min 8 characters)"
             placeholderTextColor={c.textMuted}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
-            autoComplete="password"
-            textContentType="password"
+            autoComplete="new-password"
+            textContentType="newPassword"
           />
-
-          <Link href="/(auth)/forgot-password" asChild>
-            <TouchableOpacity activeOpacity={0.7} style={styles.forgotRow}>
-              <Text style={[styles.forgotText, { color: c.textSecondary }]}>
-                Forgot password?
-              </Text>
-            </TouchableOpacity>
-          </Link>
+          <TextInput
+            style={[
+              styles.input,
+              { borderColor: c.borderStrong, color: c.textPrimary, backgroundColor: c.bgSurface },
+            ]}
+            placeholder="Confirm new password"
+            placeholderTextColor={c.textMuted}
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry
+            autoComplete="new-password"
+            textContentType="newPassword"
+          />
 
           <TouchableOpacity
             style={[styles.primaryButton, { backgroundColor: c.fillPrimary }]}
-            onPress={handleSignIn}
+            onPress={handleReset}
             disabled={loading}
             activeOpacity={0.8}
           >
@@ -108,22 +103,11 @@ export default function SignInScreen() {
               <ActivityIndicator color={c.onFillPrimary} />
             ) : (
               <Text style={[styles.primaryButtonText, { color: c.onFillPrimary }]}>
-                Sign in
+                Update password
               </Text>
             )}
           </TouchableOpacity>
         </View>
-
-        <Link href="/(auth)/sign-up" asChild>
-          <TouchableOpacity activeOpacity={0.7} style={styles.switchRow}>
-            <Text style={[styles.switchText, { color: c.textSecondary }]}>
-              Don't have an account?{' '}
-              <Text style={{ color: c.textPrimary, fontFamily: FontFamily.medium }}>
-                Sign up
-              </Text>
-            </Text>
-          </TouchableOpacity>
-        </Link>
       </View>
     </KeyboardAvoidingView>
   )
@@ -166,13 +150,6 @@ const styles = StyleSheet.create({
     ...Typography.body,
     fontFamily: FontFamily.regular,
   },
-  forgotRow: {
-    alignSelf: 'flex-end',
-  },
-  forgotText: {
-    ...Typography.caption,
-    fontFamily: FontFamily.regular,
-  },
   primaryButton: {
     height: 44,
     borderRadius: Radius.full,
@@ -183,13 +160,5 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     ...Typography.bodyStrong,
     fontFamily: FontFamily.medium,
-  },
-  switchRow: {
-    alignItems: 'center',
-    paddingVertical: Spacing.sm,
-  },
-  switchText: {
-    ...Typography.body,
-    fontFamily: FontFamily.regular,
   },
 })

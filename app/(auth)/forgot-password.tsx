@@ -11,35 +11,68 @@ import {
   Alert,
   useColorScheme,
 } from 'react-native'
-import { Link } from 'expo-router'
+import { Link, useRouter } from 'expo-router'
+import * as Linking from 'expo-linking'
 import { supabase } from '@/lib/supabase'
 import { Colors, Spacing, Radius, Typography, FontFamily, AuthFormMaxWidth } from '@/constants/design'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 
-export default function SignInScreen() {
+export default function ForgotPasswordScreen() {
+  const router = useRouter()
   const scheme = useColorScheme()
   const c = scheme === 'dark' ? Colors.dark : Colors.light
   const isWide = useIsWideScreen()
 
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [sent, setSent] = useState(false)
 
-  async function handleSignIn() {
-    if (!email || !password) {
-      Alert.alert('Missing fields', 'Please enter your email and password.')
+  async function handleSendReset() {
+    if (!email.trim()) {
+      Alert.alert('Email required', 'Enter the email you signed up with.')
       return
     }
 
     setLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: Linking.createURL('/reset-password'),
+    })
     setLoading(false)
 
     if (error) {
-      Alert.alert('Sign in failed', error.message)
+      Alert.alert('Could not send reset email', error.message)
+      return
     }
-    // On success, useAuth detects the new session and the root layout
-    // redirects to (app)/ automatically — no manual navigation needed here.
+    // Supabase never reveals whether the email exists, by design — the
+    // same confirmation shows either way.
+    setSent(true)
+  }
+
+  if (sent) {
+    return (
+      <View style={[styles.container, styles.centered, { backgroundColor: c.bgPage }]}>
+        <View style={[styles.confirmInner, isWide && styles.innerWide]}>
+          <Text style={[styles.wordmark, { color: c.textPrimary }]}>Check your email</Text>
+          <Text style={[styles.confirmText, { color: c.textSecondary }]}>
+            If an account exists for{'\n'}
+            <Text style={{ color: c.textPrimary, fontFamily: FontFamily.medium }}>
+              {email.trim()}
+            </Text>
+            {'\n\n'}
+            we've sent a link to reset the password.
+          </Text>
+          <TouchableOpacity
+            style={[styles.primaryButton, { backgroundColor: c.fillPrimary }]}
+            onPress={() => router.replace('/(auth)/sign-in')}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.primaryButtonText, { color: c.onFillPrimary }]}>
+              Back to sign in
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    )
   }
 
   return (
@@ -48,20 +81,16 @@ export default function SignInScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={[styles.inner, isWide && styles.innerWide]}>
-        <Text style={[styles.wordmark, { color: c.textPrimary }]}>CreatorDesk</Text>
+        <Text style={[styles.wordmark, { color: c.textPrimary }]}>Reset password</Text>
         <Text style={[styles.subtitle, { color: c.textSecondary }]}>
-          Sign in to your account
+          Enter your email and we'll send you a reset link.
         </Text>
 
         <View style={styles.form}>
           <TextInput
             style={[
               styles.input,
-              {
-                borderColor: c.borderStrong,
-                color: c.textPrimary,
-                backgroundColor: c.bgSurface,
-              },
+              { borderColor: c.borderStrong, color: c.textPrimary, backgroundColor: c.bgSurface },
             ]}
             placeholder="Email"
             placeholderTextColor={c.textMuted}
@@ -72,35 +101,10 @@ export default function SignInScreen() {
             autoComplete="email"
             textContentType="emailAddress"
           />
-          <TextInput
-            style={[
-              styles.input,
-              {
-                borderColor: c.borderStrong,
-                color: c.textPrimary,
-                backgroundColor: c.bgSurface,
-              },
-            ]}
-            placeholder="Password"
-            placeholderTextColor={c.textMuted}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoComplete="password"
-            textContentType="password"
-          />
-
-          <Link href="/(auth)/forgot-password" asChild>
-            <TouchableOpacity activeOpacity={0.7} style={styles.forgotRow}>
-              <Text style={[styles.forgotText, { color: c.textSecondary }]}>
-                Forgot password?
-              </Text>
-            </TouchableOpacity>
-          </Link>
 
           <TouchableOpacity
             style={[styles.primaryButton, { backgroundColor: c.fillPrimary }]}
-            onPress={handleSignIn}
+            onPress={handleSendReset}
             disabled={loading}
             activeOpacity={0.8}
           >
@@ -108,18 +112,18 @@ export default function SignInScreen() {
               <ActivityIndicator color={c.onFillPrimary} />
             ) : (
               <Text style={[styles.primaryButtonText, { color: c.onFillPrimary }]}>
-                Sign in
+                Send reset link
               </Text>
             )}
           </TouchableOpacity>
         </View>
 
-        <Link href="/(auth)/sign-up" asChild>
+        <Link href="/(auth)/sign-in" asChild>
           <TouchableOpacity activeOpacity={0.7} style={styles.switchRow}>
             <Text style={[styles.switchText, { color: c.textSecondary }]}>
-              Don't have an account?{' '}
+              Remembered it?{' '}
               <Text style={{ color: c.textPrimary, fontFamily: FontFamily.medium }}>
-                Sign up
+                Sign in
               </Text>
             </Text>
           </TouchableOpacity>
@@ -133,6 +137,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  centered: {
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.xl,
+  },
   inner: {
     flex: 1,
     justifyContent: 'center',
@@ -144,6 +152,9 @@ const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'center',
   },
+  confirmInner: {
+    width: '100%',
+  },
   wordmark: {
     ...Typography.display,
     fontFamily: FontFamily.semiBold,
@@ -152,6 +163,13 @@ const styles = StyleSheet.create({
   subtitle: {
     ...Typography.body,
     fontFamily: FontFamily.regular,
+    marginBottom: Spacing.xl,
+  },
+  confirmText: {
+    ...Typography.body,
+    fontFamily: FontFamily.regular,
+    lineHeight: 22,
+    marginTop: Spacing.md,
     marginBottom: Spacing.xl,
   },
   form: {
@@ -164,13 +182,6 @@ const styles = StyleSheet.create({
     borderRadius: Radius.sm,
     paddingHorizontal: Spacing.md,
     ...Typography.body,
-    fontFamily: FontFamily.regular,
-  },
-  forgotRow: {
-    alignSelf: 'flex-end',
-  },
-  forgotText: {
-    ...Typography.caption,
     fontFamily: FontFamily.regular,
   },
   primaryButton: {

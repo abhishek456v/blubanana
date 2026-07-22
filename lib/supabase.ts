@@ -19,8 +19,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     storage: AsyncStorage,
     autoRefreshToken: true,
     persistSession: true,
-    // Deep-link auth callbacks aren't used yet; keep this off to avoid
-    // the library trying to parse the URL on every navigation event.
-    detectSessionInUrl: false,
+    // Lets the client pick up the #access_token=...&type=recovery fragment
+    // a password-reset email link lands on (web only — this is a no-op on
+    // native, which has no window.location for the client to read; native
+    // deep links are handled by hand in app/_layout.tsx instead).
+    detectSessionInUrl: true,
   },
 })
