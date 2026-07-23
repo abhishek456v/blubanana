@@ -8,9 +8,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Alert,
   useColorScheme,
 } from 'react-native'
+import { showAlert } from '@/lib/alert'
 import { Link } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { Colors, Spacing, Radius, Typography, FontFamily, AuthFormMaxWidth } from '@/constants/design'
@@ -27,7 +27,7 @@ export default function SignInScreen() {
 
   async function handleSignIn() {
     if (!email || !password) {
-      Alert.alert('Missing fields', 'Please enter your email and password.')
+      showAlert('Missing fields', 'Please enter your email and password.')
       return
     }
 
@@ -36,7 +36,7 @@ export default function SignInScreen() {
     setLoading(false)
 
     if (error) {
-      Alert.alert('Sign in failed', error.message)
+      showAlert('Sign in failed', error.message)
     }
     // On success, useAuth detects the new session and the root layout
     // redirects to (app)/ automatically — no manual navigation needed here.

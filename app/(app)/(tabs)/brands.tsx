@@ -6,8 +6,8 @@ import {
   StyleSheet,
   useColorScheme,
   ActivityIndicator,
-  Alert,
 } from 'react-native'
+import { showAlert } from '@/lib/alert'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/core'
 import { getBrands } from '@/lib/brands'
@@ -54,7 +54,7 @@ export default function BrandsScreen() {
       const data = await getBrands()
       setBrands(data)
     } catch {
-      Alert.alert('Error', 'Could not load brands.')
+      showAlert('Error', 'Could not load brands.')
     } finally {
       setLoading(false)
     }

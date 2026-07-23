@@ -8,9 +8,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Alert,
   useColorScheme,
 } from 'react-native'
+import { showAlert } from '@/lib/alert'
 import { Link } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { Colors, Spacing, Radius, Typography, FontFamily, AuthFormMaxWidth } from '@/constants/design'
@@ -29,11 +29,11 @@ export default function SignUpScreen() {
 
   async function handleSignUp() {
     if (!name.trim() || !email || !password) {
-      Alert.alert('Missing fields', 'Please fill in all fields.')
+      showAlert('Missing fields', 'Please fill in all fields.')
       return
     }
     if (password.length < 8) {
-      Alert.alert('Weak password', 'Password must be at least 8 characters.')
+      showAlert('Weak password', 'Password must be at least 8 characters.')
       return
     }
 
@@ -49,7 +49,7 @@ export default function SignUpScreen() {
     setLoading(false)
 
     if (error) {
-      Alert.alert('Sign up failed', error.message)
+      showAlert('Sign up failed', error.message)
       return
     }
 

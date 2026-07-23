@@ -8,8 +8,8 @@ import {
   StyleSheet,
   useColorScheme,
   ActivityIndicator,
-  Alert,
 } from 'react-native'
+import { showAlert } from '@/lib/alert'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useFocusEffect } from '@react-navigation/core'
@@ -75,7 +75,7 @@ export default function DashboardScreen() {
       const data = await getDeals()
       setDeals(data)
     } catch {
-      Alert.alert('Error', 'Could not load deals.')
+      showAlert('Error', 'Could not load deals.')
     } finally {
       setLoading(false)
     }

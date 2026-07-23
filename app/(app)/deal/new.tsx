@@ -12,8 +12,8 @@ import {
   StyleSheet,
   useColorScheme,
   ActivityIndicator,
-  Alert,
 } from 'react-native'
+import { showAlert } from '@/lib/alert'
 import { useRouter } from 'expo-router'
 import { useFocusEffect } from '@react-navigation/core'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -122,7 +122,7 @@ export default function NewDealScreen() {
   function applyExtractedFields(fields: ExtractedDealFields) {
     const hasAnyField = Object.values(fields).some((v) => v !== null)
     if (!hasAnyField) {
-      Alert.alert(
+      showAlert(
         'Nothing extracted',
         "Couldn't find deal details there — try again or fill in the form manually."
       )
@@ -155,7 +155,7 @@ export default function NewDealScreen() {
   async function handleScanScreenshot() {
     const { granted } = await ImagePicker.requestMediaLibraryPermissionsAsync()
     if (!granted) {
-      Alert.alert('Photo access needed', 'Allow photo library access to scan a screenshot.')
+      showAlert('Photo access needed', 'Allow photo library access to scan a screenshot.')
       return
     }
 
@@ -172,7 +172,7 @@ export default function NewDealScreen() {
       const fields = await extractFromImage(asset.base64!, asset.mimeType || 'image/jpeg')
       applyExtractedFields(fields)
     } catch {
-      Alert.alert(
+      showAlert(
         'Could not read screenshot',
         'Please try again or enter the deal manually.'
       )
@@ -184,7 +184,7 @@ export default function NewDealScreen() {
   async function handleStartRecording() {
     const { granted } = await requestRecordingPermissionsAsync()
     if (!granted) {
-      Alert.alert('Microphone access needed', 'Allow microphone access to record a voice note.')
+      showAlert('Microphone access needed', 'Allow microphone access to record a voice note.')
       return
     }
     await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true })
@@ -196,7 +196,7 @@ export default function NewDealScreen() {
     await recorder.stop()
     const uri = recorder.uri
     if (!uri) {
-      Alert.alert('Recording failed', 'Please try again.')
+      showAlert('Recording failed', 'Please try again.')
       return
     }
 
@@ -207,7 +207,7 @@ export default function NewDealScreen() {
       const fields = await extractFromTranscript(transcript)
       applyExtractedFields(fields)
     } catch {
-      Alert.alert(
+      showAlert(
         'Could not process voice note',
         'Please try again or enter the deal manually.'
       )
@@ -227,20 +227,20 @@ export default function NewDealScreen() {
 
   async function handleSave() {
     if (!selectedBrandId) {
-      Alert.alert('Brand required', 'Select a brand for this deal.')
+      showAlert('Brand required', 'Select a brand for this deal.')
       return
     }
     if (!platform) {
-      Alert.alert('Platform required', 'Select a platform.')
+      showAlert('Platform required', 'Select a platform.')
       return
     }
     if (!deliverable.trim()) {
-      Alert.alert('Deliverable required', 'Describe what you are delivering.')
+      showAlert('Deliverable required', 'Describe what you are delivering.')
       return
     }
     const rateNum = parseInt(rate, 10)
     if (!rate || isNaN(rateNum) || rateNum <= 0) {
-      Alert.alert('Rate required', 'Enter a valid rate in INR.')
+      showAlert('Rate required', 'Enter a valid rate in INR.')
       return
     }
 
@@ -253,7 +253,7 @@ export default function NewDealScreen() {
     ]
     for (const { label, value } of datesToValidate) {
       if (value.trim() && parseDate(value) === null) {
-        Alert.alert('Invalid date', `${label} must be in YYYY-MM-DD format (e.g. 2025-09-15).`)
+        showAlert('Invalid date', `${label} must be in YYYY-MM-DD format (e.g. 2025-09-15).`)
         return
       }
     }
@@ -274,7 +274,7 @@ export default function NewDealScreen() {
       })
       router.back()
     } catch {
-      Alert.alert('Error', 'Could not save deal. Please try again.')
+      showAlert('Error', 'Could not save deal. Please try again.')
     } finally {
       setSaving(false)
     }

@@ -10,8 +10,8 @@ import {
   StyleSheet,
   useColorScheme,
   ActivityIndicator,
-  Alert,
 } from 'react-native'
+import { showAlert } from '@/lib/alert'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { getProfile, updateProfile } from '@/lib/profile'
@@ -41,7 +41,7 @@ export default function EditProfileScreen() {
         setFollowerCount(profile.follower_count != null ? String(profile.follower_count) : '')
       })
       .catch(() => {
-        if (active) Alert.alert('Error', 'Could not load your profile.')
+        if (active) showAlert('Error', 'Could not load your profile.')
       })
       .finally(() => {
         if (active) setLoading(false)
@@ -62,7 +62,7 @@ export default function EditProfileScreen() {
 
   async function handleSave() {
     if (!name.trim()) {
-      Alert.alert('Name required', 'Enter your name.')
+      showAlert('Name required', 'Enter your name.')
       return
     }
 
@@ -75,7 +75,7 @@ export default function EditProfileScreen() {
       })
       router.back()
     } catch {
-      Alert.alert('Error', 'Could not save your profile. Please try again.')
+      showAlert('Error', 'Could not save your profile. Please try again.')
     } finally {
       setSaving(false)
     }

@@ -10,8 +10,8 @@ import {
   StyleSheet,
   useColorScheme,
   ActivityIndicator,
-  Alert,
 } from 'react-native'
+import { showAlert } from '@/lib/alert'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { createBrand } from '@/lib/brands'
@@ -46,7 +46,7 @@ export default function NewBrandScreen() {
 
   async function handleSave() {
     if (!name.trim()) {
-      Alert.alert('Name required', 'Enter the brand or client name.')
+      showAlert('Name required', 'Enter the brand or client name.')
       return
     }
 
@@ -61,7 +61,7 @@ export default function NewBrandScreen() {
       })
       router.back()
     } catch {
-      Alert.alert('Error', 'Could not save brand. Please try again.')
+      showAlert('Error', 'Could not save brand. Please try again.')
     } finally {
       setSaving(false)
     }

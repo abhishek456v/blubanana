@@ -8,9 +8,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Alert,
   useColorScheme,
 } from 'react-native'
+import { showAlert } from '@/lib/alert'
 import { useRouter } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { Colors, Spacing, Radius, Typography, FontFamily, AuthFormMaxWidth } from '@/constants/design'
@@ -28,11 +28,11 @@ export default function ResetPasswordScreen() {
 
   async function handleReset() {
     if (password.length < 8) {
-      Alert.alert('Weak password', 'Password must be at least 8 characters.')
+      showAlert('Weak password', 'Password must be at least 8 characters.')
       return
     }
     if (password !== confirmPassword) {
-      Alert.alert("Passwords don't match", 'Enter the same password in both fields.')
+      showAlert("Passwords don't match", 'Enter the same password in both fields.')
       return
     }
 
@@ -41,7 +41,7 @@ export default function ResetPasswordScreen() {
 
     if (error) {
       setLoading(false)
-      Alert.alert('Could not update password', error.message)
+      showAlert('Could not update password', error.message)
       return
     }
 

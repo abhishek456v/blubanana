@@ -8,9 +8,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Alert,
   useColorScheme,
 } from 'react-native'
+import { showAlert } from '@/lib/alert'
 import { Link, useRouter } from 'expo-router'
 import * as Linking from 'expo-linking'
 import { supabase } from '@/lib/supabase'
@@ -29,7 +29,7 @@ export default function ForgotPasswordScreen() {
 
   async function handleSendReset() {
     if (!email.trim()) {
-      Alert.alert('Email required', 'Enter the email you signed up with.')
+      showAlert('Email required', 'Enter the email you signed up with.')
       return
     }
 
@@ -40,7 +40,7 @@ export default function ForgotPasswordScreen() {
     setLoading(false)
 
     if (error) {
-      Alert.alert('Could not send reset email', error.message)
+      showAlert('Could not send reset email', error.message)
       return
     }
     // Supabase never reveals whether the email exists, by design — the
