@@ -11,6 +11,7 @@ import {
   Inter_500Medium,
   Inter_600SemiBold,
 } from '@expo-google-fonts/inter'
+import { Syne_600SemiBold, Syne_700Bold } from '@expo-google-fonts/syne'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import { setForegroundHandler, ensureAndroidChannelAsync } from '@/lib/notifications'
@@ -61,6 +62,8 @@ export default function RootLayout() {
     Inter_400Regular,
     Inter_500Medium,
     Inter_600SemiBold,
+    Syne_600SemiBold,
+    Syne_700Bold,
   })
 
   // Hide splash once both fonts and auth state are ready.

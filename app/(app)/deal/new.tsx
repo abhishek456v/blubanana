@@ -12,6 +12,7 @@ import {
   StyleSheet,
   useColorScheme,
   ActivityIndicator,
+  Switch,
 } from 'react-native'
 import { showAlert } from '@/lib/alert'
 import { useRouter } from 'expo-router'
@@ -29,6 +30,7 @@ import { File } from 'expo-file-system'
 import { Ionicons } from '@expo/vector-icons'
 import { getBrands } from '@/lib/brands'
 import { createDeal } from '@/lib/deals'
+import { calculateAdRightsExpiry } from '@/lib/adRights'
 import { extractFromImage, extractFromTranscript, transcribeAudio } from '@/lib/aiIntake'
 import type { Brand, ExtractedDealFields, Platform as PlatformType } from '@/types'
 import { PLATFORMS } from '@/constants/labels'
@@ -68,6 +70,12 @@ export default function NewDealScreen() {
   const [publishDate, setPublishDate] = useState('')
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
+
+  // Ad rights (optional add-on term, not part of the base deal fields).
+  const [adRightsEnabled, setAdRightsEnabled] = useState(false)
+  const [adRightsFee, setAdRightsFee] = useState('')
+  const [adRightsDuration, setAdRightsDuration] = useState<number | null>(null)
+  const [adRightsStartDate, setAdRightsStartDate] = useState('')
 
   // AI intake state. `extracting` drives the loading banner/disabled state
   // shared by both the screenshot and voice paths (PRODUCT.md 2.1 — one
@@ -258,6 +266,22 @@ export default function NewDealScreen() {
       }
     }
 
+    if (adRightsEnabled) {
+      const feeNum = parseInt(adRightsFee, 10)
+      if (!adRightsFee || isNaN(feeNum) || feeNum <= 0) {
+        showAlert('Ad rights fee required', 'Enter the ad rights fee, or turn off ad rights.')
+        return
+      }
+      if (!adRightsDuration) {
+        showAlert('Ad rights duration required', 'Select how long the ad rights last.')
+        return
+      }
+      if (!adRightsStartDate.trim() || parseDate(adRightsStartDate) === null) {
+        showAlert('Ad rights start date required', 'Enter a valid start date (YYYY-MM-DD).')
+        return
+      }
+    }
+
     setSaving(true)
     try {
       await createDeal({
@@ -271,6 +295,14 @@ export default function NewDealScreen() {
         edit_done_date: parseDate(editDone),
         publish_date: parseDate(publishDate),
         notes: notes.trim() || null,
+        ad_rights: adRightsEnabled
+          ? {
+              ad_rights_granted: true,
+              ad_rights_fee: parseInt(adRightsFee, 10),
+              ad_rights_duration_months: adRightsDuration,
+              ad_rights_start_date: parseDate(adRightsStartDate),
+            }
+          : null,
       })
       router.back()
     } catch {
@@ -599,6 +631,95 @@ export default function NewDealScreen() {
             </View>
           </View>
 
+          {/* ── Ad rights (optional) ──────────────────────────── */}
+          <View style={styles.adRightsHeader}>
+            <Text style={[styles.sectionLabel, styles.adRightsLabel, { color: c.accent }]}>
+              Ad rights
+            </Text>
+            <Switch
+              value={adRightsEnabled}
+              onValueChange={setAdRightsEnabled}
+              trackColor={{ false: c.border, true: c.accentLight }}
+              thumbColor={adRightsEnabled ? c.accent : undefined}
+            />
+          </View>
+
+          {adRightsEnabled && (
+            <View style={[styles.adRightsBox, { backgroundColor: c.accentLight, borderColor: c.accent }]}>
+              <Text style={[styles.dateLabel, { color: c.textSecondary }]}>Ad rights fee</Text>
+              <View style={styles.rateRow}>
+                <View style={[styles.ratePrefix, { borderColor: c.borderStrong, backgroundColor: c.bgSurfaceRaised }]}>
+                  <Text style={[styles.ratePrefixText, { color: c.textMuted }]}>₹</Text>
+                </View>
+                <TextInput
+                  style={[
+                    styles.rateInput,
+                    { borderColor: c.borderStrong, color: c.textPrimary, backgroundColor: c.bgSurfaceRaised },
+                  ]}
+                  placeholder="0"
+                  placeholderTextColor={c.textMuted}
+                  value={adRightsFee}
+                  onChangeText={(v) => setAdRightsFee(v.replace(/[^0-9]/g, ''))}
+                  keyboardType="numeric"
+                />
+              </View>
+
+              <Text style={[styles.dateLabel, { color: c.textSecondary, marginTop: Spacing.md }]}>
+                Duration
+              </Text>
+              <View style={styles.platformScroll}>
+                {[1, 2, 3, 6, 9, 12].map((months) => {
+                  const selected = adRightsDuration === months
+                  return (
+                    <TouchableOpacity
+                      key={months}
+                      onPress={() => setAdRightsDuration(months)}
+                      style={[
+                        styles.platformPill,
+                        selected
+                          ? { backgroundColor: c.accent }
+                          : { borderWidth: 1, borderColor: c.borderStrong },
+                      ]}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        style={[
+                          styles.platformPillText,
+                          { color: selected ? c.onFillPrimary : c.textSecondary },
+                        ]}
+                      >
+                        {months} {months === 1 ? 'month' : 'months'}
+                      </Text>
+                    </TouchableOpacity>
+                  )
+                })}
+              </View>
+
+              <Text style={[styles.dateLabel, { color: c.textSecondary, marginTop: Spacing.md }]}>
+                Start date (YYYY-MM-DD)
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  { borderColor: c.borderStrong, color: c.textPrimary, backgroundColor: c.bgSurfaceRaised },
+                ]}
+                placeholder="2025-09-15"
+                placeholderTextColor={c.textMuted}
+                value={adRightsStartDate}
+                onChangeText={setAdRightsStartDate}
+                keyboardType="numbers-and-punctuation"
+              />
+
+              {adRightsDuration && parseDate(adRightsStartDate) && (
+                <Text style={[styles.adRightsExpiryNote, { color: c.accent }]}>
+                  Expires{' '}
+                  {calculateAdRightsExpiry(parseDate(adRightsStartDate), adRightsDuration)} — you'll
+                  get a reminder 30 days before.
+                </Text>
+              )}
+            </View>
+          )}
+
           {/* ── Notes ─────────────────────────────────────────── */}
           <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Notes</Text>
           <TextInput
@@ -812,6 +933,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     ...Typography.body,
     fontFamily: FontFamily.regular,
+  },
+  // Ad rights
+  adRightsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: Spacing.lg,
+  },
+  adRightsLabel: {
+    marginTop: 0,
+    marginBottom: 0,
+    fontFamily: FontFamily.medium,
+  },
+  adRightsBox: {
+    borderWidth: 1,
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    marginTop: Spacing.sm,
+  },
+  adRightsExpiryNote: {
+    ...Typography.caption,
+    fontFamily: FontFamily.medium,
+    marginTop: Spacing.sm,
   },
   // Timeline grid
   dateGrid: {

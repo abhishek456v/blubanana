@@ -13,6 +13,7 @@ import {
   StyleSheet,
   useColorScheme,
   ActivityIndicator,
+  Switch,
 } from 'react-native'
 import { showAlert } from '@/lib/alert'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
@@ -23,6 +24,7 @@ import {
   getDeal,
   updateDeal,
   updatePaymentRecord,
+  updateAdRights,
   advanceDealStatus,
   getNextStatus,
   respondToReminder,
@@ -34,6 +36,7 @@ import { updateBrand } from '@/lib/brands'
 import type { ReminderResponse } from '@/lib/reminders'
 import { buildPaymentReminderMessage, buildLiveLinkMessage, buildWhatsAppLink } from '@/lib/whatsapp'
 import { getPaymentAlertTone } from '@/lib/paymentReminders'
+import { calculateAdRightsExpiry, getAdRightsStatus, buildMetaAdLibraryUrl } from '@/lib/adRights'
 import {
   listAttachments,
   uploadAttachment,
@@ -85,6 +88,12 @@ export default function DealDetailScreen() {
   const [liveLink, setLiveLink] = useState('')
   const [notes, setNotes] = useState('')
 
+  // Ad rights (optional add-on term).
+  const [adRightsEnabled, setAdRightsEnabled] = useState(false)
+  const [adRightsFee, setAdRightsFee] = useState('')
+  const [adRightsDuration, setAdRightsDuration] = useState<number | null>(null)
+  const [adRightsStartDate, setAdRightsStartDate] = useState('')
+
   // Attachments (PRODUCT.md 1 — contracts/briefs, stored in Supabase Storage).
   const [attachments, setAttachments] = useState<DealAttachment[]>([])
   const [loadingAttachments, setLoadingAttachments] = useState(true)
@@ -132,6 +141,10 @@ export default function DealDetailScreen() {
         setLiveLink(data.live_link ?? '')
         setNotes(data.notes ?? '')
         setPaymentTerms(data.payment?.payment_terms ?? '')
+        setAdRightsEnabled(data.ad_rights_granted)
+        setAdRightsFee(data.ad_rights_fee != null ? String(data.ad_rights_fee) : '')
+        setAdRightsDuration(data.ad_rights_duration_months)
+        setAdRightsStartDate(data.ad_rights_start_date ?? '')
       } catch {
         if (active) setLoadError(true)
       } finally {
@@ -226,6 +239,22 @@ export default function DealDetailScreen() {
       }
     }
 
+    if (adRightsEnabled) {
+      const feeNum = parseInt(adRightsFee, 10)
+      if (!adRightsFee || isNaN(feeNum) || feeNum <= 0) {
+        showAlert('Ad rights fee required', 'Enter the ad rights fee, or turn off ad rights.')
+        return
+      }
+      if (!adRightsDuration) {
+        showAlert('Ad rights duration required', 'Select how long the ad rights last.')
+        return
+      }
+      if (!adRightsStartDate.trim() || parseDate(adRightsStartDate) === null) {
+        showAlert('Ad rights start date required', 'Enter a valid start date (YYYY-MM-DD).')
+        return
+      }
+    }
+
     setSaving(true)
     try {
       const parsedPublish = parseDate(publishDate)
@@ -248,6 +277,13 @@ export default function DealDetailScreen() {
         publishDate: parsedPublish,
       })
 
+      await updateAdRights(deal, {
+        ad_rights_granted: adRightsEnabled,
+        ad_rights_fee: adRightsEnabled ? parseInt(adRightsFee, 10) : null,
+        ad_rights_duration_months: adRightsEnabled ? adRightsDuration : null,
+        ad_rights_start_date: adRightsEnabled ? parseDate(adRightsStartDate) : null,
+      })
+
       router.back()
     } catch {
       showAlert('Error', 'Could not save changes. Please try again.')
@@ -266,6 +302,10 @@ export default function DealDetailScreen() {
     publishDate,
     liveLink,
     notes,
+    adRightsEnabled,
+    adRightsFee,
+    adRightsDuration,
+    adRightsStartDate,
   ])
 
   // Moving off 'published' is special-cased (PRODUCT.md 2.5): it requires a
@@ -876,6 +916,112 @@ export default function DealDetailScreen() {
                 placeholderTextColor={c.textMuted}
               />
 
+              {/* ── Ad rights (optional) ──────────────────────────── */}
+              <View style={styles.adRightsHeader}>
+                <Text style={[styles.sectionLabel, styles.adRightsLabel, { color: c.accent }]}>
+                  Ad rights
+                </Text>
+                <Switch
+                  value={adRightsEnabled}
+                  onValueChange={setAdRightsEnabled}
+                  trackColor={{ false: c.border, true: c.accentLight }}
+                  thumbColor={adRightsEnabled ? c.accent : undefined}
+                />
+              </View>
+
+              {adRightsEnabled && (
+                <View style={[styles.adRightsBox, { backgroundColor: c.accentLight, borderColor: c.accent }]}>
+                  <Text style={[styles.dateLabel, { color: c.textSecondary }]}>Ad rights fee</Text>
+                  <View style={styles.rateRow}>
+                    <View style={[styles.ratePrefix, { borderColor: c.borderStrong, backgroundColor: c.bgSurfaceRaised }]}>
+                      <Text style={[styles.ratePrefixText, { color: c.textMuted }]}>₹</Text>
+                    </View>
+                    <TextInput
+                      style={[
+                        styles.rateInput,
+                        { borderColor: c.borderStrong, color: c.textPrimary, backgroundColor: c.bgSurfaceRaised },
+                      ]}
+                      placeholder="0"
+                      placeholderTextColor={c.textMuted}
+                      value={adRightsFee}
+                      onChangeText={(v) => setAdRightsFee(v.replace(/[^0-9]/g, ''))}
+                      keyboardType="numeric"
+                    />
+                  </View>
+
+                  <Text style={[styles.dateLabel, { color: c.textSecondary, marginTop: Spacing.md }]}>
+                    Duration
+                  </Text>
+                  <View style={styles.platformScroll}>
+                    {[1, 2, 3, 6, 9, 12].map((months) => {
+                      const selected = adRightsDuration === months
+                      return (
+                        <TouchableOpacity
+                          key={months}
+                          onPress={() => setAdRightsDuration(months)}
+                          style={[
+                            styles.platformPill,
+                            selected
+                              ? { backgroundColor: c.accent }
+                              : { borderWidth: 1, borderColor: c.borderStrong },
+                          ]}
+                          activeOpacity={0.7}
+                        >
+                          <Text
+                            style={[
+                              styles.platformPillText,
+                              { color: selected ? c.onFillPrimary : c.textSecondary },
+                            ]}
+                          >
+                            {months} {months === 1 ? 'month' : 'months'}
+                          </Text>
+                        </TouchableOpacity>
+                      )
+                    })}
+                  </View>
+
+                  <Text style={[styles.dateLabel, { color: c.textSecondary, marginTop: Spacing.md }]}>
+                    Start date (YYYY-MM-DD)
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      { borderColor: c.borderStrong, color: c.textPrimary, backgroundColor: c.bgSurfaceRaised },
+                    ]}
+                    placeholder="2025-09-15"
+                    placeholderTextColor={c.textMuted}
+                    value={adRightsStartDate}
+                    onChangeText={setAdRightsStartDate}
+                    keyboardType="numbers-and-punctuation"
+                  />
+
+                  {adRightsDuration && parseDate(adRightsStartDate) && (
+                    <Text style={[styles.adRightsExpiryNote, { color: c.accent }]}>
+                      Expires{' '}
+                      {calculateAdRightsExpiry(parseDate(adRightsStartDate), adRightsDuration)} — you'll
+                      get a reminder 30 days before.
+                    </Text>
+                  )}
+
+                  {getAdRightsStatus(deal) === 'expired' && (
+                    <Text style={[styles.adRightsExpiryNote, { color: c.danger }]}>
+                      These ad rights have expired.
+                    </Text>
+                  )}
+
+                  <TouchableOpacity
+                    style={[styles.metaAdLibraryButton, { borderColor: c.accent }]}
+                    onPress={() => Linking.openURL(buildMetaAdLibraryUrl(brandName))}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="search-outline" size={15} color={c.accent} />
+                    <Text style={[styles.metaAdLibraryButtonText, { color: c.accent }]}>
+                      Check Meta Ad Library
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
               {/* ── Attachments ──────────────────────────────────── */}
               <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Attachments</Text>
               <View style={[styles.attachmentsBox, { backgroundColor: c.bgSurface }]}>
@@ -1198,6 +1344,43 @@ const styles = StyleSheet.create({
   },
   phoneSaveButtonText: {
     ...Typography.bodyStrong,
+    fontFamily: FontFamily.medium,
+  },
+  // Ad rights
+  adRightsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: Spacing.lg,
+  },
+  adRightsLabel: {
+    marginTop: 0,
+    marginBottom: 0,
+    fontFamily: FontFamily.medium,
+  },
+  adRightsBox: {
+    borderWidth: 1,
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    marginTop: Spacing.sm,
+  },
+  adRightsExpiryNote: {
+    ...Typography.caption,
+    fontFamily: FontFamily.medium,
+    marginTop: Spacing.sm,
+  },
+  metaAdLibraryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.xs,
+    height: 40,
+    borderWidth: 1,
+    borderRadius: Radius.full,
+    marginTop: Spacing.md,
+  },
+  metaAdLibraryButtonText: {
+    ...Typography.label,
     fontFamily: FontFamily.medium,
   },
   // Attachments

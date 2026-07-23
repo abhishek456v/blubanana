@@ -64,14 +64,13 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         tabBarPosition: isWide ? 'left' : 'bottom',
-        tabBarActiveTintColor: c.textPrimary,
+        tabBarActiveTintColor: c.accent,
         tabBarInactiveTintColor: c.textMuted,
-        // The library's default active-item background is an accent blue —
-        // DESIGN.md 1 is monochrome only, so swap it for the same neutral
-        // surface tone used everywhere else (cards, rows). Bottom tab bar
+        // Active item gets a soft accent-tinted background, matching
+        // DESIGN.md 4's "filled icon + accent" active state. Bottom tab bar
         // (mobile) doesn't render this block, so it's sidebar-only.
         ...(isWide
-          ? { tabBarActiveBackgroundColor: c.bgSurface, tabBarInactiveBackgroundColor: 'transparent' }
+          ? { tabBarActiveBackgroundColor: c.accentLight, tabBarInactiveBackgroundColor: 'transparent' }
           : null),
         tabBarStyle: isWide
           ? {
@@ -94,7 +93,7 @@ export default function TabsLayout() {
         },
         headerStyle: { backgroundColor: c.bgPage },
         headerTitleStyle: {
-          fontFamily: FontFamily.semiBold,
+          fontFamily: FontFamily.display,
           fontSize: Typography.title.fontSize,
           color: c.textPrimary,
         },

@@ -37,7 +37,7 @@ export function ModalSheet({ title, headerRight, children }: ModalSheetProps) {
   return (
     <Pressable style={styles.backdrop} onPress={() => router.back()}>
       <Pressable
-        style={[styles.card, { backgroundColor: c.bgPage, borderColor: c.border }]}
+        style={[styles.card, { backgroundColor: c.bgSurfaceRaised, borderColor: c.border }]}
         // Stops the tap from bubbling to the backdrop's dismiss handler —
         // react-native-web's Pressable uses real DOM click bubbling.
         onPress={(e) => e.stopPropagation()}
@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 560,
     maxHeight: '85%',
-    borderRadius: Radius.md,
+    borderRadius: Radius.lg,
     borderWidth: 1,
     overflow: 'hidden',
   },

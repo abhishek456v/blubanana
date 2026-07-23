@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity, useColorScheme } from 'react-
 import type { Deal } from '@/types'
 import { Colors, Spacing, Radius, Typography, FontFamily } from '@/constants/design'
 import { PLATFORM_LABELS } from '@/constants/labels'
+import { getAdRightsStatus } from '@/lib/adRights'
 import { BrandAvatar } from './BrandAvatar'
 import { StatusPill } from './StatusPill'
 
@@ -44,6 +45,9 @@ export function DealRow({ deal, onPress }: DealRowProps) {
   const { label: deadlineLabel, date: deadlineDate } = getNextDeadline(deal)
   const brandName = deal.brand?.name ?? 'Unknown brand'
   const platformLabel = PLATFORM_LABELS[deal.platform] ?? deal.platform
+  const adRightsStatus = getAdRightsStatus(deal)
+  const adRightsColor =
+    adRightsStatus === 'expired' ? c.textMuted : adRightsStatus === 'expiring_soon' ? c.warning : c.accent
 
   return (
     <TouchableOpacity
@@ -64,6 +68,14 @@ export function DealRow({ deal, onPress }: DealRowProps) {
         {deadlineDate ? (
           <Text style={[styles.deadline, { color: c.textMuted }]}>
             {deadlineLabel} {formatDate(deadlineDate)}
+          </Text>
+        ) : null}
+        {adRightsStatus && deal.ad_rights_expires_date ? (
+          <Text style={[styles.adRights, { color: adRightsColor }]} numberOfLines={1}>
+            Ad rights{' '}
+            {adRightsStatus === 'expired'
+              ? `expired ${formatDate(deal.ad_rights_expires_date)}`
+              : `until ${formatDate(deal.ad_rights_expires_date)}`}
           </Text>
         ) : null}
       </View>
@@ -98,5 +110,10 @@ const styles = StyleSheet.create({
     ...Typography.caption,
     fontFamily: FontFamily.regular,
     marginTop: 1,
+  },
+  adRights: {
+    ...Typography.caption,
+    fontFamily: FontFamily.medium,
+    marginTop: 2,
   },
 })

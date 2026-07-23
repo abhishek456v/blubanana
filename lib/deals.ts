@@ -7,6 +7,14 @@ import {
   type ReminderResponse,
 } from './reminders'
 import { reschedulePaymentReminders, cancelPaymentReminders, isPaymentOverdue } from './paymentReminders'
+import { calculateAdRightsExpiry, rescheduleAdRightsReminder } from './adRights'
+
+export interface AdRightsInput {
+  ad_rights_granted: boolean
+  ad_rights_fee: number | null
+  ad_rights_duration_months: number | null
+  ad_rights_start_date: string | null
+}
 
 export interface CreateDealInput {
   brand_id: string
@@ -19,6 +27,7 @@ export interface CreateDealInput {
   publish_date?: string | null
   notes?: string | null
   payment_terms?: string | null
+  ad_rights?: AdRightsInput | null
 }
 
 // RLS on deals restricts reads to the authenticated user's rows automatically.
@@ -43,6 +52,11 @@ export async function createDeal(input: CreateDealInput): Promise<Deal> {
   } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
 
+  const adRights = input.ad_rights
+  const adRightsExpiresDate = adRights?.ad_rights_granted
+    ? calculateAdRightsExpiry(adRights.ad_rights_start_date, adRights.ad_rights_duration_months)
+    : null
+
   const { data: deal, error: dealError } = await supabase
     .from('deals')
     .insert({
@@ -57,6 +71,11 @@ export async function createDeal(input: CreateDealInput): Promise<Deal> {
       publish_date: input.publish_date ?? null,
       notes: input.notes ?? null,
       status: 'intake',
+      ad_rights_granted: adRights?.ad_rights_granted ?? false,
+      ad_rights_fee: adRights?.ad_rights_granted ? adRights.ad_rights_fee : null,
+      ad_rights_duration_months: adRights?.ad_rights_granted ? adRights.ad_rights_duration_months : null,
+      ad_rights_start_date: adRights?.ad_rights_granted ? adRights.ad_rights_start_date : null,
+      ad_rights_expires_date: adRightsExpiresDate,
     })
     .select('*, brand:brands(*)')
     .single()
@@ -86,6 +105,7 @@ export async function createDeal(input: CreateDealInput): Promise<Deal> {
   try {
     const reminderFields = await rescheduleWorkflowReminder(deal as Deal)
     const paymentReminderFields = await reschedulePaymentReminders(payment as Payment, deal as Deal)
+    const adRightsReminderFields = await rescheduleAdRightsReminder(deal as Deal)
 
     const { error: paymentReminderError } = await supabase
       .from('payments')
@@ -95,7 +115,7 @@ export async function createDeal(input: CreateDealInput): Promise<Deal> {
 
     const { data: finalDeal, error: dealReminderError } = await supabase
       .from('deals')
-      .update(reminderFields)
+      .update({ ...reminderFields, ...adRightsReminderFields })
       .eq('id', deal.id)
       .select('*, brand:brands(*)')
       .single()
@@ -193,6 +213,43 @@ export async function updatePaymentRecord(
     .update({ amount, payment_terms: paymentTerms, due_date: dueDate, ...reminderFields })
     .eq('deal_id', deal.id)
   if (error) throw error
+}
+
+// Updates a deal's ad rights block. Always writes the full set of fields —
+// when granted is false, everything else is cleared out rather than left as
+// stale data from a previous toggle-on. Recalculates expires_date and
+// reschedules the 30-day reminder to match.
+export async function updateAdRights(
+  deal: Pick<Deal, 'id' | 'brand' | 'ad_rights_reminder_notification_id'>,
+  input: AdRightsInput
+): Promise<Pick<Deal, 'ad_rights_granted' | 'ad_rights_fee' | 'ad_rights_duration_months' | 'ad_rights_start_date' | 'ad_rights_expires_date' | 'ad_rights_reminder_notification_id'>> {
+  const expiresDate = input.ad_rights_granted
+    ? calculateAdRightsExpiry(input.ad_rights_start_date, input.ad_rights_duration_months)
+    : null
+
+  const fields = {
+    ad_rights_granted: input.ad_rights_granted,
+    ad_rights_fee: input.ad_rights_granted ? input.ad_rights_fee : null,
+    ad_rights_duration_months: input.ad_rights_granted ? input.ad_rights_duration_months : null,
+    ad_rights_start_date: input.ad_rights_granted ? input.ad_rights_start_date : null,
+    ad_rights_expires_date: expiresDate,
+  }
+
+  const reminderFields = await rescheduleAdRightsReminder({
+    id: deal.id,
+    brand: deal.brand,
+    ad_rights_granted: fields.ad_rights_granted,
+    ad_rights_expires_date: fields.ad_rights_expires_date,
+    ad_rights_reminder_notification_id: deal.ad_rights_reminder_notification_id,
+  })
+
+  const { error } = await supabase
+    .from('deals')
+    .update({ ...fields, ...reminderFields })
+    .eq('id', deal.id)
+  if (error) throw error
+
+  return { ...fields, ...reminderFields }
 }
 
 // Called when the creator taps Done / +12 hours / tomorrow on the deal

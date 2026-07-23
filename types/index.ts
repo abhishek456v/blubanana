@@ -74,6 +74,16 @@ export interface Deal {
   // a date added retroactively to an earlier, never-completed stage can
   // still resurface it (see lib/reminders.ts rescheduleWorkflowReminder).
   reminder_completed_through: ReminderStage | null
+  // Ad rights — an optional add-on term: the brand pays extra for the right
+  // to reuse the creator's content in paid ads for a fixed window.
+  // expires_date is stored, not derived, so it can be queried directly and
+  // so the 30-day-before reminder has a stable date to schedule against.
+  ad_rights_granted: boolean
+  ad_rights_fee: number | null // INR, whole rupees
+  ad_rights_duration_months: number | null
+  ad_rights_start_date: string | null
+  ad_rights_expires_date: string | null
+  ad_rights_reminder_notification_id: string | null
   created_at: string
   updated_at: string
   brand?: Brand // joined on fetch

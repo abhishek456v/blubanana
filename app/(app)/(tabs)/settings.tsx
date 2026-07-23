@@ -73,7 +73,7 @@ export default function SettingsScreen() {
             </Text>
           ) : null}
         </View>
-        <Text style={[styles.editLink, { color: c.textSecondary }]}>Edit</Text>
+        <Text style={[styles.editLink, { color: c.accent }]}>Edit</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -81,7 +81,7 @@ export default function SettingsScreen() {
         onPress={handleSignOut}
         activeOpacity={0.8}
       >
-        <Text style={[styles.signOutText, { color: c.textPrimary }]}>Sign out</Text>
+        <Text style={[styles.signOutText, { color: c.danger }]}>Sign out</Text>
       </TouchableOpacity>
       </View>
     </SafeAreaView>

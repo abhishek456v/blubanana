@@ -1,5 +1,5 @@
-import { View, Text, StyleSheet, useColorScheme } from 'react-native'
-import { Colors, Radius, FontFamily } from '@/constants/design'
+import { View, Text, StyleSheet } from 'react-native'
+import { AvatarPalette, Radius, FontFamily } from '@/constants/design'
 
 function getInitials(name: string): string {
   return name
@@ -11,14 +11,23 @@ function getInitials(name: string): string {
     .toUpperCase()
 }
 
+// Deterministic so the same brand always gets the same color across
+// screens/sessions, without storing a color on the row.
+function colorForName(name: string): string {
+  let hash = 0
+  for (let i = 0; i < name.length; i++) {
+    hash = (hash * 31 + name.charCodeAt(i)) | 0
+  }
+  const index = Math.abs(hash) % AvatarPalette.length
+  return AvatarPalette[index]
+}
+
 interface BrandAvatarProps {
   name: string
   size?: number
 }
 
 export function BrandAvatar({ name, size = 36 }: BrandAvatarProps) {
-  const isDark = useColorScheme() === 'dark'
-
   return (
     <View
       style={[
@@ -26,7 +35,7 @@ export function BrandAvatar({ name, size = 36 }: BrandAvatarProps) {
         {
           width: size,
           height: size,
-          backgroundColor: isDark ? '#2A2A2A' : '#EBEBEB',
+          backgroundColor: colorForName(name),
         },
       ]}
     >
@@ -34,7 +43,7 @@ export function BrandAvatar({ name, size = 36 }: BrandAvatarProps) {
         style={{
           fontFamily: FontFamily.semiBold,
           fontSize: Math.round(size * 0.38),
-          color: isDark ? Colors.dark.textPrimary : Colors.light.textPrimary,
+          color: '#FFFFFF',
         }}
       >
         {getInitials(name)}

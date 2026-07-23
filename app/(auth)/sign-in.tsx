@@ -15,6 +15,7 @@ import { Link } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { Colors, Spacing, Radius, Typography, FontFamily, AuthFormMaxWidth } from '@/constants/design'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
+import { AuthShell } from '@/components/AuthShell'
 
 export default function SignInScreen() {
   const scheme = useColorScheme()
@@ -43,12 +44,15 @@ export default function SignInScreen() {
   }
 
   return (
+    <AuthShell>
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: c.bgPage }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={[styles.inner, isWide && styles.innerWide]}>
-        <Text style={[styles.wordmark, { color: c.textPrimary }]}>CreatorDesk</Text>
+        <Text style={[styles.wordmark, { color: c.textPrimary, fontFamily: FontFamily.display }]}>
+          Welcome back
+        </Text>
         <Text style={[styles.subtitle, { color: c.textSecondary }]}>
           Sign in to your account
         </Text>
@@ -126,6 +130,7 @@ export default function SignInScreen() {
         </Link>
       </View>
     </KeyboardAvoidingView>
+    </AuthShell>
   )
 }
 

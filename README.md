@@ -40,6 +40,9 @@ Open your [Supabase dashboard](https://supabase.com) → your project →
    Storage bucket and its RLS policy for deal attachments (PRODUCT.md 1).
    Skipping this makes the Attachments section on the deal screen fail with
    a permission error.
+5. `005_ad_rights.sql` — adds the ad rights columns on `deals` (fee,
+   duration, start/expiry dates, reminder notification id). Skipping this
+   makes the Ad Rights section on the deal screen fail to save.
 
 Paste each file's contents and click **Run** before moving to the next one.
 

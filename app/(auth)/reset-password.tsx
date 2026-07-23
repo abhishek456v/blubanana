@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { Colors, Spacing, Radius, Typography, FontFamily, AuthFormMaxWidth } from '@/constants/design'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
+import { AuthShell } from '@/components/AuthShell'
 
 export default function ResetPasswordScreen() {
   const router = useRouter()
@@ -55,12 +56,15 @@ export default function ResetPasswordScreen() {
   }
 
   return (
+    <AuthShell>
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: c.bgPage }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={[styles.inner, isWide && styles.innerWide]}>
-        <Text style={[styles.wordmark, { color: c.textPrimary }]}>Set a new password</Text>
+        <Text style={[styles.wordmark, { color: c.textPrimary, fontFamily: FontFamily.display }]}>
+          Set a new password
+        </Text>
         <Text style={[styles.subtitle, { color: c.textSecondary }]}>
           Choose a new password for your account.
         </Text>
@@ -110,6 +114,7 @@ export default function ResetPasswordScreen() {
         </View>
       </View>
     </KeyboardAvoidingView>
+    </AuthShell>
   )
 }
 

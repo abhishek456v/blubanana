@@ -15,6 +15,7 @@ import { Link } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { Colors, Spacing, Radius, Typography, FontFamily, AuthFormMaxWidth } from '@/constants/design'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
+import { AuthShell } from '@/components/AuthShell'
 
 export default function SignUpScreen() {
   const scheme = useColorScheme()
@@ -64,9 +65,12 @@ export default function SignUpScreen() {
 
   if (awaitingConfirmation) {
     return (
+      <AuthShell>
       <View style={[styles.container, styles.centered, { backgroundColor: c.bgPage }]}>
         <View style={[styles.confirmInner, isWide && styles.innerWide]}>
-          <Text style={[styles.wordmark, { color: c.textPrimary }]}>Check your email</Text>
+          <Text style={[styles.wordmark, { color: c.textPrimary, fontFamily: FontFamily.display }]}>
+            Check your email
+          </Text>
           <Text style={[styles.confirmText, { color: c.textSecondary }]}>
             We sent a confirmation link to{'\n'}
             <Text style={{ color: c.textPrimary, fontFamily: FontFamily.medium }}>{email}</Text>
@@ -85,16 +89,20 @@ export default function SignUpScreen() {
           </Link>
         </View>
       </View>
+      </AuthShell>
     )
   }
 
   return (
+    <AuthShell>
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: c.bgPage }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={[styles.inner, isWide && styles.innerWide]}>
-        <Text style={[styles.wordmark, { color: c.textPrimary }]}>Create account</Text>
+        <Text style={[styles.wordmark, { color: c.textPrimary, fontFamily: FontFamily.display }]}>
+          Create account
+        </Text>
         <Text style={[styles.subtitle, { color: c.textSecondary }]}>
           Set up your CreatorDesk account
         </Text>
@@ -181,6 +189,7 @@ export default function SignUpScreen() {
         </Link>
       </View>
     </KeyboardAvoidingView>
+    </AuthShell>
   )
 }
 

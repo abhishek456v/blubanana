@@ -3,18 +3,25 @@ import type { PaymentStatus } from '@/types'
 import { Colors, Typography, FontFamily, Spacing, Radius } from '@/constants/design'
 import { PAYMENT_STATUS_LABELS } from '@/constants/labels'
 
-// Per DESIGN.md: status without color. Mirrors StatusPill's variant pattern
-// but kept separate since it's typed to PaymentStatus, not DealStatus —
-// each component keeps one responsibility.
-// urgent   → filled dark pill (overdue)
-// complete → muted text + checkmark (paid)
-// normal   → outline pill (pending, reminder_sent)
-type PillVariant = 'normal' | 'urgent' | 'complete'
+// Mirrors StatusPill's variant pattern but kept separate since it's typed to
+// PaymentStatus, not DealStatus — each component keeps one responsibility.
+// neutral → pending, nothing sent yet
+// warning → reminder_sent, nudged but not yet paid
+// danger  → overdue
+// success → paid
+type PillVariant = 'neutral' | 'warning' | 'danger' | 'success'
 
 function getVariant(status: PaymentStatus): PillVariant {
-  if (status === 'paid') return 'complete'
-  if (status === 'overdue') return 'urgent'
-  return 'normal'
+  switch (status) {
+    case 'paid':
+      return 'success'
+    case 'overdue':
+      return 'danger'
+    case 'reminder_sent':
+      return 'warning'
+    case 'pending':
+      return 'neutral'
+  }
 }
 
 export function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
@@ -23,37 +30,46 @@ export function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
   const variant = getVariant(status)
   const label = PAYMENT_STATUS_LABELS[status]
 
-  if (variant === 'complete') {
+  if (variant === 'neutral') {
     return (
-      <View style={styles.pill}>
-        <Text style={[styles.text, { color: c.textMuted, fontFamily: FontFamily.regular }]}>
-          ✓ {label}
-        </Text>
-      </View>
-    )
-  }
-
-  if (variant === 'urgent') {
-    return (
-      <View style={[styles.pill, { backgroundColor: c.fillPrimary }]}>
-        <Text style={[styles.text, { color: c.onFillPrimary, fontFamily: FontFamily.medium }]}>
+      <View style={[styles.pill, styles.outline, { borderColor: c.border }]}>
+        <Text style={[styles.text, { color: c.textSecondary, fontFamily: FontFamily.regular }]}>
           {label}
         </Text>
       </View>
     )
   }
 
+  const tone =
+    variant === 'success'
+      ? { fg: c.success, bg: c.successLight }
+      : variant === 'danger'
+        ? { fg: c.danger, bg: c.dangerLight }
+        : { fg: c.warning, bg: c.warningLight }
+
   return (
-    <View style={[styles.pill, styles.outline, { borderColor: c.border }]}>
-      <Text style={[styles.text, { color: c.textSecondary, fontFamily: FontFamily.regular }]}>
-        {label}
-      </Text>
+    <View style={[styles.pill, { backgroundColor: tone.bg }]}>
+      {variant === 'success' ? (
+        <Text style={[styles.text, { color: tone.fg, fontFamily: FontFamily.medium }]}>
+          ✓ {label}
+        </Text>
+      ) : (
+        <>
+          <View style={[styles.dot, { backgroundColor: tone.fg }]} />
+          <Text style={[styles.text, { color: tone.fg, fontFamily: FontFamily.medium }]}>
+            {label}
+          </Text>
+        </>
+      )}
     </View>
   )
 }
 
 const styles = StyleSheet.create({
   pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
     paddingHorizontal: Spacing.sm,
     paddingVertical: 3,
     borderRadius: Radius.full,
@@ -61,6 +77,11 @@ const styles = StyleSheet.create({
   },
   outline: {
     borderWidth: 1,
+  },
+  dot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
   },
   text: {
     ...Typography.label,

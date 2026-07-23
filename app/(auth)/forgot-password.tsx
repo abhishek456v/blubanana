@@ -16,6 +16,7 @@ import * as Linking from 'expo-linking'
 import { supabase } from '@/lib/supabase'
 import { Colors, Spacing, Radius, Typography, FontFamily, AuthFormMaxWidth } from '@/constants/design'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
+import { AuthShell } from '@/components/AuthShell'
 
 export default function ForgotPasswordScreen() {
   const router = useRouter()
@@ -50,9 +51,12 @@ export default function ForgotPasswordScreen() {
 
   if (sent) {
     return (
+      <AuthShell>
       <View style={[styles.container, styles.centered, { backgroundColor: c.bgPage }]}>
         <View style={[styles.confirmInner, isWide && styles.innerWide]}>
-          <Text style={[styles.wordmark, { color: c.textPrimary }]}>Check your email</Text>
+          <Text style={[styles.wordmark, { color: c.textPrimary, fontFamily: FontFamily.display }]}>
+            Check your email
+          </Text>
           <Text style={[styles.confirmText, { color: c.textSecondary }]}>
             If an account exists for{'\n'}
             <Text style={{ color: c.textPrimary, fontFamily: FontFamily.medium }}>
@@ -72,16 +76,20 @@ export default function ForgotPasswordScreen() {
           </TouchableOpacity>
         </View>
       </View>
+      </AuthShell>
     )
   }
 
   return (
+    <AuthShell>
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: c.bgPage }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={[styles.inner, isWide && styles.innerWide]}>
-        <Text style={[styles.wordmark, { color: c.textPrimary }]}>Reset password</Text>
+        <Text style={[styles.wordmark, { color: c.textPrimary, fontFamily: FontFamily.display }]}>
+          Reset password
+        </Text>
         <Text style={[styles.subtitle, { color: c.textSecondary }]}>
           Enter your email and we'll send you a reset link.
         </Text>
@@ -130,6 +138,7 @@ export default function ForgotPasswordScreen() {
         </Link>
       </View>
     </KeyboardAvoidingView>
+    </AuthShell>
   )
 }
 

@@ -26,7 +26,7 @@ export default function AppLayout() {
       screenOptions={{
         headerStyle: { backgroundColor: c.bgPage },
         headerTitleStyle: {
-          fontFamily: FontFamily.semiBold,
+          fontFamily: FontFamily.display,
           fontSize: Typography.title.fontSize,
           color: c.textPrimary,
         },

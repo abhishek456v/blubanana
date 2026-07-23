@@ -2,30 +2,67 @@
 
 export const Colors = {
   light: {
-    bgPage: '#FFFFFF',
-    bgSurface: '#F7F7F7',
+    bgPage: '#FDFBF9',
+    bgSurface: '#F6F2EC',
     bgSurfaceRaised: '#FFFFFF',
-    border: '#E5E5E5',
-    borderStrong: '#D0D0D0',
-    textPrimary: '#0A0A0A',
-    textSecondary: '#6B6B6B',
-    textMuted: '#9E9E9E',
-    fillPrimary: '#0A0A0A',
+    border: 'rgba(20,18,16,0.08)',
+    borderStrong: 'rgba(20,18,16,0.16)',
+    textPrimary: '#1C1815',
+    textSecondary: '#6B6259',
+    textMuted: '#9A9186',
+    fillPrimary: '#F5A623',
     onFillPrimary: '#FFFFFF',
+    accent: '#F5A623',
+    accentLight: 'rgba(245,166,35,0.12)',
+    accentHover: '#E0951A',
+    success: '#1A7A35',
+    successLight: 'rgba(26,122,53,0.10)',
+    warning: '#8B5000',
+    warningLight: 'rgba(139,80,0,0.10)',
+    danger: '#C0392B',
+    dangerLight: 'rgba(192,57,43,0.10)',
+    info: '#0051A8',
+    infoLight: 'rgba(0,81,168,0.10)',
   },
   dark: {
-    bgPage: '#000000',
-    bgSurface: '#121212',
-    bgSurfaceRaised: '#1C1C1C',
-    border: '#2A2A2A',
-    borderStrong: '#3A3A3A',
-    textPrimary: '#FAFAFA',
-    textSecondary: '#A0A0A0',
-    textMuted: '#6E6E6E',
-    fillPrimary: '#FAFAFA',
-    onFillPrimary: '#0A0A0A',
+    bgPage: '#141210',
+    bgSurface: '#221F1B',
+    bgSurfaceRaised: '#2C2822',
+    border: 'rgba(255,255,255,0.07)',
+    borderStrong: 'rgba(255,255,255,0.16)',
+    textPrimary: '#F5F0E8',
+    textSecondary: '#A89F94',
+    textMuted: '#6B6259',
+    fillPrimary: '#F5A623',
+    onFillPrimary: '#FFFFFF',
+    accent: '#F5A623',
+    accentLight: 'rgba(245,166,35,0.14)',
+    accentHover: '#FFC55A',
+    success: '#4ADE80',
+    successLight: 'rgba(74,222,128,0.14)',
+    warning: '#FBBF24',
+    warningLight: 'rgba(251,191,36,0.14)',
+    danger: '#F87171',
+    dangerLight: 'rgba(248,113,113,0.14)',
+    info: '#60A5FA',
+    infoLight: 'rgba(96,165,250,0.14)',
   },
 } as const
+
+// Flat, hashed-by-name avatar background colors (Contacts/Messages-style —
+// no gradients, since expo-linear-gradient isn't a dependency and a flat
+// chip reads just as premium without it). Same list works in both color
+// schemes; text on top is always white.
+export const AvatarPalette = [
+  '#F5A623', // amber (brand accent)
+  '#60A5FA', // blue
+  '#4ADE80', // green
+  '#F87171', // red
+  '#C084FC', // violet
+  '#FB923C', // orange
+  '#38BDF8', // sky
+  '#F472B6', // pink
+] as const
 
 export const Spacing = {
   xs: 4,
@@ -38,6 +75,8 @@ export const Spacing = {
 export const Radius = {
   sm: 8,
   md: 12,
+  lg: 16,
+  xl: 20,
   full: 999,
 } as const
 
@@ -55,6 +94,11 @@ export const FontFamily = {
   regular: 'Inter_400Regular',
   medium: 'Inter_500Medium',
   semiBold: 'Inter_600SemiBold',
+  // Syne is the display/editorial voice — screen titles, the dashboard
+  // greeting, big currency numbers. Everything else (body, labels, inputs)
+  // stays on Inter so the UI doesn't read as "all headline."
+  display: 'Syne_600SemiBold',
+  displayBold: 'Syne_700Bold',
 } as const
 
 // Below `wide`, the app uses the mobile layout (bottom tab bar, edge-to-edge
