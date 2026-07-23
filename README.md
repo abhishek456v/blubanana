@@ -41,8 +41,16 @@ Open your [Supabase dashboard](https://supabase.com) → your project →
    Skipping this makes the Attachments section on the deal screen fail with
    a permission error.
 5. `005_ad_rights.sql` — adds the ad rights columns on `deals` (fee,
-   duration, start/expiry dates, reminder notification id). Skipping this
-   makes the Ad Rights section on the deal screen fail to save.
+   duration, start/expiry dates, reminder notification id). **Required for
+   deal creation to work at all** — `createDeal` writes these columns
+   unconditionally, so without this migration every deal save fails.
+6. `006_phase2_phase3.sql` — Phase 2/3 features: client reputation scoring
+   (`brand_ratings` table), rate benchmarking snapshot + manual content
+   performance fields on `deals`, tax/GST invoicing (`invoices` table),
+   billing/niche/public-profile fields on `profiles`, and the
+   `public_creator_profiles` view backing the shareable profile card.
+   **Also required for deal creation** — same reason as 005, `createDeal`
+   writes `creator_follower_count_at_time` unconditionally.
 
 Paste each file's contents and click **Run** before moving to the next one.
 
@@ -67,6 +75,29 @@ supabase functions deploy transcribe-audio
 
 Both functions require a valid Supabase auth session by default (no extra
 config needed) — only signed-in creators can trigger OpenAI calls.
+
+### Feature scope
+
+**Phase 1** (PRODUCT.md): deal intake (screenshot/voice/manual), dashboard
+with status/platform/payment-due filters, workflow reminders, payment
+follow-up, live link submission, ad rights tracking + Meta Ad Library link.
+
+**Phase 2/3** (built beyond PRODUCT.md's original scope, on request):
+client reputation scoring, simplified rate benchmarking (follower-count
+snapshot, not live engagement), a Revenue tab, manual content performance
+entry, GST/TDS invoicing with PDF export, an annual report, and an opt-in
+shareable public profile card at `/creator/<slug>`.
+
+**Deliberately not built:**
+- **Niche-based rate intelligence** — needs aggregated data across many
+  creators to be meaningful; with one user there's no population to
+  benchmark against.
+- **Live Instagram/YouTube performance sync** — needs OAuth app credentials
+  (Meta app, Google Cloud project) that haven't been set up. Content
+  performance is manual-entry only until that exists.
+- **Automated Meta Ad Library monitoring** — the deal screen has a one-tap
+  link to a pre-filled Ad Library search; polling the real Ad Library API
+  for expired-rights violations is a separate, later decision.
 
 ### 5. Start the app
 

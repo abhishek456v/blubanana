@@ -30,6 +30,11 @@ export default function EditProfileScreen() {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [followerCount, setFollowerCount] = useState('')
+  const [niche, setNiche] = useState('')
+  const [upiId, setUpiId] = useState('')
+  const [bankAccount, setBankAccount] = useState('')
+  const [ifscCode, setIfscCode] = useState('')
+  const [gstin, setGstin] = useState('')
 
   useEffect(() => {
     let active = true
@@ -39,6 +44,11 @@ export default function EditProfileScreen() {
         setName(profile.name)
         setPhone(profile.phone ?? '')
         setFollowerCount(profile.follower_count != null ? String(profile.follower_count) : '')
+        setNiche(profile.niche ?? '')
+        setUpiId(profile.upi_id ?? '')
+        setBankAccount(profile.bank_account_number ?? '')
+        setIfscCode(profile.ifsc_code ?? '')
+        setGstin(profile.gstin ?? '')
       })
       .catch(() => {
         if (active) showAlert('Error', 'Could not load your profile.')
@@ -72,6 +82,11 @@ export default function EditProfileScreen() {
         name: name.trim(),
         phone: phone.trim() || null,
         follower_count: followerCount.trim() ? parseInt(followerCount, 10) : null,
+        niche: niche.trim() || null,
+        upi_id: upiId.trim() || null,
+        bank_account_number: bankAccount.trim() || null,
+        ifsc_code: ifscCode.trim() || null,
+        gstin: gstin.trim() || null,
       })
       router.back()
     } catch {
@@ -130,6 +145,57 @@ export default function EditProfileScreen() {
             keyboardType="numeric"
           />
 
+          <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Niche</Text>
+          <TextInput
+            style={inputStyle}
+            placeholder="e.g. Beauty, Fitness, Tech"
+            placeholderTextColor={c.textMuted}
+            value={niche}
+            onChangeText={setNiche}
+          />
+
+          <View style={[styles.divider, { backgroundColor: c.border }]} />
+          <Text style={[styles.groupLabel, { color: c.textSecondary }]}>
+            Invoice & payment details
+          </Text>
+
+          <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>UPI ID</Text>
+          <TextInput
+            style={inputStyle}
+            placeholder="yourname@upi"
+            placeholderTextColor={c.textMuted}
+            value={upiId}
+            onChangeText={setUpiId}
+            autoCapitalize="none"
+          />
+
+          <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Bank account number</Text>
+          <TextInput
+            style={inputStyle}
+            placeholderTextColor={c.textMuted}
+            value={bankAccount}
+            onChangeText={setBankAccount}
+          />
+
+          <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>IFSC code</Text>
+          <TextInput
+            style={inputStyle}
+            placeholderTextColor={c.textMuted}
+            value={ifscCode}
+            onChangeText={setIfscCode}
+            autoCapitalize="characters"
+          />
+
+          <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>GSTIN (optional)</Text>
+          <TextInput
+            style={inputStyle}
+            placeholder="22AAAAA0000A1Z5"
+            placeholderTextColor={c.textMuted}
+            value={gstin}
+            onChangeText={setGstin}
+            autoCapitalize="characters"
+          />
+
           <TouchableOpacity
             style={[styles.saveButton, { backgroundColor: c.fillPrimary }]}
             onPress={handleSave}
@@ -175,6 +241,17 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.medium,
     marginTop: Spacing.lg,
     marginBottom: Spacing.xs,
+  },
+  divider: {
+    height: 1,
+    marginTop: Spacing.lg,
+  },
+  groupLabel: {
+    ...Typography.label,
+    fontFamily: FontFamily.semiBold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginTop: Spacing.md,
   },
   input: {
     height: 44,

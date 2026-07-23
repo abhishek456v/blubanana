@@ -1,15 +1,26 @@
 import { useCallback, useState } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, useColorScheme } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet, useColorScheme, Platform, Switch, ActivityIndicator } from 'react-native'
+import { showAlert } from '@/lib/alert'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useFocusEffect } from '@react-navigation/core'
 import { supabase } from '@/lib/supabase'
-import { getProfile } from '@/lib/profile'
+import { getProfile, enablePublicProfile, disablePublicProfile } from '@/lib/profile'
 import { useAuth } from '@/hooks/useAuth'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 import { BrandAvatar } from '@/components/BrandAvatar'
 import { Colors, Spacing, Radius, Typography, FontFamily, ContentMaxWidth } from '@/constants/design'
 import type { Creator } from '@/types'
+
+// Native has no window.location — the public profile card only resolves to
+// a real URL on the web build, so native shows the path with a note instead
+// of a broken link.
+function publicProfileUrl(slug: string): string {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    return `${window.location.origin}/creator/${slug}`
+  }
+  return `/creator/${slug}`
+}
 
 export default function SettingsScreen() {
   const scheme = useColorScheme()
@@ -20,6 +31,7 @@ export default function SettingsScreen() {
   const isWide = useIsWideScreen()
 
   const [profile, setProfile] = useState<Creator | null>(null)
+  const [togglingPublic, setTogglingPublic] = useState(false)
   const email = session?.user?.email ?? ''
   // Falls back to the auth session's name while the profiles row is loading,
   // so the header isn't briefly blank on first render.
@@ -43,6 +55,19 @@ export default function SettingsScreen() {
   async function handleSignOut() {
     await supabase.auth.signOut()
     // Root layout detects cleared session and redirects to sign-in.
+  }
+
+  async function handleTogglePublicProfile(next: boolean) {
+    if (togglingPublic) return
+    setTogglingPublic(true)
+    try {
+      const updated = next ? await enablePublicProfile() : await disablePublicProfile()
+      setProfile(updated)
+    } catch {
+      showAlert('Error', 'Could not update your public profile. Please try again.')
+    } finally {
+      setTogglingPublic(false)
+    }
   }
 
   return (
@@ -75,6 +100,33 @@ export default function SettingsScreen() {
         </View>
         <Text style={[styles.editLink, { color: c.accent }]}>Edit</Text>
       </TouchableOpacity>
+
+      <View style={[styles.section, { backgroundColor: c.bgSurface }]}>
+        <View style={styles.sectionRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.sectionTitle, { color: c.textPrimary }]}>Shareable profile card</Text>
+            <Text style={[styles.sectionDesc, { color: c.textSecondary }]}>
+              A public, brand-facing page with your niche, follower count, and deals completed.
+              Never shows payment or contact details.
+            </Text>
+          </View>
+          {togglingPublic ? (
+            <ActivityIndicator color={c.textMuted} />
+          ) : (
+            <Switch
+              value={profile?.public_profile_enabled ?? false}
+              onValueChange={handleTogglePublicProfile}
+              trackColor={{ false: c.border, true: c.accentLight }}
+              thumbColor={profile?.public_profile_enabled ? c.accent : undefined}
+            />
+          )}
+        </View>
+        {profile?.public_profile_enabled && profile.public_share_slug ? (
+          <Text style={[styles.shareLink, { color: c.accent }]} selectable>
+            {publicProfileUrl(profile.public_share_slug)}
+          </Text>
+        ) : null}
+      </View>
 
       <TouchableOpacity
         style={[styles.signOutButton, { borderColor: c.borderStrong }]}
@@ -130,6 +182,31 @@ const styles = StyleSheet.create({
   editLink: {
     ...Typography.label,
     fontFamily: FontFamily.medium,
+  },
+  section: {
+    borderRadius: Radius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.lg,
+  },
+  sectionRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.md,
+  },
+  sectionTitle: {
+    ...Typography.bodyStrong,
+    fontFamily: FontFamily.semiBold,
+  },
+  sectionDesc: {
+    ...Typography.caption,
+    fontFamily: FontFamily.regular,
+    marginTop: 2,
+    lineHeight: 18,
+  },
+  shareLink: {
+    ...Typography.caption,
+    fontFamily: FontFamily.medium,
+    marginTop: Spacing.sm,
   },
   signOutButton: {
     height: 44,

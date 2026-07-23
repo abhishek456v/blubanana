@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router'
 import { useFocusEffect } from '@react-navigation/core'
 import { getDeals, type DealWithPaymentSummary } from '@/lib/deals'
 import { getPaymentAlertTone } from '@/lib/paymentReminders'
+import { getRateBenchmarkNudge } from '@/lib/rateBenchmark'
 import type { DealStatus, Platform } from '@/types'
 import { STATUS_LABELS, PLATFORMS } from '@/constants/labels'
 import { DealRow } from '@/components/DealRow'
@@ -69,6 +70,7 @@ export default function DashboardScreen() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [platformFilter, setPlatformFilter] = useState<PlatformFilter>('all')
   const [paymentDueOnly, setPaymentDueOnly] = useState(false)
+  const [rateNudgeDismissed, setRateNudgeDismissed] = useState(false)
 
   const fetchDeals = useCallback(async () => {
     try {
@@ -138,8 +140,22 @@ export default function DashboardScreen() {
     )
   }
 
+  const rateNudge = getRateBenchmarkNudge(deals)
+
   const FilterBar = (
     <View style={styles.filterBar}>
+      {rateNudge && !rateNudgeDismissed ? (
+        <View style={[styles.rateNudge, { backgroundColor: c.accentLight }]}>
+          <Text style={[styles.rateNudgeText, { color: c.accent }]}>
+            Your follower count has grown {Math.round(rateNudge.followerGrowthPercent * 100)}% since an
+            earlier deal, but your rate hasn't kept pace. Consider revising your rate card.
+          </Text>
+          <TouchableOpacity onPress={() => setRateNudgeDismissed(true)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Text style={[styles.rateNudgeDismiss, { color: c.accent }]}>Dismiss</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
+
       <Text style={[styles.filterLabel, { color: c.textMuted }]}>Status</Text>
       <PillRow options={STATUS_OPTIONS} active={statusFilter} onSelect={setStatusFilter} />
 
@@ -224,6 +240,21 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.md,
     paddingBottom: Spacing.sm,
     gap: Spacing.xs,
+  },
+  rateNudge: {
+    borderRadius: Radius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
+    gap: Spacing.xs,
+  },
+  rateNudgeText: {
+    ...Typography.caption,
+    fontFamily: FontFamily.medium,
+    lineHeight: 18,
+  },
+  rateNudgeDismiss: {
+    ...Typography.label,
+    fontFamily: FontFamily.semiBold,
   },
   filterLabel: {
     ...Typography.label,

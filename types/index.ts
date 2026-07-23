@@ -37,6 +37,16 @@ export interface Creator {
   name: string
   phone: string | null
   follower_count: number | null
+  // Billing/invoice details (Phase 3 tax & invoicing) — all optional, filled
+  // in from Settings before the creator generates their first invoice.
+  upi_id: string | null
+  bank_account_number: string | null
+  ifsc_code: string | null
+  gstin: string | null
+  // Shown on the shareable public profile card (Phase 3).
+  niche: string | null
+  public_profile_enabled: boolean
+  public_share_slug: string | null
   created_at: string
 }
 
@@ -84,6 +94,19 @@ export interface Deal {
   ad_rights_start_date: string | null
   ad_rights_expires_date: string | null
   ad_rights_reminder_notification_id: string | null
+  // Rate benchmarking (Phase 2, simplified — no social API integration).
+  // A snapshot of the creator's follower count when this deal was created,
+  // so later deals can be compared against it without needing historical
+  // Instagram/YouTube data.
+  creator_follower_count_at_time: number | null
+  // Manual content performance entry (Phase 2). Automated sync from
+  // Instagram/YouTube needs OAuth app credentials that don't exist yet —
+  // this is the creator-entered stand-in.
+  performance_views: number | null
+  performance_likes: number | null
+  performance_comments: number | null
+  performance_saves: number | null
+  performance_updated_at: string | null
   created_at: string
   updated_at: string
   brand?: Brand // joined on fetch
@@ -103,6 +126,47 @@ export interface Payment {
   due_today_notification_id: string | null
   created_at: string
   updated_at: string
+}
+
+// One post-deal review, prompted once a deal reaches 'paid' (Phase 2 client
+// reputation score). One per deal — deal_id is unique.
+export interface BrandRating {
+  id: string
+  creator_id: string
+  brand_id: string
+  deal_id: string
+  rating: number // 1-5
+  paid_on_time: boolean | null
+  easy_to_work_with: boolean | null
+  revision_rounds: number | null
+  would_work_again: boolean | null
+  notes: string | null
+  created_at: string
+}
+
+// Phase 3 tax & invoicing. Brand contact fields are snapshotted at
+// generation time — editing/deleting the brand later never changes a
+// previously issued invoice.
+export interface Invoice {
+  id: string
+  creator_id: string
+  deal_id: string
+  invoice_number: string
+  invoice_date: string
+  brand_name: string
+  brand_contact_person: string | null
+  brand_contact_email: string | null
+  description: string
+  amount: number // INR, pre-GST
+  gst_applicable: boolean
+  gst_rate: number
+  gst_amount: number
+  total_amount: number
+  payment_due_date: string | null
+  tds_deducted: boolean
+  tds_amount: number | null
+  notes: string | null
+  created_at: string
 }
 
 // Best-effort fields pulled from a screenshot or voice transcript by the

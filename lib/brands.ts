@@ -31,12 +31,15 @@ export async function createBrand(
   return data as Brand
 }
 
-// Minimal update path — there's no dedicated brand-edit screen yet, this
-// exists solely so the deal screen can fill in a missing contact_phone
-// inline when a WhatsApp payment reminder needs one (PRODUCT.md 2.4).
+export async function getBrand(id: string): Promise<Brand> {
+  const { data, error } = await supabase.from('brands').select('*').eq('id', id).single()
+  if (error) throw error
+  return data as Brand
+}
+
 export async function updateBrand(
   id: string,
-  fields: Partial<Pick<Brand, 'contact_phone'>>
+  fields: Partial<Pick<Brand, 'name' | 'contact_person' | 'contact_phone' | 'contact_email' | 'notes'>>
 ): Promise<Brand> {
   const { data, error } = await supabase.from('brands').update(fields).eq('id', id).select().single()
   if (error) throw error

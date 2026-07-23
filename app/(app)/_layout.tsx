@@ -37,10 +37,15 @@ export default function AppLayout() {
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="deal/new" options={{ title: 'Add deal', ...modalScreenOptions }} />
-      {/* title for [id] is set dynamically inside the screen via Stack.Screen */}
+      {/* title for [id] screens is set dynamically inside the screen via Stack.Screen */}
       <Stack.Screen name="deal/[id]" options={{ title: 'Deal', ...modalScreenOptions }} />
       <Stack.Screen name="brand/new" options={{ title: 'Add brand', ...modalScreenOptions }} />
+      <Stack.Screen name="brand/[id]" options={{ title: 'Brand', ...modalScreenOptions }} />
       <Stack.Screen name="profile/edit" options={{ title: 'Edit profile', ...modalScreenOptions }} />
+      <Stack.Screen name="invoice/new" options={{ title: 'Create invoice', ...modalScreenOptions }} />
+      <Stack.Screen name="invoice/[id]" options={{ title: 'Invoice', ...modalScreenOptions }} />
+      <Stack.Screen name="invoices" options={{ title: 'Invoices', ...modalScreenOptions }} />
+      <Stack.Screen name="annual-report" options={{ title: 'Annual report', ...modalScreenOptions }} />
     </Stack>
   )
 }

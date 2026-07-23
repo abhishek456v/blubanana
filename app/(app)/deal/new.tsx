@@ -31,8 +31,9 @@ import { Ionicons } from '@expo/vector-icons'
 import { getBrands } from '@/lib/brands'
 import { createDeal } from '@/lib/deals'
 import { calculateAdRightsExpiry } from '@/lib/adRights'
+import { getAllRatings, summarizeRatings } from '@/lib/reputation'
 import { extractFromImage, extractFromTranscript, transcribeAudio } from '@/lib/aiIntake'
-import type { Brand, ExtractedDealFields, Platform as PlatformType } from '@/types'
+import type { Brand, BrandRating, ExtractedDealFields, Platform as PlatformType } from '@/types'
 import { PLATFORMS } from '@/constants/labels'
 import { Colors, Spacing, Radius, Typography, FontFamily, ContentMaxWidth } from '@/constants/design'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
@@ -57,6 +58,7 @@ export default function NewDealScreen() {
 
   const [brands, setBrands] = useState<Brand[]>([])
   const [brandsLoading, setBrandsLoading] = useState(true)
+  const [ratings, setRatings] = useState<BrandRating[]>([])
 
   // Form state
   const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null)
@@ -91,13 +93,20 @@ export default function NewDealScreen() {
   // Re-fetch brands when this screen gains focus so a newly created brand
   // (from brand/new.tsx, including one created to resolve pendingBrandName)
   // appears here immediately when the user navigates back.
+  // Fetched independently — ratings depends on migration 006 (a newer,
+  // separate table), so it being unavailable shouldn't block brand selection
+  // itself, which has worked since migration 001.
   const loadBrands = useCallback(async () => {
     setBrandsLoading(true)
     try {
-      const data = await getBrands()
-      setBrands(data)
+      setBrands(await getBrands())
     } catch {
       // Non-fatal: brands section shows an appropriate empty state.
+    }
+    try {
+      setRatings(await getAllRatings())
+    } catch {
+      // Non-fatal: rows just render without a rating badge until this succeeds.
     } finally {
       setBrandsLoading(false)
     }
@@ -422,6 +431,7 @@ export default function NewDealScreen() {
             <View style={[styles.brandList, { borderColor: c.border }]}>
               {brands.map((brand, index) => {
                 const selected = brand.id === selectedBrandId
+                const summary = summarizeRatings(ratings.filter((r) => r.brand_id === brand.id))
                 return (
                   <TouchableOpacity
                     key={brand.id}
@@ -454,6 +464,14 @@ export default function NewDealScreen() {
                     <Text style={[styles.brandRowText, { color: c.textPrimary }]}>
                       {brand.name}
                     </Text>
+                    {summary ? (
+                      <View style={[styles.brandRatingPill, { backgroundColor: c.accentLight }]}>
+                        <Text style={[styles.brandRatingPillText, { color: c.accent }]}>
+                          {summary.averageRating.toFixed(1)}
+                          {summary.lastPaidOnTime === false ? ' · paid late before' : ''}
+                        </Text>
+                      </View>
+                    ) : null}
                   </TouchableOpacity>
                 )
               })}
@@ -873,6 +891,15 @@ const styles = StyleSheet.create({
     ...Typography.body,
     fontFamily: FontFamily.regular,
     flex: 1,
+  },
+  brandRatingPill: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: Radius.full,
+  },
+  brandRatingPillText: {
+    ...Typography.label,
+    fontFamily: FontFamily.semiBold,
   },
   addBrandText: {
     ...Typography.body,

@@ -32,14 +32,30 @@ export interface CreateDealInput {
 
 // RLS on deals restricts reads to the authenticated user's rows automatically.
 
-// Dashboard needs enough of the payment row to compute the payment-due filter
-// (lib/paymentReminders.ts getPaymentAlertTone) without a second round trip.
-export type DealWithPaymentSummary = Deal & { payment: Pick<Payment, 'due_date' | 'status'> | null }
+// Dashboard needs enough of the payment row to compute the payment-due
+// filter (lib/paymentReminders.ts getPaymentAlertTone); amount/paid_date are
+// included too so the same fetch also powers the Revenue tab
+// (lib/revenue.ts) without a second round trip.
+export type DealWithPaymentSummary = Deal & {
+  payment: Pick<Payment, 'due_date' | 'status' | 'amount' | 'paid_date'> | null
+}
 
 export async function getDeals(): Promise<DealWithPaymentSummary[]> {
   const { data, error } = await supabase
     .from('deals')
-    .select('*, brand:brands(*), payment:payments(due_date, status)')
+    .select('*, brand:brands(*), payment:payments(due_date, status, amount, paid_date)')
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data as DealWithPaymentSummary[]
+}
+
+// Powers the brand detail screen's deal history section.
+export async function getDealsForBrand(brandId: string): Promise<DealWithPaymentSummary[]> {
+  const { data, error } = await supabase
+    .from('deals')
+    .select('*, brand:brands(*), payment:payments(due_date, status, amount, paid_date)')
+    .eq('brand_id', brandId)
     .order('created_at', { ascending: false })
 
   if (error) throw error
@@ -57,11 +73,21 @@ export async function createDeal(input: CreateDealInput): Promise<Deal> {
     ? calculateAdRightsExpiry(adRights.ad_rights_start_date, adRights.ad_rights_duration_months)
     : null
 
+  // Snapshot for rate benchmarking (lib/rateBenchmark.ts) — best-effort, a
+  // missing snapshot just means this one deal won't count as a comparison
+  // point later, not a save failure.
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('follower_count')
+    .eq('id', user.id)
+    .single()
+
   const { data: deal, error: dealError } = await supabase
     .from('deals')
     .insert({
       creator_id: user.id,
       brand_id: input.brand_id,
+      creator_follower_count_at_time: profile?.follower_count ?? null,
       platform: input.platform,
       deliverable_description: input.deliverable_description,
       rate: input.rate,
@@ -191,6 +217,24 @@ export async function updateDeal(
   } catch {
     return updated as Deal
   }
+}
+
+// Manual content performance entry (Phase 2 — see types/index.ts on why
+// this is manual, not a live Instagram/YouTube sync).
+export async function updatePerformance(
+  dealId: string,
+  fields: {
+    performance_views: number | null
+    performance_likes: number | null
+    performance_comments: number | null
+    performance_saves: number | null
+  }
+): Promise<void> {
+  const { error } = await supabase
+    .from('deals')
+    .update({ ...fields, performance_updated_at: new Date().toISOString() })
+    .eq('id', dealId)
+  if (error) throw error
 }
 
 // Updates the payment record that belongs to a deal. Recalculates due_date

@@ -77,6 +77,11 @@ export default function RootLayout() {
   useEffect(() => {
     if (loading || !fontsLoaded) return
 
+    // The shareable creator profile card (Phase 3) is the one route meant to
+    // be opened by someone with no account at all — a brand clicking a link
+    // — so it's excluded from the sign-in redirect entirely.
+    if (segments[0] === 'creator') return
+
     const inAuthGroup = segments[0] === '(auth)'
 
     if (isPasswordRecovery) {

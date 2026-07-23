@@ -3,6 +3,7 @@ import {
   View,
   Text,
   FlatList,
+  TouchableOpacity,
   StyleSheet,
   useColorScheme,
   ActivityIndicator,
@@ -10,22 +11,33 @@ import {
 import { showAlert } from '@/lib/alert'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/core'
+import { useRouter } from 'expo-router'
 import { getBrands } from '@/lib/brands'
-import type { Brand } from '@/types'
+import { getAllRatings, summarizeRatings } from '@/lib/reputation'
+import type { Brand, BrandRating } from '@/types'
 import { BrandAvatar } from '@/components/BrandAvatar'
 import { Colors, Spacing, Radius, Typography, FontFamily, ContentMaxWidth } from '@/constants/design'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 
-function BrandRow({ brand }: { brand: Brand }) {
+function BrandRow({
+  brand,
+  ratings,
+  onPress,
+}: {
+  brand: Brand
+  ratings: BrandRating[]
+  onPress: () => void
+}) {
   const scheme = useColorScheme()
   const c = scheme === 'dark' ? Colors.dark : Colors.light
+  const summary = summarizeRatings(ratings)
 
   const subtitle = [brand.contact_person, brand.contact_email]
     .filter(Boolean)
     .join(' · ')
 
   return (
-    <View style={[styles.row, { backgroundColor: c.bgSurface }]}>
+    <TouchableOpacity style={[styles.row, { backgroundColor: c.bgSurface }]} onPress={onPress} activeOpacity={0.75}>
       <BrandAvatar name={brand.name} size={36} />
       <View style={styles.rowText}>
         <Text style={[styles.brandName, { color: c.textPrimary }]} numberOfLines={1}>
@@ -37,7 +49,12 @@ function BrandRow({ brand }: { brand: Brand }) {
           </Text>
         ) : null}
       </View>
-    </View>
+      {summary ? (
+        <View style={[styles.ratingPill, { backgroundColor: c.accentLight }]}>
+          <Text style={[styles.ratingPillText, { color: c.accent }]}>{summary.averageRating.toFixed(1)}</Text>
+        </View>
+      ) : null}
+    </TouchableOpacity>
   )
 }
 
@@ -45,16 +62,25 @@ export default function BrandsScreen() {
   const scheme = useColorScheme()
   const c = scheme === 'dark' ? Colors.dark : Colors.light
   const isWide = useIsWideScreen()
+  const router = useRouter()
 
   const [brands, setBrands] = useState<Brand[]>([])
+  const [ratings, setRatings] = useState<BrandRating[]>([])
   const [loading, setLoading] = useState(true)
 
+  // Fetched independently — ratings depends on migration 006 (a newer,
+  // separate table), so it being unavailable shouldn't block the brand list
+  // itself, which has worked since migration 001.
   const fetchBrands = useCallback(async () => {
     try {
-      const data = await getBrands()
-      setBrands(data)
+      setBrands(await getBrands())
     } catch {
       showAlert('Error', 'Could not load brands.')
+    }
+    try {
+      setRatings(await getAllRatings())
+    } catch {
+      // Non-fatal: rows just render without a rating badge until this succeeds.
     } finally {
       setLoading(false)
     }
@@ -85,7 +111,13 @@ export default function BrandsScreen() {
       <FlatList
         data={brands}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <BrandRow brand={item} />}
+        renderItem={({ item }) => (
+          <BrandRow
+            brand={item}
+            ratings={ratings.filter((r) => r.brand_id === item.id)}
+            onPress={() => router.push(`/(app)/brand/${item.id}` as never)}
+          />
+        )}
         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
         contentContainerStyle={[styles.list, isWide && styles.listWide]}
         showsVerticalScrollIndicator={false}
@@ -134,6 +166,15 @@ const styles = StyleSheet.create({
   subtitle: {
     ...Typography.caption,
     fontFamily: FontFamily.regular,
+  },
+  ratingPill: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: Radius.full,
+  },
+  ratingPillText: {
+    ...Typography.label,
+    fontFamily: FontFamily.semiBold,
   },
   emptyState: {
     alignItems: 'center',

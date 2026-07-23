@@ -25,6 +25,7 @@ import {
   updateDeal,
   updatePaymentRecord,
   updateAdRights,
+  updatePerformance,
   advanceDealStatus,
   getNextStatus,
   respondToReminder,
@@ -37,6 +38,8 @@ import type { ReminderResponse } from '@/lib/reminders'
 import { buildPaymentReminderMessage, buildLiveLinkMessage, buildWhatsAppLink } from '@/lib/whatsapp'
 import { getPaymentAlertTone } from '@/lib/paymentReminders'
 import { calculateAdRightsExpiry, getAdRightsStatus, buildMetaAdLibraryUrl } from '@/lib/adRights'
+import { submitRating, getRatingForDeal } from '@/lib/reputation'
+import { getInvoiceForDeal } from '@/lib/invoices'
 import {
   listAttachments,
   uploadAttachment,
@@ -51,7 +54,7 @@ import { ModalSheet } from '@/components/ModalSheet'
 import { BrandAvatar } from '@/components/BrandAvatar'
 import { StatusPill } from '@/components/StatusPill'
 import { PaymentStatusBadge } from '@/components/PaymentStatusBadge'
-import type { Platform as PlatformType, PaymentStatus } from '@/types'
+import type { Platform as PlatformType, PaymentStatus, BrandRating, Invoice } from '@/types'
 
 function parseDate(input: string): string | null {
   const trimmed = input.trim()
@@ -99,6 +102,27 @@ export default function DealDetailScreen() {
   const [loadingAttachments, setLoadingAttachments] = useState(true)
   const [uploadingAttachment, setUploadingAttachment] = useState(false)
 
+  // Client reputation score (Phase 2) — post-deal survey, prompted once.
+  const [existingRating, setExistingRating] = useState<BrandRating | null>(null)
+  const [ratingValue, setRatingValue] = useState(5)
+  const [paidOnTime, setPaidOnTime] = useState<boolean | null>(null)
+  const [easyToWorkWith, setEasyToWorkWith] = useState<boolean | null>(null)
+  const [wouldWorkAgain, setWouldWorkAgain] = useState<boolean | null>(null)
+  const [revisionRounds, setRevisionRounds] = useState('')
+  const [ratingNotes, setRatingNotes] = useState('')
+  const [submittingRating, setSubmittingRating] = useState(false)
+
+  // Manual content performance entry (Phase 2 — see lib/deals.ts updatePerformance).
+  const [perfViews, setPerfViews] = useState('')
+  const [perfLikes, setPerfLikes] = useState('')
+  const [perfComments, setPerfComments] = useState('')
+  const [perfSaves, setPerfSaves] = useState('')
+  const [savingPerformance, setSavingPerformance] = useState(false)
+
+  // Tax & invoicing (Phase 3) — at most one invoice per deal, generated
+  // from the "Create Invoice" button below.
+  const [invoice, setInvoice] = useState<Invoice | null>(null)
+
   // Workflow reminder card (PRODUCT.md 2.3).
   const [respondingReminder, setRespondingReminder] = useState(false)
 
@@ -145,6 +169,18 @@ export default function DealDetailScreen() {
         setAdRightsFee(data.ad_rights_fee != null ? String(data.ad_rights_fee) : '')
         setAdRightsDuration(data.ad_rights_duration_months)
         setAdRightsStartDate(data.ad_rights_start_date ?? '')
+        setPerfViews(data.performance_views != null ? String(data.performance_views) : '')
+        setPerfLikes(data.performance_likes != null ? String(data.performance_likes) : '')
+        setPerfComments(data.performance_comments != null ? String(data.performance_comments) : '')
+        setPerfSaves(data.performance_saves != null ? String(data.performance_saves) : '')
+
+        // Best-effort — reputation/invoice lookups never block the deal from loading.
+        getRatingForDeal(data.id)
+          .then((r) => active && setExistingRating(r))
+          .catch(() => {})
+        getInvoiceForDeal(data.id)
+          .then((inv) => active && setInvoice(inv))
+          .catch(() => {})
       } catch {
         if (active) setLoadError(true)
       } finally {
@@ -477,6 +513,46 @@ export default function DealDetailScreen() {
     }
   }
 
+  async function handleSubmitRating() {
+    if (!deal?.brand || submittingRating) return
+    setSubmittingRating(true)
+    try {
+      const saved = await submitRating({
+        deal_id: deal.id,
+        brand_id: deal.brand.id,
+        rating: ratingValue,
+        paid_on_time: paidOnTime,
+        easy_to_work_with: easyToWorkWith,
+        revision_rounds: revisionRounds.trim() ? parseInt(revisionRounds, 10) : null,
+        would_work_again: wouldWorkAgain,
+        notes: ratingNotes.trim() || null,
+      })
+      setExistingRating(saved)
+    } catch {
+      showAlert('Error', 'Could not save your rating. Please try again.')
+    } finally {
+      setSubmittingRating(false)
+    }
+  }
+
+  async function handleSavePerformance() {
+    if (!deal || savingPerformance) return
+    setSavingPerformance(true)
+    try {
+      await updatePerformance(deal.id, {
+        performance_views: perfViews.trim() ? parseInt(perfViews, 10) : null,
+        performance_likes: perfLikes.trim() ? parseInt(perfLikes, 10) : null,
+        performance_comments: perfComments.trim() ? parseInt(perfComments, 10) : null,
+        performance_saves: perfSaves.trim() ? parseInt(perfSaves, 10) : null,
+      })
+      showAlert('Saved', 'Performance numbers updated.')
+    } catch {
+      showAlert('Error', 'Could not save performance numbers. Please try again.')
+    } finally {
+      setSavingPerformance(false)
+    }
+  }
+
   // Parses YYYY-MM-DD or an ISO timestamp as a local date/time for display.
   function formatReminderTime(iso: string): string {
     const date = new Date(iso)
@@ -620,6 +696,121 @@ export default function DealDetailScreen() {
                   </Text>
                 ) : null}
               </View>
+
+              {/* ── Client reputation score (Phase 2) ─────────────────── */}
+              {deal.status === 'paid' && existingRating ? (
+                <View style={[styles.ratingSummaryCard, { backgroundColor: c.accentLight }]}>
+                  <Text style={[styles.ratingSummaryText, { color: c.accent }]}>
+                    You rated this collaboration {existingRating.rating}/5
+                  </Text>
+                </View>
+              ) : null}
+
+              {deal.status === 'paid' && !existingRating ? (
+                <View style={[styles.ratingCard, { backgroundColor: c.bgSurface }]}>
+                  <Text style={[styles.ratingTitle, { color: c.textPrimary }]}>
+                    Rate this collaboration
+                  </Text>
+                  <Text style={[styles.ratingSubtitle, { color: c.textSecondary }]}>
+                    Helps you decide fast if {brandName} reaches out again.
+                  </Text>
+
+                  <View style={styles.ratingStars}>
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <TouchableOpacity
+                        key={n}
+                        onPress={() => setRatingValue(n)}
+                        style={[
+                          styles.ratingStar,
+                          {
+                            backgroundColor: n <= ratingValue ? c.accent : 'transparent',
+                            borderColor: n <= ratingValue ? c.accent : c.borderStrong,
+                          },
+                        ]}
+                        activeOpacity={0.7}
+                      >
+                        <Text
+                          style={[
+                            styles.ratingStarText,
+                            { color: n <= ratingValue ? c.onFillPrimary : c.textSecondary },
+                          ]}
+                        >
+                          {n}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  <View style={styles.ratingToggleRow}>
+                    <TouchableOpacity
+                      onPress={() => setPaidOnTime((v) => (v === true ? null : true))}
+                      style={[
+                        styles.ratingToggle,
+                        paidOnTime === true
+                          ? { backgroundColor: c.accent }
+                          : { borderWidth: 1, borderColor: c.borderStrong },
+                      ]}
+                    >
+                      <Text style={[styles.ratingToggleText, { color: paidOnTime === true ? c.onFillPrimary : c.textSecondary }]}>
+                        Paid on time
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => setEasyToWorkWith((v) => (v === true ? null : true))}
+                      style={[
+                        styles.ratingToggle,
+                        easyToWorkWith === true
+                          ? { backgroundColor: c.accent }
+                          : { borderWidth: 1, borderColor: c.borderStrong },
+                      ]}
+                    >
+                      <Text style={[styles.ratingToggleText, { color: easyToWorkWith === true ? c.onFillPrimary : c.textSecondary }]}>
+                        Easy to work with
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => setWouldWorkAgain((v) => (v === true ? null : true))}
+                      style={[
+                        styles.ratingToggle,
+                        wouldWorkAgain === true
+                          ? { backgroundColor: c.accent }
+                          : { borderWidth: 1, borderColor: c.borderStrong },
+                      ]}
+                    >
+                      <Text style={[styles.ratingToggleText, { color: wouldWorkAgain === true ? c.onFillPrimary : c.textSecondary }]}>
+                        Would work again
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <TextInput
+                    style={[
+                      styles.input,
+                      styles.ratingNotesInput,
+                      { borderColor: c.borderStrong, color: c.textPrimary, backgroundColor: c.bgSurfaceRaised },
+                    ]}
+                    placeholder="Anything worth remembering about this brand? (optional)"
+                    placeholderTextColor={c.textMuted}
+                    value={ratingNotes}
+                    onChangeText={setRatingNotes}
+                    multiline
+                    textAlignVertical="top"
+                  />
+
+                  <TouchableOpacity
+                    style={[styles.ratingSubmitButton, { backgroundColor: c.fillPrimary }]}
+                    onPress={handleSubmitRating}
+                    disabled={submittingRating}
+                    activeOpacity={0.8}
+                  >
+                    {submittingRating ? (
+                      <ActivityIndicator color={c.onFillPrimary} />
+                    ) : (
+                      <Text style={[styles.ratingSubmitText, { color: c.onFillPrimary }]}>Save rating</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              ) : null}
 
               {/* ── Workflow reminder ────────────────────────────── */}
               {/*
@@ -1081,6 +1272,94 @@ export default function DealDetailScreen() {
                 )}
               </TouchableOpacity>
 
+              {/* ── Content performance (Phase 2, manual entry) ───────── */}
+              {(deal.status === 'published' || deal.status === 'payment_awaited' || deal.status === 'paid') && (
+                <>
+                  <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>
+                    Performance
+                  </Text>
+                  <Text style={[styles.performanceHint, { color: c.textMuted }]}>
+                    Entered manually for now — auto-sync from Instagram/YouTube needs those accounts connected, which isn't set up yet.
+                  </Text>
+                  <View style={styles.performanceGrid}>
+                    <View style={styles.dateCell}>
+                      <Text style={[styles.dateLabel, { color: c.textMuted }]}>Views</Text>
+                      <TextInput
+                        style={inputStyle}
+                        value={perfViews}
+                        onChangeText={(v) => setPerfViews(v.replace(/[^0-9]/g, ''))}
+                        keyboardType="numeric"
+                        placeholder="0"
+                        placeholderTextColor={c.textMuted}
+                      />
+                    </View>
+                    <View style={styles.dateCell}>
+                      <Text style={[styles.dateLabel, { color: c.textMuted }]}>Likes</Text>
+                      <TextInput
+                        style={inputStyle}
+                        value={perfLikes}
+                        onChangeText={(v) => setPerfLikes(v.replace(/[^0-9]/g, ''))}
+                        keyboardType="numeric"
+                        placeholder="0"
+                        placeholderTextColor={c.textMuted}
+                      />
+                    </View>
+                    <View style={styles.dateCell}>
+                      <Text style={[styles.dateLabel, { color: c.textMuted }]}>Comments</Text>
+                      <TextInput
+                        style={inputStyle}
+                        value={perfComments}
+                        onChangeText={(v) => setPerfComments(v.replace(/[^0-9]/g, ''))}
+                        keyboardType="numeric"
+                        placeholder="0"
+                        placeholderTextColor={c.textMuted}
+                      />
+                    </View>
+                    <View style={styles.dateCell}>
+                      <Text style={[styles.dateLabel, { color: c.textMuted }]}>Saves</Text>
+                      <TextInput
+                        style={inputStyle}
+                        value={perfSaves}
+                        onChangeText={(v) => setPerfSaves(v.replace(/[^0-9]/g, ''))}
+                        keyboardType="numeric"
+                        placeholder="0"
+                        placeholderTextColor={c.textMuted}
+                      />
+                    </View>
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.addAttachmentButton, { borderColor: c.borderStrong }]}
+                    onPress={handleSavePerformance}
+                    disabled={savingPerformance}
+                    activeOpacity={0.8}
+                  >
+                    {savingPerformance ? (
+                      <ActivityIndicator size="small" color={c.textPrimary} />
+                    ) : (
+                      <Text style={[styles.addAttachmentText, { color: c.textPrimary }]}>
+                        Save performance
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </>
+              )}
+
+              {/* ── Invoice (Phase 3) ──────────────────────────────────── */}
+              <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Invoice</Text>
+              <TouchableOpacity
+                style={[styles.addAttachmentButton, { borderColor: c.accent }]}
+                onPress={() =>
+                  invoice
+                    ? router.push(`/(app)/invoice/${invoice.id}` as never)
+                    : router.push(`/(app)/invoice/new?dealId=${deal.id}` as never)
+                }
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.addAttachmentText, { color: c.accent }]}>
+                  {invoice ? `View invoice (${invoice.invoice_number})` : 'Create invoice'}
+                </Text>
+              </TouchableOpacity>
+
             </Pressable>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -1382,6 +1661,89 @@ const styles = StyleSheet.create({
   metaAdLibraryButtonText: {
     ...Typography.label,
     fontFamily: FontFamily.medium,
+  },
+  // Reputation score
+  ratingSummaryCard: {
+    borderRadius: Radius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.xs,
+  },
+  ratingSummaryText: {
+    ...Typography.bodyStrong,
+    fontFamily: FontFamily.semiBold,
+  },
+  ratingCard: {
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.xs,
+    gap: Spacing.sm,
+  },
+  ratingTitle: {
+    ...Typography.heading,
+    fontFamily: FontFamily.semiBold,
+  },
+  ratingSubtitle: {
+    ...Typography.caption,
+    fontFamily: FontFamily.regular,
+    marginTop: -4,
+  },
+  ratingStars: {
+    flexDirection: 'row',
+    gap: Spacing.xs,
+  },
+  ratingStar: {
+    width: 40,
+    height: 40,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ratingStarText: {
+    ...Typography.bodyStrong,
+    fontFamily: FontFamily.semiBold,
+  },
+  ratingToggleRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
+  ratingToggle: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs + 2,
+    borderRadius: Radius.full,
+  },
+  ratingToggleText: {
+    ...Typography.label,
+    fontFamily: FontFamily.medium,
+  },
+  ratingNotesInput: {
+    height: undefined,
+    minHeight: 60,
+    paddingTop: 11,
+    paddingBottom: 11,
+  },
+  ratingSubmitButton: {
+    height: 44,
+    borderRadius: Radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ratingSubmitText: {
+    ...Typography.bodyStrong,
+    fontFamily: FontFamily.medium,
+  },
+  // Performance
+  performanceHint: {
+    ...Typography.caption,
+    fontFamily: FontFamily.regular,
+    lineHeight: 18,
+    marginBottom: Spacing.sm,
+  },
+  performanceGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
   },
   // Attachments
   attachmentsBox: {
