@@ -13,10 +13,12 @@ import {
   StyleSheet,
   useColorScheme,
   ActivityIndicator,
-  Alert,
 } from 'react-native'
+import { showAlert } from '@/lib/alert'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import * as DocumentPicker from 'expo-document-picker'
+import { Ionicons } from '@expo/vector-icons'
 import {
   getDeal,
   updateDeal,
@@ -32,6 +34,13 @@ import { updateBrand } from '@/lib/brands'
 import type { ReminderResponse } from '@/lib/reminders'
 import { buildPaymentReminderMessage, buildLiveLinkMessage, buildWhatsAppLink } from '@/lib/whatsapp'
 import { getPaymentAlertTone } from '@/lib/paymentReminders'
+import {
+  listAttachments,
+  uploadAttachment,
+  deleteAttachment,
+  getAttachmentUrl,
+  type DealAttachment,
+} from '@/lib/attachments'
 import { PLATFORMS, STATUS_LABELS, REMINDER_STAGE_LABELS } from '@/constants/labels'
 import { Colors, Spacing, Radius, Typography, FontFamily, ContentMaxWidth } from '@/constants/design'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
@@ -75,6 +84,11 @@ export default function DealDetailScreen() {
   const [publishDate, setPublishDate] = useState('')
   const [liveLink, setLiveLink] = useState('')
   const [notes, setNotes] = useState('')
+
+  // Attachments (PRODUCT.md 1 — contracts/briefs, stored in Supabase Storage).
+  const [attachments, setAttachments] = useState<DealAttachment[]>([])
+  const [loadingAttachments, setLoadingAttachments] = useState(true)
+  const [uploadingAttachment, setUploadingAttachment] = useState(false)
 
   // Workflow reminder card (PRODUCT.md 2.3).
   const [respondingReminder, setRespondingReminder] = useState(false)
@@ -131,12 +145,71 @@ export default function DealDetailScreen() {
     }
   }, [id])
 
+  const refreshAttachments = useCallback(async () => {
+    if (!id) return
+    try {
+      const data = await listAttachments(id)
+      setAttachments(data)
+    } catch {
+      // Non-fatal: attachments section shows an appropriate empty state.
+    } finally {
+      setLoadingAttachments(false)
+    }
+  }, [id])
+
+  useEffect(() => {
+    refreshAttachments()
+  }, [refreshAttachments])
+
+  async function handleAddAttachment() {
+    const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true, base64: false })
+    if (result.canceled || !result.assets?.[0] || !id) return
+
+    const asset = result.assets[0]
+    setUploadingAttachment(true)
+    try {
+      await uploadAttachment(id, { uri: asset.uri, name: asset.name, mimeType: asset.mimeType })
+      await refreshAttachments()
+    } catch {
+      showAlert('Could not add attachment', 'Please try again.')
+    } finally {
+      setUploadingAttachment(false)
+    }
+  }
+
+  async function handleOpenAttachment(attachment: DealAttachment) {
+    try {
+      const url = await getAttachmentUrl(attachment.path)
+      await Linking.openURL(url)
+    } catch {
+      showAlert('Could not open file', 'Please try again.')
+    }
+  }
+
+  function handleDeleteAttachment(attachment: DealAttachment) {
+    showAlert('Remove attachment', `Remove "${attachment.name}"?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteAttachment(attachment.path)
+            await refreshAttachments()
+          } catch {
+            showAlert('Could not remove attachment', 'Please try again.')
+          }
+        },
+      },
+    ])
+  }
+
   const handleSave = useCallback(async () => {
     if (!deal || !deal.payment) return
 
     const rateNum = parseInt(rate, 10)
     if (!rate || isNaN(rateNum) || rateNum <= 0) {
-      Alert.alert('Invalid rate', 'Enter a valid rate in INR.')
+      showAlert('Invalid rate', 'Enter a valid rate in INR.')
       return
     }
 
@@ -148,7 +221,7 @@ export default function DealDetailScreen() {
     ]
     for (const { label, value } of datesToValidate) {
       if (value.trim() && parseDate(value) === null) {
-        Alert.alert('Invalid date', `${label} must be YYYY-MM-DD (e.g. 2025-09-15).`)
+        showAlert('Invalid date', `${label} must be YYYY-MM-DD (e.g. 2025-09-15).`)
         return
       }
     }
@@ -177,7 +250,7 @@ export default function DealDetailScreen() {
 
       router.back()
     } catch {
-      Alert.alert('Error', 'Could not save changes. Please try again.')
+      showAlert('Error', 'Could not save changes. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -203,7 +276,7 @@ export default function DealDetailScreen() {
     if (!deal || !deal.brand || advancing) return
     const trimmedLink = liveLink.trim()
     if (!trimmedLink) {
-      Alert.alert('Live link required', 'Enter the live link before marking this as live.')
+      showAlert('Live link required', 'Enter the live link before marking this as live.')
       return
     }
 
@@ -233,13 +306,13 @@ export default function DealDetailScreen() {
       if (link) {
         await Linking.openURL(link)
       } else {
-        Alert.alert(
+        showAlert(
           'No phone number on file',
           "This brand has no phone number saved, so the live-link message couldn't be prepared. The deal was still moved to payment awaited."
         )
       }
     } catch {
-      Alert.alert('Error', 'Could not advance status.')
+      showAlert('Error', 'Could not advance status.')
     } finally {
       setAdvancing(false)
     }
@@ -284,7 +357,7 @@ export default function DealDetailScreen() {
         }
       })
     } catch {
-      Alert.alert('Error', 'Could not advance status.')
+      showAlert('Error', 'Could not advance status.')
     } finally {
       setAdvancing(false)
     }
@@ -298,7 +371,7 @@ export default function DealDetailScreen() {
       const fields = await respondToReminder(deal, response)
       setDeal((prev) => (prev ? { ...prev, ...fields } : prev))
     } catch {
-      Alert.alert('Error', 'Could not update reminder. Please try again.')
+      showAlert('Error', 'Could not update reminder. Please try again.')
     } finally {
       setRespondingReminder(false)
     }
@@ -330,7 +403,7 @@ export default function DealDetailScreen() {
       })
     )
     if (!link) {
-      Alert.alert('Invalid phone number', "This brand's phone number couldn't be used to open WhatsApp.")
+      showAlert('Invalid phone number', "This brand's phone number couldn't be used to open WhatsApp.")
       return
     }
 
@@ -340,7 +413,7 @@ export default function DealDetailScreen() {
       const newStatus = await markPaymentReminderSent(deal.id, payment.status)
       setDeal((prev) => (prev ? { ...prev, payment: { ...payment, status: newStatus } } : prev))
     } catch {
-      Alert.alert('Could not open WhatsApp', 'Please try again.')
+      showAlert('Could not open WhatsApp', 'Please try again.')
     } finally {
       setSendingReminder(false)
     }
@@ -358,7 +431,7 @@ export default function DealDetailScreen() {
       setAddingPhone(false)
       setPhoneInput('')
     } catch {
-      Alert.alert('Error', 'Could not save phone number. Please try again.')
+      showAlert('Error', 'Could not save phone number. Please try again.')
     } finally {
       setSavingPhone(false)
     }
@@ -803,6 +876,65 @@ export default function DealDetailScreen() {
                 placeholderTextColor={c.textMuted}
               />
 
+              {/* ── Attachments ──────────────────────────────────── */}
+              <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Attachments</Text>
+              <View style={[styles.attachmentsBox, { backgroundColor: c.bgSurface }]}>
+                {loadingAttachments ? (
+                  <ActivityIndicator color={c.textMuted} style={styles.attachmentsLoading} />
+                ) : attachments.length === 0 ? (
+                  <Text style={[styles.attachmentsEmpty, { color: c.textMuted }]}>
+                    No attachments yet — contracts, briefs, anything worth keeping with this deal.
+                  </Text>
+                ) : (
+                  attachments.map((a, index) => (
+                    <View
+                      key={a.path}
+                      style={[
+                        styles.attachmentRow,
+                        index < attachments.length - 1 && {
+                          borderBottomWidth: 1,
+                          borderBottomColor: c.border,
+                        },
+                      ]}
+                    >
+                      <TouchableOpacity
+                        style={styles.attachmentNameButton}
+                        onPress={() => handleOpenAttachment(a)}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="document-outline" size={18} color={c.textSecondary} />
+                        <Text
+                          style={[styles.attachmentName, { color: c.textPrimary }]}
+                          numberOfLines={1}
+                        >
+                          {a.name}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => handleDeleteAttachment(a)}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <Ionicons name="trash-outline" size={18} color={c.textMuted} />
+                      </TouchableOpacity>
+                    </View>
+                  ))
+                )}
+              </View>
+              <TouchableOpacity
+                style={[styles.addAttachmentButton, { borderColor: c.borderStrong }]}
+                onPress={handleAddAttachment}
+                disabled={uploadingAttachment}
+                activeOpacity={0.8}
+              >
+                {uploadingAttachment ? (
+                  <ActivityIndicator size="small" color={c.textPrimary} />
+                ) : (
+                  <Text style={[styles.addAttachmentText, { color: c.textPrimary }]}>
+                    + Add file
+                  </Text>
+                )}
+              </TouchableOpacity>
+
             </Pressable>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -1066,6 +1198,51 @@ const styles = StyleSheet.create({
   },
   phoneSaveButtonText: {
     ...Typography.bodyStrong,
+    fontFamily: FontFamily.medium,
+  },
+  // Attachments
+  attachmentsBox: {
+    borderRadius: Radius.md,
+    overflow: 'hidden',
+  },
+  attachmentsLoading: {
+    paddingVertical: Spacing.md,
+  },
+  attachmentsEmpty: {
+    ...Typography.caption,
+    fontFamily: FontFamily.regular,
+    padding: Spacing.md,
+    lineHeight: 18,
+  },
+  attachmentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 12,
+  },
+  attachmentNameButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  attachmentName: {
+    ...Typography.body,
+    fontFamily: FontFamily.regular,
+    flex: 1,
+  },
+  addAttachmentButton: {
+    height: 40,
+    borderWidth: 1,
+    borderRadius: Radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: Spacing.sm,
+  },
+  addAttachmentText: {
+    ...Typography.label,
     fontFamily: FontFamily.medium,
   },
 })

@@ -36,6 +36,10 @@ Open your [Supabase dashboard](https://supabase.com) → your project →
 3. `003_reminder_completed_through.sql` — adds `reminder_completed_through`,
    which the workflow-reminder rescheduling logic in `lib/reminders.ts`
    requires.
+4. `004_deal_attachments_storage.sql` — creates the private `attachments`
+   Storage bucket and its RLS policy for deal attachments (PRODUCT.md 1).
+   Skipping this makes the Attachments section on the deal screen fail with
+   a permission error.
 
 Paste each file's contents and click **Run** before moving to the next one.
 

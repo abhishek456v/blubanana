@@ -34,7 +34,8 @@
           "photosPermission": "CreatorDesk uses your photo library to read deal screenshots you choose to import."
         }
       ],
-      "expo-notifications"
+      "expo-notifications",
+      "expo-document-picker"
     ],
     "experiments": {
       "typedRoutes": true
