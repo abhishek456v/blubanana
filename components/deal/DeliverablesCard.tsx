@@ -110,7 +110,7 @@ export function DeliverablesCard({ deliverables, onChange, disabled }: Deliverab
       {deliverables.length === 0 ? (
         <View style={styles.empty}>
           <Text style={[styles.emptyText, { color: c.textMuted }]}>
-            Nothing added yet. A reel, three stories, an auto DM, the ad rights — each priced on
+            Nothing added yet. A reel, three stories, an auto DM, the ad rights: each priced on
             its own.
           </Text>
           {!disabled ? (

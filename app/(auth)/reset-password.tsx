@@ -50,7 +50,7 @@ export default function ResetPasswordScreen() {
     // needing to know the reset finished from in here.
     await supabase.auth.signOut()
     setLoading(false)
-    toast('Password updated — sign in with it now', { tone: 'success' })
+    toast('Password updated. Sign in with it now', { tone: 'success' })
     router.replace('/(auth)/sign-in')
   }
 

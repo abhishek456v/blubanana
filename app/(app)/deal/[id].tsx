@@ -1207,7 +1207,7 @@ export default function DealDetailScreen() {
                       </TouchableOpacity>
                     ) : attachments.length === 0 ? (
                       <Text style={[styles.attachmentsEmpty, { color: c.textMuted }]}>
-                        No attachments yet — contracts, briefs, anything worth keeping with this deal.
+                        No attachments yet. Contracts, briefs, anything worth keeping with this deal.
                       </Text>
                     ) : (
                       attachments.map((a, index) => (
@@ -1266,7 +1266,7 @@ export default function DealDetailScreen() {
                         Performance
                       </Text>
                       <Text style={[styles.performanceHint, { color: c.textMuted }]}>
-                        Entered manually for now — auto-sync from Instagram/YouTube needs those accounts connected, which isn't set up yet.
+                        Entered manually for now. Auto-sync from Instagram/YouTube needs those accounts connected, which isn't set up yet.
                       </Text>
                       <View style={styles.performanceGrid}>
                         <View style={styles.dateCell}>

@@ -1,3 +1,5 @@
+import { Platform } from 'react-native'
+
 // Design tokens from DESIGN.md — always pull from here, never hardcode values.
 
 // `bgContrast` is the one that makes the dashboard look designed rather than
@@ -205,43 +207,111 @@ export const AuthFormMaxWidth = 400
 // `elevation`, so one spread covers all three platforms.
 // ---------------------------------------------------------------------------
 
-const shadow = (
-  color: string,
-  opacity: number,
-  radius: number,
-  offsetY: number,
-  androidElevation: number
-) => ({
-  shadowColor: color,
-  shadowOffset: { width: 0, height: offsetY },
-  shadowOpacity: opacity,
-  shadowRadius: radius,
-  elevation: androidElevation,
-})
+/**
+ * Two-layer shadows.
+ *
+ * A single tight shadow (small blur, small offset) is what makes a card read
+ * as a sticker pasted onto the page — the whole shape darkens uniformly and
+ * the edge stays hard. Real depth is two overlapping falloffs:
+ *
+ *   contact — small, tight, barely visible. Anchors the element to the
+ *             surface and keeps the bottom edge from floating.
+ *   ambient — large, wide, very faint. Does the actual lifting, and is the
+ *             layer that reads as soft rather than dirty.
+ *
+ * Blur runs roughly 3x the offset on the ambient layer. Below about 2x the
+ * shadow reads as a hard smudge; that ratio is the difference between the two
+ * cards in every "good shadow vs bad shadow" comparison.
+ *
+ * Warm-tinted on light, because a neutral black shadow over a cream palette
+ * greys it. Dark mode needs far more opacity: a light surface on a dark ground
+ * separates by luminance much less than the reverse.
+ */
+const layered = (
+  contact: string,
+  ambient: string,
+  native: { color: string; opacity: number; radius: number; offsetY: number; elevation: number }
+) =>
+  Platform.select({
+    // Web takes both layers. React Native Web maps boxShadow straight through,
+    // so this is the full effect.
+    web: { boxShadow: `${contact}, ${ambient}` } as object,
+    // Native gets one shadow per view, so it takes the ambient layer — the one
+    // doing the lifting — and Android's elevation alongside it.
+    default: {
+      shadowColor: native.color,
+      shadowOffset: { width: 0, height: native.offsetY },
+      shadowOpacity: native.opacity,
+      shadowRadius: native.radius,
+      elevation: native.elevation,
+    },
+  }) as {
+    boxShadow?: string
+    shadowColor?: string
+    shadowOffset?: { width: number; height: number }
+    shadowOpacity?: number
+    shadowRadius?: number
+    elevation?: number
+  }
 
 export const Elevation = {
   light: {
-    /** Raised rows and cards that need to lift off the page a little. */
-    sm: shadow('#2A1F14', 0.05, 6, 2, 2),
+    /** Raised rows and cards that lift off the page a little. */
+    sm: layered(
+      '0px 1px 2px rgba(42,31,20,0.04)',
+      '0px 4px 14px rgba(42,31,20,0.06)',
+      { color: '#2A1F14', opacity: 0.06, radius: 14, offsetY: 4, elevation: 2 }
+    ),
     /** Sheets, popovers, floating panels. */
-    md: shadow('#2A1F14', 0.1, 20, 8, 8),
+    md: layered(
+      '0px 2px 4px rgba(42,31,20,0.04)',
+      '0px 12px 32px rgba(42,31,20,0.09)',
+      { color: '#2A1F14', opacity: 0.09, radius: 32, offsetY: 12, elevation: 8 }
+    ),
     /** The one thing floating above everything (FAB, toast). */
-    lg: shadow('#2A1F14', 0.16, 32, 14, 16),
+    lg: layered(
+      '0px 4px 8px rgba(42,31,20,0.05)',
+      '0px 24px 56px rgba(42,31,20,0.13)',
+      { color: '#2A1F14', opacity: 0.13, radius: 56, offsetY: 24, elevation: 16 }
+    ),
   },
   dark: {
-    sm: shadow('#000000', 0.3, 6, 2, 2),
-    md: shadow('#000000', 0.45, 20, 8, 8),
-    lg: shadow('#000000', 0.6, 32, 14, 16),
+    sm: layered(
+      '0px 1px 2px rgba(0,0,0,0.22)',
+      '0px 4px 14px rgba(0,0,0,0.28)',
+      { color: '#000000', opacity: 0.28, radius: 14, offsetY: 4, elevation: 2 }
+    ),
+    md: layered(
+      '0px 2px 4px rgba(0,0,0,0.28)',
+      '0px 12px 32px rgba(0,0,0,0.40)',
+      { color: '#000000', opacity: 0.4, radius: 32, offsetY: 12, elevation: 8 }
+    ),
+    lg: layered(
+      '0px 4px 8px rgba(0,0,0,0.32)',
+      '0px 24px 56px rgba(0,0,0,0.5)',
+      { color: '#000000', opacity: 0.5, radius: 56, offsetY: 24, elevation: 16 }
+    ),
   },
 } as const
 
 /**
- * The "soft accent glow" DESIGN.md §5 allows on primary buttons and hero
- * elements. Not a drop shadow — an amber halo, so a filled button reads as
- * lit rather than as a card sitting on the page.
+ * The soft accent glow DESIGN.md §5 allows on primary buttons.
+ *
+ * Not a drop shadow but a halo: no vertical offset, so the light reads as
+ * coming *from* the button rather than falling beneath it. That is what makes
+ * a filled button look lit instead of like a card sitting on the page.
  */
-export const accentGlow = (opacity = 0.35) =>
-  shadow(Colors.light.accent, opacity, 16, 4, 0)
+export const accentGlow = (opacity = 0.3) =>
+  Platform.select({
+    web: { boxShadow: `0px 6px 20px rgba(245,166,35,${opacity})` } as object,
+    default: {
+      shadowColor: Colors.light.accent,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: opacity,
+      shadowRadius: 20,
+      elevation: 0,
+    },
+  }) as object
 
 /** Standard touch expansion for small icon-only controls (close, dismiss). */
 export const HitSlop = { top: 10, bottom: 10, left: 10, right: 10 } as const

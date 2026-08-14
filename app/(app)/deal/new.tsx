@@ -170,7 +170,7 @@ export default function NewDealScreen() {
   function applyExtractedFields(fields: ExtractedDealFields) {
     const hasAnyField = Object.values(fields).some((v) => v !== null)
     if (!hasAnyField) {
-      toast("Couldn't find deal details there — try again or fill in the form manually", { tone: 'error' })
+      toast("Couldn't find deal details there. Try again, or fill in the form manually", { tone: 'error' })
       return
     }
 
@@ -417,7 +417,7 @@ export default function NewDealScreen() {
           {/*
             Three entry points into one shared review step below (PRODUCT.md
             2.1): scan a screenshot, record a voice note, or just start typing.
-            Extraction only fills fields — nothing saves until "Save deal".
+            Extraction only fills fields. Nothing saves until "Save deal".
           */}
           <View style={styles.intakeRow}>
             <TouchableOpacity
@@ -483,7 +483,7 @@ export default function NewDealScreen() {
           ) : brands.length === 0 ? (
             <View style={[styles.noBrandsBox, { backgroundColor: c.bgSurface, borderColor: c.border }]}>
               <Text style={[styles.noBrandsText, { color: c.textSecondary }]}>
-                No brands yet — add a client first.
+                No brands yet. Add a client first.
               </Text>
               <TouchableOpacity
                 onPress={() => router.push('/(app)/brand/new' as never)}

@@ -158,7 +158,7 @@ export default function YouScreen() {
             <View style={styles.toggleText}>
               <Text style={[styles.cardTitle, { color: c.textPrimary }]}>Profile card</Text>
               <Text style={[styles.cardHint, { color: c.textSecondary }]}>
-                A public page you can send a brand mid-negotiation — your niche, reach and deals
+                A public page you can send a brand mid-negotiation. Shows your niche, reach and deals
                 completed. Never shows payment or contact details.
               </Text>
             </View>

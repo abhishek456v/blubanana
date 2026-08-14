@@ -99,7 +99,7 @@ export default function SignUpScreen() {
           <Animated.View entering={FadeInDown.duration(Duration.slow)}>
             <Text style={[styles.title, { color: c.textPrimary }]}>Run the business side</Text>
             <Text style={[styles.subtitle, { color: c.textSecondary }]}>
-              Every deal, deadline and payment in one place — so none of them slip.
+              Every deal, deadline and payment in one place, so none of them slip.
             </Text>
           </Animated.View>
 
