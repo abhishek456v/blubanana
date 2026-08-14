@@ -187,6 +187,10 @@ export default function TabsLayout() {
         // Every tab screen draws its own large-title header via ScreenHeader,
         // so the native one is off everywhere. See components/ui/ScreenHeader.
         headerShown: false,
+        // Tab switches were instant cuts. `shift` slides the outgoing screen
+        // out and the incoming one in along the direction of travel, so moving
+        // right through the bar feels like moving right through the app.
+        animation: 'shift',
         ...(isWide ? { tabBarPosition: 'left' as const } : null),
         tabBarActiveTintColor: c.accent,
         tabBarInactiveTintColor: c.textMuted,

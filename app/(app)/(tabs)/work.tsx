@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useFocusEffect } from '@react-navigation/core'
@@ -34,6 +34,8 @@ import {
   HeaderUtilities,
   HeroCard,
   ProgressRing,
+  Reveal,
+  RevealScrollView,
   ScreenHeader,
   SegmentedControl,
   SkeletonList,
@@ -106,7 +108,7 @@ export default function WorkScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.bgPage }]} edges={['top']}>
-      <ScrollView
+      <RevealScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -148,7 +150,7 @@ export default function WorkScreen() {
         ) : (
           <PerformanceView />
         )}
-      </ScrollView>
+      </RevealScrollView>
     </SafeAreaView>
   )
 
@@ -210,7 +212,7 @@ export default function WorkScreen() {
         </View>
 
         {archive.map((year) => (
-          <View key={year.year} style={styles.yearBlock}>
+          <Reveal key={year.year} style={styles.yearBlock}>
             <View style={styles.yearHeader}>
               <Text style={[styles.yearTitle, { color: c.textPrimary }]}>{year.year}</Text>
               <Text style={[styles.yearMeta, { color: c.textSecondary }]}>
@@ -231,7 +233,7 @@ export default function WorkScreen() {
                 </View>
               ))}
             </View>
-          </View>
+          </Reveal>
         ))}
       </View>
     )

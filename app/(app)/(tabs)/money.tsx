@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useFocusEffect } from '@react-navigation/core'
@@ -26,6 +26,8 @@ import {
   HeaderUtilities,
   HeroCard,
   ListRow,
+  Reveal,
+  RevealScrollView,
   ScreenHeader,
   Skeleton,
   StatTile,
@@ -234,7 +236,7 @@ export default function MoneyScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.bgPage }]} edges={['top']}>
-      <ScrollView
+      <RevealScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -278,11 +280,13 @@ export default function MoneyScreen() {
           </View>
         ) : (
           <View style={isDesktop ? styles.rowB : styles.stack}>
-            <View style={isDesktop ? styles.chartCell : undefined}>{chart}</View>
-            <View style={isDesktop ? styles.sideCell : undefined}>{side}</View>
+            <Reveal style={isDesktop ? styles.chartCell : undefined}>{chart}</Reveal>
+            <Reveal delay={70} style={isDesktop ? styles.sideCell : undefined}>
+              {side}
+            </Reveal>
           </View>
         )}
-      </ScrollView>
+      </RevealScrollView>
     </SafeAreaView>
   )
 }

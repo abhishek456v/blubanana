@@ -84,6 +84,9 @@ export function HeroCard({
           <AnimatedNumber
             value={value}
             format={format}
+            // The one figure on the screen that earns a count-up.
+            countOnMount
+            duration={900}
             style={[styles.value, { color: c.onContrast }]}
             numberOfLines={1}
           />

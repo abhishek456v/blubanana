@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Stack, useRouter } from 'expo-router'
 import { useFocusEffect } from '@react-navigation/core'
@@ -32,6 +32,8 @@ import {
   EmptyState,
   HeaderUtilities,
   PressableScale,
+  Reveal,
+  RevealScrollView,
   ScreenHeader,
   SegmentedControl,
   SkeletonList,
@@ -140,7 +142,7 @@ export default function RemindersScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.bgPage }]} edges={['top']}>
       <Stack.Screen options={{ title: 'Reminders' }} />
-      <ScrollView
+      <RevealScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -217,7 +219,7 @@ export default function RemindersScreen() {
             ))}
           </View>
         )}
-      </ScrollView>
+      </RevealScrollView>
     </SafeAreaView>
   )
 
