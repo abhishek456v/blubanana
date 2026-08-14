@@ -14,14 +14,16 @@
 
 -- ── Profiles: billing details, niche, public profile opt-in ──────────────────
 
+-- `if not exists` throughout so this is safe to re-run against a database
+-- where it may already be partly applied.
 alter table profiles
-  add column upi_id              text,
-  add column bank_account_number text,
-  add column ifsc_code           text,
-  add column gstin                text,
-  add column niche                text,
-  add column public_profile_enabled boolean not null default false,
-  add column public_share_slug    text unique;
+  add column if not exists upi_id              text,
+  add column if not exists bank_account_number text,
+  add column if not exists ifsc_code           text,
+  add column if not exists gstin                text,
+  add column if not exists niche                text,
+  add column if not exists public_profile_enabled boolean not null default false,
+  add column if not exists public_share_slug    text unique;
 
 
 -- ── Deals: rate-benchmarking snapshot + manual performance numbers ───────────
@@ -30,15 +32,15 @@ alter table deals
   -- Snapshot of the creator's follower count at the moment this deal was
   -- created — lib/rateBenchmark.ts compares rate-per-follower across deals
   -- over time using this, without needing any social API integration.
-  add column creator_follower_count_at_time integer,
+  add column if not exists creator_follower_count_at_time integer,
   -- Manual content performance entry (PRODUCT.md explicitly deferred
   -- automated Instagram/YouTube polling to Phase 2 — this is the
   -- creator-entered stand-in until real API credentials exist).
-  add column performance_views      integer,
-  add column performance_likes      integer,
-  add column performance_comments   integer,
-  add column performance_saves      integer,
-  add column performance_updated_at timestamptz;
+  add column if not exists performance_views      integer,
+  add column if not exists performance_likes      integer,
+  add column if not exists performance_comments   integer,
+  add column if not exists performance_saves      integer,
+  add column if not exists performance_updated_at timestamptz;
 
 
 -- ── Client reputation score ───────────────────────────────────────────────────
@@ -46,7 +48,7 @@ alter table deals
 -- (not just an average column on brands) so the brand detail screen can show
 -- review history, not just a single number.
 
-create table brand_ratings (
+create table if not exists brand_ratings (
   id                 uuid        primary key default gen_random_uuid(),
   creator_id         uuid        not null references profiles(id) on delete cascade,
   brand_id           uuid        not null references brands(id) on delete cascade,
@@ -62,6 +64,7 @@ create table brand_ratings (
 
 alter table brand_ratings enable row level security;
 
+drop policy if exists "brand_ratings: own rows" on brand_ratings;
 create policy "brand_ratings: own rows"
   on brand_ratings for all using (auth.uid() = creator_id);
 
@@ -71,7 +74,7 @@ create policy "brand_ratings: own rows"
 -- so editing/deleting a brand later never changes a previously issued
 -- invoice — standard invoicing practice.
 
-create table invoices (
+create table if not exists invoices (
   id                   uuid        primary key default gen_random_uuid(),
   creator_id           uuid        not null references profiles(id) on delete cascade,
   deal_id              uuid        not null references deals(id) on delete restrict,
@@ -96,6 +99,7 @@ create table invoices (
 
 alter table invoices enable row level security;
 
+drop policy if exists "invoices: own rows" on invoices;
 create policy "invoices: own rows"
   on invoices for all using (auth.uid() = creator_id);
 
@@ -107,7 +111,7 @@ create policy "invoices: own rows"
 -- (views run with the definer's privileges, bypassing RLS on the
 -- underlying tables), so keep any future column additions here deliberate.
 
-create view public_creator_profiles as
+create or replace view public_creator_profiles as
 select
   p.public_share_slug,
   p.name,

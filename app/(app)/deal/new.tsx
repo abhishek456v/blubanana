@@ -10,11 +10,9 @@ import {
   Pressable,
   Platform,
   StyleSheet,
-  useColorScheme,
   ActivityIndicator,
   Switch,
 } from 'react-native'
-import { showAlert } from '@/lib/alert'
 import { useRouter } from 'expo-router'
 import { useFocusEffect } from '@react-navigation/core'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -28,16 +26,40 @@ import {
 } from 'expo-audio'
 import { File } from 'expo-file-system'
 import { Ionicons } from '@expo/vector-icons'
+import { formatCurrency, formatDate } from '@/lib/format'
 import { getBrands } from '@/lib/brands'
 import { createDeal } from '@/lib/deals'
-import { calculateAdRightsExpiry } from '@/lib/adRights'
 import { getAllRatings, summarizeRatings } from '@/lib/reputation'
 import { extractFromImage, extractFromTranscript, transcribeAudio } from '@/lib/aiIntake'
-import type { Brand, BrandRating, ExtractedDealFields, Platform as PlatformType } from '@/types'
+import type {
+  Brand,
+  BrandRating,
+  DeliverableKind,
+  ExtractedDealFields,
+  ExtractedDeliverable,
+  Platform as PlatformType,
+} from '@/types'
+
+/** Fallback line-item type when the brief wasn't itemised — mirrors DEFAULT_PLATFORM_FOR_KIND. */
+const KIND_FOR_PLATFORM: Record<PlatformType, DeliverableKind> = {
+  instagram_reel: 'reel',
+  instagram_feed: 'static_post',
+  instagram_story: 'story',
+  youtube_short: 'yt_short',
+  youtube_long: 'yt_long',
+  twitter: 'other',
+  linkedin: 'other',
+  other: 'other',
+}
 import { PLATFORMS } from '@/constants/labels'
 import { Colors, Spacing, Radius, Typography, FontFamily, ContentMaxWidth } from '@/constants/design'
+import { useTheme } from '@/hooks/useTheme'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 import { ModalSheet } from '@/components/ModalSheet'
+import { Chip, DateField, TextField, useToast } from '@/components/ui'
+import { replaceDeliverables, type DeliverableInput } from '@/lib/deliverables'
+import { adRightsExpiry, adRightsPerMonth } from '@/lib/deliverables'
+import { DEFAULT_PLATFORM_FOR_KIND } from '@/constants/labels'
 
 // Returns null for blank input; validates YYYY-MM-DD format before saving.
 function parseDate(input: string): string | null {
@@ -51,9 +73,9 @@ function parseDate(input: string): string | null {
 }
 
 export default function NewDealScreen() {
+  const toast = useToast()
   const router = useRouter()
-  const scheme = useColorScheme()
-  const c = scheme === 'dark' ? Colors.dark : Colors.light
+  const { c } = useTheme()
   const isWide = useIsWideScreen()
 
   const [brands, setBrands] = useState<Brand[]>([])
@@ -86,6 +108,15 @@ export default function NewDealScreen() {
   // Set when extraction returns a brand name that doesn't match any existing
   // brand, so we can prompt to create it and auto-select it once it exists.
   const [pendingBrandName, setPendingBrandName] = useState<string | null>(null)
+
+  // Itemised breakdown the extraction returned, if any. Held aside rather than
+  // rendered as editable rows here — intake stays a single fast form, and the
+  // deal screen's Deliverables card is where the breakdown gets adjusted.
+  const [extractedItems, setExtractedItems] = useState<ExtractedDeliverable[]>([])
+
+  // Live ad-rights maths, mirroring the deal screen's line-item editor.
+  const perMonthAdRights = adRightsPerMonth(Number(adRightsFee) || 0, adRightsDuration)
+  const adRightsExpiryPreview = adRightsExpiry(adRightsStartDate || null, adRightsDuration)
 
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY)
   const recorderState = useAudioRecorderState(recorder)
@@ -139,13 +170,11 @@ export default function NewDealScreen() {
   function applyExtractedFields(fields: ExtractedDealFields) {
     const hasAnyField = Object.values(fields).some((v) => v !== null)
     if (!hasAnyField) {
-      showAlert(
-        'Nothing extracted',
-        "Couldn't find deal details there — try again or fill in the form manually."
-      )
+      toast("Couldn't find deal details there — try again or fill in the form manually", { tone: 'error' })
       return
     }
 
+    if (fields.deliverables?.length) setExtractedItems(fields.deliverables)
     if (fields.deliverable_description) setDeliverable(fields.deliverable_description)
     if (fields.rate) setRate(String(fields.rate))
     if (fields.payment_terms) setPaymentTerms(fields.payment_terms)
@@ -172,7 +201,7 @@ export default function NewDealScreen() {
   async function handleScanScreenshot() {
     const { granted } = await ImagePicker.requestMediaLibraryPermissionsAsync()
     if (!granted) {
-      showAlert('Photo access needed', 'Allow photo library access to scan a screenshot.')
+      toast('Allow photo library access to scan a screenshot', { tone: 'warning' })
       return
     }
 
@@ -189,10 +218,7 @@ export default function NewDealScreen() {
       const fields = await extractFromImage(asset.base64!, asset.mimeType || 'image/jpeg')
       applyExtractedFields(fields)
     } catch {
-      showAlert(
-        'Could not read screenshot',
-        'Please try again or enter the deal manually.'
-      )
+      toast('Please try again or enter the deal manually', { tone: 'error' })
     } finally {
       setExtracting(null)
     }
@@ -201,7 +227,7 @@ export default function NewDealScreen() {
   async function handleStartRecording() {
     const { granted } = await requestRecordingPermissionsAsync()
     if (!granted) {
-      showAlert('Microphone access needed', 'Allow microphone access to record a voice note.')
+      toast('Allow microphone access to record a voice note', { tone: 'warning' })
       return
     }
     await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true })
@@ -213,7 +239,7 @@ export default function NewDealScreen() {
     await recorder.stop()
     const uri = recorder.uri
     if (!uri) {
-      showAlert('Recording failed', 'Please try again.')
+      toast('Please try again', { tone: 'error' })
       return
     }
 
@@ -224,40 +250,28 @@ export default function NewDealScreen() {
       const fields = await extractFromTranscript(transcript)
       applyExtractedFields(fields)
     } catch {
-      showAlert(
-        'Could not process voice note',
-        'Please try again or enter the deal manually.'
-      )
+      toast('Please try again or enter the deal manually', { tone: 'error' })
     } finally {
       setExtracting(null)
     }
   }
 
-  const inputStyle = [
-    styles.input,
-    {
-      borderColor: c.borderStrong,
-      color: c.textPrimary,
-      backgroundColor: c.bgSurface,
-    },
-  ]
-
   async function handleSave() {
     if (!selectedBrandId) {
-      showAlert('Brand required', 'Select a brand for this deal.')
+      toast('Select a brand for this deal', { tone: 'warning' })
       return
     }
     if (!platform) {
-      showAlert('Platform required', 'Select a platform.')
+      toast('Select a platform', { tone: 'warning' })
       return
     }
     if (!deliverable.trim()) {
-      showAlert('Deliverable required', 'Describe what you are delivering.')
+      toast('Describe what you are delivering', { tone: 'warning' })
       return
     }
     const rateNum = parseInt(rate, 10)
     if (!rate || isNaN(rateNum) || rateNum <= 0) {
-      showAlert('Rate required', 'Enter a valid rate in INR.')
+      toast('Enter a valid rate in INR', { tone: 'warning' })
       return
     }
 
@@ -270,7 +284,9 @@ export default function NewDealScreen() {
     ]
     for (const { label, value } of datesToValidate) {
       if (value.trim() && parseDate(value) === null) {
-        showAlert('Invalid date', `${label} must be in YYYY-MM-DD format (e.g. 2025-09-15).`)
+        // Defensive only — every date on this screen now comes from the
+        // calendar picker, so an unparseable one would mean a bug, not typing.
+        toast(`${label} isn't a valid date`, { tone: 'warning' })
         return
       }
     }
@@ -278,22 +294,22 @@ export default function NewDealScreen() {
     if (adRightsEnabled) {
       const feeNum = parseInt(adRightsFee, 10)
       if (!adRightsFee || isNaN(feeNum) || feeNum <= 0) {
-        showAlert('Ad rights fee required', 'Enter the ad rights fee, or turn off ad rights.')
+        toast('Enter the ad rights fee, or turn off ad rights', { tone: 'warning' })
         return
       }
       if (!adRightsDuration) {
-        showAlert('Ad rights duration required', 'Select how long the ad rights last.')
+        toast('Select how long the ad rights last', { tone: 'warning' })
         return
       }
       if (!adRightsStartDate.trim() || parseDate(adRightsStartDate) === null) {
-        showAlert('Ad rights start date required', 'Enter a valid start date (YYYY-MM-DD).')
+        toast('Enter a valid start date (YYYY-MM-DD)', { tone: 'warning' })
         return
       }
     }
 
     setSaving(true)
     try {
-      await createDeal({
+      const created = await createDeal({
         brand_id: selectedBrandId,
         platform,
         deliverable_description: deliverable.trim(),
@@ -313,9 +329,61 @@ export default function NewDealScreen() {
             }
           : null,
       })
+
+      // Line items. When the AI itemised the brief ("reel + 2 stories"), each
+      // becomes its own row; otherwise the single deliverable field becomes
+      // one row so every deal has line items from the moment it is created
+      // and the deal screen never opens on an empty Deliverables card.
+      const items: DeliverableInput[] = []
+
+      if (extractedItems.length > 0) {
+        // Rates are only split out when the brief priced each line. Where it
+        // gave one total, the first row carries it and the rest are zero, so
+        // the sum still matches what the creator agreed to.
+        const priced = extractedItems.some((item) => item.rate != null)
+        for (const [index, item] of extractedItems.entries()) {
+          items.push({
+            kind: item.kind,
+            platform: DEFAULT_PLATFORM_FOR_KIND[item.kind],
+            quantity: item.quantity,
+            description: item.description,
+            rate: priced ? (item.rate ?? 0) : index === 0 ? rateNum : 0,
+          })
+        }
+      } else {
+        items.push({
+          kind: KIND_FOR_PLATFORM[platform],
+          platform,
+          quantity: 1,
+          description: deliverable.trim(),
+          rate: rateNum,
+          due_date: parseDate(publishDate),
+        })
+      }
+
+      if (adRightsEnabled) {
+        const startsOn = parseDate(adRightsStartDate)
+        items.push({
+          kind: 'ad_rights',
+          quantity: 1,
+          description: 'Paid amplification / whitelisting rights',
+          rate: parseInt(adRightsFee, 10),
+          duration_months: adRightsDuration,
+          starts_on: startsOn,
+          expires_on: adRightsExpiry(startsOn, adRightsDuration),
+        })
+      }
+
+      try {
+        await replaceDeliverables(created.id, items)
+      } catch {
+        // The deal itself saved. Losing the line-item breakdown is recoverable
+        // from the deal screen, so it must not fail the whole intake.
+      }
+
       router.back()
     } catch {
-      showAlert('Error', 'Could not save deal. Please try again.')
+      toast('Could not save deal. Please try again', { tone: 'error' })
     } finally {
       setSaving(false)
     }
@@ -518,135 +586,74 @@ export default function NewDealScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.platformScroll}
           >
-            {PLATFORMS.map((p) => {
-              const selected = platform === p.key
-              return (
-                <TouchableOpacity
-                  key={p.key}
-                  onPress={() => setPlatform(p.key)}
-                  style={[
-                    styles.platformPill,
-                    selected
-                      ? { backgroundColor: c.fillPrimary }
-                      : { borderWidth: 1, borderColor: c.borderStrong },
-                  ]}
-                  activeOpacity={0.7}
-                >
-                  <Text
-                    style={[
-                      styles.platformPillText,
-                      { color: selected ? c.onFillPrimary : c.textSecondary },
-                    ]}
-                  >
-                    {p.label}
-                  </Text>
-                </TouchableOpacity>
-              )
-            })}
+            {PLATFORMS.map((p) => (
+              <Chip
+                key={p.key}
+                label={p.label}
+                selected={platform === p.key}
+                onPress={() => setPlatform(p.key)}
+              />
+            ))}
           </ScrollView>
 
           {/* ── Deal details ──────────────────────────────────── */}
-          <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Deliverable</Text>
-          <TextInput
-            style={[inputStyle, styles.multiline]}
-            placeholder="What are you creating? e.g. 1 Instagram Reel + 3 Stories"
-            placeholderTextColor={c.textMuted}
-            value={deliverable}
-            onChangeText={setDeliverable}
-            multiline
-            textAlignVertical="top"
-          />
+          <View style={styles.fieldStack}>
+            <TextField
+              label="Deliverable"
+              placeholder="1 Reel + 3 Stories"
+              value={deliverable}
+              onChangeText={setDeliverable}
+              multiline
+              hint="You can break this into separate priced items after saving"
+            />
 
-          <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Rate</Text>
-          <View style={styles.rateRow}>
-            <View
-              style={[
-                styles.ratePrefix,
-                {
-                  borderColor: c.borderStrong,
-                  backgroundColor: c.bgSurface,
-                },
-              ]}
-            >
-              <Text style={[styles.ratePrefixText, { color: c.textMuted }]}>₹</Text>
-            </View>
-            <TextInput
-              style={[
-                styles.rateInput,
-                {
-                  borderColor: c.borderStrong,
-                  color: c.textPrimary,
-                  backgroundColor: c.bgSurface,
-                },
-              ]}
+            <TextField
+              label="Rate"
+              prefix="₹"
               placeholder="0"
-              placeholderTextColor={c.textMuted}
+              keyboardType="number-pad"
               value={rate}
               onChangeText={(v) => setRate(v.replace(/[^0-9]/g, ''))}
-              keyboardType="numeric"
+            />
+
+            <TextField
+              label="Payment terms"
+              placeholder="45 days from publish"
+              value={paymentTerms}
+              onChangeText={setPaymentTerms}
             />
           </View>
 
-          <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>
-            Payment terms
-          </Text>
-          <TextInput
-            style={inputStyle}
-            placeholder='e.g. "45 days from publish"'
-            placeholderTextColor={c.textMuted}
-            value={paymentTerms}
-            onChangeText={setPaymentTerms}
-          />
-
-          {/* ── Timeline ──────────────────────────────────────── */}
-          <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>
-            Timeline (optional — YYYY-MM-DD)
-          </Text>
-          <View style={styles.dateGrid}>
-            <View style={styles.dateCell}>
-              <Text style={[styles.dateLabel, { color: c.textMuted }]}>Script due</Text>
-              <TextInput
-                style={inputStyle}
-                placeholder="2025-09-01"
-                placeholderTextColor={c.textMuted}
-                value={scriptDue}
-                onChangeText={setScriptDue}
-                keyboardType="numbers-and-punctuation"
-              />
-            </View>
-            <View style={styles.dateCell}>
-              <Text style={[styles.dateLabel, { color: c.textMuted }]}>Shoot day</Text>
-              <TextInput
-                style={inputStyle}
-                placeholder="2025-09-05"
-                placeholderTextColor={c.textMuted}
-                value={shootDate}
-                onChangeText={setShootDate}
-                keyboardType="numbers-and-punctuation"
-              />
-            </View>
-            <View style={styles.dateCell}>
-              <Text style={[styles.dateLabel, { color: c.textMuted }]}>Edit done</Text>
-              <TextInput
-                style={inputStyle}
-                placeholder="2025-09-10"
-                placeholderTextColor={c.textMuted}
-                value={editDone}
-                onChangeText={setEditDone}
-                keyboardType="numbers-and-punctuation"
-              />
-            </View>
-            <View style={styles.dateCell}>
-              <Text style={[styles.dateLabel, { color: c.textMuted }]}>Publish date</Text>
-              <TextInput
-                style={inputStyle}
-                placeholder="2025-09-15"
-                placeholderTextColor={c.textMuted}
-                value={publishDate}
-                onChangeText={setPublishDate}
-                keyboardType="numbers-and-punctuation"
-              />
-            </View>
+          {/* ── Timeline ──────────────────────────────────────────
+              Real date pickers. These were four bare TextInputs asking the
+              creator to hand-type "2025-09-01" — the worst input pattern in
+              an app whose first promise is that she never misses a deadline. */}
+          <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Timeline</Text>
+          <View style={styles.dateFields}>
+            <DateField
+              label="Script"
+              value={scriptDue || null}
+              onChange={(value) => setScriptDue(value ?? '')}
+              placeholder="Optional"
+            />
+            <DateField
+              label="Shoot"
+              value={shootDate || null}
+              onChange={(value) => setShootDate(value ?? '')}
+              placeholder="Optional"
+            />
+            <DateField
+              label="Edit"
+              value={editDone || null}
+              onChange={(value) => setEditDone(value ?? '')}
+              placeholder="Optional"
+            />
+            <DateField
+              label="Publish"
+              value={publishDate || null}
+              onChange={(value) => setPublishDate(value ?? '')}
+              placeholder="Optional"
+            />
           </View>
 
           {/* ── Ad rights (optional) ──────────────────────────── */}
@@ -664,91 +671,61 @@ export default function NewDealScreen() {
 
           {adRightsEnabled && (
             <View style={[styles.adRightsBox, { backgroundColor: c.accentLight, borderColor: c.accent }]}>
-              <Text style={[styles.dateLabel, { color: c.textSecondary }]}>Ad rights fee</Text>
-              <View style={styles.rateRow}>
-                <View style={[styles.ratePrefix, { borderColor: c.borderStrong, backgroundColor: c.bgSurfaceRaised }]}>
-                  <Text style={[styles.ratePrefixText, { color: c.textMuted }]}>₹</Text>
-                </View>
-                <TextInput
-                  style={[
-                    styles.rateInput,
-                    { borderColor: c.borderStrong, color: c.textPrimary, backgroundColor: c.bgSurfaceRaised },
-                  ]}
-                  placeholder="0"
-                  placeholderTextColor={c.textMuted}
-                  value={adRightsFee}
-                  onChangeText={(v) => setAdRightsFee(v.replace(/[^0-9]/g, ''))}
-                  keyboardType="numeric"
-                />
-              </View>
+              <TextField
+                label="Ad rights fee"
+                prefix="₹"
+                placeholder="0"
+                keyboardType="number-pad"
+                value={adRightsFee}
+                onChangeText={(v) => setAdRightsFee(v.replace(/[^0-9]/g, ''))}
+              />
 
               <Text style={[styles.dateLabel, { color: c.textSecondary, marginTop: Spacing.md }]}>
                 Duration
               </Text>
               <View style={styles.platformScroll}>
-                {[1, 2, 3, 6, 9, 12].map((months) => {
-                  const selected = adRightsDuration === months
-                  return (
-                    <TouchableOpacity
-                      key={months}
-                      onPress={() => setAdRightsDuration(months)}
-                      style={[
-                        styles.platformPill,
-                        selected
-                          ? { backgroundColor: c.accent }
-                          : { borderWidth: 1, borderColor: c.borderStrong },
-                      ]}
-                      activeOpacity={0.7}
-                    >
-                      <Text
-                        style={[
-                          styles.platformPillText,
-                          { color: selected ? c.onFillPrimary : c.textSecondary },
-                        ]}
-                      >
-                        {months} {months === 1 ? 'month' : 'months'}
-                      </Text>
-                    </TouchableOpacity>
-                  )
-                })}
+                {[1, 2, 3, 6, 9, 12].map((months) => (
+                  <Chip
+                    key={months}
+                    label={`${months} ${months === 1 ? 'month' : 'months'}`}
+                    selected={adRightsDuration === months}
+                    onPress={() => setAdRightsDuration(months)}
+                  />
+                ))}
               </View>
 
-              <Text style={[styles.dateLabel, { color: c.textSecondary, marginTop: Spacing.md }]}>
-                Start date (YYYY-MM-DD)
-              </Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  { borderColor: c.borderStrong, color: c.textPrimary, backgroundColor: c.bgSurfaceRaised },
-                ]}
-                placeholder="2025-09-15"
-                placeholderTextColor={c.textMuted}
-                value={adRightsStartDate}
-                onChangeText={setAdRightsStartDate}
-                keyboardType="numbers-and-punctuation"
-              />
+              <View style={styles.adRightsDate}>
+                <DateField
+                  label="Rights start"
+                  value={adRightsStartDate || null}
+                  onChange={(value) => setAdRightsStartDate(value ?? '')}
+                  placeholder="Pick a start date"
+                />
+              </View>
 
-              {adRightsDuration && parseDate(adRightsStartDate) && (
+              {/* Per-month value, the same figure the deal screen's ad-rights
+                  line item shows — useful here while the rate is negotiable. */}
+              {perMonthAdRights != null ? (
                 <Text style={[styles.adRightsExpiryNote, { color: c.accent }]}>
-                  Expires{' '}
-                  {calculateAdRightsExpiry(parseDate(adRightsStartDate), adRightsDuration)} — you'll
-                  get a reminder 30 days before.
+                  {formatCurrency(perMonthAdRights)} per month
+                  {adRightsExpiryPreview
+                    ? ` · ends ${formatDate(adRightsExpiryPreview)}`
+                    : ''}
                 </Text>
-              )}
+              ) : null}
             </View>
           )}
 
           {/* ── Notes ─────────────────────────────────────────── */}
-          <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Notes</Text>
-          <TextInput
-            style={[inputStyle, styles.multiline]}
-            placeholder="Any context that didn't come through above"
-            placeholderTextColor={c.textMuted}
-            value={notes}
-            onChangeText={setNotes}
-            multiline
-            textAlignVertical="top"
-          />
+          <View style={styles.fieldStack}>
+            <TextField
+              label="Notes"
+              placeholder="Anything the chat didn't capture — brief quirks, who to chase"
+              value={notes}
+              onChangeText={setNotes}
+              multiline
+            />
+          </View>
 
           {/* ── Save ──────────────────────────────────────────── */}
           <TouchableOpacity
@@ -850,12 +827,6 @@ const styles = StyleSheet.create({
     ...Typography.body,
     fontFamily: FontFamily.regular,
   },
-  multiline: {
-    height: undefined,
-    minHeight: 88,
-    paddingTop: 11,
-    paddingBottom: 11,
-  },
   // Brand list
   noBrandsBox: {
     borderWidth: 1,
@@ -923,44 +894,7 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     paddingBottom: 2,
   },
-  platformPill: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs + 2,
-    borderRadius: Radius.full,
-  },
-  platformPillText: {
-    ...Typography.label,
-    fontFamily: FontFamily.medium,
-  },
   // Rate
-  rateRow: {
-    flexDirection: 'row',
-    gap: 0,
-  },
-  ratePrefix: {
-    width: 44,
-    height: 44,
-    borderWidth: 1,
-    borderRightWidth: 0,
-    borderTopLeftRadius: Radius.sm,
-    borderBottomLeftRadius: Radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ratePrefixText: {
-    ...Typography.body,
-    fontFamily: FontFamily.regular,
-  },
-  rateInput: {
-    flex: 1,
-    height: 44,
-    borderWidth: 1,
-    borderTopRightRadius: Radius.sm,
-    borderBottomRightRadius: Radius.sm,
-    paddingHorizontal: Spacing.md,
-    ...Typography.body,
-    fontFamily: FontFamily.regular,
-  },
   // Ad rights
   adRightsHeader: {
     flexDirection: 'row',
@@ -985,14 +919,20 @@ const styles = StyleSheet.create({
     marginTop: Spacing.sm,
   },
   // Timeline grid
-  dateGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
+  // DateField carries its own label, so these stack in one column rather than
+  // the 2×2 grid the old bare inputs needed.
+  // TextField brings its own label and spacing, so grouped fields just need
+  // a consistent gap rather than the old label/input margin rhythm.
+  fieldStack: {
+    gap: Spacing.md,
+    marginTop: Spacing.sm,
   },
-  dateCell: {
-    width: '48%',
-    gap: Spacing.xs,
+  dateFields: {
+    gap: Spacing.md,
+    marginTop: Spacing.xs,
+  },
+  adRightsDate: {
+    marginTop: Spacing.md,
   },
   dateLabel: {
     ...Typography.caption,

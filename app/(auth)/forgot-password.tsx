@@ -1,143 +1,128 @@
 import { useState } from 'react'
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-  useColorScheme,
-} from 'react-native'
-import { showAlert } from '@/lib/alert'
-import { Link, useRouter } from 'expo-router'
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native'
+import { Link } from 'expo-router'
 import * as Linking from 'expo-linking'
+import { Ionicons } from '@expo/vector-icons'
+import Animated, { FadeInDown } from 'react-native-reanimated'
 import { supabase } from '@/lib/supabase'
-import { Colors, Spacing, Radius, Typography, FontFamily, AuthFormMaxWidth } from '@/constants/design'
+import { AuthFormMaxWidth, FontFamily, Radius, Spacing, Typography } from '@/constants/design'
+import { Duration, staggerDelay } from '@/constants/motion'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
+import { useTheme } from '@/hooks/useTheme'
 import { AuthShell } from '@/components/AuthShell'
+import { Button, PressableScale, TextField, useToast } from '@/components/ui'
 
 export default function ForgotPasswordScreen() {
-  const router = useRouter()
-  const scheme = useColorScheme()
-  const c = scheme === 'dark' ? Colors.dark : Colors.light
+  const { c } = useTheme()
   const isWide = useIsWideScreen()
+  const toast = useToast()
 
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
+  const [error, setError] = useState<string | undefined>()
 
   async function handleSendReset() {
     if (!email.trim()) {
-      showAlert('Email required', 'Enter the email you signed up with.')
+      setError('Enter the email you signed up with')
       return
     }
+    setError(undefined)
 
     setLoading(true)
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+    const { error: sendError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
       redirectTo: Linking.createURL('/reset-password'),
     })
     setLoading(false)
 
-    if (error) {
-      showAlert('Could not send reset email', error.message)
+    if (sendError) {
+      toast(sendError.message, { tone: 'error' })
       return
     }
-    // Supabase never reveals whether the email exists, by design — the
-    // same confirmation shows either way.
+    // Supabase never reveals whether the address exists, by design — the same
+    // confirmation shows either way.
     setSent(true)
   }
 
   if (sent) {
     return (
       <AuthShell>
-      <View style={[styles.container, styles.centered, { backgroundColor: c.bgPage }]}>
-        <View style={[styles.confirmInner, isWide && styles.innerWide]}>
-          <Text style={[styles.wordmark, { color: c.textPrimary, fontFamily: FontFamily.display }]}>
-            Check your email
-          </Text>
-          <Text style={[styles.confirmText, { color: c.textSecondary }]}>
-            If an account exists for{'\n'}
-            <Text style={{ color: c.textPrimary, fontFamily: FontFamily.medium }}>
-              {email.trim()}
-            </Text>
-            {'\n\n'}
-            we've sent a link to reset the password.
-          </Text>
-          <TouchableOpacity
-            style={[styles.primaryButton, { backgroundColor: c.fillPrimary }]}
-            onPress={() => router.replace('/(auth)/sign-in')}
-            activeOpacity={0.8}
+        <View style={[styles.container, { backgroundColor: c.bgPage }]}>
+          <Animated.View
+            entering={FadeInDown.duration(Duration.slow)}
+            style={[styles.inner, isWide && styles.innerWide, styles.sentBlock]}
           >
-            <Text style={[styles.primaryButtonText, { color: c.onFillPrimary }]}>
-              Back to sign in
+            <View style={[styles.iconCircle, { backgroundColor: c.accentLight }]}>
+              <Ionicons name="mail-outline" size={26} color={c.accent} />
+            </View>
+            <Text style={[styles.title, { color: c.textPrimary }]}>Check your inbox</Text>
+            <Text style={[styles.subtitle, { color: c.textSecondary }]}>
+              If an account exists for {email.trim()}, a reset link is on its way.
             </Text>
-          </TouchableOpacity>
+            <Link href="/(auth)/sign-in" asChild>
+              <Button label="Back to sign in" variant="secondary" fullWidth size="lg" />
+            </Link>
+          </Animated.View>
         </View>
-      </View>
       </AuthShell>
     )
   }
 
   return (
     <AuthShell>
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: c.bgPage }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <View style={[styles.inner, isWide && styles.innerWide]}>
-        <Text style={[styles.wordmark, { color: c.textPrimary, fontFamily: FontFamily.display }]}>
-          Reset password
-        </Text>
-        <Text style={[styles.subtitle, { color: c.textSecondary }]}>
-          Enter your email and we'll send you a reset link.
-        </Text>
-
-        <View style={styles.form}>
-          <TextInput
-            style={[
-              styles.input,
-              { borderColor: c.borderStrong, color: c.textPrimary, backgroundColor: c.bgSurface },
-            ]}
-            placeholder="Email"
-            placeholderTextColor={c.textMuted}
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            autoComplete="email"
-            textContentType="emailAddress"
-          />
-
-          <TouchableOpacity
-            style={[styles.primaryButton, { backgroundColor: c.fillPrimary }]}
-            onPress={handleSendReset}
-            disabled={loading}
-            activeOpacity={0.8}
-          >
-            {loading ? (
-              <ActivityIndicator color={c.onFillPrimary} />
-            ) : (
-              <Text style={[styles.primaryButtonText, { color: c.onFillPrimary }]}>
-                Send reset link
-              </Text>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        <Link href="/(auth)/sign-in" asChild>
-          <TouchableOpacity activeOpacity={0.7} style={styles.switchRow}>
-            <Text style={[styles.switchText, { color: c.textSecondary }]}>
-              Remembered it?{' '}
-              <Text style={{ color: c.textPrimary, fontFamily: FontFamily.medium }}>
-                Sign in
-              </Text>
+      <KeyboardAvoidingView
+        style={[styles.container, { backgroundColor: c.bgPage }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <View style={[styles.inner, isWide && styles.innerWide]}>
+          <Animated.View entering={FadeInDown.duration(Duration.slow)}>
+            <Text style={[styles.title, { color: c.textPrimary }]}>Reset password</Text>
+            <Text style={[styles.subtitle, { color: c.textSecondary }]}>
+              We'll email you a link to set a new one.
             </Text>
-          </TouchableOpacity>
-        </Link>
-      </View>
-    </KeyboardAvoidingView>
+          </Animated.View>
+
+          <Animated.View
+            entering={FadeInDown.duration(Duration.slow).delay(staggerDelay(1))}
+            style={styles.form}
+          >
+            <TextField
+              label="Email"
+              placeholder="you@example.com"
+              value={email}
+              onChangeText={(value) => {
+                setEmail(value)
+                if (error) setError(undefined)
+              }}
+              error={error}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              autoComplete="email"
+              textContentType="emailAddress"
+              returnKeyType="go"
+              onSubmitEditing={handleSendReset}
+            />
+
+            <Button
+              label="Send reset link"
+              onPress={handleSendReset}
+              loading={loading}
+              fullWidth
+              size="lg"
+              style={styles.submit}
+            />
+          </Animated.View>
+
+          <Animated.View entering={FadeInDown.duration(Duration.slow).delay(staggerDelay(2))}>
+            <Link href="/(auth)/sign-in" asChild>
+              <PressableScale style={styles.switchRow} haptic="light">
+                <Text style={[styles.switchText, { color: c.accent }]}>Back to sign in</Text>
+              </PressableScale>
+            </Link>
+          </Animated.View>
+        </View>
+      </KeyboardAvoidingView>
     </AuthShell>
   )
 }
@@ -145,10 +130,6 @@ export default function ForgotPasswordScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  centered: {
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.xl,
   },
   inner: {
     flex: 1,
@@ -161,48 +142,35 @@ const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'center',
   },
-  confirmInner: {
-    width: '100%',
+  sentBlock: {
+    gap: Spacing.sm,
+    alignItems: 'flex-start',
   },
-  wordmark: {
+  iconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: Radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.sm,
+  },
+  title: {
     ...Typography.display,
-    fontFamily: FontFamily.semiBold,
+    fontFamily: FontFamily.display,
     marginBottom: Spacing.xs,
   },
   subtitle: {
     ...Typography.body,
     fontFamily: FontFamily.regular,
-    marginBottom: Spacing.xl,
-  },
-  confirmText: {
-    ...Typography.body,
-    fontFamily: FontFamily.regular,
     lineHeight: 22,
-    marginTop: Spacing.md,
     marginBottom: Spacing.xl,
   },
   form: {
-    gap: Spacing.sm,
+    gap: Spacing.md,
     marginBottom: Spacing.lg,
   },
-  input: {
-    height: 44,
-    borderWidth: 1,
-    borderRadius: Radius.sm,
-    paddingHorizontal: Spacing.md,
-    ...Typography.body,
-    fontFamily: FontFamily.regular,
-  },
-  primaryButton: {
-    height: 44,
-    borderRadius: Radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
+  submit: {
     marginTop: Spacing.xs,
-  },
-  primaryButtonText: {
-    ...Typography.bodyStrong,
-    fontFamily: FontFamily.medium,
   },
   switchRow: {
     alignItems: 'center',
@@ -210,6 +178,6 @@ const styles = StyleSheet.create({
   },
   switchText: {
     ...Typography.body,
-    fontFamily: FontFamily.regular,
+    fontFamily: FontFamily.medium,
   },
 })

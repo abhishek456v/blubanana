@@ -1,5 +1,6 @@
 import type { Deal, ReminderStage } from '@/types'
 import { scheduleAsync, cancelAsync, type NotificationContent } from './notifications'
+import { syncChainReminder } from './reminderChains'
 
 // Workflow reminder sequencing (PRODUCT.md 2.3): script due → shoot day →
 // editing → publishing → live link submission. Only one reminder is ever
@@ -101,6 +102,22 @@ async function applyReminder(
   await cancelAsync(deal.reminder_notification_id)
 
   if (!stage || !fireAt) {
+    // Clear the durable chain too. Skipping this would leave a live row
+    // pointing at work that is finished, which the one-live-per-chain index
+    // would then block the *next* reminder from taking.
+    try {
+      await syncChainReminder({
+        dealId: deal.id,
+        stage: null,
+        fireAt: null,
+        notificationId: null,
+        title: '',
+        body: null,
+      })
+    } catch (err) {
+      console.error('applyReminder: could not clear the durable chain', err)
+    }
+
     return {
       reminder_stage: null,
       reminder_fire_at: null,
@@ -110,7 +127,28 @@ async function applyReminder(
   }
 
   const brandName = deal.brand?.name ?? 'this brand'
-  const notificationId = await scheduleAsync(buildReminderContent(stage, deal.id, brandName), fireAt)
+  const content = buildReminderContent(stage, deal.id, brandName)
+  const notificationId = await scheduleAsync(content, fireAt)
+
+  // Mirror into the durable chain (migration 015) so the schedule survives a
+  // reinstall, a device switch, or the OS clearing its notification queue —
+  // none of which the local notification alone survives.
+  //
+  // Best-effort, for the same reason the OS scheduling above is: a reminder
+  // problem must never cost the creator a deal save. The chain is fully
+  // rebuildable from the deal's own dates, so a miss here is recoverable.
+  try {
+    await syncChainReminder({
+      dealId: deal.id,
+      stage,
+      fireAt,
+      notificationId,
+      title: content.title,
+      body: content.body,
+    })
+  } catch (err) {
+    console.error('applyReminder: could not mirror reminder to the durable chain', err)
+  }
 
   return {
     reminder_stage: stage,

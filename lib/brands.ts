@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { getWorkspaceId } from './workspace'
 import type { Brand } from '@/types'
 
 // RLS on the brands table restricts reads to the authenticated user's rows automatically.
@@ -23,7 +24,7 @@ export async function createBrand(
 
   const { data, error } = await supabase
     .from('brands')
-    .insert({ ...input, creator_id: user.id })
+    .insert({ ...input, workspace_id: await getWorkspaceId() })
     .select()
     .single()
 

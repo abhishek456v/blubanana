@@ -1,20 +1,48 @@
 import { useCallback, useState } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, useColorScheme, Platform, Switch, ActivityIndicator } from 'react-native'
-import { showAlert } from '@/lib/alert'
+import { ActivityIndicator, Platform, ScrollView, StyleSheet, Switch, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useFocusEffect } from '@react-navigation/core'
+import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '@/lib/supabase'
-import { getProfile, enablePublicProfile, disablePublicProfile } from '@/lib/profile'
+import { disablePublicProfile, enablePublicProfile, getProfile } from '@/lib/profile'
 import { useAuth } from '@/hooks/useAuth'
-import { useIsWideScreen } from '@/hooks/useIsWideScreen'
+import { useBreakpoint } from '@/hooks/useBreakpoint'
+import { useTheme, useThemeMode, type ThemeMode } from '@/hooks/useTheme'
 import { BrandAvatar } from '@/components/BrandAvatar'
-import { Colors, Spacing, Radius, Typography, FontFamily, ContentMaxWidth } from '@/constants/design'
+import { ConnectedAccounts } from '@/components/social/ConnectedAccounts'
+import {
+  ColumnGap,
+  DesktopContentMaxWidth,
+  FontFamily,
+  Radius,
+  Spacing,
+  Typography,
+} from '@/constants/design'
+import {
+  Button,
+  Card,
+  HeaderUtilities,
+  ListRow,
+  ScreenHeader,
+  SegmentedControl,
+  useConfirm,
+  useToast,
+} from '@/components/ui'
+
+// Mirrors the header's ThemeToggle, but with the third option the toggle
+// deliberately leaves out: a two-state control cannot express "follow the
+// system", and that is the default the app ships with.
+const THEME_OPTIONS: { key: ThemeMode; label: string }[] = [
+  { key: 'light', label: 'Day' },
+  { key: 'dark', label: 'Night' },
+  { key: 'system', label: 'System' },
+]
 import type { Creator } from '@/types'
 
-// Native has no window.location — the public profile card only resolves to
-// a real URL on the web build, so native shows the path with a note instead
-// of a broken link.
+// Native has no window.location — the public profile card only resolves to a
+// real URL on the web build, so native shows the path with a note instead of
+// a broken link.
 function publicProfileUrl(slug: string): string {
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
     return `${window.location.origin}/creator/${slug}`
@@ -22,25 +50,26 @@ function publicProfileUrl(slug: string): string {
   return `/creator/${slug}`
 }
 
-export default function SettingsScreen() {
-  const scheme = useColorScheme()
-  const c = scheme === 'dark' ? Colors.dark : Colors.light
+export default function YouScreen() {
+  const { c } = useTheme()
   const router = useRouter()
   const { session } = useAuth()
-
-  const isWide = useIsWideScreen()
+  const { isDesktop } = useBreakpoint()
+  const { mode, setMode } = useThemeMode()
+  const toast = useToast()
+  const confirm = useConfirm()
 
   const [profile, setProfile] = useState<Creator | null>(null)
   const [togglingPublic, setTogglingPublic] = useState(false)
+
   const email = session?.user?.email ?? ''
-  // Falls back to the auth session's name while the profiles row is loading,
-  // so the header isn't briefly blank on first render.
+  // Falls back to the auth session's name while the profiles row loads, so the
+  // header isn't briefly blank on first render.
   const name = profile?.name || session?.user?.user_metadata?.name || 'Creator'
 
   const loadProfile = useCallback(async () => {
     try {
-      const data = await getProfile()
-      setProfile(data)
+      setProfile(await getProfile())
     } catch {
       // Non-fatal: falls back to session metadata for the name.
     }
@@ -53,89 +82,132 @@ export default function SettingsScreen() {
   )
 
   async function handleSignOut() {
+    if (!(await confirm({ title: 'Sign out?', confirmLabel: 'Sign out', destructive: true })))
+      return
     await supabase.auth.signOut()
-    // Root layout detects cleared session and redirects to sign-in.
+    // The root layout notices the cleared session and redirects to sign-in.
   }
 
   async function handleTogglePublicProfile(next: boolean) {
     if (togglingPublic) return
     setTogglingPublic(true)
     try {
-      const updated = next ? await enablePublicProfile() : await disablePublicProfile()
-      setProfile(updated)
+      setProfile(next ? await enablePublicProfile() : await disablePublicProfile())
+      toast(next ? 'Your profile card is live' : 'Profile card turned off', {
+        tone: next ? 'success' : 'neutral',
+      })
     } catch {
-      showAlert('Error', 'Could not update your public profile. Please try again.')
+      toast('Could not update your profile card', { tone: 'error' })
     } finally {
       setTogglingPublic(false)
     }
   }
 
+  const followerLine =
+    profile?.follower_count != null
+      ? `${profile.follower_count.toLocaleString('en-IN')} followers`
+      : null
+
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: c.bgPage }]}
-      edges={['bottom']}
-    >
-      <View style={[styles.inner, isWide && styles.innerWide]}>
-      <TouchableOpacity
-        style={[styles.profileCard, { backgroundColor: c.bgSurface }]}
-        onPress={() => router.push('/(app)/profile/edit' as never)}
-        activeOpacity={0.7}
+    <SafeAreaView style={[styles.container, { backgroundColor: c.bgPage }]} edges={['top']}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
       >
-        <BrandAvatar name={name} size={48} />
-        <View style={styles.profileText}>
-          <Text style={[styles.profileName, { color: c.textPrimary }]}>{name}</Text>
-          <Text style={[styles.profileEmail, { color: c.textMuted }]}>{email}</Text>
-          {profile?.phone || profile?.follower_count ? (
+        <ScreenHeader style={styles.headerFlush} title="You" leadingAction={<HeaderUtilities />} />
+
+        <View style={isDesktop ? styles.columns : styles.stack}>
+          <View style={isDesktop ? styles.column : undefined}>
+        <Card onPress={() => router.push('/(app)/profile/edit' as never)} style={styles.profileCard}>
+          <BrandAvatar name={name} size={52} />
+          <View style={styles.profileText}>
+            <Text style={[styles.profileName, { color: c.textPrimary }]} numberOfLines={1}>
+              {name}
+            </Text>
             <Text style={[styles.profileMeta, { color: c.textMuted }]} numberOfLines={1}>
-              {[
-                profile.phone,
-                profile.follower_count != null
-                  ? `${profile.follower_count.toLocaleString('en-IN')} followers`
-                  : null,
-              ]
-                .filter(Boolean)
-                .join(' · ')}
+              {email}
             </Text>
-          ) : null}
-        </View>
-        <Text style={[styles.editLink, { color: c.accent }]}>Edit</Text>
-      </TouchableOpacity>
-
-      <View style={[styles.section, { backgroundColor: c.bgSurface }]}>
-        <View style={styles.sectionRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.sectionTitle, { color: c.textPrimary }]}>Shareable profile card</Text>
-            <Text style={[styles.sectionDesc, { color: c.textSecondary }]}>
-              A public, brand-facing page with your niche, follower count, and deals completed.
-              Never shows payment or contact details.
-            </Text>
+            {profile?.phone || followerLine ? (
+              <Text style={[styles.profileMeta, { color: c.textMuted }]} numberOfLines={1}>
+                {[profile?.phone, followerLine].filter(Boolean).join(' · ')}
+              </Text>
+            ) : null}
           </View>
-          {togglingPublic ? (
-            <ActivityIndicator color={c.textMuted} />
-          ) : (
-            <Switch
-              value={profile?.public_profile_enabled ?? false}
-              onValueChange={handleTogglePublicProfile}
-              trackColor={{ false: c.border, true: c.accentLight }}
-              thumbColor={profile?.public_profile_enabled ? c.accent : undefined}
-            />
-          )}
-        </View>
-        {profile?.public_profile_enabled && profile.public_share_slug ? (
-          <Text style={[styles.shareLink, { color: c.accent }]} selectable>
-            {publicProfileUrl(profile.public_share_slug)}
-          </Text>
-        ) : null}
-      </View>
+          <Ionicons name="chevron-forward" size={16} color={c.textMuted} />
+        </Card>
 
-      <TouchableOpacity
-        style={[styles.signOutButton, { borderColor: c.borderStrong }]}
-        onPress={handleSignOut}
-        activeOpacity={0.8}
-      >
-        <Text style={[styles.signOutText, { color: c.danger }]}>Sign out</Text>
-      </TouchableOpacity>
-      </View>
+        <ConnectedAccounts />
+          </View>
+
+          <View style={isDesktop ? styles.column : undefined}>
+        <Card style={styles.appearanceCard}>
+          <Text style={[styles.cardTitle, { color: c.textPrimary }]}>Appearance</Text>
+          <Text style={[styles.cardHint, { color: c.textSecondary }]}>
+            Day, night, or whatever your phone is doing.
+          </Text>
+          <SegmentedControl
+            options={THEME_OPTIONS}
+            value={mode}
+            onChange={setMode}
+            style={styles.themeControl}
+          />
+        </Card>
+
+        <Card>
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleText}>
+              <Text style={[styles.cardTitle, { color: c.textPrimary }]}>Profile card</Text>
+              <Text style={[styles.cardHint, { color: c.textSecondary }]}>
+                A public page you can send a brand mid-negotiation — your niche, reach and deals
+                completed. Never shows payment or contact details.
+              </Text>
+            </View>
+            {togglingPublic ? (
+              <ActivityIndicator color={c.textMuted} />
+            ) : (
+              <Switch
+                value={profile?.public_profile_enabled ?? false}
+                onValueChange={handleTogglePublicProfile}
+                trackColor={{ false: c.border, true: c.accentLight }}
+                thumbColor={profile?.public_profile_enabled ? c.accent : undefined}
+              />
+            )}
+          </View>
+
+          {profile?.public_profile_enabled && profile.public_share_slug ? (
+            <View style={[styles.linkBox, { backgroundColor: c.bgPage }]}>
+              <Text style={[styles.link, { color: c.accent }]} selectable numberOfLines={1}>
+                {publicProfileUrl(profile.public_share_slug)}
+              </Text>
+            </View>
+          ) : null}
+        </Card>
+
+        <View style={styles.links}>
+          <ListRow
+            title="Billing details"
+            subtitle="PAN, GSTIN and bank details used on your invoices"
+            leading={
+              <View style={[styles.linkIcon, { backgroundColor: c.accentLight }]}>
+                <Ionicons name="card" size={18} color={c.accent} />
+              </View>
+            }
+            showChevron
+            onPress={() => router.push('/(app)/profile/edit' as never)}
+            index={0}
+          />
+        </View>
+
+        <Button
+          label="Sign out"
+          variant="secondary"
+          fullWidth
+          onPress={handleSignOut}
+          style={styles.signOut}
+        />
+          </View>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   )
 }
@@ -143,80 +215,95 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  content: {
     paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.md,
-  },
-  inner: {
-    flex: 1,
-  },
-  innerWide: {
-    maxWidth: ContentMaxWidth,
+    paddingBottom: Spacing.xl,
+    maxWidth: DesktopContentMaxWidth,
     width: '100%',
     alignSelf: 'center',
+  },
+  headerFlush: {
+    paddingHorizontal: 0,
+  },
+  // Settings is a stack of unrelated cards, which is exactly the content that
+  // reads as a long thin ribbon on a desktop window. Two columns, identity and
+  // accounts on the left, preferences and billing on the right.
+  columns: {
+    flexDirection: 'row',
+    gap: ColumnGap,
+    alignItems: 'flex-start',
+  },
+  column: {
+    flex: 1,
+    gap: Spacing.sm,
+  },
+  stack: {
+    gap: Spacing.sm,
+  },
+  appearanceCard: {
+    gap: 2,
+  },
+  themeControl: {
+    marginTop: Spacing.md,
   },
   profileCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
-    padding: Spacing.md,
-    borderRadius: Radius.md,
-    marginBottom: Spacing.lg,
   },
   profileText: {
     flex: 1,
     gap: 2,
   },
   profileName: {
-    ...Typography.heading,
-    fontFamily: FontFamily.semiBold,
-  },
-  profileEmail: {
-    ...Typography.caption,
-    fontFamily: FontFamily.regular,
+    ...Typography.title,
+    fontFamily: FontFamily.display,
   },
   profileMeta: {
     ...Typography.caption,
     fontFamily: FontFamily.regular,
-    marginTop: 2,
   },
-  editLink: {
-    ...Typography.label,
-    fontFamily: FontFamily.medium,
-  },
-  section: {
-    borderRadius: Radius.md,
-    padding: Spacing.md,
-    marginBottom: Spacing.lg,
-  },
-  sectionRow: {
+  toggleRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: Spacing.md,
   },
-  sectionTitle: {
-    ...Typography.bodyStrong,
+  toggleText: {
+    flex: 1,
+  },
+  cardTitle: {
+    ...Typography.heading,
     fontFamily: FontFamily.semiBold,
   },
-  sectionDesc: {
+  cardHint: {
     ...Typography.caption,
     fontFamily: FontFamily.regular,
     marginTop: 2,
     lineHeight: 18,
   },
-  shareLink: {
+  linkBox: {
+    marginTop: Spacing.md,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radius.sm,
+  },
+  link: {
     ...Typography.caption,
     fontFamily: FontFamily.medium,
-    marginTop: Spacing.sm,
   },
-  signOutButton: {
-    height: 44,
-    borderRadius: Radius.full,
-    borderWidth: 1,
+  links: {
+    gap: 10,
+    marginTop: Spacing.xs,
+  },
+  linkIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: Radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  signOutText: {
-    ...Typography.bodyStrong,
-    fontFamily: FontFamily.medium,
+  signOut: {
+    marginTop: Spacing.lg,
   },
 })

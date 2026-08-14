@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import { Colors, Spacing, Radius, FontFamily } from '@/constants/design'
+import { Mark } from '@/components/ui'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 
 const BENEFITS = ['Never miss a deal', 'Never miss a deadline', 'Never miss a payment']
@@ -21,9 +22,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
       <View style={[styles.brandPanel, { backgroundColor: dark.bgPage }]}>
         <View style={[styles.glow, { backgroundColor: dark.accentLight }]} />
         <View style={styles.brandTop}>
-          <View style={[styles.logoMark, { backgroundColor: dark.accent }]}>
-            <Text style={styles.logoMarkText}>C</Text>
-          </View>
+          <Mark size={30} color={dark.accent} />
           <Text style={[styles.logoWord, { color: dark.textPrimary }]}>CreatorDesk</Text>
         </View>
 
@@ -77,18 +76,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
-  },
-  logoMark: {
-    width: 32,
-    height: 32,
-    borderRadius: Radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoMarkText: {
-    color: '#FFFFFF',
-    fontFamily: FontFamily.display,
-    fontSize: 16,
   },
   logoWord: {
     fontFamily: FontFamily.semiBold,

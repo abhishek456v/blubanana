@@ -1,119 +1,120 @@
 import { useState } from 'react'
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-  useColorScheme,
-} from 'react-native'
-import { showAlert } from '@/lib/alert'
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
+import Animated, { FadeInDown } from 'react-native-reanimated'
 import { supabase } from '@/lib/supabase'
-import { Colors, Spacing, Radius, Typography, FontFamily, AuthFormMaxWidth } from '@/constants/design'
+import { AuthFormMaxWidth, FontFamily, Spacing, Typography } from '@/constants/design'
+import { Duration, staggerDelay } from '@/constants/motion'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
+import { useTheme } from '@/hooks/useTheme'
 import { AuthShell } from '@/components/AuthShell'
+import { Button, TextField, useToast } from '@/components/ui'
+
+const MIN_PASSWORD_LENGTH = 8
 
 export default function ResetPasswordScreen() {
-  const router = useRouter()
-  const scheme = useColorScheme()
-  const c = scheme === 'dark' ? Colors.dark : Colors.light
+  const { c } = useTheme()
   const isWide = useIsWideScreen()
+  const router = useRouter()
+  const toast = useToast()
 
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [errors, setErrors] = useState<{ password?: string; confirm?: string }>({})
 
   async function handleReset() {
-    if (password.length < 8) {
-      showAlert('Weak password', 'Password must be at least 8 characters.')
-      return
+    const nextErrors: typeof errors = {}
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      nextErrors.password = `At least ${MIN_PASSWORD_LENGTH} characters`
     }
     if (password !== confirmPassword) {
-      showAlert("Passwords don't match", 'Enter the same password in both fields.')
-      return
+      nextErrors.confirm = "These don't match"
     }
+
+    setErrors(nextErrors)
+    if (Object.keys(nextErrors).length > 0) return
 
     setLoading(true)
     const { error } = await supabase.auth.updateUser({ password })
 
     if (error) {
       setLoading(false)
-      showAlert('Could not update password', error.message)
+      toast(error.message, { tone: 'error' })
       return
     }
 
     // Sign out of the recovery session and send the creator back to sign in
     // with the new password — cleaner than silently treating a recovery
-    // session as a real login, and sidesteps app/_layout.tsx's redirect
-    // needing to know the reset "finished" from in here.
+    // session as a real login, and it sidesteps app/_layout.tsx's redirect
+    // needing to know the reset finished from in here.
     await supabase.auth.signOut()
     setLoading(false)
+    toast('Password updated — sign in with it now', { tone: 'success' })
     router.replace('/(auth)/sign-in')
   }
 
   return (
     <AuthShell>
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: c.bgPage }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <View style={[styles.inner, isWide && styles.innerWide]}>
-        <Text style={[styles.wordmark, { color: c.textPrimary, fontFamily: FontFamily.display }]}>
-          Set a new password
-        </Text>
-        <Text style={[styles.subtitle, { color: c.textSecondary }]}>
-          Choose a new password for your account.
-        </Text>
+      <KeyboardAvoidingView
+        style={[styles.container, { backgroundColor: c.bgPage }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <View style={[styles.inner, isWide && styles.innerWide]}>
+          <Animated.View entering={FadeInDown.duration(Duration.slow)}>
+            <Text style={[styles.title, { color: c.textPrimary }]}>New password</Text>
+            <Text style={[styles.subtitle, { color: c.textSecondary }]}>
+              Pick something you'll remember. You'll sign in with it next.
+            </Text>
+          </Animated.View>
 
-        <View style={styles.form}>
-          <TextInput
-            style={[
-              styles.input,
-              { borderColor: c.borderStrong, color: c.textPrimary, backgroundColor: c.bgSurface },
-            ]}
-            placeholder="New password (min 8 characters)"
-            placeholderTextColor={c.textMuted}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoComplete="new-password"
-            textContentType="newPassword"
-          />
-          <TextInput
-            style={[
-              styles.input,
-              { borderColor: c.borderStrong, color: c.textPrimary, backgroundColor: c.bgSurface },
-            ]}
-            placeholder="Confirm new password"
-            placeholderTextColor={c.textMuted}
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry
-            autoComplete="new-password"
-            textContentType="newPassword"
-          />
-
-          <TouchableOpacity
-            style={[styles.primaryButton, { backgroundColor: c.fillPrimary }]}
-            onPress={handleReset}
-            disabled={loading}
-            activeOpacity={0.8}
+          <Animated.View
+            entering={FadeInDown.duration(Duration.slow).delay(staggerDelay(1))}
+            style={styles.form}
           >
-            {loading ? (
-              <ActivityIndicator color={c.onFillPrimary} />
-            ) : (
-              <Text style={[styles.primaryButtonText, { color: c.onFillPrimary }]}>
-                Update password
-              </Text>
-            )}
-          </TouchableOpacity>
+            <TextField
+              label="New password"
+              placeholder="••••••••"
+              value={password}
+              onChangeText={(value) => {
+                setPassword(value)
+                if (errors.password) setErrors((e) => ({ ...e, password: undefined }))
+              }}
+              error={errors.password}
+              hint={`At least ${MIN_PASSWORD_LENGTH} characters`}
+              secureTextEntry
+              autoComplete="new-password"
+              textContentType="newPassword"
+              returnKeyType="next"
+            />
+
+            <TextField
+              label="Confirm password"
+              placeholder="••••••••"
+              value={confirmPassword}
+              onChangeText={(value) => {
+                setConfirmPassword(value)
+                if (errors.confirm) setErrors((e) => ({ ...e, confirm: undefined }))
+              }}
+              error={errors.confirm}
+              secureTextEntry
+              autoComplete="new-password"
+              textContentType="newPassword"
+              returnKeyType="go"
+              onSubmitEditing={handleReset}
+            />
+
+            <Button
+              label="Update password"
+              onPress={handleReset}
+              loading={loading}
+              fullWidth
+              size="lg"
+              style={styles.submit}
+            />
+          </Animated.View>
         </View>
-      </View>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
     </AuthShell>
   )
 }
@@ -133,37 +134,22 @@ const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'center',
   },
-  wordmark: {
+  title: {
     ...Typography.display,
-    fontFamily: FontFamily.semiBold,
+    fontFamily: FontFamily.display,
     marginBottom: Spacing.xs,
   },
   subtitle: {
     ...Typography.body,
     fontFamily: FontFamily.regular,
+    lineHeight: 22,
     marginBottom: Spacing.xl,
   },
   form: {
-    gap: Spacing.sm,
+    gap: Spacing.md,
     marginBottom: Spacing.lg,
   },
-  input: {
-    height: 44,
-    borderWidth: 1,
-    borderRadius: Radius.sm,
-    paddingHorizontal: Spacing.md,
-    ...Typography.body,
-    fontFamily: FontFamily.regular,
-  },
-  primaryButton: {
-    height: 44,
-    borderRadius: Radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
+  submit: {
     marginTop: Spacing.xs,
-  },
-  primaryButtonText: {
-    ...Typography.bodyStrong,
-    fontFamily: FontFamily.medium,
   },
 })

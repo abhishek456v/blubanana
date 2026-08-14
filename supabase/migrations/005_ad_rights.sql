@@ -11,10 +11,12 @@
 -- client-side cache of the local OS notification currently scheduled.
 -- ─────────────────────────────────────────────────────────────────────────────
 
+-- `if not exists` throughout so this is safe to re-run against a database
+-- where it may already be partly applied.
 alter table deals
-  add column ad_rights_granted             boolean not null default false,
-  add column ad_rights_fee                 integer,
-  add column ad_rights_duration_months     integer,
-  add column ad_rights_start_date          date,
-  add column ad_rights_expires_date        date,
-  add column ad_rights_reminder_notification_id text;
+  add column if not exists ad_rights_granted             boolean not null default false,
+  add column if not exists ad_rights_fee                 integer,
+  add column if not exists ad_rights_duration_months     integer,
+  add column if not exists ad_rights_start_date          date,
+  add column if not exists ad_rights_expires_date        date,
+  add column if not exists ad_rights_reminder_notification_id text;

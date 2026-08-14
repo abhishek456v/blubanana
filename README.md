@@ -51,8 +51,53 @@ Open your [Supabase dashboard](https://supabase.com) → your project →
    `public_creator_profiles` view backing the shareable profile card.
    **Also required for deal creation** — same reason as 005, `createDeal`
    writes `creator_follower_count_at_time` unconditionally.
+7. `007_deliverables_and_platforms.sql` — `deal_deliverables`: a deal becomes a
+   list of typed line items (reel, story, carousel, ad rights, auto DM) rather
+   than one text field. Also removes `podcast` as a platform.
+8. `008_invoice_line_items.sql` — `invoice_line_items`, so one invoice can
+   cover several deals. Makes `invoices.deal_id` nullable.
+9. `009_workspaces_expand.sql` — adds `workspaces` + `memberships` and a
+   nullable `workspace_id` on every business table, then backfills. Changes no
+   behaviour on its own.
+10. `010_workspaces_enforce.sql` — makes `workspace_id` NOT NULL, replaces every
+    `creator_id` RLS policy with a workspace-membership one, and forces RLS.
+    **Deploy the app before running this**: it makes `workspace_id` mandatory,
+    so an older client fails on every insert.
+11. `011_workspaces_contract.sql` — drops `creator_id`. One-way: after this,
+    010's down script has nothing to fall back on. Run once you trust 010.
+12. `012_audit_log.sql` — `audit_logs` plus triggers recording every change to
+    a money or status field, including changes made outside the app.
+13. `013_social_accounts.sql` — connected Instagram/YouTube accounts and the
+    daily reach time series. OAuth tokens are protected by column-level grants,
+    so the client cannot read them.
+14. `014_outbound_messages.sql` — the outbound message log. Approval before
+    sending is enforced by a check constraint, not by application code.
+15. `015_reminder_chains.sql` — durable reminder chains. A partial unique index
+    enforces one live reminder per chain.
 
 Paste each file's contents and click **Run** before moving to the next one.
+Every migration from 005 onward is guarded and safe to re-run.
+
+## Conventions
+
+**Money is a whole number of rupees.** Every money value — `rate`, `amount`,
+`total_amount`, `gst_amount`, `tds_amount`, `ad_rights_fee` — is an `integer`
+count of rupees. Never a float, and deliberately not paise: integers already
+rule out the floating-point errors that rule exists to prevent, and GST is
+rounded to the nearest rupee by law (CGST Act s.170), so sub-rupee digits would
+be computed and then legally discarded. Revisit at the first non-INR currency,
+which is a currency migration rather than a change of scale. Full reasoning is
+at the top of `types/index.ts`.
+
+**The tenant is a workspace, not a user.** Every business table carries
+`workspace_id`, and isolation is enforced by forced RLS keyed off workspace
+membership. Writes go through `getWorkspaceId()` in `lib/workspace.ts`; reads
+need no filter because the policies apply one.
+
+**Guarantees live in the database, not in code.** One live reminder per chain,
+approval before a message is sent, and tenant isolation are a unique index, a
+check constraint, and RLS respectively — so a bug, a retry, or a hand-run SQL
+statement cannot bypass them.
 
 **Recommended for development:** in Supabase → **Authentication** → **Email**,
 toggle off **"Confirm email"**. This lets you sign up and sign in immediately

@@ -1,6 +1,7 @@
-import { View, Text, StyleSheet, useColorScheme } from 'react-native'
+import { View, Text, StyleSheet } from 'react-native'
 import type { DealStatus } from '@/types'
-import { Colors, Typography, FontFamily, Spacing, Radius } from '@/constants/design'
+import { Typography, FontFamily, Spacing, Radius } from '@/constants/design'
+import { useTheme } from '@/hooks/useTheme'
 import { STATUS_LABELS } from '@/constants/labels'
 
 // Per DESIGN.md: color is a second signal on top of the label, never the
@@ -28,8 +29,7 @@ function getVariant(status: DealStatus): PillVariant {
 }
 
 export function StatusPill({ status }: { status: DealStatus }) {
-  const scheme = useColorScheme()
-  const c = scheme === 'dark' ? Colors.dark : Colors.light
+  const { c } = useTheme()
   const variant = getVariant(status)
   const label = STATUS_LABELS[status]
 

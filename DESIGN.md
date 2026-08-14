@@ -1,153 +1,162 @@
 # CreatorDesk — Design System
 
-This file is the single source of truth for how CreatorDesk looks and feels.
-Every screen, component, and future feature should pull from these tokens
-instead of improvising new colors, spacing, or type choices.
+Single source of truth for how CreatorDesk looks and feels. Tokens live in
+`constants/design.ts` and `constants/motion.ts` — reference them by name, never
+hardcode a value in a screen.
 
-Inspiration: Apple's native app confidence — generous whitespace, content
-does the talking, restraint everywhere except one deliberate accent — paired
-with a warm, editorial creator-economy voice (a single amber accent, a
-display serif-adjacent headline font) instead of Apple's cool blue-on-white.
-Status is still communicated primarily through label and weight; color is
-layered on top as a second signal, not the only one.
+**This document was rewritten in August 2026.** The previous version described a
+flat, monochrome-leaning system: one surface colour, no depth, no charts, "flat
+rows not boxed cards". It was followed faithfully, and the result was a wall of
+uniform beige with no hierarchy — every element equally important, so nothing
+was. The rules below replace it.
+
+What changed, and why: this is a **dashboard**, not a reading surface. A creator
+opens it to find one number (what am I owed?) and one list (what needs me
+today?). A design language with no contrast cannot answer "look here first",
+which is the only job the first screenful has.
 
 ---
 
-## 1. Color
+## 1. Two themes, both first class
 
-One accent (amber), a warm neutral scale, and four status colors used
-consistently everywhere a state needs to read at a glance. Tokens live in
-`constants/design.ts` — always reference them by name, never hardcode a hex
-value in a screen.
+Day and night are equals, switchable by a toggle (`ThemeToggle`), persisted
+across launches, defaulting to the OS. Neither is an afterthought — screenshot
+both before calling a screen done.
+
+Themes are read through `useTheme()`. Never call `useColorScheme()` in a screen:
+it ignores the user's explicit choice.
 
 | Token | Light | Dark | Use |
 |---|---|---|---|
 | `bgPage` | `#FDFBF9` | `#141210` | App background |
-| `bgSurface` | `#F6F2EC` | `#221F1B` | Cards, rows, sidebar |
-| `bgSurfaceRaised` | `#FFFFFF` | `#2C2822` | Modals, sheets |
-| `border` | `rgba(20,18,16,.08)` | `rgba(255,255,255,.07)` | Hairline dividers |
-| `borderStrong` | `rgba(20,18,16,.16)` | `rgba(255,255,255,.16)` | Input borders, emphasis |
-| `textPrimary` | `#1C1815` | `#F5F0E8` | Headlines, primary content |
-| `textSecondary` | `#6B6259` | `#A89F94` | Supporting text, labels |
-| `textMuted` | `#9A9186` | `#6B6259` | Placeholders, timestamps |
-| `accent` / `fillPrimary` | `#F5A623` | `#F5A623` | Primary button fill, active states, the one brand color |
-| `onFillPrimary` | `#FFFFFF` | `#FFFFFF` | Text/icon on accent fill |
-| `accentLight` | 12% accent | 14% accent | Tinted backgrounds behind accent content |
-| `accentHover` | `#E0951A` | `#FFC55A` | Pressed/hover state (darker on light, lighter on dark) |
+| `bgSurface` | `#F6F2EC` | `#221F1B` | Cards, rows |
+| `bgSurfaceRaised` | `#FFFFFF` | `#2C2822` | Sheets, floating cards |
+| `bgContrast` | `#1C1815` | `#F5F0E8` | **The one card that inverts** |
+| `onContrast` | `#F5F0E8` | `#1C1815` | Text on that card |
+| `border` | 8% ink | 7% white | Hairlines |
+| `borderStrong` | 16% ink | 16% white | Input borders |
+| `textPrimary` | `#1C1815` | `#F5F0E8` | Headlines, figures |
+| `textSecondary` | `#6B6259` | `#A89F94` | Supporting copy |
+| `textMuted` | `#9A9186` | `#6B6259` | Meta, placeholders |
+| `accent` | `#F5A623` | `#F5A623` | The one brand colour |
 
-**Status colors** — one hue per state, same hue in both modes, tuned per
-mode for contrast (dark mode uses bright pastel text on a translucent tint;
-light mode uses a deep, saturated text on a pale tint):
-
-| State | Token | Light text | Dark text | Meaning |
-|---|---|---|---|---|
-| Success | `success` / `successLight` | `#1A7A35` | `#4ADE80` | Paid, completed, on track |
-| Warning | `warning` / `warningLight` | `#8B5000` | `#FBBF24` | Due soon, in progress, needs attention |
-| Danger | `danger` / `dangerLight` | `#C0392B` | `#F87171` | Overdue, urgent |
-| Info | `info` / `infoLight` | `#0051A8` | `#60A5FA` | Awaiting an external party (payment awaited, sent) |
-
-A status pill is never color alone — it always carries a label too, so the
-product stays usable for colorblind users even though color is now a first-
-class signal (not just weight, as in the original monochrome-only version of
-this system).
-
-**Avatars** (brand initials, creator avatar) cycle through a fixed 8-color
-flat palette (`AvatarPalette` in `constants/design.ts`), hashed from the
-name so the same brand always gets the same color. Flat fills only — no
-gradients (keeps rendering identical across iOS/Android/web without an extra
-dependency).
+Status colours (`success` / `warning` / `danger` / `info`) each have a text and
+a `*Light` tint, tuned per theme: deep and saturated on light, bright pastel on
+dark.
 
 ---
 
-## 2. Typography
+## 2. Contrast is the hierarchy
 
-**Body: Inter** (variable font, already integrated via `@expo-google-fonts`).
-**Display: Syne** — screen titles, the dashboard greeting, large currency
-figures. Used sparingly: one or two elements per screen, never body copy.
+**Exactly one `bgContrast` card per screen.** It carries the single most
+important figure — money owed on Home, locked-this-month on Money. On the light
+theme it is near-black; on the dark theme it is cream. Same role, inverted
+value.
 
-Fallback stacks: `Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif` / `Syne, Georgia, serif`
+Two contrast cards competing means neither wins. If a screen seems to need two,
+the screen has no primary answer and the content needs rethinking, not another
+card.
 
-| Style | Size | Weight | Family | Use |
-|---|---|---|---|---|
-| Display | 28px | 600 | Syne | Dashboard greeting, empty states, hero numbers |
-| Title | 20px | 600 | Syne | Screen titles |
-| Heading | 16px | 600 | Inter | Card titles, section headers, row primary text |
-| Body | 15px | 400 | Inter | Default content |
-| Body strong | 15px | 500 | Inter | Emphasized inline content |
-| Caption | 13px | 400 | Inter | Secondary/meta text |
-| Label | 12px | 500 | Inter | Pills, tags |
-
-Rules: sentence case everywhere, no all-caps, no italics for emphasis — use
-weight or the display family instead.
+Everything else sits on `bgSurface`, separated by gaps rather than borders.
 
 ---
 
-## 3. Spacing & radius
+## 3. Typography
 
-8px base grid.
+**Syne** for display — figures, greetings, screen titles, card values.
+**Inter** for everything else — body, labels, inputs, meta.
 
-| Token | Value |
+| Style | Size | Weight | Family |
+|---|---|---|---|
+| Hero figure | 34–40 | 700 | Syne |
+| Display | 28 | 600 | Syne |
+| Title | 20 | 600 | Syne |
+| Heading | 16 | 600 | Inter |
+| Body | 15 | 400 | Inter |
+| Caption | 13 | 400 | Inter |
+| Label | 12 | 500 | Inter |
+
+Money is always Syne. It is the thing the creator came for, and it should
+read differently from the words around it.
+
+Sentence case throughout. No all-caps except the small uppercase eyebrow labels
+on stat tiles, where letterspacing carries the hierarchy instead of size.
+
+---
+
+## 4. Density
+
+The old system used phone-scale padding at every width, which on desktop
+produced 120px-tall rows carrying two lines of text.
+
+| | Mobile | Desktop |
+|---|---|---|
+| List row height | 64–72 | 56–64 |
+| Card padding | 16 | 20 |
+| Gap between cards | 10 | 12 |
+| Metric tiles per row | 2 | 4 |
+
+A desktop screenful should show roughly twice what a phone does. If it doesn't,
+the layout is a stretched phone.
+
+---
+
+## 5. Elevation and shape
+
+| Token | Use |
 |---|---|
-| `space-xs` | 4px |
-| `space-sm` | 8px |
-| `space-md` | 16px |
-| `space-lg` | 24px |
-| `space-xl` | 32px |
-| `radius-sm` | 8px (inputs, small controls) |
-| `radius-md` | 12px (cards, deal rows) |
-| `radius-lg` | 16px (modals, larger panels) |
-| `radius-xl` | 20px (auth panels, hero surfaces) |
-| `radius-full` | 999px (pills, primary buttons, avatars) |
+| `Radius.sm` 8 | Inputs, small controls |
+| `Radius.md` 12 | Rows, standard cards |
+| `Radius.lg` 16 | Sheets, hero cards |
+| `Radius.xl` 20 | Auth panels |
+| `Radius.full` | Pills, avatars, buttons |
+
+`Elevation.sm` for cards that lift off the page, `md` for sheets, `lg` for the
+one floating thing (toast, FAB). Warm-tinted, never pure black — black shadow
+over a warm palette reads grey.
+
+`accentGlow()` on the primary button only.
 
 ---
 
-## 4. Components
+## 6. Charts belong in cards
 
-**Primary button** — pill shape, `accent` background, white text, 44px
-height (touch target), icon + label when the action benefits from it (e.g.
-mic icon on "Add deal"). Never more than one visible on screen at a time.
+A dashboard without charts is a table. Every screen showing a trend over time
+should show it as a shape, not only as a number:
 
-**Secondary button** — pill shape, transparent fill, `borderStrong` outline,
-`textPrimary` text.
+- `Sparkline` — inline trend inside a stat tile or row
+- `BarChart` — monthly comparison
+- `ProgressRing` — a proportion against a benchmark
 
-**Deal row (flat, not boxed cards)** — `bgSurface` background, `radius-md`
-corners, no border, 14–16px vertical padding. Left: small rounded-square
-avatar with brand initials (flat color from `AvatarPalette`). Center: brand
-name + deliverable, deadline as secondary line. Right: status pill (colored
-per the state table above). Rows sit directly on the page background with
-8–10px gaps — no heavy card borders stacking on top of each other.
-
-**Metric card** — `bgSurface` background, `radius-md`, label in Caption
-style above a Display-weight number. Used in 2-3 column grids for dashboard
-summary rows.
-
-**Sidebar / bottom nav** — on mobile this becomes a bottom tab bar, not a
-sidebar. Icons only + label, 5 items max: Dashboard, Deals, Brands, Revenue,
-Settings. Active state = filled icon + `accent`; inactive = outline icon +
-`textMuted`.
-
-**Auth screens (wide viewport)** — split panel: a branded left panel
-(`bgSurfaceRaised`-on-dark editorial headline in Syne, accent-tinted glow)
-next to the form on the right, matching the confidence of a native app's
-onboarding rather than a bare centered form. Below the `wide` breakpoint,
-the branding panel collapses and only the form shows.
+Charts use the accent at full strength for the active/current value and
+`accentLight` for the rest. Never more than one hue in a single chart — this
+product has one brand colour and status colours; a rainbow palette belongs to a
+different product.
 
 ---
 
-## 5. Motion
+## 7. Motion
 
-Keep it minimal and functional. Standard transitions: 200ms ease-out for
-sheets/modals, 150ms for taps/presses (scale to 0.97 on press, no shadow
-pulses beyond a soft accent glow on primary buttons/hero elements).
+Tokens in `constants/motion.ts`. Timings for things appearing, springs for
+things a finger is manipulating.
+
+- 200ms ease-out for sheets and entrances
+- 150ms for tap feedback, scale to 0.97
+- Staggered list entrance, capped at 8 items
+- Exactly one looping animation in the app: the current node on `StageTimeline`.
+  Anything else that loops competes with the thing actually asking for action.
 
 ---
 
-## 6. What NOT to do
+## 8. What not to do
 
-- No more than one accent hue as a "brand" color — amber is it; don't add a
-  second one later without a deliberate decision
-- No gradients on avatars or fills — flat color only
-- No more than one primary (filled) button visible on screen at a time
-- No dense data tables on mobile — use rows/cards; tables are fine on wide/
-  web layouts where there's room
-- Status color is always paired with a label — never color as the only signal
+- **No second accent hue.** Amber is it. Status colours are not accents.
+- **No more than one contrast card per screen.**
+- **No more than one filled primary button visible at once.**
+- **Never `useColorScheme()` in a screen** — it ignores the theme toggle.
+- **No flat wall of one surface colour.** If a screen is entirely `bgSurface`,
+  it has no hierarchy.
+- **No dense tables on mobile.** Tables are a desktop affordance; phones get
+  rows.
+- **Status colour is never the only signal** — always paired with a label, so
+  the product stays usable for colourblind users.

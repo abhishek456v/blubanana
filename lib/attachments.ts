@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { getWorkspaceId } from './workspace'
 
 // Deal attachments (contracts/briefs — PRODUCT.md 1) live in Supabase
 // Storage, not a DB table — Storage already tracks the file list, so a
@@ -14,8 +15,18 @@ export interface DealAttachment {
   createdAt: string | null
 }
 
-function folderPath(creatorId: string, dealId: string): string {
-  return `${creatorId}/${dealId}`
+// Keyed on the workspace, matching the storage policy since migration 010,
+// which compares the first path segment against the caller's active
+// memberships.
+//
+// This used to key on `user.id`. That kept working only by coincidence:
+// migration 009 seeded each workspace with the creator's own uuid, so the two
+// are the same value for a solo workspace. The moment a second member joined,
+// their uploads would land under their own user id, match no workspace, and be
+// denied by the policy.
+async function folderPath(dealId: string): Promise<string> {
+  const workspaceId = await getWorkspaceId()
+  return `${workspaceId}/${dealId}`
 }
 
 // Storage objects are named {timestamp}-{sanitized original name} to avoid
@@ -31,20 +42,17 @@ function displayName(objectName: string): string {
 }
 
 export async function listAttachments(dealId: string): Promise<DealAttachment[]> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) throw new Error('Not authenticated')
+  const folder = await folderPath(dealId)
 
   const { data, error } = await supabase.storage
     .from(BUCKET)
-    .list(folderPath(user.id, dealId), { sortBy: { column: 'created_at', order: 'desc' } })
+    .list(folder, { sortBy: { column: 'created_at', order: 'desc' } })
   if (error) throw error
 
   return (data ?? [])
     .filter((f) => f.id !== null) // excludes the placeholder Storage lists for empty folders
     .map((f) => ({
-      path: `${folderPath(user.id, dealId)}/${f.name}`,
+      path: `${folder}/${f.name}`,
       name: displayName(f.name),
       createdAt: f.created_at ?? null,
     }))
@@ -57,15 +65,12 @@ export async function uploadAttachment(
   dealId: string,
   file: { uri: string; name: string; mimeType?: string | null }
 ): Promise<void> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) throw new Error('Not authenticated')
+  const folder = await folderPath(dealId)
 
   const response = await fetch(file.uri)
   const blob = await response.blob()
 
-  const path = `${folderPath(user.id, dealId)}/${buildObjectName(file.name)}`
+  const path = `${folder}/${buildObjectName(file.name)}`
   const { error } = await supabase.storage
     .from(BUCKET)
     .upload(path, blob, { contentType: file.mimeType ?? undefined })

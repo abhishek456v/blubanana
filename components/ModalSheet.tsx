@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react'
-import { View, Text, TouchableOpacity, Pressable, StyleSheet, useColorScheme } from 'react-native'
+import { View, Text, TouchableOpacity, Pressable, StyleSheet } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useIsFocused } from '@react-navigation/core'
 import { Ionicons } from '@expo/vector-icons'
-import { Colors, Spacing, Radius, Typography, FontFamily } from '@/constants/design'
+import { Spacing, Radius, Typography, FontFamily } from '@/constants/design'
+import { useTheme } from '@/hooks/useTheme'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 
 interface ModalSheetProps {
@@ -23,8 +24,7 @@ interface ModalSheetProps {
 export function ModalSheet({ title, headerRight, children }: ModalSheetProps) {
   const isWide = useIsWideScreen()
   const router = useRouter()
-  const scheme = useColorScheme()
-  const c = scheme === 'dark' ? Colors.dark : Colors.light
+  const { c } = useTheme()
   // The Stack keeps this screen mounted after router.back() navigates away
   // from it (for back-gesture support), so the backdrop must not render
   // once unfocused — an absolute, full-viewport Pressable left behind would

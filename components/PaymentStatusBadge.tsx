@@ -1,6 +1,7 @@
-import { View, Text, StyleSheet, useColorScheme } from 'react-native'
+import { View, Text, StyleSheet } from 'react-native'
 import type { PaymentStatus } from '@/types'
-import { Colors, Typography, FontFamily, Spacing, Radius } from '@/constants/design'
+import { Typography, FontFamily, Spacing, Radius } from '@/constants/design'
+import { useTheme } from '@/hooks/useTheme'
 import { PAYMENT_STATUS_LABELS } from '@/constants/labels'
 
 // Mirrors StatusPill's variant pattern but kept separate since it's typed to
@@ -25,8 +26,7 @@ function getVariant(status: PaymentStatus): PillVariant {
 }
 
 export function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
-  const scheme = useColorScheme()
-  const c = scheme === 'dark' ? Colors.dark : Colors.light
+  const { c } = useTheme()
   const variant = getVariant(status)
   const label = PAYMENT_STATUS_LABELS[status]
 

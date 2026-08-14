@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { getWorkspaceId } from './workspace'
 import type { BrandRating } from '@/types'
 
 // Client reputation score (Phase 2). One review per deal, prompted once a
@@ -25,7 +26,7 @@ export async function submitRating(input: SubmitRatingInput): Promise<BrandRatin
 
   const { data, error } = await supabase
     .from('brand_ratings')
-    .insert({ creator_id: user.id, ...input })
+    .insert({ workspace_id: await getWorkspaceId(), ...input })
     .select()
     .single()
   if (error) throw error

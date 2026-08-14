@@ -20,6 +20,18 @@ function formatDate(dateStr: string): string {
   })
 }
 
+/**
+ * The payment chaser, escalating from friendly to firm.
+ *
+ * `escalationLevel` counts how many chasers have already gone out, not how
+ * overdue the payment is — a creator who only started chasing today should not
+ * open in the tone of a fourth follow-up.
+ *
+ * Every level stays professional. These go to a brand the creator may want to
+ * work with again, and a message she would be embarrassed to have sent is one
+ * she will stop sending — which costs her far more than a firm tone would.
+ * The escalation is in the directness and in what is asked for, not in warmth.
+ */
 export function buildPaymentReminderMessage(params: {
   brandName: string
   contactPerson: string | null
@@ -27,15 +39,51 @@ export function buildPaymentReminderMessage(params: {
   amount: number
   dueDate: string
   tone: PaymentReminderTone
+  escalationLevel?: number
+  liveLink?: string | null
+  invoiceNumber?: string | null
 }): string {
-  const { brandName, contactPerson, deliverable, amount, dueDate, tone } = params
-  const greetingName = contactPerson?.trim() || brandName
+  const {
+    brandName,
+    contactPerson,
+    deliverable,
+    amount,
+    dueDate,
+    tone,
+    escalationLevel = 0,
+    liveLink,
+    invoiceNumber,
+  } = params
+
+  const name = contactPerson?.trim() || brandName
+  const money = formatINR(amount)
+  const due = formatDate(dueDate)
+
+  // Included automatically so she never has to scroll back through six weeks
+  // of chat to find the link or the invoice number — the specific friction
+  // that stops creators chasing at all.
+  const reference = [
+    invoiceNumber ? `Invoice ${invoiceNumber}` : null,
+    liveLink ? `Link: ${liveLink}` : null,
+  ]
+    .filter(Boolean)
+    .join('\n')
+  const tail = reference ? `\n\n${reference}` : ''
 
   if (tone === 'due_soon') {
-    return `Hi ${greetingName}, quick reminder — ${formatINR(amount)} for ${deliverable} is due on ${formatDate(dueDate)}. Let me know if you need anything from my end!`
+    return `Hi ${name}, quick heads-up — ${money} for ${deliverable} is due on ${due}. Anything you need from my end to get it processed?${tail}`
   }
 
-  return `Hi ${greetingName}, following up — ${formatINR(amount)} for ${deliverable} was due on ${formatDate(dueDate)} and I haven't received it yet. Could you share an update?`
+  switch (Math.min(escalationLevel, 3)) {
+    case 0:
+      return `Hi ${name}, following up — ${money} for ${deliverable} was due on ${due} and I haven't received it yet. Could you share an update?${tail}`
+    case 1:
+      return `Hi ${name}, checking in again on ${money} for ${deliverable}, due ${due}. Could you let me know where this is in your payment run?${tail}`
+    case 2:
+      return `Hi ${name}, ${money} for ${deliverable} is now well past its ${due} due date. Could you confirm a payment date, or put me in touch with your finance team?${tail}`
+    default:
+      return `Hi ${name}, I still haven't received ${money} for ${deliverable}, due ${due}. I'd like to get this settled this week — could you confirm when it will be paid?${tail}`
+  }
 }
 
 // Sent once, when the deal moves published → payment_awaited (PRODUCT.md 2.5).

@@ -1,24 +1,30 @@
-import { useState, useEffect, useCallback } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, useColorScheme, ActivityIndicator } from 'react-native'
-import { showAlert } from '@/lib/alert'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { getDeals, type DealWithPaymentSummary } from '@/lib/deals'
 import { getInvoices } from '@/lib/invoices'
 import { getAllRatings } from '@/lib/reputation'
 import { computeAnnualReport, currentFinancialYearStart } from '@/lib/annualReport'
-import type { Invoice, BrandRating } from '@/types'
-import { Colors, Spacing, Radius, Typography, FontFamily, ContentMaxWidth } from '@/constants/design'
+import { formatCurrency } from '@/lib/format'
+import type { BrandRating, Invoice } from '@/types'
+import { ContentMaxWidth, FontFamily, HitSlop, Radius, Spacing, Typography } from '@/constants/design'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
+import { useTheme } from '@/hooks/useTheme'
 import { ModalSheet } from '@/components/ModalSheet'
-
-function formatINR(amount: number): string {
-  return `₹${amount.toLocaleString('en-IN')}`
-}
+import {
+  AnimatedNumber,
+  Card,
+  EmptyState,
+  MetricCard,
+  PressableScale,
+  Skeleton,
+  useToast,
+} from '@/components/ui'
 
 export default function AnnualReportScreen() {
-  const scheme = useColorScheme()
-  const c = scheme === 'dark' ? Colors.dark : Colors.light
+  const toast = useToast()
+  const { c } = useTheme()
   const isWide = useIsWideScreen()
 
   const [deals, setDeals] = useState<DealWithPaymentSummary[]>([])
@@ -34,107 +40,157 @@ export default function AnnualReportScreen() {
     try {
       setDeals(await getDeals())
     } catch {
-      showAlert('Error', 'Could not load deals.')
+      toast('Could not load deals', { tone: 'error' })
     }
     try {
       setInvoices(await getInvoices())
     } catch {
-      // Non-fatal: tax summary just shows zero until this succeeds.
+      // Non-fatal: the tax block shows zero until this succeeds.
     }
     try {
       setRatings(await getAllRatings())
     } catch {
-      // Non-fatal: lowest-rated client just doesn't show until this succeeds.
+      // Non-fatal: the toughest-client line just doesn't show.
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [toast])
 
   useEffect(() => {
     load()
   }, [load])
 
-  if (loading) {
-    return (
-      <ModalSheet title="Annual report">
-        <SafeAreaView style={[styles.centered, { backgroundColor: c.bgPage }]} edges={['bottom']}>
-          <ActivityIndicator color={c.textMuted} />
-        </SafeAreaView>
-      </ModalSheet>
-    )
-  }
+  const report = useMemo(
+    () => computeAnnualReport(deals, invoices, ratings, fyStartYear),
+    [deals, invoices, ratings, fyStartYear]
+  )
 
-  const report = computeAnnualReport(deals, invoices, ratings, fyStartYear)
+  const atCurrentYear = fyStartYear >= currentFinancialYearStart()
+  const isEmpty = report.totalRevenue === 0 && report.dealsClosed === 0
 
   return (
-    <ModalSheet title="Annual report">
+    <ModalSheet title="Year in review">
       <SafeAreaView style={[styles.safe, { backgroundColor: c.bgPage }]} edges={['bottom']}>
         <ScrollView
           contentContainerStyle={[styles.content, isWide && styles.contentWide]}
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.yearRow}>
-            <TouchableOpacity onPress={() => setFyStartYear((y) => y - 1)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Ionicons name="chevron-back" size={20} color={c.textSecondary} />
-            </TouchableOpacity>
-            <Text style={[styles.yearLabel, { color: c.textPrimary }]}>{report.fyLabel}</Text>
-            <TouchableOpacity
-              onPress={() => setFyStartYear((y) => Math.min(currentFinancialYearStart(), y + 1))}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            <PressableScale
+              onPress={() => setFyStartYear((y) => y - 1)}
+              hitSlop={HitSlop}
+              haptic="selection"
+              accessibilityLabel="Previous financial year"
             >
-              <Ionicons name="chevron-forward" size={20} color={c.textSecondary} />
-            </TouchableOpacity>
+              <Ionicons name="chevron-back" size={20} color={c.textSecondary} />
+            </PressableScale>
+
+            <Text style={[styles.yearLabel, { color: c.textPrimary }]}>{report.fyLabel}</Text>
+
+            <PressableScale
+              onPress={() => setFyStartYear((y) => Math.min(currentFinancialYearStart(), y + 1))}
+              hitSlop={HitSlop}
+              haptic="selection"
+              disabled={atCurrentYear}
+              accessibilityLabel="Next financial year"
+            >
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={atCurrentYear ? c.textMuted : c.textSecondary}
+              />
+            </PressableScale>
           </View>
 
-          <View style={[styles.heroCard, { backgroundColor: c.accentLight }]}>
-            <Text style={[styles.heroLabel, { color: c.textSecondary }]}>Total revenue</Text>
-            <Text style={[styles.heroValue, { color: c.accent }]}>{formatINR(report.totalRevenue)}</Text>
-          </View>
-
-          <View style={styles.statsRow}>
-            <View style={[styles.statCard, { backgroundColor: c.bgSurface }]}>
-              <Text style={[styles.statLabel, { color: c.textMuted }]}>Deals closed</Text>
-              <Text style={[styles.statValue, { color: c.textPrimary }]}>{report.dealsClosed}</Text>
+          {loading ? (
+            <View style={styles.section}>
+              <Skeleton height={132} radius={Radius.md} />
+              <Skeleton height={92} radius={Radius.md} />
+              <Skeleton height={92} radius={Radius.md} />
             </View>
-            <View style={[styles.statCard, { backgroundColor: c.bgSurface }]}>
-              <Text style={[styles.statLabel, { color: c.textMuted }]}>Payments resolved</Text>
-              <Text style={[styles.statValue, { color: c.textPrimary }]}>{report.paymentsResolved}</Text>
-            </View>
-          </View>
+          ) : isEmpty ? (
+            <EmptyState
+              icon="calendar-outline"
+              title="Nothing this year"
+              message="Once payments land inside this financial year, your full summary — income, TDS and GST — shows up here."
+            />
+          ) : (
+            <View style={styles.section}>
+              <Card style={[styles.hero, { backgroundColor: c.accentLight }]}>
+                <Text style={[styles.heroLabel, { color: c.textSecondary }]}>You earned</Text>
+                <AnimatedNumber
+                  value={report.totalRevenue}
+                  format={formatCurrency}
+                  style={[styles.heroValue, { color: c.accent }]}
+                  numberOfLines={1}
+                />
+                <Text style={[styles.heroCaption, { color: c.textSecondary }]}>
+                  across {report.dealsClosed} closed{' '}
+                  {report.dealsClosed === 1 ? 'deal' : 'deals'} in {report.fyLabel}
+                </Text>
+              </Card>
 
-          {report.bestClient ? (
-            <View style={[styles.rowCard, { backgroundColor: c.bgSurface }]}>
-              <Text style={[styles.rowLabel, { color: c.textSecondary }]}>Best client</Text>
-              <Text style={[styles.rowValue, { color: c.textPrimary }]}>
-                {report.bestClient.name} · {formatINR(report.bestClient.total)}
+              <View style={styles.metrics}>
+                <MetricCard
+                  label="GST collected"
+                  value={report.gstCollected}
+                  format={formatCurrency}
+                  index={0}
+                />
+                <MetricCard
+                  label="TDS deducted"
+                  value={report.tdsDeducted}
+                  format={formatCurrency}
+                  caption="claim against 26AS"
+                  index={1}
+                />
+              </View>
+
+              <View style={styles.metrics}>
+                <MetricCard
+                  label="Payments settled"
+                  value={report.paymentsResolved}
+                  index={2}
+                />
+                <MetricCard
+                  label="Deals closed"
+                  value={report.dealsClosed}
+                  index={3}
+                />
+              </View>
+
+              {report.bestClient ? (
+                <Card>
+                  <Text style={[styles.cardLabel, { color: c.textSecondary }]}>Best client</Text>
+                  <Text style={[styles.cardValue, { color: c.textPrimary }]}>
+                    {report.bestClient.name}
+                  </Text>
+                  <Text style={[styles.cardHint, { color: c.textMuted }]}>
+                    {formatCurrency(report.bestClient.total)} paid to you this year
+                  </Text>
+                </Card>
+              ) : null}
+
+              {report.worstClient ? (
+                <Card>
+                  <Text style={[styles.cardLabel, { color: c.textSecondary }]}>
+                    Toughest to work with
+                  </Text>
+                  <Text style={[styles.cardValue, { color: c.textPrimary }]}>
+                    {report.worstClient.name}
+                  </Text>
+                  <Text style={[styles.cardHint, { color: c.textMuted }]}>
+                    You rated them {report.worstClient.averageRating.toFixed(1)} out of 5
+                  </Text>
+                </Card>
+              ) : null}
+
+              <Text style={[styles.footnote, { color: c.textMuted }]}>
+                Indian financial year, April to March. Figures come from payments marked received
+                and invoices raised inside {report.fyLabel}.
               </Text>
             </View>
-          ) : null}
-
-          {report.worstClient ? (
-            <View style={[styles.rowCard, { backgroundColor: c.bgSurface }]}>
-              <Text style={[styles.rowLabel, { color: c.textSecondary }]}>Lowest-rated client</Text>
-              <Text style={[styles.rowValue, { color: c.textPrimary }]}>
-                {report.worstClient.name} · {report.worstClient.averageRating.toFixed(1)}/5
-              </Text>
-            </View>
-          ) : null}
-
-          <Text style={[styles.sectionTitle, { color: c.textPrimary }]}>Tax summary</Text>
-          <View style={[styles.rowCard, { backgroundColor: c.bgSurface }]}>
-            <Text style={[styles.rowLabel, { color: c.textSecondary }]}>GST collected</Text>
-            <Text style={[styles.rowValue, { color: c.textPrimary }]}>{formatINR(report.gstCollected)}</Text>
-          </View>
-          <View style={[styles.rowCard, { backgroundColor: c.bgSurface }]}>
-            <Text style={[styles.rowLabel, { color: c.textSecondary }]}>TDS deducted</Text>
-            <Text style={[styles.rowValue, { color: c.textPrimary }]}>{formatINR(report.tdsDeducted)}</Text>
-          </View>
-
-          {deals.length === 0 ? (
-            <Text style={[styles.emptyNote, { color: c.textMuted }]}>
-              No deal data yet — this fills in as you log and complete deals.
-            </Text>
-          ) : null}
+          )}
         </ScrollView>
       </SafeAreaView>
     </ModalSheet>
@@ -142,77 +198,71 @@ export default function AnnualReportScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  content: { padding: Spacing.md, paddingBottom: Spacing.xl, gap: Spacing.sm },
-  contentWide: { maxWidth: ContentMaxWidth, width: '100%', alignSelf: 'center' },
+  safe: {
+    flex: 1,
+  },
+  content: {
+    padding: Spacing.md,
+    paddingBottom: Spacing.xl,
+  },
+  contentWide: {
+    maxWidth: ContentMaxWidth,
+    width: '100%',
+    alignSelf: 'center',
+  },
+  section: {
+    gap: Spacing.sm,
+  },
   yearRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.md,
+    justifyContent: 'space-between',
+    paddingVertical: Spacing.sm,
     marginBottom: Spacing.sm,
   },
   yearLabel: {
+    ...Typography.title,
     fontFamily: FontFamily.display,
-    fontSize: 18,
   },
-  heroCard: {
-    borderRadius: Radius.lg,
+  hero: {
     padding: Spacing.lg,
-    alignItems: 'center',
+    gap: 2,
   },
   heroLabel: {
     ...Typography.caption,
     fontFamily: FontFamily.medium,
   },
   heroValue: {
-    fontFamily: FontFamily.display,
-    fontSize: 32,
-    marginTop: 4,
+    fontFamily: FontFamily.displayBold,
+    fontSize: 38,
+    lineHeight: 46,
   },
-  statsRow: {
+  heroCaption: {
+    ...Typography.caption,
+    fontFamily: FontFamily.regular,
+  },
+  metrics: {
     flexDirection: 'row',
     gap: Spacing.sm,
   },
-  statCard: {
-    flex: 1,
-    borderRadius: Radius.md,
-    padding: Spacing.md,
-  },
-  statLabel: {
+  cardLabel: {
     ...Typography.caption,
     fontFamily: FontFamily.medium,
   },
-  statValue: {
+  cardValue: {
+    ...Typography.title,
     fontFamily: FontFamily.display,
-    fontSize: 20,
     marginTop: 2,
   },
-  rowCard: {
-    borderRadius: Radius.md,
-    padding: Spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  rowLabel: {
-    ...Typography.body,
-    fontFamily: FontFamily.regular,
-  },
-  rowValue: {
-    ...Typography.bodyStrong,
-    fontFamily: FontFamily.semiBold,
-  },
-  sectionTitle: {
-    ...Typography.heading,
-    fontFamily: FontFamily.semiBold,
-    marginTop: Spacing.md,
-  },
-  emptyNote: {
+  cardHint: {
     ...Typography.caption,
     fontFamily: FontFamily.regular,
-    textAlign: 'center',
-    marginTop: Spacing.lg,
+    marginTop: 1,
+  },
+  footnote: {
+    ...Typography.caption,
+    fontFamily: FontFamily.regular,
+    lineHeight: 18,
+    marginTop: Spacing.sm,
   },
 })
