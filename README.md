@@ -153,6 +153,45 @@ npx expo start
 Scan the QR code with [Expo Go](https://expo.dev/go) (iOS or Android), or press
 `i` / `a` to open in a simulator.
 
+Web is a first-class target, not an afterthought — the desktop layout is a
+genuinely different code path (sidebar, two-column bodies, data tables), so
+`npx expo start --web` is worth running alongside the phone.
+
+---
+
+## Seeing what you actually built
+
+`tsc` and the bundler only prove the code compiles. They cannot tell you a
+screen rendered blank, a card is missing, or a contrast is unreadable.
+`scripts/drive.mjs` opens the running app in a real browser, signs in, drives
+it, and saves screenshots.
+
+```bash
+npx expo start --web --port 8081          # in another terminal
+node scripts/drive.mjs --email you@example.com --password '…' --all
+```
+
+| Flag | What it does |
+|---|---|
+| `--all` | Visits every tab (Work, Money, Brands, You) |
+| `--width` / `--height` | Viewport. Defaults to a phone; pass `--width 1440` for desktop |
+| `--dark` | Renders in the dark theme |
+| `--goto /reminders` | Opens an in-app route after sign-in. Repeatable |
+| `--deal` | Opens the first deal, for the detail screen |
+| `--search nyka` | Opens the search overlay and runs a query |
+| `--tap 'Next'` | Clicks a control and screenshots the result. Repeatable |
+| `--prefix v2-` | Prefixes filenames so runs don't overwrite each other |
+
+Screenshots land in `screenshots/` (gitignored — regenerate, don't commit).
+
+**Read the output, not just the exit code.** The driver collects console
+errors, failed requests, and every HTTP >= 400 *with its response body*. That
+last one matters: Playwright does not treat a 4xx as a failed request, so
+without it a broken query surfaces only as a bare
+`Failed to load resource: 400` with no URL. Two production bugs in migration
+010 — a recursive RLS policy that broke every insert in the app while reads
+kept working — were found this way and nowhere else.
+
 ---
 
 ## Folder structure
@@ -161,13 +200,21 @@ Scan the QR code with [Expo Go](https://expo.dev/go) (iOS or Android), or press
 app/                   expo-router screens
   (auth)/              sign-in and sign-up (no header, redirected if logged in)
   (app)/               protected screens (redirected here once logged in)
+components/
+  ui/                  the design system — every primitive, exported via one barrel
 constants/
   design.ts            design tokens from DESIGN.md — colors, spacing, type, radius
+  motion.ts            durations, easings and springs (DESIGN.md §7)
 hooks/
   useAuth.ts           reads Supabase session; used by root layout for auth guard
+  useTheme.tsx         ThemeProvider — persisted light/dark/system; never useColorScheme() in a screen
+  useBreakpoint.ts     the three width tiers and the layout decisions that follow
 lib/
   supabase.ts          Supabase client (singleton, uses AsyncStorage for session)
+  workspace.ts         cached getWorkspaceId() — on the write path for everything
   aiIntake.ts           client wrappers for the extract-deal / transcribe-audio edge functions
+scripts/
+  drive.mjs            opens the app in a browser and screenshots it (see above)
 supabase/
   migrations/          SQL files — run manually in Supabase SQL editor
   functions/
