@@ -160,6 +160,8 @@ export default function HomeScreen() {
         icon: 'add-circle' as const,
         label: 'New deal',
         caption: 'Scan, speak or type',
+        // The one thing a creator opens this app to do.
+        primary: true,
         onPress: () => router.push('/(app)/deal/new' as never),
       },
       {

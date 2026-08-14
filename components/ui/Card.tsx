@@ -83,7 +83,10 @@ export function CardSection({ title, subtitle, action, children, style }: CardSe
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: Radius.md,
+    // Radius tracks surface size: rows 12, tiles and cards 16, the hero 20.
+    // This was 12, which made a full-width content card *rounder-cornered*
+    // than nothing and squarer than the small tiles beside it.
+    borderRadius: Radius.lg,
   },
   padded: {
     padding: Spacing.md,

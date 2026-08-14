@@ -153,7 +153,8 @@ const styles = StyleSheet.create({
   },
   card: {
     flex: 1,
-    borderRadius: Radius.lg,
+    // The largest surface on any screen, so the largest radius.
+    borderRadius: Radius.xl,
     padding: Spacing.lg,
     gap: Spacing.md,
   },
