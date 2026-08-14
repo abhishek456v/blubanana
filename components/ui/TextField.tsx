@@ -123,7 +123,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
 
 const styles = StyleSheet.create({
   container: {
-    gap: 6,
+    gap: Spacing.sm,
   },
   label: {
     ...Typography.label,

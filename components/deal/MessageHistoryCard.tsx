@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
   hint: {
     ...Typography.caption,
     fontFamily: FontFamily.regular,
-    marginTop: 2,
+    marginTop: Spacing.xxs,
   },
   list: {
     gap: Spacing.sm,
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   rowHead: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: Spacing.sm,
   },
   rowTitle: {
     flex: 1,

@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
   card: {
     flex: 1,
     borderRadius: Radius.lg,
-    padding: Spacing.lg - 2,
+    padding: Spacing.lg,
     gap: Spacing.md,
   },
   topRow: {
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 5,
     paddingHorizontal: 11,
-    paddingVertical: 6,
+    paddingVertical: Spacing.sm,
     borderRadius: Radius.full,
   },
   ghostText: {

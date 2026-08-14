@@ -460,7 +460,7 @@ const styles = StyleSheet.create({
   cardHint: {
     ...Typography.caption,
     fontFamily: FontFamily.regular,
-    marginTop: 2,
+    marginTop: Spacing.xxs,
     lineHeight: 18,
   },
   candidates: { gap: Spacing.sm, marginTop: Spacing.md },
@@ -492,7 +492,7 @@ const styles = StyleSheet.create({
   switchRowSpaced: { marginTop: Spacing.lg },
   switchText: { flex: 1 },
   tdsField: { marginTop: Spacing.md },
-  preview: { gap: 2 },
+  preview: { gap: Spacing.xxs },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

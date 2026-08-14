@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
   },
   headerText: {
     flex: 1,
-    gap: 2,
+    gap: Spacing.xxs,
   },
   title: {
     ...Typography.heading,

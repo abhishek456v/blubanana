@@ -81,13 +81,13 @@ const styles = StyleSheet.create({
   // Padding on the cell rather than a gap on the grid: a percentage basis plus
   // a flex gap overflows the row, since the gap is added outside the basis.
   cell: {
-    padding: 5,
+    padding: Spacing.xs + 2,
   },
   tile: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    padding: 13,
+    gap: Spacing.base,
+    padding: Spacing.base,
     borderRadius: Radius.md,
   },
   iconBox: {

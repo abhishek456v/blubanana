@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
   tile: {
     flex: 1,
     borderRadius: Radius.lg,
-    padding: Spacing.md + 2,
+    padding: Spacing.md,
     gap: 3,
   },
   label: {
@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
   trend: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: Spacing.xxs,
   },
   trendText: {
     ...Typography.label,

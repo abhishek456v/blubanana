@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
   hint: {
     ...Typography.caption,
     fontFamily: FontFamily.regular,
-    marginTop: 2,
+    marginTop: Spacing.xxs,
     lineHeight: 18,
   },
   notice: {

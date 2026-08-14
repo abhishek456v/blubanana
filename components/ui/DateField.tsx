@@ -248,7 +248,7 @@ export function DateField({
 
 const styles = StyleSheet.create({
   container: {
-    gap: 6,
+    gap: Spacing.sm,
   },
   label: {
     ...Typography.label,

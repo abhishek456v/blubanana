@@ -6,7 +6,7 @@ import Animated, {
   withDelay,
   withTiming,
 } from 'react-native-reanimated'
-import { FontFamily, Radius, Typography } from '@/constants/design'
+import { FontFamily, Radius, Spacing, Typography } from '@/constants/design'
 import { Duration, Ease } from '@/constants/motion'
 import { useTheme } from '@/hooks/useTheme'
 
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
   },
   center: {
     alignItems: 'center',
-    paddingHorizontal: 6,
+    paddingHorizontal: Spacing.sm,
   },
   centerLabel: {
     ...Typography.heading,
@@ -231,16 +231,16 @@ const styles = StyleSheet.create({
   withLegend: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 18,
+    gap: Spacing.md,
   },
   legend: {
     flex: 1,
-    gap: 8,
+    gap: Spacing.sm,
   },
   legendRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: Spacing.sm,
   },
   swatch: {
     width: 8,

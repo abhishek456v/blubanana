@@ -510,7 +510,7 @@ const styles = StyleSheet.create({
   // because a 40px figure needs the room, and the chart gets more of row B
   // than the list because six bars compress badly.
   stack: {
-    gap: 10,
+    gap: Spacing.base,
   },
   rowA: {
     flexDirection: 'row',
@@ -544,18 +544,18 @@ const styles = StyleSheet.create({
   tileRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: Spacing.base,
   },
   blockCard: {
     flex: 1,
-    padding: Spacing.md + 2,
+    padding: Spacing.md,
     gap: Spacing.md,
   },
   // Unlike the chart card this one must *not* flex to fill its column — the
   // quick actions sit under it, and a stretched attention card would push
   // them off the fold.
   needsCard: {
-    padding: Spacing.md + 2,
+    padding: Spacing.md,
     gap: Spacing.md,
   },
   cardHead: {
@@ -566,7 +566,7 @@ const styles = StyleSheet.create({
   },
   cardHeadText: {
     flex: 1,
-    gap: 2,
+    gap: Spacing.xxs,
   },
   cardTitle: {
     ...Typography.heading,
@@ -597,7 +597,7 @@ const styles = StyleSheet.create({
 
   section: {
     marginBottom: Spacing.md,
-    gap: 10,
+    gap: Spacing.base,
   },
   sectionTitleRow: {
     flexDirection: 'row',
@@ -612,7 +612,7 @@ const styles = StyleSheet.create({
   countBadge: {
     minWidth: 22,
     height: 22,
-    paddingHorizontal: 6,
+    paddingHorizontal: Spacing.sm,
     borderRadius: Radius.full,
     alignItems: 'center',
     justifyContent: 'center',
@@ -623,7 +623,7 @@ const styles = StyleSheet.create({
   },
   filterRow: {
     gap: Spacing.sm,
-    paddingBottom: 2,
+    paddingBottom: Spacing.xxs,
   },
   list: {
     gap: Spacing.sm,

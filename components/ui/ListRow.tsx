@@ -91,14 +91,14 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
+    paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.md,
     borderRadius: Radius.md,
     gap: Spacing.sm,
   },
   center: {
     flex: 1,
-    gap: 2,
+    gap: Spacing.xxs,
   },
   title: {
     ...Typography.heading,

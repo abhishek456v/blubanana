@@ -349,16 +349,16 @@ const styles = StyleSheet.create({
   },
   tiles: {
     flexDirection: 'row',
-    gap: 10,
+    gap: Spacing.base,
     alignItems: 'stretch',
   },
   list: {
-    gap: 10,
+    gap: Spacing.base,
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: Spacing.base,
   },
   gridCell: {
     flexBasis: '48%',
@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
   },
   cardText: {
     flex: 1,
-    gap: 2,
+    gap: Spacing.xxs,
   },
   cardTitle: {
     ...Typography.heading,

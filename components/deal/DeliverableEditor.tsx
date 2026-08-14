@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.md,
   },
   field: {
-    gap: 6,
+    gap: Spacing.sm,
   },
   label: {
     ...Typography.label,

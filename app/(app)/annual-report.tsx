@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
   },
   hero: {
     padding: Spacing.lg,
-    gap: 2,
+    gap: Spacing.xxs,
   },
   heroLabel: {
     ...Typography.caption,
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
   cardValue: {
     ...Typography.title,
     fontFamily: FontFamily.display,
-    marginTop: 2,
+    marginTop: Spacing.xxs,
   },
   cardHint: {
     ...Typography.caption,

@@ -892,7 +892,7 @@ const styles = StyleSheet.create({
   // Platform picker
   platformScroll: {
     gap: Spacing.sm,
-    paddingBottom: 2,
+    paddingBottom: Spacing.xxs,
   },
   // Rate
   // Ad rights

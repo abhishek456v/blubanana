@@ -27,7 +27,7 @@ export interface ButtonProps {
 // DESIGN.md §4 fixes the primary button at 44px (the iOS minimum touch
 // target). sm/lg scale around that for dense rows and hero actions.
 const SIZES = {
-  sm: { height: 36, paddingHorizontal: Spacing.md, fontSize: 13, icon: 15, gap: 6 },
+  sm: { height: 36, paddingHorizontal: Spacing.md, fontSize: 13, icon: 15, gap: Spacing.sm },
   md: { height: 44, paddingHorizontal: Spacing.lg, fontSize: 15, icon: 17, gap: Spacing.sm },
   lg: { height: 52, paddingHorizontal: Spacing.lg + Spacing.xs, fontSize: 16, icon: 19, gap: Spacing.sm },
 } as const

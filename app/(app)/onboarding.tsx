@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
   },
   dots: {
     flexDirection: 'row',
-    gap: 6,
+    gap: Spacing.sm,
   },
   dot: {
     width: 8,
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
+    gap: Spacing.xxs,
     paddingVertical: Spacing.sm,
   },
   backText: {

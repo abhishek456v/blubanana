@@ -1461,7 +1461,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.sm,
     paddingHorizontal: Spacing.md,
-    paddingVertical: 12,
+    paddingVertical: Spacing.base,
     borderRadius: Radius.md,
   },
   brandDisplayName: {
@@ -1471,7 +1471,7 @@ const styles = StyleSheet.create({
   // Platform pills
   platformScroll: {
     gap: Spacing.sm,
-    paddingBottom: 2,
+    paddingBottom: Spacing.xxs,
   },
   // Text inputs
   input: {
@@ -1713,7 +1713,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: Spacing.sm,
     paddingHorizontal: Spacing.md,
-    paddingVertical: 12,
+    paddingVertical: Spacing.base,
   },
   attachmentNameButton: {
     flex: 1,

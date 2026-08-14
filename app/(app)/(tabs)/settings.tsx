@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   appearanceCard: {
-    gap: 2,
+    gap: Spacing.xxs,
   },
   themeControl: {
     marginTop: Spacing.md,
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
   },
   profileText: {
     flex: 1,
-    gap: 2,
+    gap: Spacing.xxs,
   },
   profileName: {
     ...Typography.title,
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
   cardHint: {
     ...Typography.caption,
     fontFamily: FontFamily.regular,
-    marginTop: 2,
+    marginTop: Spacing.xxs,
     lineHeight: 18,
   },
   linkBox: {
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.medium,
   },
   links: {
-    gap: 10,
+    gap: Spacing.base,
     marginTop: Spacing.xs,
   },
   linkIcon: {

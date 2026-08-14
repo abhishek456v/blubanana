@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
   },
   sectionBreak: {
     marginTop: Spacing.sm,
-    gap: 2,
+    gap: Spacing.xxs,
   },
   sectionTitle: {
     ...Typography.title,

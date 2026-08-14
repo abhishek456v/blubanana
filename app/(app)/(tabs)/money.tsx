@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   stack: {
-    gap: 10,
+    gap: Spacing.base,
   },
   rowA: {
     flexDirection: 'row',
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
   tileRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: Spacing.base,
   },
   sideColumn: {
     flex: 1,
@@ -345,12 +345,12 @@ const styles = StyleSheet.create({
   },
   blockCard: {
     flex: 1,
-    padding: Spacing.md + 2,
+    padding: Spacing.md,
     gap: Spacing.md,
   },
   sideCard: {
-    padding: Spacing.md + 2,
-    gap: 2,
+    padding: Spacing.md,
+    gap: Spacing.xxs,
   },
   cardHead: {
     flexDirection: 'row',
@@ -360,7 +360,7 @@ const styles = StyleSheet.create({
   },
   cardHeadText: {
     flex: 1,
-    gap: 2,
+    gap: Spacing.xxs,
   },
   cardTitle: {
     ...Typography.heading,
@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.display,
   },
   links: {
-    gap: 10,
+    gap: Spacing.base,
   },
   linkIcon: {
     width: 38,

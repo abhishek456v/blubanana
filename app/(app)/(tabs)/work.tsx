@@ -408,12 +408,12 @@ const styles = StyleSheet.create({
     gap: ColumnGap,
   },
   stack: {
-    gap: 10,
+    gap: Spacing.base,
   },
   tileRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: Spacing.base,
   },
   // Two per row on desktop: a single column of 1160px-wide rows carrying a
   // brand name and a figure is the stretched-phone layout DESIGN.md §4 rules
@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
   listGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: Spacing.base,
   },
   listGridCell: {
     flexBasis: '48%',
@@ -431,7 +431,7 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   list: {
-    gap: 10,
+    gap: Spacing.base,
   },
   yearBlock: {
     gap: Spacing.sm,
@@ -464,7 +464,7 @@ const styles = StyleSheet.create({
     ...Typography.caption,
     fontFamily: FontFamily.regular,
     lineHeight: 19,
-    marginTop: 2,
+    marginTop: Spacing.xxs,
   },
   kindList: {
     marginTop: Spacing.md,
@@ -494,16 +494,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
-    paddingVertical: 14,
+    paddingVertical: Spacing.md,
   },
   perfCenter: {
     flex: 1,
-    gap: 2,
+    gap: Spacing.xxs,
   },
   perfTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: Spacing.sm,
   },
   perfBrand: {
     ...Typography.heading,
@@ -514,8 +514,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xxs,
     borderRadius: Radius.full,
   },
   bestText: {

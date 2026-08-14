@@ -101,12 +101,19 @@ export const AvatarPalette = [
   '#F472B6', // pink
 ] as const
 
+// A 4-based scale with no gaps. The previous version jumped 8 -> 16, so
+// screens invented 10, 12 and 14 to fill it — 42 hand-picked values across the
+// app, which is what "random spacing" looks like in a codebase. `base` closes
+// that gap and is the default gap between siblings.
 export const Spacing = {
+  xxs: 2,
   xs: 4,
   sm: 8,
+  base: 12,
   md: 16,
   lg: 24,
   xl: 32,
+  xxl: 48,
 } as const
 
 export const Radius = {
@@ -125,10 +132,15 @@ export const Radius = {
 // look for a semibold cut of a
 // family that has exactly one cut, fail, and silently fall back to the system
 // face — which is why type looked consistent on web and mismatched on device.
+// Steps wide enough to read as different levels. `heading` used to be 16
+// against a 15 body — a one-pixel difference that the eye cannot see, so a
+// card title and its body text carried the same weight and the hierarchy came
+// out flat. The top of the scale moved up rather than the bottom moving down,
+// so nothing got smaller or harder to read.
 export const Typography = {
-  display: { fontSize: 28 },
-  title: { fontSize: 20 },
-  heading: { fontSize: 16 },
+  display: { fontSize: 30 },
+  title: { fontSize: 22 },
+  heading: { fontSize: 17 },
   body: { fontSize: 15 },
   bodyStrong: { fontSize: 15 },
   caption: { fontSize: 13 },

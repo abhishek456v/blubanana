@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
   back: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: Spacing.xxs,
     // Pulls the chevron's optical left edge in line with the title's stem
     // rather than its glyph box.
     marginLeft: -4,
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
   },
   titleBlock: {
     flex: 1,
-    gap: 2,
+    gap: Spacing.xxs,
   },
   eyebrow: {
     ...Typography.label,

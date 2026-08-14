@@ -245,10 +245,10 @@ const styles = StyleSheet.create({
   tiles: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: Spacing.base,
   },
   column: {
-    gap: 10,
+    gap: Spacing.base,
   },
   gridCell: {
     flex: 1,

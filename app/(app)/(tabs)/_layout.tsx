@@ -219,7 +219,7 @@ export default function TabsLayout() {
               // the bottom inset itself; overriding `height` opted out of that
               // and left the buttons inside the home-indicator strip, where
               // the system swallows the touch.
-              paddingTop: 6,
+              paddingTop: Spacing.sm,
             },
         tabBarLabelStyle: {
           fontFamily: FontFamily.medium,
@@ -278,9 +278,9 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: Spacing.base,
     paddingHorizontal: Spacing.md,
-    paddingVertical: 14,
+    paddingVertical: Spacing.md,
     borderTopWidth: 1,
   },
   footerText: {
