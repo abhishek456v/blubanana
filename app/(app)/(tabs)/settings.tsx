@@ -176,7 +176,7 @@ export default function YouScreen() {
 
           {profile?.public_profile_enabled && profile.public_share_slug ? (
             <View style={[styles.linkBox, { backgroundColor: c.bgPage }]}>
-              <Text style={[styles.link, { color: c.accent }]} selectable numberOfLines={1}>
+              <Text style={[styles.link, { color: c.accentText }]} selectable numberOfLines={1}>
                 {publicProfileUrl(profile.public_share_slug)}
               </Text>
             </View>

@@ -117,7 +117,7 @@ export default function ForgotPasswordScreen() {
           <Animated.View entering={FadeInDown.duration(Duration.slow).delay(staggerDelay(2))}>
             <Link href="/(auth)/sign-in" asChild>
               <PressableScale style={styles.switchRow} haptic="light">
-                <Text style={[styles.switchText, { color: c.accent }]}>Back to sign in</Text>
+                <Text style={[styles.switchText, { color: c.accentText }]}>Back to sign in</Text>
               </PressableScale>
             </Link>
           </Animated.View>

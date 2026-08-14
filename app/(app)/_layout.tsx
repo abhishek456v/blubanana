@@ -6,6 +6,24 @@ import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 // Back button label is suppressed (empty string) because expo-router shows
 // the previous screen title by default, which can be long on small screens.
 
+/**
+ * Anchor the stack to the tab navigator.
+ *
+ * Without this, opening any of the routes below directly — a deep link, a
+ * notification tap, or just a browser refresh on /invoices — starts the
+ * history at that screen. There is nothing beneath it, so react-navigation
+ * renders no back button, `router.back()` is a no-op, and on wide screens the
+ * modal floats over an empty page with the app nowhere to be seen.
+ *
+ * Declaring the anchor makes expo-router synthesise `(tabs)` underneath any
+ * such entry, which restores the back affordance and puts the app back behind
+ * the sheet. One line, and it fixes every route in this stack rather than each
+ * screen patching itself.
+ */
+export const unstable_settings = {
+  initialRouteName: '(tabs)',
+}
+
 export default function AppLayout() {
   const { c } = useTheme()
   const isWide = useIsWideScreen()

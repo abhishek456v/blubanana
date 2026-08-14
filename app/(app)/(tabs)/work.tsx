@@ -305,7 +305,7 @@ export default function WorkScreen() {
                   <Text style={[styles.kindMeta, { color: c.textMuted }]}>
                     {kind.count} · {formatCount(kind.avgViews)} views
                   </Text>
-                  <Text style={[styles.kindRate, { color: c.accent }]}>
+                  <Text style={[styles.kindRate, { color: c.accentText }]}>
                     {formatRate(kind.avgEngagementRate)}
                   </Text>
                 </View>
@@ -352,7 +352,7 @@ export default function WorkScreen() {
             {isBest ? (
               <View style={[styles.bestBadge, { backgroundColor: c.accentLight }]}>
                 <Ionicons name="trophy" size={10} color={c.accent} />
-                <Text style={[styles.bestText, { color: c.accent }]}>Best</Text>
+                <Text style={[styles.bestText, { color: c.accentText }]}>Best</Text>
               </View>
             ) : null}
           </View>
@@ -368,7 +368,7 @@ export default function WorkScreen() {
           </Text>
         </View>
 
-        <Text style={[styles.perfRate, { color: c.accent }]}>
+        <Text style={[styles.perfRate, { color: c.accentText }]}>
           {formatRate(item.engagementRate)}
         </Text>
       </Card>

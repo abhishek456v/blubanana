@@ -121,7 +121,7 @@ export default function AnnualReportScreen() {
                 <AnimatedNumber
                   value={report.totalRevenue}
                   format={formatCurrency}
-                  style={[styles.heroValue, { color: c.accent }]}
+                  style={[styles.heroValue, { color: c.accentText }]}
                   numberOfLines={1}
                 />
                 <Text style={[styles.heroCaption, { color: c.textSecondary }]}>

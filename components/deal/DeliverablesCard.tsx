@@ -212,7 +212,7 @@ function DeliverableRow({
           ) : null}
           {/* The per-month figure, surfaced without needing to open the row. */}
           {breakdown ? (
-            <Text style={[styles.rowCalc, { color: c.accent }]} numberOfLines={1}>
+            <Text style={[styles.rowCalc, { color: c.accentText }]} numberOfLines={1}>
               {formatCurrency(breakdown.perMonth)}/month
             </Text>
           ) : null}

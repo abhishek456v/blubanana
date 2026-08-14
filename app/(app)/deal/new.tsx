@@ -534,7 +534,7 @@ export default function NewDealScreen() {
                     </Text>
                     {summary ? (
                       <View style={[styles.brandRatingPill, { backgroundColor: c.accentLight }]}>
-                        <Text style={[styles.brandRatingPillText, { color: c.accent }]}>
+                        <Text style={[styles.brandRatingPillText, { color: c.accentText }]}>
                           {summary.averageRating.toFixed(1)}
                           {summary.lastPaidOnTime === false ? ' · paid late before' : ''}
                         </Text>
@@ -658,7 +658,7 @@ export default function NewDealScreen() {
 
           {/* ── Ad rights (optional) ──────────────────────────── */}
           <View style={styles.adRightsHeader}>
-            <Text style={[styles.sectionLabel, styles.adRightsLabel, { color: c.accent }]}>
+            <Text style={[styles.sectionLabel, styles.adRightsLabel, { color: c.accentText }]}>
               Ad rights
             </Text>
             <Switch
@@ -706,7 +706,7 @@ export default function NewDealScreen() {
               {/* Per-month value, the same figure the deal screen's ad-rights
                   line item shows — useful here while the rate is negotiable. */}
               {perMonthAdRights != null ? (
-                <Text style={[styles.adRightsExpiryNote, { color: c.accent }]}>
+                <Text style={[styles.adRightsExpiryNote, { color: c.accentText }]}>
                   {formatCurrency(perMonthAdRights)} per month
                   {adRightsExpiryPreview
                     ? ` · ends ${formatDate(adRightsExpiryPreview)}`

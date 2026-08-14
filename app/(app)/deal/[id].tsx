@@ -823,7 +823,7 @@ export default function DealDetailScreen() {
                   {/* ── Client reputation score (Phase 2) ─────────────────── */}
                   {deal.status === 'paid' && existingRating ? (
                     <View style={[styles.ratingSummaryCard, { backgroundColor: c.accentLight }]}>
-                      <Text style={[styles.ratingSummaryText, { color: c.accent }]}>
+                      <Text style={[styles.ratingSummaryText, { color: c.accentText }]}>
                         You rated this collaboration {existingRating.rating}/5
                       </Text>
                     </View>
@@ -1153,7 +1153,7 @@ export default function DealDetailScreen() {
                     <View
                       style={[styles.adRightsBox, { backgroundColor: c.accentLight, borderColor: c.accent }]}
                     >
-                      <Text style={[styles.sectionLabel, styles.adRightsLabel, { color: c.accent }]}>
+                      <Text style={[styles.sectionLabel, styles.adRightsLabel, { color: c.accentText }]}>
                         Ad rights
                       </Text>
 
@@ -1183,7 +1183,7 @@ export default function DealDetailScreen() {
                         activeOpacity={0.8}
                       >
                         <Ionicons name="search-outline" size={15} color={c.accent} />
-                        <Text style={[styles.metaAdLibraryButtonText, { color: c.accent }]}>
+                        <Text style={[styles.metaAdLibraryButtonText, { color: c.accentText }]}>
                           Check Meta Ad Library
                         </Text>
                       </TouchableOpacity>
@@ -1342,7 +1342,7 @@ export default function DealDetailScreen() {
                     }
                     activeOpacity={0.8}
                   >
-                    <Text style={[styles.addAttachmentText, { color: c.accent }]}>
+                    <Text style={[styles.addAttachmentText, { color: c.accentText }]}>
                       {invoice ? `View invoice (${invoice.invoice_number})` : 'Create invoice'}
                     </Text>
                   </TouchableOpacity>

@@ -99,7 +99,7 @@ export default function PublicCreatorProfileScreen() {
             <Text style={[styles.name, { color: c.textPrimary }]}>{profile.name}</Text>
             {profile.niche ? (
               <View style={[styles.nichePill, { backgroundColor: c.accentLight }]}>
-                <Text style={[styles.nicheText, { color: c.accent }]}>{profile.niche}</Text>
+                <Text style={[styles.nicheText, { color: c.accentText }]}>{profile.niche}</Text>
               </View>
             ) : null}
           </Animated.View>

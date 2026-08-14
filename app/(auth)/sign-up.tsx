@@ -171,7 +171,7 @@ export default function SignUpScreen() {
               <PressableScale style={styles.switchRow} haptic="light">
                 <Text style={[styles.switchText, { color: c.textSecondary }]}>
                   Already have an account?{' '}
-                  <Text style={{ color: c.accent, fontFamily: FontFamily.semiBold }}>Sign in</Text>
+                  <Text style={{ color: c.accentText, fontFamily: FontFamily.semiBold }}>Sign in</Text>
                 </Text>
               </PressableScale>
             </Link>

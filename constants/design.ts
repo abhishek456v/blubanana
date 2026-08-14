@@ -21,11 +21,16 @@ export const Colors = {
     border: 'rgba(20,18,16,0.08)',
     borderStrong: 'rgba(20,18,16,0.16)',
     textPrimary: '#1C1815',
-    textSecondary: '#6B6259',
-    textMuted: '#9A9186',
+    textSecondary: '#585049',
+    textMuted: '#756E66',
     fillPrimary: '#F5A623',
     onFillPrimary: '#FFFFFF',
     accent: '#F5A623',
+    // Amber as *text*. The brand amber is 1.96:1 on the page — unreadable —
+    // so anywhere the accent carries words rather than fills a shape, it is
+    // darkened to clear AA. Fills, icons on tinted grounds, chart bars and
+    // borders keep `accent`.
+    accentText: '#956515',
     accentLight: 'rgba(245,166,35,0.12)',
     // Between `accentLight` (a tint you put text on) and `accent` (the thing
     // itself). Chart bars need this: at 12% alpha a bar reads as a loading
@@ -54,11 +59,15 @@ export const Colors = {
     border: 'rgba(255,255,255,0.07)',
     borderStrong: 'rgba(255,255,255,0.16)',
     textPrimary: '#F5F0E8',
-    textSecondary: '#A89F94',
-    textMuted: '#6B6259',
+    textSecondary: '#BAB3AA',
+    textMuted: '#948E87',
     fillPrimary: '#F5A623',
     onFillPrimary: '#FFFFFF',
     accent: '#F5A623',
+    // On a dark ground the brand amber already clears AA (9.2:1), so the text
+    // variant is the accent itself — the token exists so screens can use one
+    // name in both themes.
+    accentText: '#F5A623',
     accentLight: 'rgba(245,166,35,0.14)',
     // Higher than the light theme's: an amber at 46% over a near-black ground
     // reads olive, not amber.
