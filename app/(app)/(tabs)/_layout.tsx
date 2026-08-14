@@ -180,22 +180,14 @@ export default function TabsLayout() {
   // so this stays one navigator instead of a bespoke sidebar.
   const isWide = useIsWideScreen()
 
-  // TEMPORARY DIAGNOSTIC — remove once the tab-press issue is resolved.
-  console.log('[diag] TabsLayout render, isWide =', isWide)
-
   return (
     <Tabs
-      screenListeners={{
-        tabPress: (e) => console.log('[diag] tabPress fired ->', e.target),
-        state: () => console.log('[diag] navigation state changed'),
-        focus: (e) => console.log('[diag] focus ->', e.target),
-      }}
       tabBar={isWide ? (props) => <SidebarWithBrand {...props} /> : undefined}
       screenOptions={{
         // Every tab screen draws its own large-title header via ScreenHeader,
         // so the native one is off everywhere. See components/ui/ScreenHeader.
         headerShown: false,
-        tabBarPosition: isWide ? 'left' : 'bottom',
+        ...(isWide ? { tabBarPosition: 'left' as const } : null),
         tabBarActiveTintColor: c.accent,
         tabBarInactiveTintColor: c.textMuted,
         ...(isWide
