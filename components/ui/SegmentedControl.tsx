@@ -125,5 +125,6 @@ const styles = StyleSheet.create({
   },
   label: {
     ...Typography.caption,
+    fontFamily: FontFamily.semiBold,
   },
 })

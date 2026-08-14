@@ -101,7 +101,7 @@ export default function MoneyScreen() {
       format={formatCurrency}
       caption={
         summary.lockedThisMonth.count === 0
-          ? 'No new deals logged this month yet — this is the number that moves first.'
+          ? 'No new deals logged this month yet. This is the number that moves first.'
           : `Across ${summary.lockedThisMonth.count} new ${summary.lockedThisMonth.count === 1 ? 'deal' : 'deals'} signed this month.`
       }
       action={{ label: 'Invoices', onPress: () => router.push('/(app)/invoices' as never) }}

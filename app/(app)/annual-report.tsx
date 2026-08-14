@@ -112,7 +112,7 @@ export default function AnnualReportScreen() {
             <EmptyState
               icon="calendar-outline"
               title="Nothing this year"
-              message="Once payments land inside this financial year, your full summary — income, TDS and GST — shows up here."
+              message="Once payments land inside this financial year, your income, TDS and GST all show up here."
             />
           ) : (
             <View style={styles.section}>

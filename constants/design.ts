@@ -115,14 +115,21 @@ export const Radius = {
   full: 999,
 } as const
 
+// Sizes only. Weight comes from `FontFamily`, never from `fontWeight`.
+//
+// Inter and Syne ship as separate files per weight, so the weight is already
+// baked into the family name. Asking for `fontFamily: 'Inter_400Regular'` and
+// `fontWeight: '600'` together makes native look for a semibold cut of a
+// family that has exactly one cut, fail, and silently fall back to the system
+// face — which is why type looked consistent on web and mismatched on device.
 export const Typography = {
-  display: { fontSize: 28, fontWeight: '600' as const },
-  title: { fontSize: 20, fontWeight: '600' as const },
-  heading: { fontSize: 16, fontWeight: '600' as const },
-  body: { fontSize: 15, fontWeight: '400' as const },
-  bodyStrong: { fontSize: 15, fontWeight: '500' as const },
-  caption: { fontSize: 13, fontWeight: '400' as const },
-  label: { fontSize: 12, fontWeight: '500' as const },
+  display: { fontSize: 28 },
+  title: { fontSize: 20 },
+  heading: { fontSize: 16 },
+  body: { fontSize: 15 },
+  bodyStrong: { fontSize: 15 },
+  caption: { fontSize: 13 },
+  label: { fontSize: 12 },
 } as const
 
 export const FontFamily = {

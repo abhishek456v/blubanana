@@ -68,7 +68,13 @@ export default function NewInvoiceScreen() {
   const [included, setIncluded] = useState<Set<string>>(new Set())
 
   const load = useCallback(async () => {
-    if (!dealId) return
+    // Opened from a header "+" rather than from a deal, so there is nothing to
+    // prefill. Clearing the flag matters: returning early while `loading` was
+    // still true left the screen on its skeletons forever.
+    if (!dealId) {
+      setLoading(false)
+      return
+    }
     try {
       const deal = await getDeal(dealId)
       setBrandName(deal.brand?.name ?? '')

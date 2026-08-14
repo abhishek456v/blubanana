@@ -52,7 +52,10 @@ export default function AppLayout() {
         headerBackTitle: '',
       }}
     >
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      {/* The title is never displayed — this screen hides its header — but it
+          is what every pushed screen shows on its back button. Without it the
+          back control reads "(tabs)", the raw route-group name. */}
+      <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Home' }} />
       <Stack.Screen name="deal/new" options={{ title: 'Add deal', ...modalScreenOptions }} />
       {/* title for [id] screens is set dynamically inside the screen via Stack.Screen */}
       {/* Deliberately not a modal on wide screens, unlike the forms around it:

@@ -164,7 +164,7 @@ export default function InvoicesScreen() {
               <EmptyState
                 icon="document-text-outline"
                 title="No invoices yet"
-                message="Open any deal and tap Create invoice — the brand's details, the amount and the GST are filled in for you."
+                message="Open any deal and tap Create invoice. The brand's details, the amount and the GST are filled in for you."
               />
             }
             contentContainerStyle={[styles.list, isWide && styles.listWide]}

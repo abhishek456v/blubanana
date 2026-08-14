@@ -111,7 +111,7 @@ export default function NewBrandScreen() {
 
             <TextField
               label="Notes"
-              placeholder="Fussy about hook style. Pays slow — ask for an advance."
+              placeholder="Fussy about hook style. Pays slow, so ask for an advance."
               value={notes}
               onChangeText={setNotes}
               multiline

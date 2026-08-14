@@ -720,7 +720,7 @@ export default function NewDealScreen() {
           <View style={styles.fieldStack}>
             <TextField
               label="Notes"
-              placeholder="Anything the chat didn't capture — brief quirks, who to chase"
+              placeholder="Anything the chat missed: brief quirks, who to chase"
               value={notes}
               onChangeText={setNotes}
               multiline

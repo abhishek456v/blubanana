@@ -196,7 +196,7 @@ export default function HomeScreen() {
       format={formatCurrency}
       caption={
         unpaidCount === 0
-          ? 'Nothing outstanding — every deal is settled.'
+          ? 'Nothing outstanding. Every deal is settled.'
           : metrics.overdue > 0
             ? `${formatCurrencyCompact(metrics.overdue)} of it is already past due.`
             : `Across ${unpaidCount} unpaid ${unpaidCount === 1 ? 'deal' : 'deals'}, all on track.`
@@ -459,7 +459,7 @@ export default function HomeScreen() {
             title={filter === 'all' ? 'No deals yet' : 'Nothing here'}
             message={
               filter === 'all'
-                ? 'Screenshot a brand DM, talk it out, or type it in — a deal takes about thirty seconds to log.'
+                ? 'Screenshot a brand DM, talk it out, or type it in. A deal takes about thirty seconds to log.'
                 : 'Try another filter.'
             }
             actionLabel={filter === 'all' ? 'Add your first deal' : undefined}

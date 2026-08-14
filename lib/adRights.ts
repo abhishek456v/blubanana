@@ -61,7 +61,7 @@ export async function rescheduleAdRightsReminder(
   const id = await scheduleAsync(
     {
       title: 'Ad rights expiring soon',
-      body: `${brandName}'s ad rights expire in 30 days — worth checking if they're still running the ad.`,
+      body: `${brandName}'s ad rights expire in 30 days. Worth checking if they're still running the ad.`,
       data: { type: 'ad_rights_expiring', dealId: deal.id },
     },
     remindAt

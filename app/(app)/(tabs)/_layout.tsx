@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated'
 import { FontFamily, SidebarWidth, Spacing, Typography } from '@/constants/design'
 import { Spring } from '@/constants/motion'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 import { useTheme } from '@/hooks/useTheme'
 import { getAlertFeed } from '@/lib/alerts'
@@ -179,6 +180,11 @@ export default function TabsLayout() {
   // lays the bar and the scene out as a real flex row rather than an overlay,
   // so this stays one navigator instead of a bespoke sidebar.
   const isWide = useIsWideScreen()
+  // react-navigation grows the bar by the bottom inset automatically, but only
+  // while it owns the height. Hard-coding `height` overrode that, so on a phone
+  // with a home indicator the bar sat inside the system gesture strip and its
+  // buttons could not be tapped.
+  const insets = useSafeAreaInsets()
 
   return (
     <Tabs
@@ -211,8 +217,9 @@ export default function TabsLayout() {
               // here would be the only one in the app pointing upward.
               elevation: 0,
               shadowOpacity: 0,
-              height: 62,
+              height: 62 + insets.bottom,
               paddingTop: 6,
+              paddingBottom: insets.bottom,
             },
         tabBarLabelStyle: {
           fontFamily: FontFamily.medium,

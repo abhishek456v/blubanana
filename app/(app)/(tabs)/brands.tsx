@@ -199,7 +199,7 @@ export default function BrandsScreen() {
             message={
               query
                 ? 'Nothing matches that search.'
-                : 'Every brand you add builds a private record — how fast they paid, how many revisions they asked for, whether you would work with them again.'
+                : 'Every brand you add builds a private record: how fast they paid, how many revisions they asked for, whether you would work with them again.'
             }
             actionLabel={query ? undefined : 'Add your first brand'}
             onAction={query ? undefined : () => router.push('/(app)/brand/new' as never)}

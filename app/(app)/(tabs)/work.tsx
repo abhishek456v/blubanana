@@ -158,7 +158,7 @@ export default function WorkScreen() {
         <EmptyState
           icon="albums-outline"
           title="Nothing here yet"
-          message="Every deal you log shows up here, grouped by year — your whole body of work in one place."
+          message="Every deal you log shows up here, grouped by year. Your whole body of work in one place."
           actionLabel="Add a deal"
           onAction={() => router.push('/(app)/deal/new' as never)}
         />

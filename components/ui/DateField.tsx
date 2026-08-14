@@ -315,6 +315,7 @@ const styles = StyleSheet.create({
   },
   dayText: {
     ...Typography.body,
+    fontFamily: FontFamily.medium,
   },
   clearAction: {
     marginTop: Spacing.sm,

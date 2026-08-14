@@ -1168,7 +1168,7 @@ export default function DealDetailScreen() {
                           ]}
                         >
                           {getAdRightsStatus(deal) === 'expired'
-                            ? `Expired ${formatDateLong(adRightsItem.expires_on)} — the brand should have stopped running ads.`
+                            ? `Expired ${formatDateLong(adRightsItem.expires_on)}. The brand should have stopped running ads.`
                             : `Runs until ${formatDateLong(adRightsItem.expires_on)}. You'll get a reminder 30 days before.`}
                         </Text>
                       ) : (
