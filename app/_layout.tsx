@@ -13,11 +13,11 @@ import * as Notifications from 'expo-notifications'
 import * as Linking from 'expo-linking'
 import {
   useFonts,
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-} from '@expo-google-fonts/inter'
-import { Syne_600SemiBold, Syne_700Bold } from '@expo-google-fonts/syne'
+  InstrumentSans_400Regular,
+  InstrumentSans_500Medium,
+  InstrumentSans_600SemiBold,
+  InstrumentSans_700Bold,
+} from '@expo-google-fonts/instrument-sans'
 import { FeedbackProvider } from '@/components/ui'
 import { ThemeProvider } from '@/hooks/useTheme'
 import { useAuth } from '@/hooks/useAuth'
@@ -68,11 +68,10 @@ export default function RootLayout() {
   }, [])
 
   const [fontsLoaded] = useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Syne_600SemiBold,
-    Syne_700Bold,
+    InstrumentSans_400Regular,
+    InstrumentSans_500Medium,
+    InstrumentSans_600SemiBold,
+    InstrumentSans_700Bold,
   })
 
   // Hide splash once both fonts and auth state are ready.

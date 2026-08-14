@@ -117,9 +117,10 @@ export const Radius = {
 
 // Sizes only. Weight comes from `FontFamily`, never from `fontWeight`.
 //
-// Inter and Syne ship as separate files per weight, so the weight is already
-// baked into the family name. Asking for `fontFamily: 'Inter_400Regular'` and
-// `fontWeight: '600'` together makes native look for a semibold cut of a
+// Instrument Sans ships as a separate file per weight, so the weight is already
+// baked into the family name. Asking for `fontFamily:
+// 'InstrumentSans_400Regular'` and `fontWeight: '600'` together makes native
+// look for a semibold cut of a
 // family that has exactly one cut, fail, and silently fall back to the system
 // face — which is why type looked consistent on web and mismatched on device.
 export const Typography = {
@@ -132,15 +133,19 @@ export const Typography = {
   label: { fontSize: 12 },
 } as const
 
+// One family, four cuts. Weight carries the hierarchy that a second face used
+// to carry, so `display` and `displayBold` still exist as names — screens ask
+// for a role, not a font — they just resolve into the same family now.
+//
+// Never pair these with `fontWeight`: each cut is its own file, and asking for
+// a weight the named family does not contain drops native back to the system
+// face. See the note on Typography below.
 export const FontFamily = {
-  regular: 'Inter_400Regular',
-  medium: 'Inter_500Medium',
-  semiBold: 'Inter_600SemiBold',
-  // Syne is the display/editorial voice — screen titles, the dashboard
-  // greeting, big currency numbers. Everything else (body, labels, inputs)
-  // stays on Inter so the UI doesn't read as "all headline."
-  display: 'Syne_600SemiBold',
-  displayBold: 'Syne_700Bold',
+  regular: 'InstrumentSans_400Regular',
+  medium: 'InstrumentSans_500Medium',
+  semiBold: 'InstrumentSans_600SemiBold',
+  display: 'InstrumentSans_600SemiBold',
+  displayBold: 'InstrumentSans_700Bold',
 } as const
 
 // Below `wide`, the app uses the mobile layout (bottom tab bar, edge-to-edge
