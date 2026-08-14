@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react'
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, useColorScheme, ActivityIndicator, Platform } from 'react-native'
-import { showAlert } from '@/lib/alert'
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Platform } from 'react-native'
 import { useLocalSearchParams } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { getInvoice } from '@/lib/invoices'
+import { getInvoice, getInvoiceLineItems } from '@/lib/invoices'
 import { getProfile } from '@/lib/profile'
 import { buildInvoiceHtml } from '@/lib/invoiceHtml'
 import { shareInvoicePdf } from '@/lib/invoicePdf'
-import type { Creator, Invoice } from '@/types'
+import type { Creator, Invoice, InvoiceLineItem } from '@/types'
 import { Colors, Spacing, Radius, Typography, FontFamily, ContentMaxWidth } from '@/constants/design'
+import { useTheme } from '@/hooks/useTheme'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 import { ModalSheet } from '@/components/ModalSheet'
+import { useToast } from '@/components/ui'
 
 function formatINR(amount: number): string {
   return `₹${amount.toLocaleString('en-IN')}`
@@ -22,13 +23,14 @@ function formatDate(dateStr: string): string {
 }
 
 export default function InvoiceDetailScreen() {
+  const toast = useToast()
   const { id } = useLocalSearchParams<{ id: string }>()
-  const scheme = useColorScheme()
-  const c = scheme === 'dark' ? Colors.dark : Colors.light
+  const { c } = useTheme()
   const isWide = useIsWideScreen()
 
   const [invoice, setInvoice] = useState<Invoice | null>(null)
   const [creator, setCreator] = useState<Creator | null>(null)
+  const [lineItems, setLineItems] = useState<InvoiceLineItem[]>([])
   const [loading, setLoading] = useState(true)
   const [sharing, setSharing] = useState(false)
 
@@ -41,20 +43,31 @@ export default function InvoiceDetailScreen() {
         setInvoice(inv)
         setCreator(profile)
       })
-      .catch(() => showAlert('Error', 'Could not load this invoice.'))
+      .catch(() => toast('Could not load this invoice', { tone: 'error' }))
       .finally(() => active && setLoading(false))
+
+    // Fetched separately — invoice_line_items arrived in migration 008, so an
+    // older invoice (or an un-migrated database) simply has none, and
+    // buildInvoiceHtml falls back to the invoice's own description/amount.
+    getInvoiceLineItems(id)
+      .then((items) => active && setLineItems(items))
+      .catch(() => {})
+
     return () => {
       active = false
     }
-  }, [id])
+  }, [id, toast])
 
   async function handleShare() {
     if (!invoice || !creator || sharing) return
     setSharing(true)
     try {
-      await shareInvoicePdf(buildInvoiceHtml(invoice, creator), invoice.invoice_number)
+      await shareInvoicePdf(
+        buildInvoiceHtml(invoice, creator, lineItems),
+        invoice.invoice_number
+      )
     } catch {
-      showAlert('Could not export PDF', 'Please try again.')
+      toast('Could not export the PDF', { tone: 'error' })
     } finally {
       setSharing(false)
     }
@@ -108,10 +121,30 @@ export default function InvoiceDetailScreen() {
               <Text style={[styles.tableHeaderText, { color: c.textMuted }]}>Description</Text>
               <Text style={[styles.tableHeaderText, { color: c.textMuted }]}>Amount</Text>
             </View>
-            <View style={[styles.tableRow, { borderBottomColor: c.border }]}>
-              <Text style={[styles.tableCell, { color: c.textPrimary, flex: 1 }]}>{invoice.description}</Text>
-              <Text style={[styles.tableCell, { color: c.textPrimary }]}>{formatINR(invoice.amount)}</Text>
-            </View>
+            {/* One row per billed line, so a consolidated invoice reads on
+                screen exactly as it will print. Pre-migration-008 invoices
+                have no line items and fall back to their own description. */}
+            {lineItems.length > 0 ? (
+              lineItems.map((item) => (
+                <View key={item.id} style={[styles.tableRow, { borderBottomColor: c.border }]}>
+                  <Text style={[styles.tableCell, { color: c.textPrimary, flex: 1 }]}>
+                    {item.quantity > 1 ? `${item.description} ×${item.quantity}` : item.description}
+                  </Text>
+                  <Text style={[styles.tableCell, { color: c.textPrimary }]}>
+                    {formatINR(item.amount)}
+                  </Text>
+                </View>
+              ))
+            ) : (
+              <View style={[styles.tableRow, { borderBottomColor: c.border }]}>
+                <Text style={[styles.tableCell, { color: c.textPrimary, flex: 1 }]}>
+                  {invoice.description}
+                </Text>
+                <Text style={[styles.tableCell, { color: c.textPrimary }]}>
+                  {formatINR(invoice.amount)}
+                </Text>
+              </View>
+            )}
 
             <View style={styles.totalsBlock}>
               <View style={styles.totalRow}>

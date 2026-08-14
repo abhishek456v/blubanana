@@ -1,31 +1,22 @@
 import { useState } from 'react'
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
-  useColorScheme,
-  ActivityIndicator,
-} from 'react-native'
-import { showAlert } from '@/lib/alert'
-import { useRouter, useLocalSearchParams } from 'expo-router'
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { createBrand } from '@/lib/brands'
-import { Colors, Spacing, Radius, Typography, FontFamily, ContentMaxWidth } from '@/constants/design'
+import { ContentMaxWidth, Spacing } from '@/constants/design'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
+import { useTheme } from '@/hooks/useTheme'
 import { ModalSheet } from '@/components/ModalSheet'
+import { Button, TextField, useToast } from '@/components/ui'
 
 export default function NewBrandScreen() {
+  const toast = useToast()
   const router = useRouter()
-  const scheme = useColorScheme()
-  const c = scheme === 'dark' ? Colors.dark : Colors.light
+  const { c } = useTheme()
   const isWide = useIsWideScreen()
-  // Prefilled when arriving from AI deal intake with a brand name that
-  // didn't match any existing brand (see deal/new.tsx).
+
+  // Prefilled when arriving from AI deal intake with a brand name that didn't
+  // match any existing brand (see deal/new.tsx).
   const { name: prefillName } = useLocalSearchParams<{ name?: string }>()
 
   const [name, setName] = useState(prefillName ?? '')
@@ -34,21 +25,14 @@ export default function NewBrandScreen() {
   const [contactEmail, setContactEmail] = useState('')
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
-
-  const inputStyle = [
-    styles.input,
-    {
-      borderColor: c.borderStrong,
-      color: c.textPrimary,
-      backgroundColor: c.bgSurface,
-    },
-  ]
+  const [nameError, setNameError] = useState<string | undefined>()
 
   async function handleSave() {
     if (!name.trim()) {
-      showAlert('Name required', 'Enter the brand or client name.')
+      setNameError('Enter the brand or client name')
       return
     }
+    setNameError(undefined)
 
     setSaving(true)
     try {
@@ -59,9 +43,10 @@ export default function NewBrandScreen() {
         contact_email: contactEmail.trim() || null,
         notes: notes.trim() || null,
       })
+      toast(`${name.trim()} added`, { tone: 'success' })
       router.back()
     } catch {
-      showAlert('Error', 'Could not save brand. Please try again.')
+      toast('Could not save that brand', { tone: 'error' })
     } finally {
       setSaving(false)
     }
@@ -69,89 +54,80 @@ export default function NewBrandScreen() {
 
   return (
     <ModalSheet title="Add brand">
-    <SafeAreaView
-      style={[styles.safe, { backgroundColor: c.bgPage }]}
-      edges={['bottom']}
-    >
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        <ScrollView
-          contentContainerStyle={[styles.content, isWide && styles.contentWide]}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
+      <SafeAreaView style={[styles.safe, { backgroundColor: c.bgPage }]} edges={['bottom']}>
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Brand name</Text>
-          <TextInput
-            style={inputStyle}
-            placeholder="e.g. Nike, Sony Music"
-            placeholderTextColor={c.textMuted}
-            value={name}
-            onChangeText={setName}
-            autoCapitalize="words"
-            autoFocus
-          />
-
-          <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Contact person</Text>
-          <TextInput
-            style={inputStyle}
-            placeholder="Name of your point of contact"
-            placeholderTextColor={c.textMuted}
-            value={contactPerson}
-            onChangeText={setContactPerson}
-            autoCapitalize="words"
-          />
-
-          <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Contact phone</Text>
-          <TextInput
-            style={inputStyle}
-            placeholder="+91 98765 43210"
-            placeholderTextColor={c.textMuted}
-            value={contactPhone}
-            onChangeText={setContactPhone}
-            keyboardType="phone-pad"
-          />
-
-          <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Contact email</Text>
-          <TextInput
-            style={inputStyle}
-            placeholder="brand@example.com"
-            placeholderTextColor={c.textMuted}
-            value={contactEmail}
-            onChangeText={setContactEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
-
-          <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Notes</Text>
-          <TextInput
-            style={[inputStyle, styles.multiline]}
-            placeholder="Anything useful to remember about this client"
-            placeholderTextColor={c.textMuted}
-            value={notes}
-            onChangeText={setNotes}
-            multiline
-            textAlignVertical="top"
-          />
-
-          <TouchableOpacity
-            style={[styles.saveButton, { backgroundColor: c.fillPrimary }]}
-            onPress={handleSave}
-            disabled={saving}
-            activeOpacity={0.8}
+          <ScrollView
+            contentContainerStyle={[styles.content, isWide && styles.contentWide]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
-            {saving ? (
-              <ActivityIndicator color={c.onFillPrimary} />
-            ) : (
-              <Text style={[styles.saveButtonText, { color: c.onFillPrimary }]}>
-                Save brand
-              </Text>
-            )}
-          </TouchableOpacity>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+            <TextField
+              label="Brand"
+              placeholder="Nykaa"
+              value={name}
+              onChangeText={(value) => {
+                setName(value)
+                if (nameError) setNameError(undefined)
+              }}
+              error={nameError}
+              autoCapitalize="words"
+              returnKeyType="next"
+            />
+
+            {/* POC — the person at the brand she actually deals with. */}
+            <TextField
+              label="POC"
+              placeholder="Who you talk to"
+              value={contactPerson}
+              onChangeText={setContactPerson}
+              autoCapitalize="words"
+              returnKeyType="next"
+            />
+
+            <TextField
+              label="Phone"
+              placeholder="+91 98765 43210"
+              value={contactPhone}
+              onChangeText={setContactPhone}
+              keyboardType="phone-pad"
+              autoComplete="tel"
+              hint="Used for the one-tap WhatsApp payment nudge"
+              returnKeyType="next"
+            />
+
+            <TextField
+              label="Email"
+              placeholder="poc@brand.com"
+              value={contactEmail}
+              onChangeText={setContactEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="next"
+            />
+
+            <TextField
+              label="Notes"
+              placeholder="Fussy about hook style. Pays slow — ask for an advance."
+              value={notes}
+              onChangeText={setNotes}
+              multiline
+            />
+
+            <Button
+              label="Add brand"
+              onPress={handleSave}
+              loading={saving}
+              fullWidth
+              size="lg"
+              style={styles.submit}
+            />
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </ModalSheet>
   )
 }
@@ -166,41 +142,14 @@ const styles = StyleSheet.create({
   content: {
     padding: Spacing.md,
     paddingBottom: Spacing.xl,
+    gap: Spacing.md,
   },
   contentWide: {
     maxWidth: ContentMaxWidth,
     width: '100%',
     alignSelf: 'center',
   },
-  sectionLabel: {
-    ...Typography.caption,
-    fontFamily: FontFamily.medium,
-    marginTop: Spacing.lg,
-    marginBottom: Spacing.xs,
-  },
-  input: {
-    height: 44,
-    borderWidth: 1,
-    borderRadius: Radius.sm,
-    paddingHorizontal: Spacing.md,
-    ...Typography.body,
-    fontFamily: FontFamily.regular,
-  },
-  multiline: {
-    height: undefined,
-    minHeight: 88,
-    paddingTop: 11,
-    paddingBottom: 11,
-  },
-  saveButton: {
-    height: 44,
-    borderRadius: Radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: Spacing.xl,
-  },
-  saveButtonText: {
-    ...Typography.bodyStrong,
-    fontFamily: FontFamily.medium,
+  submit: {
+    marginTop: Spacing.sm,
   },
 })

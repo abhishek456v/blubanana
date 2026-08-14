@@ -34,3 +34,5 @@ supabase/.temp/
 
 expo-env.d.ts
 # @end expo-cli
+# Screenshots from scripts/drive.mjs — regenerate, do not commit
+screenshots/

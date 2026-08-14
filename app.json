@@ -6,12 +6,20 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
+    "icon": "./assets/icon.png",
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "ai.automitra.creatordesk"
     },
     "android": {
-      "package": "ai.automitra.creatordesk"
+      "package": "ai.automitra.creatordesk",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#141210"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-router",
@@ -35,7 +43,19 @@
         }
       ],
       "expo-notifications",
-      "expo-document-picker"
+      "expo-document-picker",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#FDFBF9",
+          "dark": {
+            "backgroundColor": "#141210"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

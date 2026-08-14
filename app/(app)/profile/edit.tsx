@@ -1,28 +1,18 @@
-import { useState, useEffect } from 'react'
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
-  useColorScheme,
-  ActivityIndicator,
-} from 'react-native'
-import { showAlert } from '@/lib/alert'
+import { useEffect, useState } from 'react'
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { getProfile, updateProfile } from '@/lib/profile'
-import { Colors, Spacing, Radius, Typography, FontFamily, ContentMaxWidth } from '@/constants/design'
+import { ContentMaxWidth, FontFamily, Spacing, Typography } from '@/constants/design'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
+import { useTheme } from '@/hooks/useTheme'
 import { ModalSheet } from '@/components/ModalSheet'
+import { Button, Skeleton, TextField, useToast } from '@/components/ui'
 
 export default function EditProfileScreen() {
+  const toast = useToast()
   const router = useRouter()
-  const scheme = useColorScheme()
-  const c = scheme === 'dark' ? Colors.dark : Colors.light
+  const { c } = useTheme()
   const isWide = useIsWideScreen()
 
   const [loading, setLoading] = useState(true)
@@ -35,6 +25,7 @@ export default function EditProfileScreen() {
   const [bankAccount, setBankAccount] = useState('')
   const [ifscCode, setIfscCode] = useState('')
   const [gstin, setGstin] = useState('')
+  const [nameError, setNameError] = useState<string | undefined>()
 
   useEffect(() => {
     let active = true
@@ -51,7 +42,7 @@ export default function EditProfileScreen() {
         setGstin(profile.gstin ?? '')
       })
       .catch(() => {
-        if (active) showAlert('Error', 'Could not load your profile.')
+        if (active) toast('Could not load your profile', { tone: 'error' })
       })
       .finally(() => {
         if (active) setLoading(false)
@@ -59,22 +50,17 @@ export default function EditProfileScreen() {
     return () => {
       active = false
     }
+    // toast is stable from the provider; re-running this on it would refetch
+    // the profile on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  const inputStyle = [
-    styles.input,
-    {
-      borderColor: c.borderStrong,
-      color: c.textPrimary,
-      backgroundColor: c.bgSurface,
-    },
-  ]
 
   async function handleSave() {
     if (!name.trim()) {
-      showAlert('Name required', 'Enter your name.')
+      setNameError('Enter your name')
       return
     }
+    setNameError(undefined)
 
     setSaving(true)
     try {
@@ -88,9 +74,10 @@ export default function EditProfileScreen() {
         ifsc_code: ifscCode.trim() || null,
         gstin: gstin.trim() || null,
       })
+      toast('Profile saved', { tone: 'success' })
       router.back()
     } catch {
-      showAlert('Error', 'Could not save your profile. Please try again.')
+      toast('Could not save your profile', { tone: 'error' })
     } finally {
       setSaving(false)
     }
@@ -98,119 +85,122 @@ export default function EditProfileScreen() {
 
   if (loading) {
     return (
-      <ModalSheet title="Edit profile">
-      <SafeAreaView style={[styles.centered, { backgroundColor: c.bgPage }]} edges={['bottom']}>
-        <ActivityIndicator color={c.textMuted} />
-      </SafeAreaView>
+      <ModalSheet title="Your profile">
+        <SafeAreaView style={[styles.safe, { backgroundColor: c.bgPage }]} edges={['bottom']}>
+          <View style={[styles.content, isWide && styles.contentWide]}>
+            {Array.from({ length: 5 }, (_, i) => (
+              <Skeleton key={i} height={62} />
+            ))}
+          </View>
+        </SafeAreaView>
       </ModalSheet>
     )
   }
 
   return (
-    <ModalSheet title="Edit profile">
-    <SafeAreaView style={[styles.safe, { backgroundColor: c.bgPage }]} edges={['bottom']}>
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <ScrollView
-          contentContainerStyle={[styles.content, isWide && styles.contentWide]}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
+    <ModalSheet title="Your profile">
+      <SafeAreaView style={[styles.safe, { backgroundColor: c.bgPage }]} edges={['bottom']}>
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Name</Text>
-          <TextInput
-            style={inputStyle}
-            placeholder="Your name"
-            placeholderTextColor={c.textMuted}
-            value={name}
-            onChangeText={setName}
-            autoCapitalize="words"
-          />
-
-          <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Phone</Text>
-          <TextInput
-            style={inputStyle}
-            placeholder="+91 98765 43210"
-            placeholderTextColor={c.textMuted}
-            value={phone}
-            onChangeText={setPhone}
-            keyboardType="phone-pad"
-          />
-
-          <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Follower count</Text>
-          <TextInput
-            style={inputStyle}
-            placeholder="e.g. 25000"
-            placeholderTextColor={c.textMuted}
-            value={followerCount}
-            onChangeText={(v) => setFollowerCount(v.replace(/[^0-9]/g, ''))}
-            keyboardType="numeric"
-          />
-
-          <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Niche</Text>
-          <TextInput
-            style={inputStyle}
-            placeholder="e.g. Beauty, Fitness, Tech"
-            placeholderTextColor={c.textMuted}
-            value={niche}
-            onChangeText={setNiche}
-          />
-
-          <View style={[styles.divider, { backgroundColor: c.border }]} />
-          <Text style={[styles.groupLabel, { color: c.textSecondary }]}>
-            Invoice & payment details
-          </Text>
-
-          <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>UPI ID</Text>
-          <TextInput
-            style={inputStyle}
-            placeholder="yourname@upi"
-            placeholderTextColor={c.textMuted}
-            value={upiId}
-            onChangeText={setUpiId}
-            autoCapitalize="none"
-          />
-
-          <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Bank account number</Text>
-          <TextInput
-            style={inputStyle}
-            placeholderTextColor={c.textMuted}
-            value={bankAccount}
-            onChangeText={setBankAccount}
-          />
-
-          <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>IFSC code</Text>
-          <TextInput
-            style={inputStyle}
-            placeholderTextColor={c.textMuted}
-            value={ifscCode}
-            onChangeText={setIfscCode}
-            autoCapitalize="characters"
-          />
-
-          <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>GSTIN (optional)</Text>
-          <TextInput
-            style={inputStyle}
-            placeholder="22AAAAA0000A1Z5"
-            placeholderTextColor={c.textMuted}
-            value={gstin}
-            onChangeText={setGstin}
-            autoCapitalize="characters"
-          />
-
-          <TouchableOpacity
-            style={[styles.saveButton, { backgroundColor: c.fillPrimary }]}
-            onPress={handleSave}
-            disabled={saving}
-            activeOpacity={0.8}
+          <ScrollView
+            contentContainerStyle={[styles.content, isWide && styles.contentWide]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
-            {saving ? (
-              <ActivityIndicator color={c.onFillPrimary} />
-            ) : (
-              <Text style={[styles.saveButtonText, { color: c.onFillPrimary }]}>Save</Text>
-            )}
-          </TouchableOpacity>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+            <TextField
+              label="Name"
+              placeholder="Your name"
+              value={name}
+              onChangeText={(value) => {
+                setName(value)
+                if (nameError) setNameError(undefined)
+              }}
+              error={nameError}
+              autoCapitalize="words"
+            />
+
+            <TextField
+              label="Phone"
+              placeholder="+91 98765 43210"
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
+              autoComplete="tel"
+            />
+
+            <TextField
+              label="Niche"
+              placeholder="Beauty, fitness, food, tech…"
+              value={niche}
+              onChangeText={setNiche}
+              hint="Shown on your public profile card"
+            />
+
+            <TextField
+              label="Followers"
+              placeholder="50000"
+              value={followerCount}
+              onChangeText={(value) => setFollowerCount(value.replace(/[^0-9]/g, ''))}
+              keyboardType="number-pad"
+              hint="Snapshotted on each new deal, so the app can tell you when your reach has outgrown your rate"
+            />
+
+            <View style={styles.sectionBreak}>
+              <Text style={[styles.sectionTitle, { color: c.textPrimary }]}>Billing</Text>
+              <Text style={[styles.sectionHint, { color: c.textSecondary }]}>
+                Printed on the invoices you send. Never shown on your public profile.
+              </Text>
+            </View>
+
+            <TextField
+              label="GSTIN"
+              placeholder="22AAAAA0000A1Z5"
+              value={gstin}
+              onChangeText={(value) => setGstin(value.toUpperCase())}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              hint="Leave blank if you're not GST registered"
+            />
+
+            <TextField
+              label="UPI ID"
+              placeholder="you@upi"
+              value={upiId}
+              onChangeText={setUpiId}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+
+            <TextField
+              label="Account number"
+              placeholder="Bank account number"
+              value={bankAccount}
+              onChangeText={setBankAccount}
+              keyboardType="number-pad"
+            />
+
+            <TextField
+              label="IFSC"
+              placeholder="HDFC0001234"
+              value={ifscCode}
+              onChangeText={(value) => setIfscCode(value.toUpperCase())}
+              autoCapitalize="characters"
+              autoCorrect={false}
+            />
+
+            <Button
+              label="Save"
+              onPress={handleSave}
+              loading={saving}
+              fullWidth
+              size="lg"
+              style={styles.submit}
+            />
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </ModalSheet>
   )
 }
@@ -222,54 +212,30 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
-  centered: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   content: {
     padding: Spacing.md,
     paddingBottom: Spacing.xl,
+    gap: Spacing.md,
   },
   contentWide: {
     maxWidth: ContentMaxWidth,
     width: '100%',
     alignSelf: 'center',
   },
-  sectionLabel: {
+  sectionBreak: {
+    marginTop: Spacing.sm,
+    gap: 2,
+  },
+  sectionTitle: {
+    ...Typography.title,
+    fontFamily: FontFamily.display,
+  },
+  sectionHint: {
     ...Typography.caption,
-    fontFamily: FontFamily.medium,
-    marginTop: Spacing.lg,
-    marginBottom: Spacing.xs,
-  },
-  divider: {
-    height: 1,
-    marginTop: Spacing.lg,
-  },
-  groupLabel: {
-    ...Typography.label,
-    fontFamily: FontFamily.semiBold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-    marginTop: Spacing.md,
-  },
-  input: {
-    height: 44,
-    borderWidth: 1,
-    borderRadius: Radius.sm,
-    paddingHorizontal: Spacing.md,
-    ...Typography.body,
     fontFamily: FontFamily.regular,
+    lineHeight: 18,
   },
-  saveButton: {
-    height: 44,
-    borderRadius: Radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: Spacing.xl,
-  },
-  saveButtonText: {
-    ...Typography.bodyStrong,
-    fontFamily: FontFamily.medium,
+  submit: {
+    marginTop: Spacing.sm,
   },
 })

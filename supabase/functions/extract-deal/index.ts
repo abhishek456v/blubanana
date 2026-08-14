@@ -6,7 +6,13 @@
 // prompt so both intake methods behave consistently (PRODUCT.md 2.1).
 
 import { corsHeaders } from '../_shared/cors.ts'
-import { buildSystemPrompt, VALID_PLATFORMS, type ExtractedDealFields } from '../_shared/extraction-schema.ts'
+import {
+  buildSystemPrompt,
+  VALID_DELIVERABLE_KINDS,
+  VALID_PLATFORMS,
+  type ExtractedDealFields,
+  type ExtractedDeliverable,
+} from '../_shared/extraction-schema.ts'
 
 interface RequestBody {
   imageBase64?: string
@@ -18,6 +24,7 @@ const EMPTY_FIELDS: ExtractedDealFields = {
   brand_name: null,
   platform: null,
   deliverable_description: null,
+  deliverables: [],
   rate: null,
   payment_terms: null,
   script_due_date: null,
@@ -26,6 +33,9 @@ const EMPTY_FIELDS: ExtractedDealFields = {
   publish_date: null,
   notes: null,
 }
+
+/** Guards against a runaway model response turning into 400 form rows. */
+const MAX_DELIVERABLES = 12
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
@@ -44,13 +54,52 @@ function sanitize(raw: unknown): ExtractedDealFields {
       : null
   const rate = (v: unknown) => {
     const n = typeof v === 'number' ? v : typeof v === 'string' ? Number(v) : NaN
-    return Number.isFinite(n) && n > 0 ? Math.round(n) : null
+    // Zero is meaningful — a barter deal really is worth 0 — so only reject
+    // values that aren't numbers at all, or are negative.
+    return Number.isFinite(n) && n >= 0 ? Math.round(n) : null
+  }
+
+  // Each row is validated independently and dropped if its `kind` isn't one we
+  // recognise, so one bad item can't discard the whole itemisation.
+  const deliverables = (v: unknown): ExtractedDeliverable[] => {
+    if (!Array.isArray(v)) return []
+    const out: ExtractedDeliverable[] = []
+
+    for (const entry of v.slice(0, MAX_DELIVERABLES)) {
+      if (typeof entry !== 'object' || entry === null) continue
+      const e = entry as Record<string, unknown>
+
+      if (
+        typeof e.kind !== 'string' ||
+        !(VALID_DELIVERABLE_KINDS as readonly string[]).includes(e.kind)
+      ) {
+        continue
+      }
+
+      const quantityRaw =
+        typeof e.quantity === 'number'
+          ? e.quantity
+          : typeof e.quantity === 'string'
+            ? Number(e.quantity)
+            : 1
+
+      out.push({
+        kind: e.kind as ExtractedDeliverable['kind'],
+        quantity:
+          Number.isFinite(quantityRaw) && quantityRaw >= 1 ? Math.round(quantityRaw) : 1,
+        description: str(e.description),
+        rate: rate(e.rate),
+      })
+    }
+
+    return out
   }
 
   return {
     brand_name: str(r.brand_name),
     platform: platform(r.platform),
     deliverable_description: str(r.deliverable_description),
+    deliverables: deliverables(r.deliverables),
     rate: rate(r.rate),
     payment_terms: str(r.payment_terms),
     script_due_date: date(r.script_due_date),

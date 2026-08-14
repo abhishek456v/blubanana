@@ -1,33 +1,32 @@
-import { useState, useEffect, useCallback } from 'react'
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
-  useColorScheme,
-  ActivityIndicator,
-} from 'react-native'
-import { showAlert } from '@/lib/alert'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { getBrand, updateBrand } from '@/lib/brands'
 import { getDealsForBrand, type DealWithPaymentSummary } from '@/lib/deals'
 import { getRatingsForBrand, summarizeRatings } from '@/lib/reputation'
+import { formatCurrency } from '@/lib/format'
 import type { Brand, BrandRating } from '@/types'
-import { Colors, Spacing, Radius, Typography, FontFamily, ContentMaxWidth } from '@/constants/design'
+import { ContentMaxWidth, FontFamily, Spacing, Typography } from '@/constants/design'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
+import { useTheme } from '@/hooks/useTheme'
 import { ModalSheet } from '@/components/ModalSheet'
 import { DealRow } from '@/components/DealRow'
+import { BrandAvatar } from '@/components/BrandAvatar'
+import {
+  Button,
+  Card,
+  Skeleton,
+  StarRating,
+  TextField,
+  useToast,
+} from '@/components/ui'
 
 export default function BrandDetailScreen() {
+  const toast = useToast()
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
-  const scheme = useColorScheme()
-  const c = scheme === 'dark' ? Colors.dark : Colors.light
+  const { c } = useTheme()
   const isWide = useIsWideScreen()
 
   const [brand, setBrand] = useState<Brand | null>(null)
@@ -41,11 +40,11 @@ export default function BrandDetailScreen() {
   const [contactPhone, setContactPhone] = useState('')
   const [contactEmail, setContactEmail] = useState('')
   const [notes, setNotes] = useState('')
+  const [nameError, setNameError] = useState<string | undefined>()
 
-  // brandData/dealsData fetched together (both depend on tables that have
-  // existed since migration 001); ratings fetched separately since
-  // brand_ratings is a newer table (migration 006) and shouldn't block the
-  // rest of the screen if it's not there yet.
+  // brand/deals fetched together (both depend on tables that have existed since
+  // migration 001); ratings fetched separately since brand_ratings is newer
+  // (migration 006) and shouldn't block the rest of the screen.
   const load = useCallback(async () => {
     if (!id) return
     try {
@@ -58,26 +57,41 @@ export default function BrandDetailScreen() {
       setContactEmail(brandData.contact_email ?? '')
       setNotes(brandData.notes ?? '')
     } catch {
-      showAlert('Error', 'Could not load this brand.')
+      toast('Could not load this brand', { tone: 'error' })
     } finally {
       setLoading(false)
     }
     try {
       setRatings(await getRatingsForBrand(id))
     } catch {
-      // Non-fatal: review history section just doesn't show until this succeeds.
+      // Non-fatal: the reputation card just doesn't render until this succeeds.
     }
-  }, [id])
+  }, [id, toast])
 
   useEffect(() => {
     load()
   }, [load])
 
+  const summary = summarizeRatings(ratings)
+
+  // What this brand is actually worth to her — the answer to "should I say yes
+  // again?", which a star rating alone doesn't give.
+  const earned = useMemo(
+    () =>
+      deals
+        .filter((deal) => deal.payment?.status === 'paid')
+        .reduce((total, deal) => total + (deal.payment?.amount ?? deal.rate), 0),
+    [deals]
+  )
+
   async function handleSave() {
-    if (!brand || !name.trim()) {
-      showAlert('Name required', 'Enter the brand or client name.')
+    if (!brand) return
+    if (!name.trim()) {
+      setNameError('Enter the brand or client name')
       return
     }
+    setNameError(undefined)
+
     setSaving(true)
     try {
       await updateBrand(brand.id, {
@@ -87,210 +101,234 @@ export default function BrandDetailScreen() {
         contact_email: contactEmail.trim() || null,
         notes: notes.trim() || null,
       })
+      toast('Saved', { tone: 'success' })
       router.back()
     } catch {
-      showAlert('Error', 'Could not save changes. Please try again.')
+      toast('Could not save changes', { tone: 'error' })
     } finally {
       setSaving(false)
     }
   }
 
-  const inputStyle = [
-    styles.input,
-    { borderColor: c.borderStrong, color: c.textPrimary, backgroundColor: c.bgSurface },
-  ]
-
-  const summary = summarizeRatings(ratings)
-
-  if (loading || !brand) {
+  if (loading) {
     return (
       <ModalSheet title="Brand">
-        <SafeAreaView style={[styles.centered, { backgroundColor: c.bgPage }]} edges={['bottom']}>
-          <ActivityIndicator color={c.textMuted} />
+        <SafeAreaView style={[styles.safe, { backgroundColor: c.bgPage }]} edges={['bottom']}>
+          <View style={[styles.content, isWide && styles.contentWide]}>
+            {Array.from({ length: 5 }, (_, i) => (
+              <Skeleton key={i} height={62} />
+            ))}
+          </View>
         </SafeAreaView>
       </ModalSheet>
     )
   }
 
-  const saveButton = (
-    <TouchableOpacity onPress={handleSave} disabled={saving} hitSlop={{ top: 8, bottom: 8, left: 8, right: 0 }}>
-      <Text style={[styles.headerSaveText, { color: saving ? c.textMuted : c.textPrimary }]}>
-        {saving ? 'Saving…' : 'Save'}
-      </Text>
-    </TouchableOpacity>
-  )
-
   return (
-    <ModalSheet title={brand.name} headerRight={saveButton}>
-      <>
-        <Stack.Screen options={{ title: brand.name, headerRight: () => saveButton }} />
-        <SafeAreaView style={[styles.safe, { backgroundColor: c.bgPage }]} edges={['bottom']}>
-          <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-            <ScrollView
-              contentContainerStyle={[styles.content, isWide && styles.contentWide]}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
-            >
-              {summary ? (
-                <View style={[styles.reputationCard, { backgroundColor: c.accentLight, borderColor: c.accent }]}>
-                  <Text style={[styles.reputationScore, { color: c.accent }]}>
-                    {summary.averageRating.toFixed(1)} / 5
-                  </Text>
-                  <Text style={[styles.reputationMeta, { color: c.textSecondary }]}>
-                    From {summary.reviewCount} {summary.reviewCount === 1 ? 'review' : 'reviews'}
-                    {summary.lastPaidOnTime === false ? ' · Last payment was late' : ''}
-                  </Text>
-                </View>
-              ) : null}
+    <ModalSheet title={brand?.name ?? 'Brand'}>
+      <Stack.Screen options={{ title: brand?.name ?? 'Brand' }} />
+      <SafeAreaView style={[styles.safe, { backgroundColor: c.bgPage }]} edges={['bottom']}>
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <ScrollView
+            contentContainerStyle={[styles.content, isWide && styles.contentWide]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Track record first. Before editing a phone number, the useful
+                thing is whether this brand is worth working with again. */}
+            <Card style={styles.headerCard}>
+              <BrandAvatar name={brand?.name ?? '?'} size={48} />
+              <View style={styles.headerText}>
+                <Text style={[styles.headerName, { color: c.textPrimary }]} numberOfLines={1}>
+                  {brand?.name}
+                </Text>
+                <Text style={[styles.headerMeta, { color: c.textSecondary }]}>
+                  {deals.length} {deals.length === 1 ? 'deal' : 'deals'}
+                  {earned > 0 ? ` · ${formatCurrency(earned)} paid` : ''}
+                </Text>
+              </View>
+            </Card>
 
-              <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Brand name</Text>
-              <TextInput style={inputStyle} value={name} onChangeText={setName} autoCapitalize="words" />
-
-              <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Contact person</Text>
-              <TextInput style={inputStyle} value={contactPerson} onChangeText={setContactPerson} autoCapitalize="words" />
-
-              <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Contact phone</Text>
-              <TextInput style={inputStyle} value={contactPhone} onChangeText={setContactPhone} keyboardType="phone-pad" />
-
-              <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Contact email</Text>
-              <TextInput
-                style={inputStyle}
-                value={contactEmail}
-                onChangeText={setContactEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-              />
-
-              <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Notes</Text>
-              <TextInput
-                style={[inputStyle, styles.multiline]}
-                value={notes}
-                onChangeText={setNotes}
-                multiline
-                textAlignVertical="top"
-              />
-
-              {ratings.length > 0 && (
-                <>
-                  <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Review history</Text>
-                  <View style={{ gap: Spacing.sm }}>
-                    {ratings.map((r) => (
-                      <View key={r.id} style={[styles.reviewRow, { backgroundColor: c.bgSurface }]}>
-                        <View style={styles.reviewHeader}>
-                          <Text style={[styles.reviewRating, { color: c.textPrimary }]}>{r.rating} / 5</Text>
-                          <Text style={[styles.reviewDate, { color: c.textMuted }]}>
-                            {new Date(r.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                          </Text>
-                        </View>
-                        <Text style={[styles.reviewMeta, { color: c.textSecondary }]}>
-                          {[
-                            r.paid_on_time === false ? 'Paid late' : r.paid_on_time ? 'Paid on time' : null,
-                            r.would_work_again === false ? "Wouldn't work again" : r.would_work_again ? 'Would work again' : null,
-                            r.revision_rounds != null ? `${r.revision_rounds} revision rounds` : null,
-                          ]
-                            .filter(Boolean)
-                            .join(' · ')}
-                        </Text>
-                        {r.notes ? (
-                          <Text style={[styles.reviewNotes, { color: c.textSecondary }]}>{r.notes}</Text>
-                        ) : null}
-                      </View>
-                    ))}
+            {summary ? (
+              <Card>
+                <View style={styles.repRow}>
+                  <View style={styles.repText}>
+                    <Text style={[styles.repScore, { color: c.textPrimary }]}>
+                      {summary.averageRating.toFixed(1)}
+                      <Text style={[styles.repOutOf, { color: c.textMuted }]}> / 5</Text>
+                    </Text>
+                    <Text style={[styles.headerMeta, { color: c.textSecondary }]}>
+                      From {summary.reviewCount}{' '}
+                      {summary.reviewCount === 1 ? 'review' : 'reviews'}
+                    </Text>
                   </View>
-                </>
-              )}
+                  <StarRating value={Math.round(summary.averageRating)} size={18} readonly />
+                </View>
 
-              <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>
-                Deal history ({deals.length})
-              </Text>
-              {deals.length === 0 ? (
-                <Text style={[styles.emptyDeals, { color: c.textMuted }]}>No deals with this brand yet.</Text>
-              ) : (
-                <View style={{ gap: Spacing.sm }}>
-                  {deals.map((deal) => (
-                    <DealRow key={deal.id} deal={deal} onPress={() => router.push(`/(app)/deal/${deal.id}` as never)} />
+                {summary.lastPaidOnTime === false ? (
+                  <View style={[styles.flag, { backgroundColor: c.dangerLight }]}>
+                    <Text style={[styles.flagText, { color: c.danger }]}>
+                      Their last payment was late. Consider asking for an advance.
+                    </Text>
+                  </View>
+                ) : null}
+              </Card>
+            ) : null}
+
+            <TextField
+              label="Brand"
+              value={name}
+              onChangeText={(value) => {
+                setName(value)
+                if (nameError) setNameError(undefined)
+              }}
+              error={nameError}
+              autoCapitalize="words"
+            />
+
+            <TextField
+              label="POC"
+              placeholder="Who you talk to"
+              value={contactPerson}
+              onChangeText={setContactPerson}
+              autoCapitalize="words"
+            />
+
+            <TextField
+              label="Phone"
+              placeholder="+91 98765 43210"
+              value={contactPhone}
+              onChangeText={setContactPhone}
+              keyboardType="phone-pad"
+              autoComplete="tel"
+              hint="Used for the one-tap WhatsApp payment nudge"
+            />
+
+            <TextField
+              label="Email"
+              placeholder="poc@brand.com"
+              value={contactEmail}
+              onChangeText={setContactEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+
+            <TextField
+              label="Notes"
+              placeholder="Fussy about hook style. Two revision rounds expected."
+              value={notes}
+              onChangeText={setNotes}
+              multiline
+            />
+
+            <Button
+              label="Save"
+              onPress={handleSave}
+              loading={saving}
+              fullWidth
+              size="lg"
+              style={styles.submit}
+            />
+
+            {deals.length > 0 ? (
+              <View style={styles.dealsBlock}>
+                <Text style={[styles.sectionTitle, { color: c.textPrimary }]}>Deals</Text>
+                <View style={styles.dealsList}>
+                  {deals.map((deal, index) => (
+                    <DealRow
+                      key={deal.id}
+                      deal={deal}
+                      index={index}
+                      onPress={() => router.push(`/(app)/deal/${deal.id}` as never)}
+                    />
                   ))}
                 </View>
-              )}
-            </ScrollView>
-          </KeyboardAvoidingView>
-        </SafeAreaView>
-      </>
+              </View>
+            ) : null}
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </ModalSheet>
   )
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
-  flex: { flex: 1 },
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  content: { padding: Spacing.md, paddingBottom: Spacing.xl },
-  contentWide: { maxWidth: ContentMaxWidth, width: '100%', alignSelf: 'center' },
-  headerSaveText: {
-    ...Typography.bodyStrong,
-    fontFamily: FontFamily.medium,
-    marginRight: Spacing.md,
+  safe: {
+    flex: 1,
   },
-  sectionLabel: {
-    ...Typography.caption,
-    fontFamily: FontFamily.medium,
-    marginTop: Spacing.lg,
-    marginBottom: Spacing.xs,
+  flex: {
+    flex: 1,
   },
-  input: {
-    height: 44,
-    borderWidth: 1,
-    borderRadius: Radius.sm,
-    paddingHorizontal: Spacing.md,
-    ...Typography.body,
-    fontFamily: FontFamily.regular,
-  },
-  multiline: { height: undefined, minHeight: 80, paddingTop: 11, paddingBottom: 11 },
-  reputationCard: {
-    borderWidth: 1,
-    borderRadius: Radius.lg,
+  content: {
     padding: Spacing.md,
+    paddingBottom: Spacing.xl,
+    gap: Spacing.md,
+  },
+  contentWide: {
+    maxWidth: ContentMaxWidth,
+    width: '100%',
+    alignSelf: 'center',
+  },
+  headerCard: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: Spacing.md,
   },
-  reputationScore: {
+  headerText: {
+    flex: 1,
+    gap: 2,
+  },
+  headerName: {
+    ...Typography.title,
     fontFamily: FontFamily.display,
-    fontSize: 28,
   },
-  reputationMeta: {
+  headerMeta: {
     ...Typography.caption,
     fontFamily: FontFamily.regular,
-    marginTop: 2,
   },
-  reviewRow: {
-    borderRadius: Radius.md,
-    padding: Spacing.md,
-    gap: 4,
-  },
-  reviewHeader: {
+  repRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: Spacing.md,
   },
-  reviewRating: {
-    ...Typography.bodyStrong,
-    fontFamily: FontFamily.semiBold,
+  repText: {
+    gap: 1,
   },
-  reviewDate: {
-    ...Typography.caption,
+  repScore: {
+    ...Typography.display,
+    fontFamily: FontFamily.display,
+  },
+  repOutOf: {
+    ...Typography.body,
     fontFamily: FontFamily.regular,
   },
-  reviewMeta: {
-    ...Typography.caption,
-    fontFamily: FontFamily.regular,
+  flag: {
+    marginTop: Spacing.md,
+    padding: Spacing.sm + 2,
+    borderRadius: 10,
   },
-  reviewNotes: {
+  flagText: {
     ...Typography.caption,
-    fontFamily: FontFamily.regular,
-    marginTop: 2,
+    fontFamily: FontFamily.medium,
     lineHeight: 18,
   },
-  emptyDeals: {
-    ...Typography.caption,
-    fontFamily: FontFamily.regular,
+  submit: {
+    marginTop: Spacing.xs,
+  },
+  dealsBlock: {
+    marginTop: Spacing.md,
+    gap: Spacing.sm,
+  },
+  sectionTitle: {
+    ...Typography.title,
+    fontFamily: FontFamily.display,
+  },
+  dealsList: {
+    gap: 10,
   },
 })

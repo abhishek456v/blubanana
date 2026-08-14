@@ -1,14 +1,66 @@
-// Shared data-model types for the full Phase 1 schema.
-// All four core objects are typed here even if only used partially in Step 1.
+// Shared data-model types.
+//
+// ─────────────────────────────────────────────────────────────────────────────
+// INVARIANT: money is a whole number of rupees.
+//
+// Every money value in this codebase — `rate`, `amount`, `unit_amount`,
+// `total_amount`, `gst_amount`, `tds_amount`, `ad_rights_fee` — is an integer
+// count of RUPEES. Not paise, and never a float.
+//
+// Why not float: `0.1 + 0.2 !== 0.3`. Floating point is how money silently
+// goes wrong, so it is not used anywhere in this path.
+//
+// Why not paise, given the architecture spec asks for the smallest currency
+// unit: that rule exists to rule out floats, which integers already do. Paise
+// would add precision this product cannot use —
+//
+//   - deal rates, fees and payments in this market are whole rupees
+//   - GST is the only place a fraction arises, and under s.170 of the CGST Act
+//     tax on an invoice is rounded to the nearest rupee by law
+//
+// so the sub-rupee digits would be computed and then legally discarded, in
+// exchange for touching every money column and every display site.
+//
+// WHEN TO REVISIT: the first non-INR currency. USD has real cents, and at that
+// point this becomes a currency migration (per-row currency code, conversion,
+// display formatting) rather than a change of scale — so it should be designed
+// then, not pre-empted now.
+//
+// If you are adding a money column: make it `integer`, name it so the audit
+// trigger in migration 012 picks it up, and add it to `watched` there.
+// ─────────────────────────────────────────────────────────────────────────────
 
+// `podcast` was removed in migration 007 — podcasts are published on YouTube
+// or Instagram, so it was never a destination of its own. Existing podcast
+// deals were remapped to `youtube_long`.
 export type Platform =
   | 'instagram_reel'
   | 'instagram_feed'
+  | 'instagram_story'
   | 'youtube_short'
   | 'youtube_long'
-  | 'podcast'
   | 'twitter'
   | 'linkedin'
+  | 'other'
+
+/**
+ * What was actually sold on a deal.
+ *
+ * `ad_rights` (the brand may run this as a paid ad) and `auto_dm` (the
+ * "comment LINK and I'll DM you" setup) are commercial add-ons rather than
+ * pieces of content, so they carry no platform.
+ */
+export type DeliverableKind =
+  | 'reel'
+  | 'story'
+  | 'carousel'
+  | 'static_post'
+  | 'yt_short'
+  | 'yt_long'
+  | 'yt_integration'
+  | 'live'
+  | 'ad_rights'
+  | 'auto_dm'
   | 'other'
 
 export type DealStatus =
@@ -52,7 +104,7 @@ export interface Creator {
 
 export interface Brand {
   id: string
-  creator_id: string
+  workspace_id: string
   name: string
   contact_person: string | null
   contact_phone: string | null
@@ -63,7 +115,7 @@ export interface Brand {
 
 export interface Deal {
   id: string
-  creator_id: string
+  workspace_id: string
   brand_id: string
   platform: Platform
   deliverable_description: string
@@ -112,6 +164,44 @@ export interface Deal {
   brand?: Brand // joined on fetch
 }
 
+/**
+ * One line item on a deal — a reel, three stories, an auto-DM setup, the ad
+ * rights. Added in migration 007; replaces the single
+ * `Deal.deliverable_description` text field, which could not express a
+ * collaboration made of several dated, separately-priced pieces.
+ *
+ * Performance numbers live here rather than on the deal because a reel and a
+ * story from the same collaboration perform nothing alike.
+ */
+export interface Deliverable {
+  id: string
+  workspace_id: string
+  deal_id: string
+  kind: DeliverableKind
+  platform: Platform | null
+  quantity: number
+  description: string | null
+  rate: number // INR, whole rupees
+  due_date: string | null
+  published_at: string | null
+  live_link: string | null
+  // Ad-rights terms. Only meaningful when kind is 'ad_rights'.
+  duration_months: number | null
+  starts_on: string | null
+  expires_on: string | null
+  // Manual performance entry — no Instagram/YouTube API integration yet.
+  views: number | null
+  likes: number | null
+  comments: number | null
+  saves: number | null
+  shares: number | null
+  reach: number | null
+  performance_updated_at: string | null
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
 export interface Payment {
   id: string
   deal_id: string
@@ -132,7 +222,7 @@ export interface Payment {
 // reputation score). One per deal — deal_id is unique.
 export interface BrandRating {
   id: string
-  creator_id: string
+  workspace_id: string
   brand_id: string
   deal_id: string
   rating: number // 1-5
@@ -147,10 +237,34 @@ export interface BrandRating {
 // Phase 3 tax & invoicing. Brand contact fields are snapshotted at
 // generation time — editing/deleting the brand later never changes a
 // previously issued invoice.
+/**
+ * One billed line on an invoice (migration 008).
+ *
+ * Exists so a single invoice can cover several deals — three reels for the
+ * same brand across a month, billed together, which is what a brand's finance
+ * team expects against one PO.
+ */
+export interface InvoiceLineItem {
+  id: string
+  workspace_id: string
+  invoice_id: string
+  /** Null for an ad-hoc line with no deal behind it (a reshoot, an expense). */
+  deal_id: string | null
+  description: string
+  /** GST requires an HSN/SAC on the invoice. 998397 = other advertising services. */
+  hsn_sac: string
+  quantity: number
+  unit_amount: number // INR, whole rupees
+  amount: number // quantity * unit_amount
+  sort_order: number
+  created_at: string
+}
+
 export interface Invoice {
   id: string
-  creator_id: string
-  deal_id: string
+  workspace_id: string
+  /** Null on a consolidated invoice — the deals live on the line items. */
+  deal_id: string | null
   invoice_number: string
   invoice_date: string
   brand_name: string
@@ -172,10 +286,19 @@ export interface Invoice {
 // Best-effort fields pulled from a screenshot or voice transcript by the
 // extract-deal edge function. Every field is optional/nullable — the AI may
 // miss some, and the creator always reviews/edits before saving (PRODUCT.md 2.1).
+export interface ExtractedDeliverable {
+  kind: DeliverableKind
+  quantity: number
+  description: string | null
+  rate: number | null
+}
+
 export interface ExtractedDealFields {
   brand_name: string | null
   platform: Platform | null
   deliverable_description: string | null
+  /** Itemised breakdown. Empty when the source described only one thing. */
+  deliverables: ExtractedDeliverable[]
   rate: number | null // whole INR rupees
   payment_terms: string | null
   script_due_date: string | null // YYYY-MM-DD

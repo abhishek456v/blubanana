@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { getWorkspaceId } from './workspace'
 import type { Deal, DealStatus, Payment, PaymentStatus, Platform } from '@/types'
 import {
   rescheduleWorkflowReminder,
@@ -82,10 +83,12 @@ export async function createDeal(input: CreateDealInput): Promise<Deal> {
     .eq('id', user.id)
     .single()
 
+  const workspaceId = await getWorkspaceId()
+
   const { data: deal, error: dealError } = await supabase
     .from('deals')
     .insert({
-      creator_id: user.id,
+      workspace_id: workspaceId,
       brand_id: input.brand_id,
       creator_follower_count_at_time: profile?.follower_count ?? null,
       platform: input.platform,
@@ -115,6 +118,10 @@ export async function createDeal(input: CreateDealInput): Promise<Deal> {
   const { data: payment, error: paymentError } = await supabase
     .from('payments')
     .insert({
+      // payments has no creator_id of its own; before workspaces it was scoped
+      // through a subquery on deals. Carrying workspace_id directly is what
+      // lets its RLS policy drop that per-row join.
+      workspace_id: workspaceId,
       deal_id: deal.id,
       amount: input.rate,
       payment_terms: input.payment_terms ?? null,

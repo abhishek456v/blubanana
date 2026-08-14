@@ -1,5 +1,11 @@
+// Must be the first import in the entry tree — Gesture Handler patches the
+// native touch pipeline at module load, and anything that renders before it
+// runs will not receive gestures on Android.
+import 'react-native-gesture-handler'
+
 import { useEffect, useState } from 'react'
-import { Platform } from 'react-native'
+import { Platform, StyleSheet } from 'react-native'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { Slot, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import * as SplashScreen from 'expo-splash-screen'
@@ -12,9 +18,12 @@ import {
   Inter_600SemiBold,
 } from '@expo-google-fonts/inter'
 import { Syne_600SemiBold, Syne_700Bold } from '@expo-google-fonts/syne'
+import { FeedbackProvider } from '@/components/ui'
+import { ThemeProvider } from '@/hooks/useTheme'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
-import { setForegroundHandler, ensureAndroidChannelAsync } from '@/lib/notifications'
+import { setForegroundHandler, ensureAndroidChannelAsync, scheduleAsync } from '@/lib/notifications'
+import { rebuildLocalNotifications } from '@/lib/reminderChains'
 
 SplashScreen.preventAutoHideAsync()
 setForegroundHandler()
@@ -116,6 +125,37 @@ export default function RootLayout() {
     return () => subscription.remove()
   }, [])
 
+  // Re-create OS notifications from the durable reminder chain.
+  //
+  // This is the payoff for storing the schedule in the database: after a
+  // reinstall, a device switch, or the OS clearing its notification queue,
+  // everything scheduled is recoverable. Without it the creator finds out the
+  // schedule was lost by missing a deadline.
+  //
+  // Runs once per signed-in launch, after auth resolves so RLS can scope it.
+  useEffect(() => {
+    if (Platform.OS === 'web') return
+    if (!session || loading) return
+
+    rebuildLocalNotifications(async (reminder) =>
+      scheduleAsync(
+        {
+          title: reminder.title,
+          body: reminder.body ?? '',
+          data: {
+            type: reminder.type,
+            dealId: reminder.deal_id ?? '',
+            stage: reminder.stage ?? '',
+          },
+        },
+        new Date(reminder.scheduled_for)
+      )
+    ).catch(() => {
+      // Best-effort. A failure here leaves the previously scheduled
+      // notifications in place; it never blocks the app from opening.
+    })
+  }, [session, loading])
+
   // Workflow/payment reminder notifications are never actionable in-place —
   // tapping one just deep-links into the relevant deal, where the response
   // buttons/WhatsApp send button live (PRODUCT.md 2.3, 2.4).
@@ -146,9 +186,20 @@ export default function RootLayout() {
   if (!fontsLoaded || loading) return null
 
   return (
-    <>
-      <StatusBar style="auto" />
-      <Slot />
-    </>
+    <GestureHandlerRootView style={styles.root}>
+      {/* FeedbackProvider hosts the toast and confirmation surfaces. It sits
+          above the router so a toast raised on any screen survives the
+          navigation that usually follows it (save → toast → go back). */}
+      <ThemeProvider>
+        <FeedbackProvider>
+          <StatusBar style="auto" />
+          <Slot />
+        </FeedbackProvider>
+      </ThemeProvider>
+    </GestureHandlerRootView>
   )
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+})

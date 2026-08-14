@@ -11,11 +11,9 @@ import {
   Platform,
   Linking,
   StyleSheet,
-  useColorScheme,
   ActivityIndicator,
   Switch,
 } from 'react-native'
-import { showAlert } from '@/lib/alert'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import * as DocumentPicker from 'expo-document-picker'
@@ -35,9 +33,10 @@ import {
 } from '@/lib/deals'
 import { updateBrand } from '@/lib/brands'
 import type { ReminderResponse } from '@/lib/reminders'
-import { buildPaymentReminderMessage, buildLiveLinkMessage, buildWhatsAppLink } from '@/lib/whatsapp'
+import { buildPaymentReminderMessage, buildLiveLinkMessage } from '@/lib/whatsapp'
+import { chasedToday, nextEscalationLevel, sendNow } from '@/lib/messaging'
 import { getPaymentAlertTone } from '@/lib/paymentReminders'
-import { calculateAdRightsExpiry, getAdRightsStatus, buildMetaAdLibraryUrl } from '@/lib/adRights'
+import { getAdRightsStatus, buildMetaAdLibraryUrl } from '@/lib/adRights'
 import { submitRating, getRatingForDeal } from '@/lib/reputation'
 import { getInvoiceForDeal } from '@/lib/invoices'
 import {
@@ -47,14 +46,41 @@ import {
   getAttachmentUrl,
   type DealAttachment,
 } from '@/lib/attachments'
+import {
+  adRightsExpiry,
+  contentValue,
+  getDeliverables,
+  replaceDeliverables,
+  summarizeDeliverables,
+  type DeliverableInput,
+} from '@/lib/deliverables'
+import { DeliverablesCard } from '@/components/deal/DeliverablesCard'
+import { TimelineCard } from '@/components/deal/TimelineCard'
+import { MessageHistoryCard } from '@/components/deal/MessageHistoryCard'
+import type { DeliverableDraft } from '@/components/deal/DeliverableEditor'
+import { Chip, StarRating, TextField, useConfirm, useToast } from '@/components/ui'
+import { formatDateLong } from '@/lib/format'
 import { PLATFORMS, STATUS_LABELS, REMINDER_STAGE_LABELS } from '@/constants/labels'
-import { Colors, Spacing, Radius, Typography, FontFamily, ContentMaxWidth } from '@/constants/design'
-import { useIsWideScreen } from '@/hooks/useIsWideScreen'
-import { ModalSheet } from '@/components/ModalSheet'
+import {
+  ColumnGap,
+  DesktopContentMaxWidth,
+  FontFamily,
+  Radius,
+  Spacing,
+  Typography,
+} from '@/constants/design'
+import { useTheme } from '@/hooks/useTheme'
+import { useBreakpoint } from '@/hooks/useBreakpoint'
 import { BrandAvatar } from '@/components/BrandAvatar'
 import { StatusPill } from '@/components/StatusPill'
 import { PaymentStatusBadge } from '@/components/PaymentStatusBadge'
-import type { Platform as PlatformType, PaymentStatus, BrandRating, Invoice } from '@/types'
+import type {
+  Platform as PlatformType,
+  PaymentStatus,
+  BrandRating,
+  Deliverable,
+  Invoice,
+} from '@/types'
 
 function parseDate(input: string): string | null {
   const trimmed = input.trim()
@@ -67,11 +93,12 @@ function parseDate(input: string): string | null {
 }
 
 export default function DealDetailScreen() {
+  const toast = useToast()
+  const confirm = useConfirm()
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
-  const scheme = useColorScheme()
-  const c = scheme === 'dark' ? Colors.dark : Colors.light
-  const isWide = useIsWideScreen()
+  const { c } = useTheme()
+  const { isDesktop } = useBreakpoint()
 
   const [deal, setDeal] = useState<DealWithPayments | null>(null)
   const [loadError, setLoadError] = useState(false)
@@ -91,15 +118,22 @@ export default function DealDetailScreen() {
   const [liveLink, setLiveLink] = useState('')
   const [notes, setNotes] = useState('')
 
-  // Ad rights (optional add-on term).
-  const [adRightsEnabled, setAdRightsEnabled] = useState(false)
-  const [adRightsFee, setAdRightsFee] = useState('')
-  const [adRightsDuration, setAdRightsDuration] = useState<number | null>(null)
-  const [adRightsStartDate, setAdRightsStartDate] = useState('')
+  // Ad-rights terms live on the `ad_rights` deliverable now, not in local
+  // form state — see handleDeliverablesChange, which mirrors them onto the
+  // deal's own ad_rights_* columns for the expiry reminder.
+
+  // Typed line items (migration 007). `deliverable`/`rate` above are still
+  // maintained as a rendering of these, for everything that predates them.
+  const [deliverables, setDeliverables] = useState<Deliverable[]>([])
+  const [savingDeliverables, setSavingDeliverables] = useState(false)
 
   // Attachments (PRODUCT.md 1 — contracts/briefs, stored in Supabase Storage).
   const [attachments, setAttachments] = useState<DealAttachment[]>([])
   const [loadingAttachments, setLoadingAttachments] = useState(true)
+  // Distinct from "none uploaded". A storage failure used to render the empty
+  // state, so a policy that denied every read for weeks looked exactly like a
+  // deal with no files attached.
+  const [attachmentsError, setAttachmentsError] = useState(false)
   const [uploadingAttachment, setUploadingAttachment] = useState(false)
 
   // Client reputation score (Phase 2) — post-deal survey, prompted once.
@@ -165,16 +199,16 @@ export default function DealDetailScreen() {
         setLiveLink(data.live_link ?? '')
         setNotes(data.notes ?? '')
         setPaymentTerms(data.payment?.payment_terms ?? '')
-        setAdRightsEnabled(data.ad_rights_granted)
-        setAdRightsFee(data.ad_rights_fee != null ? String(data.ad_rights_fee) : '')
-        setAdRightsDuration(data.ad_rights_duration_months)
-        setAdRightsStartDate(data.ad_rights_start_date ?? '')
         setPerfViews(data.performance_views != null ? String(data.performance_views) : '')
         setPerfLikes(data.performance_likes != null ? String(data.performance_likes) : '')
         setPerfComments(data.performance_comments != null ? String(data.performance_comments) : '')
         setPerfSaves(data.performance_saves != null ? String(data.performance_saves) : '')
 
-        // Best-effort — reputation/invoice lookups never block the deal from loading.
+        // Best-effort — deliverable/reputation/invoice lookups never block the
+        // deal from loading.
+        getDeliverables(data.id)
+          .then((items) => active && setDeliverables(items))
+          .catch(() => {})
         getRatingForDeal(data.id)
           .then((r) => active && setExistingRating(r))
           .catch(() => {})
@@ -199,8 +233,11 @@ export default function DealDetailScreen() {
     try {
       const data = await listAttachments(id)
       setAttachments(data)
+      setAttachmentsError(false)
     } catch {
-      // Non-fatal: attachments section shows an appropriate empty state.
+      // Non-fatal for the rest of the screen, but it must not be silent.
+      setAttachments([])
+      setAttachmentsError(true)
     } finally {
       setLoadingAttachments(false)
     }
@@ -209,6 +246,68 @@ export default function DealDetailScreen() {
   useEffect(() => {
     refreshAttachments()
   }, [refreshAttachments])
+
+  /**
+   * Saves the line items immediately rather than waiting for the screen's
+   * Save button — the editor sheet already has its own explicit Save, so
+   * requiring a second one further down the page is the kind of thing that
+   * silently loses a creator's edits.
+   */
+  async function handleDeliverablesChange(drafts: DeliverableDraft[]) {
+    if (!deal || savingDeliverables) return
+    setSavingDeliverables(true)
+
+    const items: DeliverableInput[] = drafts.map((draft) => {
+      const months = Number(draft.duration_months) || null
+      return {
+        kind: draft.kind,
+        platform: draft.platform,
+        quantity: draft.quantity,
+        description: draft.description.trim() || null,
+        rate: Number(draft.rate) || 0,
+        due_date: draft.due_date,
+        live_link: draft.live_link,
+        published_at: draft.published_at,
+        duration_months: months,
+        starts_on: draft.starts_on,
+        expires_on: adRightsExpiry(draft.starts_on, months),
+      }
+    })
+
+    try {
+      const saved = await replaceDeliverables(deal.id, items)
+      setDeliverables(saved)
+
+      // Mirror the ad-rights line item onto the deal's own columns. Those are
+      // what schedule the 30-day expiry reminder and what getAdRightsStatus
+      // reads on the dashboard, so they cannot be left behind — and clearing
+      // them when the item is removed is what cancels a stale reminder.
+      const adRights = saved.find((item) => item.kind === 'ad_rights')
+      const adRightsFields = await updateAdRights(deal, {
+        ad_rights_granted: Boolean(adRights),
+        ad_rights_fee: adRights?.rate ?? null,
+        ad_rights_duration_months: adRights?.duration_months ?? null,
+        ad_rights_start_date: adRights?.starts_on ?? null,
+      })
+
+      // Mirror the derived figures back into local state so the rest of the
+      // screen (rate field, header total) reflects the change without a reload.
+      const summary = summarizeDeliverables(items)
+      const contentTotal = contentValue(saved)
+      setDeliverable(summary)
+      setRate(String(contentTotal))
+      setDeal({
+        ...deal,
+        deliverable_description: summary,
+        rate: contentTotal,
+        ...adRightsFields,
+      })
+    } catch {
+      toast('Could not save the deliverables. Please try again', { tone: 'error' })
+    } finally {
+      setSavingDeliverables(false)
+    }
+  }
 
   async function handleAddAttachment() {
     const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true, base64: false })
@@ -220,7 +319,7 @@ export default function DealDetailScreen() {
       await uploadAttachment(id, { uri: asset.uri, name: asset.name, mimeType: asset.mimeType })
       await refreshAttachments()
     } catch {
-      showAlert('Could not add attachment', 'Please try again.')
+      toast('Please try again', { tone: 'error' })
     } finally {
       setUploadingAttachment(false)
     }
@@ -231,26 +330,25 @@ export default function DealDetailScreen() {
       const url = await getAttachmentUrl(attachment.path)
       await Linking.openURL(url)
     } catch {
-      showAlert('Could not open file', 'Please try again.')
+      toast('Please try again', { tone: 'error' })
     }
   }
 
-  function handleDeleteAttachment(attachment: DealAttachment) {
-    showAlert('Remove attachment', `Remove "${attachment.name}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Remove',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await deleteAttachment(attachment.path)
-            await refreshAttachments()
-          } catch {
-            showAlert('Could not remove attachment', 'Please try again.')
-          }
-        },
-      },
-    ])
+  async function handleDeleteAttachment(attachment: DealAttachment) {
+    const confirmed = await confirm({
+      title: 'Remove attachment?',
+      message: `"${attachment.name}" will be deleted. A signed contract is worth keeping if this deal is ever disputed.`,
+      confirmLabel: 'Remove',
+      destructive: true,
+    })
+    if (!confirmed) return
+
+    try {
+      await deleteAttachment(attachment.path)
+      await refreshAttachments()
+    } catch {
+      toast('Could not remove that attachment', { tone: 'error' })
+    }
   }
 
   const handleSave = useCallback(async () => {
@@ -258,7 +356,7 @@ export default function DealDetailScreen() {
 
     const rateNum = parseInt(rate, 10)
     if (!rate || isNaN(rateNum) || rateNum <= 0) {
-      showAlert('Invalid rate', 'Enter a valid rate in INR.')
+      toast('Enter a valid rate in INR', { tone: 'warning' })
       return
     }
 
@@ -270,23 +368,9 @@ export default function DealDetailScreen() {
     ]
     for (const { label, value } of datesToValidate) {
       if (value.trim() && parseDate(value) === null) {
-        showAlert('Invalid date', `${label} must be YYYY-MM-DD (e.g. 2025-09-15).`)
-        return
-      }
-    }
-
-    if (adRightsEnabled) {
-      const feeNum = parseInt(adRightsFee, 10)
-      if (!adRightsFee || isNaN(feeNum) || feeNum <= 0) {
-        showAlert('Ad rights fee required', 'Enter the ad rights fee, or turn off ad rights.')
-        return
-      }
-      if (!adRightsDuration) {
-        showAlert('Ad rights duration required', 'Select how long the ad rights last.')
-        return
-      }
-      if (!adRightsStartDate.trim() || parseDate(adRightsStartDate) === null) {
-        showAlert('Ad rights start date required', 'Enter a valid start date (YYYY-MM-DD).')
+        // Defensive only — every date on this screen now comes from the
+        // calendar picker, so an unparseable one would mean a bug, not typing.
+        toast(`${label} isn't a valid date`, { tone: 'warning' })
         return
       }
     }
@@ -313,16 +397,14 @@ export default function DealDetailScreen() {
         publishDate: parsedPublish,
       })
 
-      await updateAdRights(deal, {
-        ad_rights_granted: adRightsEnabled,
-        ad_rights_fee: adRightsEnabled ? parseInt(adRightsFee, 10) : null,
-        ad_rights_duration_months: adRightsEnabled ? adRightsDuration : null,
-        ad_rights_start_date: adRightsEnabled ? parseDate(adRightsStartDate) : null,
-      })
+      // Ad rights are not written here. They are saved by the Deliverables
+      // card the moment its editor is confirmed, which also syncs the deal's
+      // ad_rights_* columns and reschedules the expiry reminder. Writing them
+      // again from stale local state would undo that.
 
       router.back()
     } catch {
-      showAlert('Error', 'Could not save changes. Please try again.')
+      toast('Could not save changes. Please try again', { tone: 'error' })
     } finally {
       setSaving(false)
     }
@@ -338,10 +420,6 @@ export default function DealDetailScreen() {
     publishDate,
     liveLink,
     notes,
-    adRightsEnabled,
-    adRightsFee,
-    adRightsDuration,
-    adRightsStartDate,
   ])
 
   // Moving off 'published' is special-cased (PRODUCT.md 2.5): it requires a
@@ -352,7 +430,7 @@ export default function DealDetailScreen() {
     if (!deal || !deal.brand || advancing) return
     const trimmedLink = liveLink.trim()
     if (!trimmedLink) {
-      showAlert('Live link required', 'Enter the live link before marking this as live.')
+      toast('Enter the live link before marking this as live', { tone: 'warning' })
       return
     }
 
@@ -372,23 +450,31 @@ export default function DealDetailScreen() {
           : prev
       )
 
-      const message = buildLiveLinkMessage({
-        brandName: deal.brand.name,
-        contactPerson: deal.brand.contact_person,
-        deliverable: deal.deliverable_description,
-        liveLink: trimmedLink,
-      })
-      const link = deal.brand.contact_phone ? buildWhatsAppLink(deal.brand.contact_phone, message) : null
-      if (link) {
-        await Linking.openURL(link)
-      } else {
-        showAlert(
-          'No phone number on file',
-          "This brand has no phone number saved, so the live-link message couldn't be prepared. The deal was still moved to payment awaited."
+      // Logged to the outbox like every other brand-facing message. Sending
+      // this one through a side door would leave a gap in the very history
+      // that makes the payment chasers defensible.
+      const handedOff = await sendNow(
+        {
+          dealId: deal.id,
+          purpose: 'delivery_notification',
+          body: buildLiveLinkMessage({
+            brandName: deal.brand.name,
+            contactPerson: deal.brand.contact_person,
+            deliverable: deal.deliverable_description,
+            liveLink: trimmedLink,
+          }),
+        },
+        deal.brand.contact_phone
+      )
+
+      if (!handedOff) {
+        toast(
+          'Deal moved to payment awaited. Add a phone number for this brand to send the live link.',
+          { tone: 'warning' }
         )
       }
     } catch {
-      showAlert('Error', 'Could not advance status.')
+      toast('Could not advance status', { tone: 'error' })
     } finally {
       setAdvancing(false)
     }
@@ -433,7 +519,7 @@ export default function DealDetailScreen() {
         }
       })
     } catch {
-      showAlert('Error', 'Could not advance status.')
+      toast('Could not advance status', { tone: 'error' })
     } finally {
       setAdvancing(false)
     }
@@ -447,7 +533,7 @@ export default function DealDetailScreen() {
       const fields = await respondToReminder(deal, response)
       setDeal((prev) => (prev ? { ...prev, ...fields } : prev))
     } catch {
-      showAlert('Error', 'Could not update reminder. Please try again.')
+      toast('Could not update reminder. Please try again', { tone: 'error' })
     } finally {
       setRespondingReminder(false)
     }
@@ -467,29 +553,60 @@ export default function DealDetailScreen() {
       return
     }
 
-    const link = buildWhatsAppLink(
-      brand.contact_phone,
-      buildPaymentReminderMessage({
+    setSendingReminder(true)
+    try {
+      // Tone is driven by how many chasers have actually gone out, not by how
+      // overdue the payment is — someone who only started chasing today should
+      // not open with the wording of a fourth follow-up.
+      const escalationLevel = await nextEscalationLevel(payment.id)
+
+      if (await chasedToday(payment.id)) {
+        const again = await confirm({
+          title: 'Already chased today',
+          message: 'You sent a reminder for this payment earlier today. Send another?',
+          confirmLabel: 'Send anyway',
+        })
+        if (!again) {
+          setSendingReminder(false)
+          return
+        }
+      }
+
+      const body = buildPaymentReminderMessage({
         brandName: brand.name,
         contactPerson: brand.contact_person,
         deliverable: deal.deliverable_description,
         amount: payment.amount,
         dueDate: payment.due_date!,
         tone,
+        escalationLevel,
+        liveLink: deal.live_link,
+        invoiceNumber: invoice?.invoice_number ?? null,
       })
-    )
-    if (!link) {
-      showAlert('Invalid phone number', "This brand's phone number couldn't be used to open WhatsApp.")
-      return
-    }
 
-    setSendingReminder(true)
-    try {
-      await Linking.openURL(link)
+      // Logged to the outbox before it leaves, so "I chased them on the 3rd,
+      // the 10th and the 24th" is evidence the creator actually holds if this
+      // payment is ever disputed.
+      const handedOff = await sendNow(
+        {
+          dealId: deal.id,
+          paymentId: payment.id,
+          purpose: tone === 'due_soon' ? 'payment_reminder_pre' : 'payment_reminder_overdue',
+          body,
+          escalationLevel,
+        },
+        brand.contact_phone
+      )
+
+      if (!handedOff) {
+        toast("This brand's phone number couldn't be used to open WhatsApp", { tone: 'warning' })
+        return
+      }
+
       const newStatus = await markPaymentReminderSent(deal.id, payment.status)
       setDeal((prev) => (prev ? { ...prev, payment: { ...payment, status: newStatus } } : prev))
     } catch {
-      showAlert('Could not open WhatsApp', 'Please try again.')
+      toast('Could not open WhatsApp', { tone: 'error' })
     } finally {
       setSendingReminder(false)
     }
@@ -507,7 +624,7 @@ export default function DealDetailScreen() {
       setAddingPhone(false)
       setPhoneInput('')
     } catch {
-      showAlert('Error', 'Could not save phone number. Please try again.')
+      toast('Could not save phone number. Please try again', { tone: 'error' })
     } finally {
       setSavingPhone(false)
     }
@@ -529,7 +646,7 @@ export default function DealDetailScreen() {
       })
       setExistingRating(saved)
     } catch {
-      showAlert('Error', 'Could not save your rating. Please try again.')
+      toast('Could not save your rating. Please try again', { tone: 'error' })
     } finally {
       setSubmittingRating(false)
     }
@@ -545,9 +662,9 @@ export default function DealDetailScreen() {
         performance_comments: perfComments.trim() ? parseInt(perfComments, 10) : null,
         performance_saves: perfSaves.trim() ? parseInt(perfSaves, 10) : null,
       })
-      showAlert('Saved', 'Performance numbers updated.')
+      toast('Performance numbers updated', { tone: 'success' })
     } catch {
-      showAlert('Error', 'Could not save performance numbers. Please try again.')
+      toast('Could not save performance numbers. Please try again', { tone: 'error' })
     } finally {
       setSavingPerformance(false)
     }
@@ -568,6 +685,10 @@ export default function DealDetailScreen() {
   }
 
   const brandName = deal?.brand?.name ?? ''
+  // Ad rights are entered as a line item now. The deal's own ad_rights_*
+  // columns are kept in sync from it (see handleDeliverablesChange) because
+  // the expiry reminder and the Ad Library check read those, not the item.
+  const adRightsItem = deliverables.find((item) => item.kind === 'ad_rights') ?? null
   const nextStatus = deal ? getNextStatus(deal.status) : null
   const needsLiveLinkFirst = deal?.status === 'published' && !liveLink.trim()
 
@@ -584,20 +705,17 @@ export default function DealDetailScreen() {
 
   if (loading) {
     return (
-      <ModalSheet title="Deal">
       <>
         <Stack.Screen options={{ title: 'Deal' }} />
         <SafeAreaView style={[styles.centered, { backgroundColor: c.bgPage }]} edges={['bottom']}>
           <ActivityIndicator color={c.textMuted} />
         </SafeAreaView>
       </>
-      </ModalSheet>
     )
   }
 
   if (loadError || !deal) {
     return (
-      <ModalSheet title="Deal">
       <>
         <Stack.Screen options={{ title: 'Deal' }} />
         <SafeAreaView style={[styles.centered, { backgroundColor: c.bgPage }]} edges={['bottom']}>
@@ -609,13 +727,12 @@ export default function DealDetailScreen() {
           </TouchableOpacity>
         </SafeAreaView>
       </>
-      </ModalSheet>
     )
   }
 
   // ── Main screen ────────────────────────────────────────────────────────────
 
-  // Shared between the native Stack header (mobile) and ModalSheet's own
+  // Shared between the native Stack header and the inline save control
   // header (desktop) — see app/(app)/_layout.tsx for which one is active.
   const saveButton = (
     <TouchableOpacity
@@ -631,7 +748,6 @@ export default function DealDetailScreen() {
   )
 
   return (
-    <ModalSheet title={brandName || 'Deal'} headerRight={saveButton}>
     <>
       {/*
         Stack.Screen placed inside the component so headerRight closes over
@@ -650,722 +766,594 @@ export default function DealDetailScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
           <ScrollView
-            contentContainerStyle={[styles.content, isWide && styles.contentWide]}
+            contentContainerStyle={[styles.content, styles.contentWide]}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
             showsVerticalScrollIndicator={false}
           >
             <Pressable onPress={() => Keyboard.dismiss()}>
 
-              {/* ── Status ──────────────────────────────────────────── */}
-              <View style={[styles.statusCard, { backgroundColor: c.bgSurface }]}>
-                <View style={styles.statusRow}>
-                  <StatusPill status={deal.status} />
-                  {nextStatus ? (
-                    <TouchableOpacity
-                      style={[
-                        styles.advanceButton,
-                        { borderColor: c.borderStrong },
-                        needsLiveLinkFirst && styles.advanceButtonDisabled,
-                      ]}
-                      onPress={handleAdvanceStatus}
-                      disabled={advancing || needsLiveLinkFirst}
-                      activeOpacity={0.8}
-                    >
-                      {advancing ? (
-                        <ActivityIndicator
-                          size="small"
-                          color={c.textPrimary}
-                          style={styles.advanceSpinner}
-                        />
-                      ) : (
-                        <Text style={[styles.advanceButtonText, { color: c.textPrimary }]}>
-                          → {STATUS_LABELS[nextStatus]}
-                        </Text>
-                      )}
-                    </TouchableOpacity>
-                  ) : (
-                    <Text style={[styles.completedNote, { color: c.textMuted }]}>
-                      Deal complete
-                    </Text>
-                  )}
-                </View>
-                {needsLiveLinkFirst ? (
-                  <Text style={[styles.statusCaption, { color: c.textMuted }]}>
-                    Add the live link below before marking this as live.
-                  </Text>
-                ) : null}
-              </View>
-
-              {/* ── Client reputation score (Phase 2) ─────────────────── */}
-              {deal.status === 'paid' && existingRating ? (
-                <View style={[styles.ratingSummaryCard, { backgroundColor: c.accentLight }]}>
-                  <Text style={[styles.ratingSummaryText, { color: c.accent }]}>
-                    You rated this collaboration {existingRating.rating}/5
-                  </Text>
-                </View>
-              ) : null}
-
-              {deal.status === 'paid' && !existingRating ? (
-                <View style={[styles.ratingCard, { backgroundColor: c.bgSurface }]}>
-                  <Text style={[styles.ratingTitle, { color: c.textPrimary }]}>
-                    Rate this collaboration
-                  </Text>
-                  <Text style={[styles.ratingSubtitle, { color: c.textSecondary }]}>
-                    Helps you decide fast if {brandName} reaches out again.
-                  </Text>
-
-                  <View style={styles.ratingStars}>
-                    {[1, 2, 3, 4, 5].map((n) => (
-                      <TouchableOpacity
-                        key={n}
-                        onPress={() => setRatingValue(n)}
-                        style={[
-                          styles.ratingStar,
-                          {
-                            backgroundColor: n <= ratingValue ? c.accent : 'transparent',
-                            borderColor: n <= ratingValue ? c.accent : c.borderStrong,
-                          },
-                        ]}
-                        activeOpacity={0.7}
-                      >
-                        <Text
+              {/* Two columns on desktop. The cut is between the deal itself —
+                  status, brand, deliverables, money, dates — and everything
+                  attached to it: rights, messages, files, performance, invoice.
+                  Below `desktop` they stack in exactly this order, so the mobile
+                  reading order is unchanged. */}
+              <View style={isDesktop ? styles.columns : undefined}>
+                <View style={isDesktop ? styles.mainColumn : undefined}>
+                  {/* ── Status ──────────────────────────────────────────── */}
+                  <View style={[styles.statusCard, { backgroundColor: c.bgSurface }]}>
+                    <View style={styles.statusRow}>
+                      <StatusPill status={deal.status} />
+                      {nextStatus ? (
+                        <TouchableOpacity
                           style={[
-                            styles.ratingStarText,
-                            { color: n <= ratingValue ? c.onFillPrimary : c.textSecondary },
+                            styles.advanceButton,
+                            { borderColor: c.borderStrong },
+                            needsLiveLinkFirst && styles.advanceButtonDisabled,
                           ]}
+                          onPress={handleAdvanceStatus}
+                          disabled={advancing || needsLiveLinkFirst}
+                          activeOpacity={0.8}
                         >
-                          {n}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-
-                  <View style={styles.ratingToggleRow}>
-                    <TouchableOpacity
-                      onPress={() => setPaidOnTime((v) => (v === true ? null : true))}
-                      style={[
-                        styles.ratingToggle,
-                        paidOnTime === true
-                          ? { backgroundColor: c.accent }
-                          : { borderWidth: 1, borderColor: c.borderStrong },
-                      ]}
-                    >
-                      <Text style={[styles.ratingToggleText, { color: paidOnTime === true ? c.onFillPrimary : c.textSecondary }]}>
-                        Paid on time
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => setEasyToWorkWith((v) => (v === true ? null : true))}
-                      style={[
-                        styles.ratingToggle,
-                        easyToWorkWith === true
-                          ? { backgroundColor: c.accent }
-                          : { borderWidth: 1, borderColor: c.borderStrong },
-                      ]}
-                    >
-                      <Text style={[styles.ratingToggleText, { color: easyToWorkWith === true ? c.onFillPrimary : c.textSecondary }]}>
-                        Easy to work with
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => setWouldWorkAgain((v) => (v === true ? null : true))}
-                      style={[
-                        styles.ratingToggle,
-                        wouldWorkAgain === true
-                          ? { backgroundColor: c.accent }
-                          : { borderWidth: 1, borderColor: c.borderStrong },
-                      ]}
-                    >
-                      <Text style={[styles.ratingToggleText, { color: wouldWorkAgain === true ? c.onFillPrimary : c.textSecondary }]}>
-                        Would work again
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  <TextInput
-                    style={[
-                      styles.input,
-                      styles.ratingNotesInput,
-                      { borderColor: c.borderStrong, color: c.textPrimary, backgroundColor: c.bgSurfaceRaised },
-                    ]}
-                    placeholder="Anything worth remembering about this brand? (optional)"
-                    placeholderTextColor={c.textMuted}
-                    value={ratingNotes}
-                    onChangeText={setRatingNotes}
-                    multiline
-                    textAlignVertical="top"
-                  />
-
-                  <TouchableOpacity
-                    style={[styles.ratingSubmitButton, { backgroundColor: c.fillPrimary }]}
-                    onPress={handleSubmitRating}
-                    disabled={submittingRating}
-                    activeOpacity={0.8}
-                  >
-                    {submittingRating ? (
-                      <ActivityIndicator color={c.onFillPrimary} />
-                    ) : (
-                      <Text style={[styles.ratingSubmitText, { color: c.onFillPrimary }]}>Save rating</Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              ) : null}
-
-              {/* ── Workflow reminder ────────────────────────────── */}
-              {/*
-                Notifications never carry action buttons — tapping one just
-                deep-links here (app/_layout.tsx), where these three
-                responses live (PRODUCT.md 2.3). "Done" is the only filled
-                pill anywhere on this screen; the other two stay outline so
-                DESIGN.md's one-filled-button rule holds even though the
-                payment card below can show its own (outline) send button
-                at the same time.
-              */}
-              {deal.reminder_stage ? (
-                <View style={[styles.reminderCard, { backgroundColor: c.bgSurface }]}>
-                  <Text style={[styles.reminderTitle, { color: c.textPrimary }]}>
-                    {REMINDER_STAGE_LABELS[deal.reminder_stage]}
-                  </Text>
-                  {deal.reminder_fire_at ? (
-                    <Text style={[styles.reminderSubtitle, { color: c.textSecondary }]}>
-                      {formatReminderTime(deal.reminder_fire_at)}
-                    </Text>
-                  ) : null}
-                  <View style={styles.reminderActions}>
-                    <TouchableOpacity
-                      style={[styles.reminderDoneButton, { backgroundColor: c.fillPrimary }]}
-                      onPress={() => handleReminderResponse('done')}
-                      disabled={respondingReminder}
-                      activeOpacity={0.8}
-                    >
-                      {respondingReminder ? (
-                        <ActivityIndicator size="small" color={c.onFillPrimary} />
-                      ) : (
-                        <Text style={[styles.reminderDoneText, { color: c.onFillPrimary }]}>Done</Text>
-                      )}
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => handleReminderResponse('remind_12h')}
-                      disabled={respondingReminder}
-                      style={styles.reminderSnoozeButton}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[styles.reminderSnoozeText, { color: c.textSecondary }]}>
-                        +12 hours
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => handleReminderResponse('remind_tomorrow')}
-                      disabled={respondingReminder}
-                      style={styles.reminderSnoozeButton}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[styles.reminderSnoozeText, { color: c.textSecondary }]}>
-                        Tomorrow
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ) : null}
-
-              {/* ── Brand (non-editable) ─────────────────────────── */}
-              <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Brand</Text>
-              <View style={[styles.brandDisplay, { backgroundColor: c.bgSurface }]}>
-                <BrandAvatar name={brandName} size={32} />
-                <Text style={[styles.brandDisplayName, { color: c.textPrimary }]}>
-                  {brandName}
-                </Text>
-              </View>
-
-              {/* ── Platform ─────────────────────────────────────── */}
-              <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Platform</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.platformScroll}
-              >
-                {PLATFORMS.map((p) => {
-                  const selected = platform === p.key
-                  return (
-                    <TouchableOpacity
-                      key={p.key}
-                      onPress={() => setPlatform(p.key)}
-                      style={[
-                        styles.platformPill,
-                        selected
-                          ? { backgroundColor: c.fillPrimary }
-                          : { borderWidth: 1, borderColor: c.borderStrong },
-                      ]}
-                      activeOpacity={0.7}
-                    >
-                      <Text
-                        style={[
-                          styles.platformPillText,
-                          { color: selected ? c.onFillPrimary : c.textSecondary },
-                        ]}
-                      >
-                        {p.label}
-                      </Text>
-                    </TouchableOpacity>
-                  )
-                })}
-              </ScrollView>
-
-              {/* ── Deliverable ──────────────────────────────────── */}
-              <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Deliverable</Text>
-              <TextInput
-                style={[inputStyle, styles.multiline]}
-                value={deliverable}
-                onChangeText={setDeliverable}
-                multiline
-                textAlignVertical="top"
-                placeholder="What you're creating"
-                placeholderTextColor={c.textMuted}
-              />
-
-              {/* ── Rate ─────────────────────────────────────────── */}
-              <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Rate</Text>
-              <View style={styles.rateRow}>
-                <View
-                  style={[
-                    styles.ratePrefix,
-                    { borderColor: c.borderStrong, backgroundColor: c.bgSurface },
-                  ]}
-                >
-                  <Text style={[styles.ratePrefixText, { color: c.textMuted }]}>₹</Text>
-                </View>
-                <TextInput
-                  style={[
-                    styles.rateInput,
-                    { borderColor: c.borderStrong, color: c.textPrimary, backgroundColor: c.bgSurface },
-                  ]}
-                  value={rate}
-                  onChangeText={(v) => setRate(v.replace(/[^0-9]/g, ''))}
-                  keyboardType="numeric"
-                  placeholder="0"
-                  placeholderTextColor={c.textMuted}
-                />
-              </View>
-
-              {/* ── Payment terms ────────────────────────────────── */}
-              <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Payment terms</Text>
-              <TextInput
-                style={inputStyle}
-                value={paymentTerms}
-                onChangeText={setPaymentTerms}
-                placeholder='e.g. "45 days from publish"'
-                placeholderTextColor={c.textMuted}
-              />
-
-              {/* ── Payment ──────────────────────────────────────── */}
-              {(() => {
-                const payment = deal.payment
-                if (!payment) return null
-                const tone = getPaymentAlertTone(payment)
-                const missingPhone = !deal.brand?.contact_phone
-
-                return (
-                  <View style={[styles.paymentCard, { backgroundColor: c.bgSurface }]}>
-                    <View style={styles.paymentHeaderRow}>
-                      <PaymentStatusBadge status={payment.status} />
-                      {payment.due_date ? (
-                        <Text style={[styles.paymentDueDate, { color: c.textSecondary }]}>
-                          Due {formatDueDate(payment.due_date)}
-                        </Text>
-                      ) : null}
-                    </View>
-
-                    {tone ? (
-                      addingPhone ? (
-                        <View style={styles.phoneAddRow}>
-                          <TextInput
-                            style={[inputStyle, styles.phoneInput]}
-                            value={phoneInput}
-                            onChangeText={setPhoneInput}
-                            placeholder="Brand phone number"
-                            placeholderTextColor={c.textMuted}
-                            keyboardType="phone-pad"
-                            autoFocus
-                          />
-                          <TouchableOpacity
-                            style={[styles.phoneSaveButton, { borderColor: c.borderStrong }]}
-                            onPress={handleSavePhone}
-                            disabled={savingPhone || !phoneInput.trim()}
-                            activeOpacity={0.8}
-                          >
-                            {savingPhone ? (
-                              <ActivityIndicator size="small" color={c.textPrimary} />
-                            ) : (
-                              <Text style={[styles.phoneSaveButtonText, { color: c.textPrimary }]}>
-                                Save
-                              </Text>
-                            )}
-                          </TouchableOpacity>
-                        </View>
-                      ) : (
-                        <>
-                          <TouchableOpacity
-                            style={[styles.paymentSendButton, { borderColor: c.borderStrong }]}
-                            onPress={handleSendPaymentReminder}
-                            disabled={sendingReminder}
-                            activeOpacity={0.8}
-                          >
-                            {sendingReminder ? (
-                              <ActivityIndicator size="small" color={c.textPrimary} />
-                            ) : (
-                              <Text style={[styles.paymentSendButtonText, { color: c.textPrimary }]}>
-                                {missingPhone ? 'Add phone number to send' : 'Send WhatsApp reminder'}
-                              </Text>
-                            )}
-                          </TouchableOpacity>
-                          {missingPhone ? (
-                            <Text style={[styles.paymentCaption, { color: c.textMuted }]}>
-                              This brand has no phone number on file yet.
+                          {advancing ? (
+                            <ActivityIndicator
+                              size="small"
+                              color={c.textPrimary}
+                              style={styles.advanceSpinner}
+                            />
+                          ) : (
+                            <Text style={[styles.advanceButtonText, { color: c.textPrimary }]}>
+                              → {STATUS_LABELS[nextStatus]}
                             </Text>
-                          ) : null}
-                        </>
-                      )
+                          )}
+                        </TouchableOpacity>
+                      ) : (
+                        <Text style={[styles.completedNote, { color: c.textMuted }]}>
+                          Deal complete
+                        </Text>
+                      )}
+                    </View>
+                    {needsLiveLinkFirst ? (
+                      <Text style={[styles.statusCaption, { color: c.textMuted }]}>
+                        Add the live link below before marking this as live.
+                      </Text>
                     ) : null}
                   </View>
-                )
-              })()}
 
-              {/* ── Timeline ─────────────────────────────────────── */}
-              <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>
-                Timeline (YYYY-MM-DD)
-              </Text>
-              <View style={styles.dateGrid}>
-                <View style={styles.dateCell}>
-                  <Text style={[styles.dateLabel, { color: c.textMuted }]}>Script due</Text>
-                  <TextInput
-                    style={inputStyle}
-                    value={scriptDue}
-                    onChangeText={setScriptDue}
-                    placeholder="2025-09-01"
-                    placeholderTextColor={c.textMuted}
-                    keyboardType="numbers-and-punctuation"
-                  />
-                </View>
-                <View style={styles.dateCell}>
-                  <Text style={[styles.dateLabel, { color: c.textMuted }]}>Shoot day</Text>
-                  <TextInput
-                    style={inputStyle}
-                    value={shootDate}
-                    onChangeText={setShootDate}
-                    placeholder="2025-09-05"
-                    placeholderTextColor={c.textMuted}
-                    keyboardType="numbers-and-punctuation"
-                  />
-                </View>
-                <View style={styles.dateCell}>
-                  <Text style={[styles.dateLabel, { color: c.textMuted }]}>Edit done</Text>
-                  <TextInput
-                    style={inputStyle}
-                    value={editDone}
-                    onChangeText={setEditDone}
-                    placeholder="2025-09-10"
-                    placeholderTextColor={c.textMuted}
-                    keyboardType="numbers-and-punctuation"
-                  />
-                </View>
-                <View style={styles.dateCell}>
-                  <Text style={[styles.dateLabel, { color: c.textMuted }]}>Publish date</Text>
-                  <TextInput
-                    style={inputStyle}
-                    value={publishDate}
-                    onChangeText={setPublishDate}
-                    placeholder="2025-09-15"
-                    placeholderTextColor={c.textMuted}
-                    keyboardType="numbers-and-punctuation"
-                  />
-                </View>
-              </View>
-
-              {/* ── Live link ────────────────────────────────────── */}
-              <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Live link</Text>
-              <TextInput
-                style={inputStyle}
-                value={liveLink}
-                onChangeText={setLiveLink}
-                placeholder="Link to the published post"
-                placeholderTextColor={c.textMuted}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="url"
-              />
-
-              {/* ── Notes ────────────────────────────────────────── */}
-              <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Notes</Text>
-              <TextInput
-                style={[inputStyle, styles.multiline]}
-                value={notes}
-                onChangeText={setNotes}
-                multiline
-                textAlignVertical="top"
-                placeholder="Any additional context"
-                placeholderTextColor={c.textMuted}
-              />
-
-              {/* ── Ad rights (optional) ──────────────────────────── */}
-              <View style={styles.adRightsHeader}>
-                <Text style={[styles.sectionLabel, styles.adRightsLabel, { color: c.accent }]}>
-                  Ad rights
-                </Text>
-                <Switch
-                  value={adRightsEnabled}
-                  onValueChange={setAdRightsEnabled}
-                  trackColor={{ false: c.border, true: c.accentLight }}
-                  thumbColor={adRightsEnabled ? c.accent : undefined}
-                />
-              </View>
-
-              {adRightsEnabled && (
-                <View style={[styles.adRightsBox, { backgroundColor: c.accentLight, borderColor: c.accent }]}>
-                  <Text style={[styles.dateLabel, { color: c.textSecondary }]}>Ad rights fee</Text>
-                  <View style={styles.rateRow}>
-                    <View style={[styles.ratePrefix, { borderColor: c.borderStrong, backgroundColor: c.bgSurfaceRaised }]}>
-                      <Text style={[styles.ratePrefixText, { color: c.textMuted }]}>₹</Text>
+                  {/* ── Client reputation score (Phase 2) ─────────────────── */}
+                  {deal.status === 'paid' && existingRating ? (
+                    <View style={[styles.ratingSummaryCard, { backgroundColor: c.accentLight }]}>
+                      <Text style={[styles.ratingSummaryText, { color: c.accent }]}>
+                        You rated this collaboration {existingRating.rating}/5
+                      </Text>
                     </View>
-                    <TextInput
-                      style={[
-                        styles.rateInput,
-                        { borderColor: c.borderStrong, color: c.textPrimary, backgroundColor: c.bgSurfaceRaised },
-                      ]}
-                      placeholder="0"
-                      placeholderTextColor={c.textMuted}
-                      value={adRightsFee}
-                      onChangeText={(v) => setAdRightsFee(v.replace(/[^0-9]/g, ''))}
-                      keyboardType="numeric"
-                    />
-                  </View>
+                  ) : null}
 
-                  <Text style={[styles.dateLabel, { color: c.textSecondary, marginTop: Spacing.md }]}>
-                    Duration
-                  </Text>
-                  <View style={styles.platformScroll}>
-                    {[1, 2, 3, 6, 9, 12].map((months) => {
-                      const selected = adRightsDuration === months
-                      return (
+                  {deal.status === 'paid' && !existingRating ? (
+                    <View style={[styles.ratingCard, { backgroundColor: c.bgSurface }]}>
+                      <Text style={[styles.ratingTitle, { color: c.textPrimary }]}>
+                        Rate this collaboration
+                      </Text>
+                      <Text style={[styles.ratingSubtitle, { color: c.textSecondary }]}>
+                        Helps you decide fast if {brandName} reaches out again.
+                      </Text>
+
+                      {/* Actual stars. This was five numbered square buttons,
+                          which read as a form field rather than a judgement —
+                          the wrong feel for "would you work with them again?" */}
+                      <View style={styles.ratingStars}>
+                        <StarRating value={ratingValue} onChange={setRatingValue} size={30} />
+                      </View>
+
+                      <View style={styles.ratingToggleRow}>
                         <TouchableOpacity
-                          key={months}
-                          onPress={() => setAdRightsDuration(months)}
+                          onPress={() => setPaidOnTime((v) => (v === true ? null : true))}
                           style={[
-                            styles.platformPill,
-                            selected
+                            styles.ratingToggle,
+                            paidOnTime === true
                               ? { backgroundColor: c.accent }
                               : { borderWidth: 1, borderColor: c.borderStrong },
                           ]}
-                          activeOpacity={0.7}
                         >
-                          <Text
-                            style={[
-                              styles.platformPillText,
-                              { color: selected ? c.onFillPrimary : c.textSecondary },
-                            ]}
-                          >
-                            {months} {months === 1 ? 'month' : 'months'}
+                          <Text style={[styles.ratingToggleText, { color: paidOnTime === true ? c.onFillPrimary : c.textSecondary }]}>
+                            Paid on time
                           </Text>
                         </TouchableOpacity>
-                      )
-                    })}
+                        <TouchableOpacity
+                          onPress={() => setEasyToWorkWith((v) => (v === true ? null : true))}
+                          style={[
+                            styles.ratingToggle,
+                            easyToWorkWith === true
+                              ? { backgroundColor: c.accent }
+                              : { borderWidth: 1, borderColor: c.borderStrong },
+                          ]}
+                        >
+                          <Text style={[styles.ratingToggleText, { color: easyToWorkWith === true ? c.onFillPrimary : c.textSecondary }]}>
+                            Easy to work with
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => setWouldWorkAgain((v) => (v === true ? null : true))}
+                          style={[
+                            styles.ratingToggle,
+                            wouldWorkAgain === true
+                              ? { backgroundColor: c.accent }
+                              : { borderWidth: 1, borderColor: c.borderStrong },
+                          ]}
+                        >
+                          <Text style={[styles.ratingToggleText, { color: wouldWorkAgain === true ? c.onFillPrimary : c.textSecondary }]}>
+                            Would work again
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+
+                      <TextInput
+                        style={[
+                          styles.input,
+                          styles.ratingNotesInput,
+                          { borderColor: c.borderStrong, color: c.textPrimary, backgroundColor: c.bgSurfaceRaised },
+                        ]}
+                        placeholder="Anything worth remembering about this brand? (optional)"
+                        placeholderTextColor={c.textMuted}
+                        value={ratingNotes}
+                        onChangeText={setRatingNotes}
+                        multiline
+                        textAlignVertical="top"
+                      />
+
+                      <TouchableOpacity
+                        style={[styles.ratingSubmitButton, { backgroundColor: c.fillPrimary }]}
+                        onPress={handleSubmitRating}
+                        disabled={submittingRating}
+                        activeOpacity={0.8}
+                      >
+                        {submittingRating ? (
+                          <ActivityIndicator color={c.onFillPrimary} />
+                        ) : (
+                          <Text style={[styles.ratingSubmitText, { color: c.onFillPrimary }]}>Save rating</Text>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  ) : null}
+
+                  {/* ── Workflow reminder ────────────────────────────── */}
+                  {/*
+                    Notifications never carry action buttons — tapping one just
+                    deep-links here (app/_layout.tsx), where these three
+                    responses live (PRODUCT.md 2.3). "Done" is the only filled
+                    pill anywhere on this screen; the other two stay outline so
+                    DESIGN.md's one-filled-button rule holds even though the
+                    payment card below can show its own (outline) send button
+                    at the same time.
+                  */}
+                  {deal.reminder_stage ? (
+                    <View style={[styles.reminderCard, { backgroundColor: c.bgSurface }]}>
+                      <Text style={[styles.reminderTitle, { color: c.textPrimary }]}>
+                        {REMINDER_STAGE_LABELS[deal.reminder_stage]}
+                      </Text>
+                      {deal.reminder_fire_at ? (
+                        <Text style={[styles.reminderSubtitle, { color: c.textSecondary }]}>
+                          {formatReminderTime(deal.reminder_fire_at)}
+                        </Text>
+                      ) : null}
+                      <View style={styles.reminderActions}>
+                        <TouchableOpacity
+                          style={[styles.reminderDoneButton, { backgroundColor: c.fillPrimary }]}
+                          onPress={() => handleReminderResponse('done')}
+                          disabled={respondingReminder}
+                          activeOpacity={0.8}
+                        >
+                          {respondingReminder ? (
+                            <ActivityIndicator size="small" color={c.onFillPrimary} />
+                          ) : (
+                            <Text style={[styles.reminderDoneText, { color: c.onFillPrimary }]}>Done</Text>
+                          )}
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => handleReminderResponse('remind_12h')}
+                          disabled={respondingReminder}
+                          style={styles.reminderSnoozeButton}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={[styles.reminderSnoozeText, { color: c.textSecondary }]}>
+                            +12 hours
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => handleReminderResponse('remind_tomorrow')}
+                          disabled={respondingReminder}
+                          style={styles.reminderSnoozeButton}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={[styles.reminderSnoozeText, { color: c.textSecondary }]}>
+                            Tomorrow
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ) : null}
+
+                  {/* ── Brand (non-editable) ─────────────────────────── */}
+                  <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Brand</Text>
+                  <View style={[styles.brandDisplay, { backgroundColor: c.bgSurface }]}>
+                    <BrandAvatar name={brandName} size={32} />
+                    <Text style={[styles.brandDisplayName, { color: c.textPrimary }]}>
+                      {brandName}
+                    </Text>
                   </View>
 
-                  <Text style={[styles.dateLabel, { color: c.textSecondary, marginTop: Spacing.md }]}>
-                    Start date (YYYY-MM-DD)
-                  </Text>
-                  <TextInput
-                    style={[
-                      styles.input,
-                      { borderColor: c.borderStrong, color: c.textPrimary, backgroundColor: c.bgSurfaceRaised },
-                    ]}
-                    placeholder="2025-09-15"
-                    placeholderTextColor={c.textMuted}
-                    value={adRightsStartDate}
-                    onChangeText={setAdRightsStartDate}
-                    keyboardType="numbers-and-punctuation"
-                  />
-
-                  {adRightsDuration && parseDate(adRightsStartDate) && (
-                    <Text style={[styles.adRightsExpiryNote, { color: c.accent }]}>
-                      Expires{' '}
-                      {calculateAdRightsExpiry(parseDate(adRightsStartDate), adRightsDuration)} — you'll
-                      get a reminder 30 days before.
-                    </Text>
-                  )}
-
-                  {getAdRightsStatus(deal) === 'expired' && (
-                    <Text style={[styles.adRightsExpiryNote, { color: c.danger }]}>
-                      These ad rights have expired.
-                    </Text>
-                  )}
-
-                  <TouchableOpacity
-                    style={[styles.metaAdLibraryButton, { borderColor: c.accent }]}
-                    onPress={() => Linking.openURL(buildMetaAdLibraryUrl(brandName))}
-                    activeOpacity={0.8}
+                  {/* ── Platform ─────────────────────────────────────── */}
+                  <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Platform</Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.platformScroll}
                   >
-                    <Ionicons name="search-outline" size={15} color={c.accent} />
-                    <Text style={[styles.metaAdLibraryButtonText, { color: c.accent }]}>
-                      Check Meta Ad Library
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              )}
+                    {PLATFORMS.map((p) => {
+                      return (
+                        <Chip
+                          key={p.key}
+                          label={p.label}
+                          selected={platform === p.key}
+                          onPress={() => setPlatform(p.key)}
+                        />
+                      )
+                    })}
+                  </ScrollView>
 
-              {/* ── Attachments ──────────────────────────────────── */}
-              <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Attachments</Text>
-              <View style={[styles.attachmentsBox, { backgroundColor: c.bgSurface }]}>
-                {loadingAttachments ? (
-                  <ActivityIndicator color={c.textMuted} style={styles.attachmentsLoading} />
-                ) : attachments.length === 0 ? (
-                  <Text style={[styles.attachmentsEmpty, { color: c.textMuted }]}>
-                    No attachments yet — contracts, briefs, anything worth keeping with this deal.
-                  </Text>
-                ) : (
-                  attachments.map((a, index) => (
+                  {/* ── Deliverables ─────────────────────────────────────
+                      Replaces the old free-text deliverable field and the single
+                      rate input. Both are now derived from the line items, so the
+                      rate is the sum of what was actually sold rather than a
+                      number typed separately that could disagree with it. */}
+                  <View style={styles.deliverablesBlock}>
+                    <DeliverablesCard
+                      deliverables={deliverables}
+                      onChange={handleDeliverablesChange}
+                      disabled={savingDeliverables}
+                    />
+                  </View>
+
+                  {/* ── Payment terms ────────────────────────────────── */}
+                  <View style={styles.fieldStack}>
+                    <TextField
+                      label="Payment terms"
+                      value={paymentTerms}
+                      onChangeText={setPaymentTerms}
+                      placeholder="45 days from publish"
+                      hint="The payment clock starts from the publish date"
+                    />
+                  </View>
+
+                  {/* ── Payment ──────────────────────────────────────── */}
+                  {(() => {
+                    const payment = deal.payment
+                    if (!payment) return null
+                    const tone = getPaymentAlertTone(payment)
+                    const missingPhone = !deal.brand?.contact_phone
+
+                    return (
+                      <View style={[styles.paymentCard, { backgroundColor: c.bgSurface }]}>
+                        <View style={styles.paymentHeaderRow}>
+                          <PaymentStatusBadge status={payment.status} />
+                          {payment.due_date ? (
+                            <Text style={[styles.paymentDueDate, { color: c.textSecondary }]}>
+                              Due {formatDueDate(payment.due_date)}
+                            </Text>
+                          ) : null}
+                        </View>
+
+                        {tone ? (
+                          addingPhone ? (
+                            <View style={styles.phoneAddRow}>
+                              <TextInput
+                                style={[inputStyle, styles.phoneInput]}
+                                value={phoneInput}
+                                onChangeText={setPhoneInput}
+                                placeholder="Brand phone number"
+                                placeholderTextColor={c.textMuted}
+                                keyboardType="phone-pad"
+                                autoFocus
+                              />
+                              <TouchableOpacity
+                                style={[styles.phoneSaveButton, { borderColor: c.borderStrong }]}
+                                onPress={handleSavePhone}
+                                disabled={savingPhone || !phoneInput.trim()}
+                                activeOpacity={0.8}
+                              >
+                                {savingPhone ? (
+                                  <ActivityIndicator size="small" color={c.textPrimary} />
+                                ) : (
+                                  <Text style={[styles.phoneSaveButtonText, { color: c.textPrimary }]}>
+                                    Save
+                                  </Text>
+                                )}
+                              </TouchableOpacity>
+                            </View>
+                          ) : (
+                            <>
+                              <TouchableOpacity
+                                style={[styles.paymentSendButton, { borderColor: c.borderStrong }]}
+                                onPress={handleSendPaymentReminder}
+                                disabled={sendingReminder}
+                                activeOpacity={0.8}
+                              >
+                                {sendingReminder ? (
+                                  <ActivityIndicator size="small" color={c.textPrimary} />
+                                ) : (
+                                  <Text style={[styles.paymentSendButtonText, { color: c.textPrimary }]}>
+                                    {missingPhone ? 'Add phone number to send' : 'Send WhatsApp reminder'}
+                                  </Text>
+                                )}
+                              </TouchableOpacity>
+                              {missingPhone ? (
+                                <Text style={[styles.paymentCaption, { color: c.textMuted }]}>
+                                  This brand has no phone number on file yet.
+                                </Text>
+                              ) : null}
+                            </>
+                          )
+                        ) : null}
+                      </View>
+                    )
+                  })()}
+
+                  {/* ── Timeline ─────────────────────────────────────────
+                      A stage tracker plus real date pickers, replacing the grid
+                      of hand-typed YYYY-MM-DD inputs this screen used to carry. */}
+                  <View style={styles.deliverablesBlock}>
+                    <TimelineCard
+                      status={deal.status}
+                      scriptDue={scriptDue}
+                      shootDate={shootDate}
+                      editDone={editDone}
+                      publishDate={publishDate}
+                      onChange={(field, value) => {
+                        if (field === 'script') setScriptDue(value)
+                        else if (field === 'shoot') setShootDate(value)
+                        else if (field === 'edit') setEditDone(value)
+                        else setPublishDate(value)
+                      }}
+                    />
+                  </View>
+
+                </View>
+
+                <View style={isDesktop ? styles.sideColumn : undefined}>
+                  {/* ── Live link + notes ────────────────────────────── */}
+                  <View style={styles.fieldStack}>
+                    <TextField
+                      label="Live link"
+                      value={liveLink}
+                      onChangeText={setLiveLink}
+                      placeholder="https://instagram.com/reel/…"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      keyboardType="url"
+                      hint="Goes into the delivery message and starts the payment clock"
+                    />
+
+                    <TextField
+                      label="Notes"
+                      value={notes}
+                      onChangeText={setNotes}
+                      multiline
+                      placeholder="Anything worth remembering next time they message"
+                    />
+                  </View>
+
+                  {/* ── Ad rights ────────────────────────────────────────
+                      The fee, duration and start date are edited as an `ad_rights`
+                      line item in the Deliverables card above. This block used to
+                      duplicate all three, which meant the same term could be
+                      entered twice and disagree with itself. What is left is the
+                      part the line item can't express: whether the licence has
+                      run out, and the one-tap Ad Library check. */}
+                  {adRightsItem ? (
                     <View
-                      key={a.path}
-                      style={[
-                        styles.attachmentRow,
-                        index < attachments.length - 1 && {
-                          borderBottomWidth: 1,
-                          borderBottomColor: c.border,
-                        },
-                      ]}
+                      style={[styles.adRightsBox, { backgroundColor: c.accentLight, borderColor: c.accent }]}
                     >
-                      <TouchableOpacity
-                        style={styles.attachmentNameButton}
-                        onPress={() => handleOpenAttachment(a)}
-                        activeOpacity={0.7}
-                      >
-                        <Ionicons name="document-outline" size={18} color={c.textSecondary} />
+                      <Text style={[styles.sectionLabel, styles.adRightsLabel, { color: c.accent }]}>
+                        Ad rights
+                      </Text>
+
+                      {adRightsItem.expires_on ? (
                         <Text
-                          style={[styles.attachmentName, { color: c.textPrimary }]}
-                          numberOfLines={1}
+                          style={[
+                            styles.adRightsExpiryNote,
+                            {
+                              color:
+                                getAdRightsStatus(deal) === 'expired' ? c.danger : c.textSecondary,
+                            },
+                          ]}
                         >
-                          {a.name}
+                          {getAdRightsStatus(deal) === 'expired'
+                            ? `Expired ${formatDateLong(adRightsItem.expires_on)} — the brand should have stopped running ads.`
+                            : `Runs until ${formatDateLong(adRightsItem.expires_on)}. You'll get a reminder 30 days before.`}
+                        </Text>
+                      ) : (
+                        <Text style={[styles.adRightsExpiryNote, { color: c.textSecondary }]}>
+                          Add a start date and duration to the ad rights item above to track expiry.
+                        </Text>
+                      )}
+
+                      <TouchableOpacity
+                        style={[styles.metaAdLibraryButton, { borderColor: c.accent }]}
+                        onPress={() => Linking.openURL(buildMetaAdLibraryUrl(brandName))}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="search-outline" size={15} color={c.accent} />
+                        <Text style={[styles.metaAdLibraryButtonText, { color: c.accent }]}>
+                          Check Meta Ad Library
                         </Text>
                       </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => handleDeleteAttachment(a)}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      >
-                        <Ionicons name="trash-outline" size={18} color={c.textMuted} />
-                      </TouchableOpacity>
                     </View>
-                  ))
-                )}
-              </View>
-              <TouchableOpacity
-                style={[styles.addAttachmentButton, { borderColor: c.borderStrong }]}
-                onPress={handleAddAttachment}
-                disabled={uploadingAttachment}
-                activeOpacity={0.8}
-              >
-                {uploadingAttachment ? (
-                  <ActivityIndicator size="small" color={c.textPrimary} />
-                ) : (
-                  <Text style={[styles.addAttachmentText, { color: c.textPrimary }]}>
-                    + Add file
-                  </Text>
-                )}
-              </TouchableOpacity>
+                  ) : null}
 
-              {/* ── Content performance (Phase 2, manual entry) ───────── */}
-              {(deal.status === 'published' || deal.status === 'payment_awaited' || deal.status === 'paid') && (
-                <>
-                  <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>
-                    Performance
-                  </Text>
-                  <Text style={[styles.performanceHint, { color: c.textMuted }]}>
-                    Entered manually for now — auto-sync from Instagram/YouTube needs those accounts connected, which isn't set up yet.
-                  </Text>
-                  <View style={styles.performanceGrid}>
-                    <View style={styles.dateCell}>
-                      <Text style={[styles.dateLabel, { color: c.textMuted }]}>Views</Text>
-                      <TextInput
-                        style={inputStyle}
-                        value={perfViews}
-                        onChangeText={(v) => setPerfViews(v.replace(/[^0-9]/g, ''))}
-                        keyboardType="numeric"
-                        placeholder="0"
-                        placeholderTextColor={c.textMuted}
-                      />
-                    </View>
-                    <View style={styles.dateCell}>
-                      <Text style={[styles.dateLabel, { color: c.textMuted }]}>Likes</Text>
-                      <TextInput
-                        style={inputStyle}
-                        value={perfLikes}
-                        onChangeText={(v) => setPerfLikes(v.replace(/[^0-9]/g, ''))}
-                        keyboardType="numeric"
-                        placeholder="0"
-                        placeholderTextColor={c.textMuted}
-                      />
-                    </View>
-                    <View style={styles.dateCell}>
-                      <Text style={[styles.dateLabel, { color: c.textMuted }]}>Comments</Text>
-                      <TextInput
-                        style={inputStyle}
-                        value={perfComments}
-                        onChangeText={(v) => setPerfComments(v.replace(/[^0-9]/g, ''))}
-                        keyboardType="numeric"
-                        placeholder="0"
-                        placeholderTextColor={c.textMuted}
-                      />
-                    </View>
-                    <View style={styles.dateCell}>
-                      <Text style={[styles.dateLabel, { color: c.textMuted }]}>Saves</Text>
-                      <TextInput
-                        style={inputStyle}
-                        value={perfSaves}
-                        onChangeText={(v) => setPerfSaves(v.replace(/[^0-9]/g, ''))}
-                        keyboardType="numeric"
-                        placeholder="0"
-                        placeholderTextColor={c.textMuted}
-                      />
-                    </View>
+                  <View style={styles.deliverablesBlock}>
+                    <MessageHistoryCard dealId={deal.id} />
+                  </View>
+
+                  {/* ── Attachments ──────────────────────────────────── */}
+                  <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Attachments</Text>
+                  <View style={[styles.attachmentsBox, { backgroundColor: c.bgSurface }]}>
+                    {loadingAttachments ? (
+                      <ActivityIndicator color={c.textMuted} style={styles.attachmentsLoading} />
+                    ) : attachmentsError ? (
+                      <TouchableOpacity onPress={refreshAttachments} activeOpacity={0.8}>
+                        <Text style={[styles.attachmentsEmpty, { color: c.danger }]}>
+                          Could not load your files. Tap to try again.
+                        </Text>
+                      </TouchableOpacity>
+                    ) : attachments.length === 0 ? (
+                      <Text style={[styles.attachmentsEmpty, { color: c.textMuted }]}>
+                        No attachments yet — contracts, briefs, anything worth keeping with this deal.
+                      </Text>
+                    ) : (
+                      attachments.map((a, index) => (
+                        <View
+                          key={a.path}
+                          style={[
+                            styles.attachmentRow,
+                            index < attachments.length - 1 && {
+                              borderBottomWidth: 1,
+                              borderBottomColor: c.border,
+                            },
+                          ]}
+                        >
+                          <TouchableOpacity
+                            style={styles.attachmentNameButton}
+                            onPress={() => handleOpenAttachment(a)}
+                            activeOpacity={0.7}
+                          >
+                            <Ionicons name="document-outline" size={18} color={c.textSecondary} />
+                            <Text
+                              style={[styles.attachmentName, { color: c.textPrimary }]}
+                              numberOfLines={1}
+                            >
+                              {a.name}
+                            </Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => handleDeleteAttachment(a)}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          >
+                            <Ionicons name="trash-outline" size={18} color={c.textMuted} />
+                          </TouchableOpacity>
+                        </View>
+                      ))
+                    )}
                   </View>
                   <TouchableOpacity
                     style={[styles.addAttachmentButton, { borderColor: c.borderStrong }]}
-                    onPress={handleSavePerformance}
-                    disabled={savingPerformance}
+                    onPress={handleAddAttachment}
+                    disabled={uploadingAttachment}
                     activeOpacity={0.8}
                   >
-                    {savingPerformance ? (
+                    {uploadingAttachment ? (
                       <ActivityIndicator size="small" color={c.textPrimary} />
                     ) : (
                       <Text style={[styles.addAttachmentText, { color: c.textPrimary }]}>
-                        Save performance
+                        + Add file
                       </Text>
                     )}
                   </TouchableOpacity>
-                </>
-              )}
 
-              {/* ── Invoice (Phase 3) ──────────────────────────────────── */}
-              <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Invoice</Text>
-              <TouchableOpacity
-                style={[styles.addAttachmentButton, { borderColor: c.accent }]}
-                onPress={() =>
-                  invoice
-                    ? router.push(`/(app)/invoice/${invoice.id}` as never)
-                    : router.push(`/(app)/invoice/new?dealId=${deal.id}` as never)
-                }
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.addAttachmentText, { color: c.accent }]}>
-                  {invoice ? `View invoice (${invoice.invoice_number})` : 'Create invoice'}
-                </Text>
-              </TouchableOpacity>
+                  {/* ── Content performance (Phase 2, manual entry) ───────── */}
+                  {(deal.status === 'published' || deal.status === 'payment_awaited' || deal.status === 'paid') && (
+                    <>
+                      <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>
+                        Performance
+                      </Text>
+                      <Text style={[styles.performanceHint, { color: c.textMuted }]}>
+                        Entered manually for now — auto-sync from Instagram/YouTube needs those accounts connected, which isn't set up yet.
+                      </Text>
+                      <View style={styles.performanceGrid}>
+                        <View style={styles.dateCell}>
+                          <Text style={[styles.dateLabel, { color: c.textMuted }]}>Views</Text>
+                          <TextInput
+                            style={inputStyle}
+                            value={perfViews}
+                            onChangeText={(v) => setPerfViews(v.replace(/[^0-9]/g, ''))}
+                            keyboardType="numeric"
+                            placeholder="0"
+                            placeholderTextColor={c.textMuted}
+                          />
+                        </View>
+                        <View style={styles.dateCell}>
+                          <Text style={[styles.dateLabel, { color: c.textMuted }]}>Likes</Text>
+                          <TextInput
+                            style={inputStyle}
+                            value={perfLikes}
+                            onChangeText={(v) => setPerfLikes(v.replace(/[^0-9]/g, ''))}
+                            keyboardType="numeric"
+                            placeholder="0"
+                            placeholderTextColor={c.textMuted}
+                          />
+                        </View>
+                        <View style={styles.dateCell}>
+                          <Text style={[styles.dateLabel, { color: c.textMuted }]}>Comments</Text>
+                          <TextInput
+                            style={inputStyle}
+                            value={perfComments}
+                            onChangeText={(v) => setPerfComments(v.replace(/[^0-9]/g, ''))}
+                            keyboardType="numeric"
+                            placeholder="0"
+                            placeholderTextColor={c.textMuted}
+                          />
+                        </View>
+                        <View style={styles.dateCell}>
+                          <Text style={[styles.dateLabel, { color: c.textMuted }]}>Saves</Text>
+                          <TextInput
+                            style={inputStyle}
+                            value={perfSaves}
+                            onChangeText={(v) => setPerfSaves(v.replace(/[^0-9]/g, ''))}
+                            keyboardType="numeric"
+                            placeholder="0"
+                            placeholderTextColor={c.textMuted}
+                          />
+                        </View>
+                      </View>
+                      <TouchableOpacity
+                        style={[styles.addAttachmentButton, { borderColor: c.borderStrong }]}
+                        onPress={handleSavePerformance}
+                        disabled={savingPerformance}
+                        activeOpacity={0.8}
+                      >
+                        {savingPerformance ? (
+                          <ActivityIndicator size="small" color={c.textPrimary} />
+                        ) : (
+                          <Text style={[styles.addAttachmentText, { color: c.textPrimary }]}>
+                            Save performance
+                          </Text>
+                        )}
+                      </TouchableOpacity>
+                    </>
+                  )}
 
+                  {/* ── Invoice (Phase 3) ──────────────────────────────────── */}
+                  <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Invoice</Text>
+                  <TouchableOpacity
+                    style={[styles.addAttachmentButton, { borderColor: c.accent }]}
+                    onPress={() =>
+                      invoice
+                        ? router.push(`/(app)/invoice/${invoice.id}` as never)
+                        : router.push(`/(app)/invoice/new?dealId=${deal.id}` as never)
+                    }
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.addAttachmentText, { color: c.accent }]}>
+                      {invoice ? `View invoice (${invoice.invoice_number})` : 'Create invoice'}
+                    </Text>
+                  </TouchableOpacity>
+
+                </View>
+              </View>
             </Pressable>
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
     </>
-    </ModalSheet>
   )
 }
 
@@ -1405,9 +1393,22 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.xl,
   },
   contentWide: {
-    maxWidth: ContentMaxWidth,
+    maxWidth: DesktopContentMaxWidth,
     width: '100%',
     alignSelf: 'center',
+  },
+  columns: {
+    flexDirection: 'row',
+    gap: ColumnGap,
+    alignItems: 'flex-start',
+  },
+  // The deal itself earns the wider column: it holds the deliverables editor
+  // and the timeline, both of which are rows of controls rather than prose.
+  mainColumn: {
+    flex: 1.35,
+  },
+  sideColumn: {
+    flex: 1,
   },
   sectionLabel: {
     ...Typography.caption,
@@ -1472,15 +1473,6 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     paddingBottom: 2,
   },
-  platformPill: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs + 2,
-    borderRadius: Radius.full,
-  },
-  platformPillText: {
-    ...Typography.label,
-    fontFamily: FontFamily.medium,
-  },
   // Text inputs
   input: {
     height: 44,
@@ -1490,46 +1482,20 @@ const styles = StyleSheet.create({
     ...Typography.body,
     fontFamily: FontFamily.regular,
   },
-  multiline: {
-    height: undefined,
-    minHeight: 88,
-    paddingTop: 11,
-    paddingBottom: 11,
+  // The card brings its own surface and padding, so it sits outside the
+  // screen's label/input rhythm rather than inside it.
+  // TextField brings its own label and spacing, so grouped fields just need
+  // a consistent gap rather than the old label/input margin rhythm.
+  fieldStack: {
+    gap: Spacing.md,
+    marginTop: Spacing.md,
+  },
+  deliverablesBlock: {
+    marginTop: Spacing.md,
+    marginBottom: Spacing.xs,
   },
   // Rate row
-  rateRow: {
-    flexDirection: 'row',
-  },
-  ratePrefix: {
-    width: 44,
-    height: 44,
-    borderWidth: 1,
-    borderRightWidth: 0,
-    borderTopLeftRadius: Radius.sm,
-    borderBottomLeftRadius: Radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ratePrefixText: {
-    ...Typography.body,
-    fontFamily: FontFamily.regular,
-  },
-  rateInput: {
-    flex: 1,
-    height: 44,
-    borderWidth: 1,
-    borderTopRightRadius: Radius.sm,
-    borderBottomRightRadius: Radius.sm,
-    paddingHorizontal: Spacing.md,
-    ...Typography.body,
-    fontFamily: FontFamily.regular,
-  },
   // Timeline grid
-  dateGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-  },
   dateCell: {
     width: '48%',
     gap: Spacing.xs,
@@ -1626,12 +1592,6 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.medium,
   },
   // Ad rights
-  adRightsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: Spacing.lg,
-  },
   adRightsLabel: {
     marginTop: 0,
     marginBottom: 0,
@@ -1690,18 +1650,6 @@ const styles = StyleSheet.create({
   ratingStars: {
     flexDirection: 'row',
     gap: Spacing.xs,
-  },
-  ratingStar: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.sm,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ratingStarText: {
-    ...Typography.bodyStrong,
-    fontFamily: FontFamily.semiBold,
   },
   ratingToggleRow: {
     flexDirection: 'row',

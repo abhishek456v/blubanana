@@ -1,16 +1,38 @@
 import type { DealWithPaymentSummary } from './deals'
+import { getPaymentAlertTone } from './paymentReminders'
 
-// Revenue dashboard (Phase 2) — every number here is derived client-side
-// from deals + payments already being fetched elsewhere. No new schema, no
-// new API calls; this is purely a different view of existing data.
+// Revenue dashboard — every number here is derived client-side from deals +
+// payments already being fetched elsewhere. No new schema, no new API calls;
+// this is purely a different view of existing data.
+
+/** A count and a rupee total, the pair almost every figure on Money reports. */
+export interface MoneyBucket {
+  count: number
+  value: number
+}
 
 export interface RevenueSummary {
-  earnedThisMonth: number
-  pendingPayment: number
+  /**
+   * Deals signed this month and what they are worth.
+   *
+   * This is the number that says whether the month is going well, and it says
+   * it *now* — earnings only show up 45 to 90 days after the work, so a
+   * dashboard built on received payments alone reports on a quarter already
+   * gone. Keyed off `created_at`, which is when the deal was logged; the
+   * schema has no separate "confirmed" timestamp to key off instead.
+   */
+  lockedThisMonth: MoneyBucket
+  /** Payments actually received this calendar month. */
+  earnedThisMonth: MoneyBucket
+  /** Everything billed or expected and not yet received. */
+  pending: MoneyBucket
+  /** The subset of pending that is already past its due date. */
+  overdue: MoneyBucket
   averageDealValue: number
   dealsClosed: number
   bestPayingBrand: { name: string; total: number } | null
-  monthlyTotals: { label: string; total: number }[] // oldest → newest, 6 months
+  /** Oldest → newest, six months. */
+  monthlyTotals: { label: string; total: number }[]
 }
 
 function isSameMonth(dateStr: string, ref: Date): boolean {
@@ -23,17 +45,36 @@ export function computeRevenueSummary(deals: DealWithPaymentSummary[]): RevenueS
 
   const paidDeals = deals.filter((d) => d.payment?.status === 'paid' && d.payment.paid_date)
 
-  const earnedThisMonth = paidDeals
-    .filter((d) => isSameMonth(d.payment!.paid_date!, now))
-    .reduce((sum, d) => sum + (d.payment?.amount ?? d.rate), 0)
+  const lockedDeals = deals.filter((d) => isSameMonth(d.created_at.slice(0, 10), now))
+  const lockedThisMonth: MoneyBucket = {
+    count: lockedDeals.length,
+    value: lockedDeals.reduce((sum, d) => sum + d.rate, 0),
+  }
 
-  const pendingPayment = deals
-    .filter((d) => d.payment && d.payment.status !== 'paid')
-    .reduce((sum, d) => sum + (d.payment?.amount ?? 0), 0)
+  const earnedDeals = paidDeals.filter((d) => isSameMonth(d.payment!.paid_date!, now))
+  const earnedThisMonth: MoneyBucket = {
+    count: earnedDeals.length,
+    value: earnedDeals.reduce((sum, d) => sum + (d.payment?.amount ?? d.rate), 0),
+  }
 
-  const averageDealValue = deals.length > 0 ? Math.round(deals.reduce((sum, d) => sum + d.rate, 0) / deals.length) : 0
+  const pending: MoneyBucket = { count: 0, value: 0 }
+  const overdue: MoneyBucket = { count: 0, value: 0 }
 
-  const dealsClosed = paidDeals.length
+  for (const deal of deals) {
+    if (!deal.payment || deal.payment.status === 'paid') continue
+    const amount = deal.payment.amount ?? deal.rate
+
+    pending.count += 1
+    pending.value += amount
+
+    if (getPaymentAlertTone(deal.payment) === 'overdue') {
+      overdue.count += 1
+      overdue.value += amount
+    }
+  }
+
+  const averageDealValue =
+    deals.length > 0 ? Math.round(deals.reduce((sum, d) => sum + d.rate, 0) / deals.length) : 0
 
   const byBrand = new Map<string, number>()
   for (const d of paidDeals) {
@@ -54,5 +95,14 @@ export function computeRevenueSummary(deals: DealWithPaymentSummary[]): RevenueS
     monthlyTotals.push({ label: ref.toLocaleDateString('en-IN', { month: 'short' }), total })
   }
 
-  return { earnedThisMonth, pendingPayment, averageDealValue, dealsClosed, bestPayingBrand, monthlyTotals }
+  return {
+    lockedThisMonth,
+    earnedThisMonth,
+    pending,
+    overdue,
+    averageDealValue,
+    dealsClosed: paidDeals.length,
+    bestPayingBrand,
+    monthlyTotals,
+  }
 }

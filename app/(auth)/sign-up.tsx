@@ -1,194 +1,183 @@
 import { useState } from 'react'
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-  useColorScheme,
-} from 'react-native'
-import { showAlert } from '@/lib/alert'
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native'
 import { Link } from 'expo-router'
+import { Ionicons } from '@expo/vector-icons'
+import Animated, { FadeInDown } from 'react-native-reanimated'
 import { supabase } from '@/lib/supabase'
-import { Colors, Spacing, Radius, Typography, FontFamily, AuthFormMaxWidth } from '@/constants/design'
+import { AuthFormMaxWidth, FontFamily, Radius, Spacing, Typography } from '@/constants/design'
+import { Duration, staggerDelay } from '@/constants/motion'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
+import { useTheme } from '@/hooks/useTheme'
 import { AuthShell } from '@/components/AuthShell'
+import { Button, PressableScale, TextField, useToast } from '@/components/ui'
+
+const MIN_PASSWORD_LENGTH = 8
 
 export default function SignUpScreen() {
-  const scheme = useColorScheme()
-  const c = scheme === 'dark' ? Colors.dark : Colors.light
+  const { c } = useTheme()
   const isWide = useIsWideScreen()
+  const toast = useToast()
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false)
+  const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string }>({})
+
+  function clearError(field: keyof typeof errors) {
+    if (errors[field]) setErrors((current) => ({ ...current, [field]: undefined }))
+  }
 
   async function handleSignUp() {
-    if (!name.trim() || !email || !password) {
-      showAlert('Missing fields', 'Please fill in all fields.')
-      return
+    const nextErrors: typeof errors = {}
+    if (!name.trim()) nextErrors.name = 'What should we call you?'
+    if (!email.trim()) nextErrors.email = 'Enter your email'
+    if (!password) nextErrors.password = 'Choose a password'
+    else if (password.length < MIN_PASSWORD_LENGTH) {
+      nextErrors.password = `At least ${MIN_PASSWORD_LENGTH} characters`
     }
-    if (password.length < 8) {
-      showAlert('Weak password', 'Password must be at least 8 characters.')
-      return
-    }
+
+    setErrors(nextErrors)
+    if (Object.keys(nextErrors).length > 0) return
 
     setLoading(true)
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
-      options: {
-        // name is read by the handle_new_user DB trigger to populate profiles.name
-        data: { name: name.trim() },
-      },
+      // `name` is read by the handle_new_user DB trigger to populate profiles.name.
+      options: { data: { name: name.trim() } },
     })
     setLoading(false)
 
     if (error) {
-      showAlert('Sign up failed', error.message)
+      toast(error.message, { tone: 'error' })
       return
     }
 
-    // If email confirmation is enabled, data.session will be null.
-    // Show a message so the creator knows to check their inbox.
+    // With email confirmation enabled, there is no session yet — tell the
+    // creator to check their inbox rather than leaving them on a form that
+    // looks like it did nothing.
     if (data.session === null) {
       setAwaitingConfirmation(true)
     }
-    // If email confirmation is disabled (recommended for dev — see README),
-    // useAuth picks up the session and the root layout redirects automatically.
+    // With confirmation disabled (recommended for dev — see README), useAuth
+    // picks up the session and the root layout redirects automatically.
   }
 
   if (awaitingConfirmation) {
     return (
       <AuthShell>
-      <View style={[styles.container, styles.centered, { backgroundColor: c.bgPage }]}>
-        <View style={[styles.confirmInner, isWide && styles.innerWide]}>
-          <Text style={[styles.wordmark, { color: c.textPrimary, fontFamily: FontFamily.display }]}>
-            Check your email
-          </Text>
-          <Text style={[styles.confirmText, { color: c.textSecondary }]}>
-            We sent a confirmation link to{'\n'}
-            <Text style={{ color: c.textPrimary, fontFamily: FontFamily.medium }}>{email}</Text>
-            {'\n\n'}
-            Open it to activate your account, then come back and sign in.
-          </Text>
-          <Link href="/(auth)/sign-in" asChild>
-            <TouchableOpacity
-              style={[styles.primaryButton, { backgroundColor: c.fillPrimary }]}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.primaryButtonText, { color: c.onFillPrimary }]}>
-                Go to sign in
-              </Text>
-            </TouchableOpacity>
-          </Link>
+        <View style={[styles.container, styles.center, { backgroundColor: c.bgPage }]}>
+          <Animated.View
+            entering={FadeInDown.duration(Duration.slow)}
+            style={[styles.inner, isWide && styles.innerWide, styles.confirmBlock]}
+          >
+            <View style={[styles.iconCircle, { backgroundColor: c.accentLight }]}>
+              <Ionicons name="mail-outline" size={26} color={c.accent} />
+            </View>
+            <Text style={[styles.title, { color: c.textPrimary }]}>Check your inbox</Text>
+            <Text style={[styles.subtitle, { color: c.textSecondary }]}>
+              We sent a confirmation link to {email.trim()}. Tap it and you're in.
+            </Text>
+            <Link href="/(auth)/sign-in" asChild>
+              <Button label="Back to sign in" variant="secondary" fullWidth size="lg" />
+            </Link>
+          </Animated.View>
         </View>
-      </View>
       </AuthShell>
     )
   }
 
   return (
     <AuthShell>
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: c.bgPage }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <View style={[styles.inner, isWide && styles.innerWide]}>
-        <Text style={[styles.wordmark, { color: c.textPrimary, fontFamily: FontFamily.display }]}>
-          Create account
-        </Text>
-        <Text style={[styles.subtitle, { color: c.textSecondary }]}>
-          Set up your CreatorDesk account
-        </Text>
-
-        <View style={styles.form}>
-          <TextInput
-            style={[
-              styles.input,
-              {
-                borderColor: c.borderStrong,
-                color: c.textPrimary,
-                backgroundColor: c.bgSurface,
-              },
-            ]}
-            placeholder="Your name"
-            placeholderTextColor={c.textMuted}
-            value={name}
-            onChangeText={setName}
-            autoCapitalize="words"
-            autoComplete="name"
-            textContentType="name"
-          />
-          <TextInput
-            style={[
-              styles.input,
-              {
-                borderColor: c.borderStrong,
-                color: c.textPrimary,
-                backgroundColor: c.bgSurface,
-              },
-            ]}
-            placeholder="Email"
-            placeholderTextColor={c.textMuted}
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            autoComplete="email"
-            textContentType="emailAddress"
-          />
-          <TextInput
-            style={[
-              styles.input,
-              {
-                borderColor: c.borderStrong,
-                color: c.textPrimary,
-                backgroundColor: c.bgSurface,
-              },
-            ]}
-            placeholder="Password (min 8 characters)"
-            placeholderTextColor={c.textMuted}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoComplete="new-password"
-            textContentType="newPassword"
-          />
-
-          <TouchableOpacity
-            style={[styles.primaryButton, { backgroundColor: c.fillPrimary }]}
-            onPress={handleSignUp}
-            disabled={loading}
-            activeOpacity={0.8}
-          >
-            {loading ? (
-              <ActivityIndicator color={c.onFillPrimary} />
-            ) : (
-              <Text style={[styles.primaryButtonText, { color: c.onFillPrimary }]}>
-                Create account
-              </Text>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        <Link href="/(auth)/sign-in" asChild>
-          <TouchableOpacity activeOpacity={0.7} style={styles.switchRow}>
-            <Text style={[styles.switchText, { color: c.textSecondary }]}>
-              Already have an account?{' '}
-              <Text style={{ color: c.textPrimary, fontFamily: FontFamily.medium }}>
-                Sign in
-              </Text>
+      <KeyboardAvoidingView
+        style={[styles.container, { backgroundColor: c.bgPage }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <View style={[styles.inner, isWide && styles.innerWide]}>
+          <Animated.View entering={FadeInDown.duration(Duration.slow)}>
+            <Text style={[styles.title, { color: c.textPrimary }]}>Run the business side</Text>
+            <Text style={[styles.subtitle, { color: c.textSecondary }]}>
+              Every deal, deadline and payment in one place — so none of them slip.
             </Text>
-          </TouchableOpacity>
-        </Link>
-      </View>
-    </KeyboardAvoidingView>
+          </Animated.View>
+
+          <Animated.View
+            entering={FadeInDown.duration(Duration.slow).delay(staggerDelay(1))}
+            style={styles.form}
+          >
+            <TextField
+              label="Name"
+              placeholder="Your name"
+              value={name}
+              onChangeText={(value) => {
+                setName(value)
+                clearError('name')
+              }}
+              error={errors.name}
+              autoCapitalize="words"
+              autoComplete="name"
+              textContentType="name"
+              returnKeyType="next"
+            />
+
+            <TextField
+              label="Email"
+              placeholder="you@example.com"
+              value={email}
+              onChangeText={(value) => {
+                setEmail(value)
+                clearError('email')
+              }}
+              error={errors.email}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              autoComplete="email"
+              textContentType="emailAddress"
+              returnKeyType="next"
+            />
+
+            <TextField
+              label="Password"
+              placeholder="••••••••"
+              value={password}
+              onChangeText={(value) => {
+                setPassword(value)
+                clearError('password')
+              }}
+              error={errors.password}
+              hint={`At least ${MIN_PASSWORD_LENGTH} characters`}
+              secureTextEntry
+              autoComplete="new-password"
+              textContentType="newPassword"
+              returnKeyType="go"
+              onSubmitEditing={handleSignUp}
+            />
+
+            <Button
+              label="Create account"
+              onPress={handleSignUp}
+              loading={loading}
+              fullWidth
+              size="lg"
+              style={styles.submit}
+            />
+          </Animated.View>
+
+          <Animated.View entering={FadeInDown.duration(Duration.slow).delay(staggerDelay(2))}>
+            <Link href="/(auth)/sign-in" asChild>
+              <PressableScale style={styles.switchRow} haptic="light">
+                <Text style={[styles.switchText, { color: c.textSecondary }]}>
+                  Already have an account?{' '}
+                  <Text style={{ color: c.accent, fontFamily: FontFamily.semiBold }}>Sign in</Text>
+                </Text>
+              </PressableScale>
+            </Link>
+          </Animated.View>
+        </View>
+      </KeyboardAvoidingView>
     </AuthShell>
   )
 }
@@ -197,9 +186,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  centered: {
+  center: {
     justifyContent: 'center',
-    paddingHorizontal: Spacing.xl,
   },
   inner: {
     flex: 1,
@@ -212,48 +200,36 @@ const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'center',
   },
-  confirmInner: {
-    width: '100%',
+  confirmBlock: {
+    flexGrow: 0,
+    gap: Spacing.sm,
+    alignItems: 'flex-start',
   },
-  wordmark: {
+  iconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: Radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.sm,
+  },
+  title: {
     ...Typography.display,
-    fontFamily: FontFamily.semiBold,
+    fontFamily: FontFamily.display,
     marginBottom: Spacing.xs,
   },
   subtitle: {
     ...Typography.body,
     fontFamily: FontFamily.regular,
-    marginBottom: Spacing.xl,
-  },
-  confirmText: {
-    ...Typography.body,
-    fontFamily: FontFamily.regular,
     lineHeight: 22,
-    marginTop: Spacing.md,
     marginBottom: Spacing.xl,
   },
   form: {
-    gap: Spacing.sm,
+    gap: Spacing.md,
     marginBottom: Spacing.lg,
   },
-  input: {
-    height: 44,
-    borderWidth: 1,
-    borderRadius: Radius.sm,
-    paddingHorizontal: Spacing.md,
-    ...Typography.body,
-    fontFamily: FontFamily.regular,
-  },
-  primaryButton: {
-    height: 44,
-    borderRadius: Radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
+  submit: {
     marginTop: Spacing.xs,
-  },
-  primaryButtonText: {
-    ...Typography.bodyStrong,
-    fontFamily: FontFamily.medium,
   },
   switchRow: {
     alignItems: 'center',

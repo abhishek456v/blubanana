@@ -1,135 +1,131 @@
 import { useState } from 'react'
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-  useColorScheme,
-} from 'react-native'
-import { showAlert } from '@/lib/alert'
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native'
 import { Link } from 'expo-router'
+import Animated, { FadeInDown } from 'react-native-reanimated'
 import { supabase } from '@/lib/supabase'
-import { Colors, Spacing, Radius, Typography, FontFamily, AuthFormMaxWidth } from '@/constants/design'
+import { AuthFormMaxWidth, FontFamily, Spacing, Typography } from '@/constants/design'
+import { Duration, staggerDelay } from '@/constants/motion'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
+import { useTheme } from '@/hooks/useTheme'
 import { AuthShell } from '@/components/AuthShell'
+import { Button, PressableScale, TextField, useToast } from '@/components/ui'
 
 export default function SignInScreen() {
-  const scheme = useColorScheme()
-  const c = scheme === 'dark' ? Colors.dark : Colors.light
+  const { c } = useTheme()
   const isWide = useIsWideScreen()
+  const toast = useToast()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  // Inline, per-field, so a mistake is marked where it happened rather than in
+  // a modal the user has to dismiss before they can fix anything.
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
 
   async function handleSignIn() {
-    if (!email || !password) {
-      showAlert('Missing fields', 'Please enter your email and password.')
-      return
-    }
+    const nextErrors: typeof errors = {}
+    if (!email.trim()) nextErrors.email = 'Enter your email'
+    if (!password) nextErrors.password = 'Enter your password'
+    setErrors(nextErrors)
+    if (Object.keys(nextErrors).length > 0) return
 
     setLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    })
     setLoading(false)
 
     if (error) {
-      showAlert('Sign in failed', error.message)
+      toast(error.message, { tone: 'error' })
     }
-    // On success, useAuth detects the new session and the root layout
-    // redirects to (app)/ automatically — no manual navigation needed here.
+    // On success, useAuth picks up the new session and the root layout
+    // redirects into (app)/ — no manual navigation needed here.
   }
 
   return (
     <AuthShell>
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: c.bgPage }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <View style={[styles.inner, isWide && styles.innerWide]}>
-        <Text style={[styles.wordmark, { color: c.textPrimary, fontFamily: FontFamily.display }]}>
-          Welcome back
-        </Text>
-        <Text style={[styles.subtitle, { color: c.textSecondary }]}>
-          Sign in to your account
-        </Text>
-
-        <View style={styles.form}>
-          <TextInput
-            style={[
-              styles.input,
-              {
-                borderColor: c.borderStrong,
-                color: c.textPrimary,
-                backgroundColor: c.bgSurface,
-              },
-            ]}
-            placeholder="Email"
-            placeholderTextColor={c.textMuted}
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            autoComplete="email"
-            textContentType="emailAddress"
-          />
-          <TextInput
-            style={[
-              styles.input,
-              {
-                borderColor: c.borderStrong,
-                color: c.textPrimary,
-                backgroundColor: c.bgSurface,
-              },
-            ]}
-            placeholder="Password"
-            placeholderTextColor={c.textMuted}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoComplete="password"
-            textContentType="password"
-          />
-
-          <Link href="/(auth)/forgot-password" asChild>
-            <TouchableOpacity activeOpacity={0.7} style={styles.forgotRow}>
-              <Text style={[styles.forgotText, { color: c.textSecondary }]}>
-                Forgot password?
-              </Text>
-            </TouchableOpacity>
-          </Link>
-
-          <TouchableOpacity
-            style={[styles.primaryButton, { backgroundColor: c.fillPrimary }]}
-            onPress={handleSignIn}
-            disabled={loading}
-            activeOpacity={0.8}
-          >
-            {loading ? (
-              <ActivityIndicator color={c.onFillPrimary} />
-            ) : (
-              <Text style={[styles.primaryButtonText, { color: c.onFillPrimary }]}>
-                Sign in
-              </Text>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        <Link href="/(auth)/sign-up" asChild>
-          <TouchableOpacity activeOpacity={0.7} style={styles.switchRow}>
-            <Text style={[styles.switchText, { color: c.textSecondary }]}>
-              Don't have an account?{' '}
-              <Text style={{ color: c.textPrimary, fontFamily: FontFamily.medium }}>
-                Sign up
-              </Text>
+      <KeyboardAvoidingView
+        style={[styles.container, { backgroundColor: c.bgPage }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <View style={[styles.inner, isWide && styles.innerWide]}>
+          <Animated.View entering={FadeInDown.duration(Duration.slow)}>
+            <Text style={[styles.title, { color: c.textPrimary }]}>Welcome back</Text>
+            <Text style={[styles.subtitle, { color: c.textSecondary }]}>
+              Your deals, deadlines and money are where you left them.
             </Text>
-          </TouchableOpacity>
-        </Link>
-      </View>
-    </KeyboardAvoidingView>
+          </Animated.View>
+
+          <Animated.View
+            entering={FadeInDown.duration(Duration.slow).delay(staggerDelay(1))}
+            style={styles.form}
+          >
+            <TextField
+              label="Email"
+              placeholder="you@example.com"
+              value={email}
+              onChangeText={(value) => {
+                setEmail(value)
+                if (errors.email) setErrors((e) => ({ ...e, email: undefined }))
+              }}
+              error={errors.email}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              autoComplete="email"
+              textContentType="emailAddress"
+              returnKeyType="next"
+            />
+
+            <TextField
+              label="Password"
+              placeholder="••••••••"
+              value={password}
+              onChangeText={(value) => {
+                setPassword(value)
+                if (errors.password) setErrors((e) => ({ ...e, password: undefined }))
+              }}
+              error={errors.password}
+              secureTextEntry
+              autoComplete="password"
+              textContentType="password"
+              returnKeyType="go"
+              onSubmitEditing={handleSignIn}
+            />
+
+            <Link href="/(auth)/forgot-password" asChild>
+              <PressableScale style={styles.forgotRow} haptic="light">
+                <Text style={[styles.forgotText, { color: c.textSecondary }]}>
+                  Forgot password?
+                </Text>
+              </PressableScale>
+            </Link>
+
+            <Button
+              label="Sign in"
+              onPress={handleSignIn}
+              loading={loading}
+              fullWidth
+              size="lg"
+              style={styles.submit}
+            />
+          </Animated.View>
+
+          <Animated.View entering={FadeInDown.duration(Duration.slow).delay(staggerDelay(2))}>
+            <Link href="/(auth)/sign-up" asChild>
+              <PressableScale style={styles.switchRow} haptic="light">
+                <Text style={[styles.switchText, { color: c.textSecondary }]}>
+                  New here?{' '}
+                  <Text style={{ color: c.accent, fontFamily: FontFamily.semiBold }}>
+                    Create an account
+                  </Text>
+                </Text>
+              </PressableScale>
+            </Link>
+          </Animated.View>
+        </View>
+      </KeyboardAvoidingView>
     </AuthShell>
   )
 }
@@ -149,45 +145,30 @@ const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'center',
   },
-  wordmark: {
+  title: {
     ...Typography.display,
-    fontFamily: FontFamily.semiBold,
+    fontFamily: FontFamily.display,
     marginBottom: Spacing.xs,
   },
   subtitle: {
     ...Typography.body,
     fontFamily: FontFamily.regular,
+    lineHeight: 22,
     marginBottom: Spacing.xl,
   },
   form: {
-    gap: Spacing.sm,
+    gap: Spacing.md,
     marginBottom: Spacing.lg,
-  },
-  input: {
-    height: 44,
-    borderWidth: 1,
-    borderRadius: Radius.sm,
-    paddingHorizontal: Spacing.md,
-    ...Typography.body,
-    fontFamily: FontFamily.regular,
   },
   forgotRow: {
     alignSelf: 'flex-end',
   },
   forgotText: {
     ...Typography.caption,
-    fontFamily: FontFamily.regular,
-  },
-  primaryButton: {
-    height: 44,
-    borderRadius: Radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: Spacing.xs,
-  },
-  primaryButtonText: {
-    ...Typography.bodyStrong,
     fontFamily: FontFamily.medium,
+  },
+  submit: {
+    marginTop: Spacing.xs,
   },
   switchRow: {
     alignItems: 'center',
