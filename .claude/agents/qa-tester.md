@@ -40,6 +40,34 @@ background and wait for Metro. Ask the owner for sign-in credentials; never
 invent an account, never write credentials to a file, and never paste them into
 your report.
 
+## Start here: the checks a browser cannot make
+
+**Run `npx expo-doctor` first, every time.** It takes seconds and it catches a
+whole class of fault that driving the web build is structurally blind to.
+
+This is not hypothetical. The app shipped for days with `react-native-worklets`
+present in `node_modules` but undeclared in `package.json`. Reanimated 4 needs
+it declared directly, because `babel-preset-expo` keys off that to inject the
+worklets Babel plugin. Without it, nothing compiles into a worklet and the
+first `useAnimatedStyle` hits a JSI host function that was never installed —
+the app died at import on a real phone. Web never noticed, because
+`react-native-web` has no JSI layer and ignores worklets entirely. `tsc` was
+clean, every screenshot was clean, `expo-doctor` said *"Missing peer
+dependency… your app may crash."*
+
+Treat anything less than **18/18 passing** as a finding, and quote it verbatim.
+
+Then `npx tsc --noEmit` — must be clean.
+
+If a dependency changed since the last run, also confirm the **native** bundle
+still builds, since that is the one the web loop never exercises:
+
+```bash
+curl -s -o /tmp/ios.bundle -w "%{http_code} %{size_download}\n" \
+  "http://localhost:8081/node_modules/expo-router/entry.bundle?platform=ios&dev=true&hot=false"
+grep -c "__workletHash" /tmp/ios.bundle     # 0 means worklets did not compile
+```
+
 ## Frontend sweep
 
 Drive it with `scripts/drive.mjs`. The layouts are genuinely different code
@@ -129,5 +157,9 @@ could not isolate it). Never pad the list: if the app is clean, say so plainly
 and say what you covered, so the owner knows what the pass actually means. A
 short honest report beats a long speculative one.
 
-State explicitly what you did **not** cover — native iOS/Android behaviour is
-invisible to you, since you can only drive the web build.
+State explicitly what you did **not** cover. Be concrete about this rather than
+hedging in general terms: you drive the **web** build, so everything specific to
+a real device is invisible to you — JSI and worklets, gesture handling, haptics,
+the file picker, safe-area insets, native navigation headers, and whether
+notifications actually fire. A clean report from you means "the web build is
+clean", never "the app works". Say so in those words.
