@@ -46,7 +46,7 @@ export default function InvoiceDetailScreen() {
       .catch(() => toast('Could not load this invoice', { tone: 'error' }))
       .finally(() => active && setLoading(false))
 
-    // Fetched separately — invoice_line_items arrived in migration 008, so an
+    // Fetched separately: invoice_line_items arrived in migration 008, so an
     // older invoice (or an un-migrated database) simply has none, and
     // buildInvoiceHtml falls back to the invoice's own description/amount.
     getInvoiceLineItems(id)

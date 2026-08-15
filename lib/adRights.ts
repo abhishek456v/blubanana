@@ -3,7 +3,7 @@ import { scheduleAsync, cancelAsync } from './notifications'
 
 // Ad rights tracking: an optional add-on term where the brand pays extra for
 // the right to reuse the creator's content in paid ads for a fixed window.
-// Not part of PRODUCT.md's original Phase 1 scope — added on top of it per
+// Not part of PRODUCT.md's original Phase 1 scope, added on top of it per
 // the prototype/feature-brief materials, kept as simple as those describe:
 // manual entry + a 30-day-before-expiry nudge + a one-tap Meta Ad Library
 // search link. No Meta API integration (that's the brief's Phase 3 version).
@@ -34,7 +34,7 @@ export interface AdRightsReminderFields {
   ad_rights_reminder_notification_id: string | null
 }
 
-// Called whenever ad rights fields change — cancels whatever was previously
+// Called whenever ad rights fields change. Cancels whatever was previously
 // scheduled and reschedules a single one-shot reminder 30 days before
 // expiry. Unlike workflow reminders (lib/reminders.ts) there's no chain of
 // stages here, so one fixed nudge is enough.
@@ -96,7 +96,7 @@ export function getAdRightsStatus(
 }
 
 // Meta's public Ad Library search page doesn't require an API token to view
-// (only the JSON API does) — this just deep-links to a pre-filled search for
+// (only the JSON API does), so this just deep-links to a pre-filled search for
 // the brand, so the creator doesn't have to navigate and type it in by hand.
 // This is the "Phase 2-lite" version from the feature brief; automatic
 // monitoring via the real Ad Library API is a later, separate decision.

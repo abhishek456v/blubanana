@@ -18,7 +18,7 @@ export interface Breakpoint {
  * The screen tier, and the couple of layout decisions that follow from it.
  *
  * Replaces a bare `isWide` boolean, which forced a 1440px laptop and a 768px
- * tablet down the same path — a single narrow column with the rest of the
+ * tablet down the same path: a single narrow column with the rest of the
  * window left empty.
  *
  * `metricColumns` lives here rather than in each screen because four screens

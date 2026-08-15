@@ -15,7 +15,7 @@ export type ThemeColors = { readonly [K in keyof typeof Colors.light]: string }
 
 /**
  * `system` follows the OS. The other two are an explicit choice that outlives
- * the OS changing at sunset — which is the whole point of offering a toggle.
+ * the OS changing at sunset, which is the whole point of offering a toggle.
  */
 export type ThemeMode = 'light' | 'dark' | 'system'
 
@@ -61,12 +61,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // Web only: paint the document itself, not just the React tree.
   //
   // Anything outside a rendered screen keeps the browser's default white
-  // otherwise — the overscroll gutter, the flash before the first frame, and
+  // otherwise: the overscroll gutter, the flash before the first frame, and
   // most visibly the area behind a modal opened by deep link, where no screen
   // is mounted underneath and the dark scrim sat on a white void.
   //
-  // `color-scheme` is set alongside it so the browser's own chrome — form
-  // controls, scrollbars, the autofill highlight — matches the app's theme
+  // `color-scheme` is set alongside it so the browser's own chrome (form
+  // controls, scrollbars, the autofill highlight) matches the app's theme
   // rather than the OS's.
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof document === 'undefined') return
@@ -100,7 +100,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 /**
  * The active palette.
  *
- * `c` is deliberately short — it appears dozens of times per screen in style
+ * `c` is deliberately short: it appears dozens of times per screen in style
  * expressions, and every screen already uses that name.
  *
  * Falls back to the system scheme when no provider is mounted, so a component

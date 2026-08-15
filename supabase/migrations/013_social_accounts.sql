@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- CreatorDesk — connected social accounts and the reach time series.
+-- CreatorDesk: connected social accounts and the reach time series.
 -- Run this once in the Supabase dashboard SQL editor, after 012.
 --
 -- Each creator connects THEIR OWN Instagram / YouTube. The app reads their
@@ -13,14 +13,14 @@
 -- WHY TOKENS ARE NOT READABLE BY THE APP
 --
 -- An OAuth token is the single most dangerous value in this database: it grants
--- access to a creator's real Instagram account. RLS alone is not enough here —
+-- access to a creator's real Instagram account. RLS alone is not enough here:
 -- it is row-level, so a policy that lets a creator read *their own* row also
 -- lets the client read the token in it, where it can end up in a log, a crash
 -- report, or a redux dump.
 --
 -- So the token columns are protected at the COLUMN level: `authenticated` is
 -- granted select on every column except the two token columns. The client can
--- see that an account is connected, its handle, and when it last synced — and
+-- see that an account is connected, its handle, and when it last synced, and
 -- physically cannot read the credential. Only service_role (Edge Functions) can.
 --
 -- That means token exchange and refresh must happen in an Edge Function, never
@@ -52,7 +52,7 @@ create table if not exists social_accounts (
   -- it is what stat history stays attached to when a creator renames.
   external_account_id text,
 
-  -- Server-only. See the header — `authenticated` has no select grant on these.
+  -- Server-only. See the header; `authenticated` has no select grant on these.
   access_token        text,
   refresh_token       text,
   token_expires_at    timestamptz,
@@ -89,7 +89,7 @@ create policy "social_accounts: workspace members"
 
 -- Column-level protection for the credentials. Revoke the blanket grant, then
 -- hand back every column except the tokens. A `select *` from the client will
--- now fail loudly rather than quietly returning a token — which is the right
+-- now fail loudly rather than quietly returning a token, which is the right
 -- failure mode, and why lib/social reads an explicit column list.
 revoke select on social_accounts from authenticated;
 grant select (
@@ -106,7 +106,7 @@ grant insert, update, delete on social_accounts to authenticated;
 
 -- ── Reach over time ──────────────────────────────────────────────────────────
 -- One row per account per day. This time series is what makes "your engagement
--- is up 22% and your rate hasn't moved" computable — without a follower figure
+-- is up 22% and your rate hasn't moved" computable: without a follower figure
 -- dated to each deal, that sentence cannot be written.
 
 create table if not exists creator_stat_snapshots (

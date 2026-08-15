@@ -39,7 +39,7 @@ const KIND_ICON: Record<SearchResultKind, keyof typeof Ionicons.glyphMap> = {
  * screen gets search by rendering `HeaderUtilities` and nothing else has to
  * remember to place the overlay.
  *
- * Results are grouped under the query as a flat ranked list — at six per kind
+ * Results are grouped under the query as a flat ranked list: at six per kind
  * the total is small enough that section headers would take more height than
  * they organise.
  */

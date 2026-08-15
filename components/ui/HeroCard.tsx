@@ -16,7 +16,7 @@ export interface HeroStat {
 }
 
 export interface HeroCardProps {
-  /** Small line above the figure — "Owed to you". */
+  /** Small line above the figure: "Owed to you". */
   label: string
   value: number
   format?: (value: number) => string
@@ -35,14 +35,14 @@ export interface HeroCardProps {
 /**
  * The one inverted card on a screen (DESIGN.md §2).
  *
- * `StatTile contrast` gave the right colour but the wrong weight — it is the
+ * `StatTile contrast` gave the right colour but the wrong weight: it is the
  * same size as the tiles beside it, so the most important number on the screen
  * read as one of four equals. This is deliberately bigger: a 40px figure, a
  * footer strip of supporting numbers, and room for a chart, so the eye lands
  * here first and everything else is read in relation to it.
  *
  * Near-black on the light theme, cream on the dark one. All text inside uses
- * `onContrast`, never `textPrimary` — the ground is inverted, so the page's
+ * `onContrast`, never `textPrimary`: the ground is inverted, so the page's
  * text colours would vanish into it.
  */
 export function HeroCard({

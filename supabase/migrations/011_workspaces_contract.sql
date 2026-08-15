@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- CreatorDesk — Phase 2, stage 3 of 3: workspaces (CONTRACT).
+-- CreatorDesk: Phase 2, stage 3 of 3: workspaces (CONTRACT).
 -- Run this ONLY after 010 has been applied AND the app has been running against
 -- it long enough that you trust it. This is the point of no return: once
 -- creator_id is gone, 010's down script no longer has anything to fall back to.
@@ -16,7 +16,7 @@
 -- ── Preconditions ────────────────────────────────────────────────────────────
 -- Refuse to run unless 010 actually enforced isolation. Dropping creator_id
 -- while the old policies were still in force would leave tables with no
--- effective policy at all — every row readable by everyone.
+-- effective policy at all: every row readable by everyone.
 
 do $$
 declare unenforced text;
@@ -50,7 +50,7 @@ end $$;
 
 -- ── Drop the column ──────────────────────────────────────────────────────────
 -- `cascade` would silently take any dependent index or constraint with it,
--- which is the point — but nothing outside these tables references creator_id,
+-- which is the point, but nothing outside these tables references creator_id,
 -- so the blast radius is known.
 
 alter table brands             drop column if exists creator_id cascade;

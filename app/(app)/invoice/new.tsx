@@ -40,8 +40,8 @@ interface DraftLine {
  *
  * Other unbilled deals for the same brand are offered for consolidation, since
  * a brand's finance team would rather receive one invoice for three reels than
- * three invoices. And the totals are shown as they will print — including the
- * amount in words — so the document is checked before it exists, not after.
+ * three invoices. And the totals are shown as they will print (including the
+ * amount in words), so the document is checked before it exists, not after.
  */
 export default function NewInvoiceScreen() {
   const toast = useToast()
@@ -375,7 +375,7 @@ export default function NewInvoiceScreen() {
               multiline
             />
 
-            {/* Preview — exactly the figures that will print. */}
+            {/* Preview: exactly the figures that will print. */}
             <Card style={[styles.preview, { backgroundColor: c.bgSurfaceRaised }]}>
               <Text style={[styles.cardTitle, { color: c.textPrimary }]}>Preview</Text>
 

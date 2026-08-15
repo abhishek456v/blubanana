@@ -9,8 +9,8 @@ import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 /**
  * Anchor the stack to the tab navigator.
  *
- * Without this, opening any of the routes below directly — a deep link, a
- * notification tap, or just a browser refresh on /invoices — starts the
+ * Without this, opening any of the routes below directly (a deep link, a
+ * notification tap, or just a browser refresh on /invoices) starts the
  * history at that screen. There is nothing beneath it, so react-navigation
  * renders no back button, `router.back()` is a no-op, and on wide screens the
  * modal floats over an empty page with the app nowhere to be seen.
@@ -52,7 +52,7 @@ export default function AppLayout() {
         headerBackTitle: '',
       }}
     >
-      {/* The title is never displayed — this screen hides its header — but it
+      {/* The title is never displayed (this screen hides its header), but it
           is what every pushed screen shows on its back button. Without it the
           back control reads "(tabs)", the raw route-group name. */}
       <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Home' }} />

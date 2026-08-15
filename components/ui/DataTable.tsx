@@ -25,14 +25,14 @@ export interface DataTableProps<Row> {
 }
 
 /**
- * The desktop data table — invoices, and any future screen where the unit of
+ * The desktop data table: invoices, and any future screen where the unit of
  * reading is a figure in a column rather than a card.
  *
  * A table and not styled rows: column alignment is the entire point. Right-
  * aligned amounts under a right-aligned header let the eye run down a column
  * of rupees, which a ListRow's trailing block never quite lines up.
  *
- * Desktop-only by convention (DESIGN.md §8: "phones get rows") — callers
+ * Desktop-only by convention (DESIGN.md §8: "phones get rows"), so callers
  * branch on `isDesktop` and render their ListRow layout below it. The table
  * does not try to collapse itself responsively; a squeezed table is worse
  * than the rows it replaced.
@@ -97,7 +97,7 @@ export function DataTable<Row>({ columns, rows, keyOf, onRowPress, style }: Data
 
         const rowStyle = [
           styles.row,
-          // Hairline between rows, not around them — the table's card supplies
+          // Hairline between rows, not around them; the table's card supplies
           // the outer edge.
           index > 0 && { borderTopWidth: 1, borderTopColor: c.border },
         ]
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.md,
-    // Denser than a ListRow (DESIGN.md §4) — a table's rows are scanned, not
+    // Denser than a ListRow (DESIGN.md §4): a table's rows are scanned, not
     // read one by one.
     paddingVertical: 11,
     gap: Spacing.sm,

@@ -24,7 +24,7 @@ export interface AttentionItem {
   deal: DealWithPaymentSummary
   kind: AttentionKind
   tone: AttentionTone
-  /** One short line naming the action — "Payment 8 days late". */
+  /** One short line naming the action: "Payment 8 days late". */
   reason: string
 }
 
@@ -179,7 +179,7 @@ export function getHomeMetrics(deals: DealWithPaymentSummary[]): HomeMetrics {
   return { earnedThisMonth, outstanding, overdue, activeDeals }
 }
 
-/** "Morning" / "Afternoon" / "Evening" — the greeting on Home. */
+/** "Morning" / "Afternoon" / "Evening": the greeting on Home. */
 export function greeting(now: Date = new Date()): string {
   const hour = now.getHours()
   if (hour < 12) return 'Morning'
@@ -187,7 +187,7 @@ export function greeting(now: Date = new Date()): string {
   return 'Evening'
 }
 
-/** "Thursday, 14 August" — the eyebrow above the greeting. */
+/** "Thursday, 14 August": the eyebrow above the greeting. */
 export function todayLabel(now: Date = new Date()): string {
   return now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })
 }

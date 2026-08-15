@@ -1,8 +1,8 @@
 import { supabase } from './supabase'
 import { getWorkspaceId } from './workspace'
 
-// Deal attachments (contracts/briefs — PRODUCT.md 1) live in Supabase
-// Storage, not a DB table — Storage already tracks the file list, so a
+// Deal attachments (contracts/briefs, PRODUCT.md 1) live in Supabase
+// Storage, not a DB table: Storage already tracks the file list, so a
 // synced-copy table would just be one more thing to keep in sync. See
 // supabase/migrations/004_deal_attachments_storage.sql for the bucket + RLS
 // policy this all depends on.
@@ -10,7 +10,7 @@ import { getWorkspaceId } from './workspace'
 const BUCKET = 'attachments'
 
 export interface DealAttachment {
-  path: string // full storage path — used for delete/signed URL
+  path: string // full storage path, used for delete/signed URL
   name: string // display name (original filename, timestamp prefix stripped)
   createdAt: string | null
 }
@@ -30,7 +30,7 @@ async function folderPath(dealId: string): Promise<string> {
 }
 
 // Storage objects are named {timestamp}-{sanitized original name} to avoid
-// collisions between attachments that share a filename — the prefix is
+// collisions between attachments that share a filename; the prefix is
 // stripped back off for display.
 function buildObjectName(originalName: string): string {
   const safe = originalName.replace(/[^a-zA-Z0-9._-]/g, '_')
@@ -58,7 +58,7 @@ export async function listAttachments(dealId: string): Promise<DealAttachment[]>
     }))
 }
 
-// Reads the picked file via fetch(uri).blob() — works uniformly for a
+// Reads the picked file via fetch(uri).blob(), which works uniformly for a
 // native file:// URI and a web blob: URI, so upload doesn't need to branch
 // per platform.
 export async function uploadAttachment(
@@ -82,7 +82,7 @@ export async function deleteAttachment(path: string): Promise<void> {
   if (error) throw error
 }
 
-// The bucket is private — a signed URL is required to open/download a
+// The bucket is private, so a signed URL is required to open/download a
 // file, valid for an hour.
 export async function getAttachmentUrl(path: string): Promise<string> {
   const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, 60 * 60)

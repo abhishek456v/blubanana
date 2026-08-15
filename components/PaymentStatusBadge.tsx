@@ -5,7 +5,7 @@ import { useTheme } from '@/hooks/useTheme'
 import { PAYMENT_STATUS_LABELS } from '@/constants/labels'
 
 // Mirrors StatusPill's variant pattern but kept separate since it's typed to
-// PaymentStatus, not DealStatus — each component keeps one responsibility.
+// PaymentStatus, not DealStatus; each component keeps one responsibility.
 // neutral → pending, nothing sent yet
 // warning → reminder_sent, nudged but not yet paid
 // danger  → overdue

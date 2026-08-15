@@ -8,9 +8,9 @@ export interface SparklineProps {
   width?: number
   height?: number
   color?: string
-  /** Flat translucent fill under the line. Not a gradient — DESIGN.md §6. */
+  /** Flat translucent fill under the line. Not a gradient; DESIGN.md §6. */
   filled?: boolean
-  /** Marks the final point with a dot — "where you are now". */
+  /** Marks the final point with a dot: "where you are now". */
   showEndPoint?: boolean
   style?: StyleProp<ViewStyle>
 }
@@ -54,7 +54,7 @@ function smoothPath(points: Point[]): string {
 }
 
 /**
- * Compact trend line — follower growth, engagement over time, rate history.
+ * Compact trend line: follower growth, engagement over time, rate history.
  *
  * SVG here rather than Views (unlike `BarChart`) because a smooth curve is
  * exactly what a path is for and cannot be faked with rectangles.

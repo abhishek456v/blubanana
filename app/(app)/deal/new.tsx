@@ -40,7 +40,7 @@ import type {
   Platform as PlatformType,
 } from '@/types'
 
-/** Fallback line-item type when the brief wasn't itemised — mirrors DEFAULT_PLATFORM_FOR_KIND. */
+/** Fallback line-item type when the brief wasn't itemised; mirrors DEFAULT_PLATFORM_FOR_KIND. */
 const KIND_FOR_PLATFORM: Record<PlatformType, DeliverableKind> = {
   instagram_reel: 'reel',
   instagram_feed: 'static_post',
@@ -102,7 +102,7 @@ export default function NewDealScreen() {
   const [adRightsStartDate, setAdRightsStartDate] = useState('')
 
   // AI intake state. `extracting` drives the loading banner/disabled state
-  // shared by both the screenshot and voice paths (PRODUCT.md 2.1 — one
+  // shared by both the screenshot and voice paths (PRODUCT.md 2.1: one
   // review step, three entry points).
   const [extracting, setExtracting] = useState<'screenshot' | 'voice' | null>(null)
   // Set when extraction returns a brand name that doesn't match any existing
@@ -110,7 +110,7 @@ export default function NewDealScreen() {
   const [pendingBrandName, setPendingBrandName] = useState<string | null>(null)
 
   // Itemised breakdown the extraction returned, if any. Held aside rather than
-  // rendered as editable rows here — intake stays a single fast form, and the
+  // rendered as editable rows here. Intake stays a single fast form, and the
   // deal screen's Deliverables card is where the breakdown gets adjusted.
   const [extractedItems, setExtractedItems] = useState<ExtractedDeliverable[]>([])
 
@@ -124,7 +124,7 @@ export default function NewDealScreen() {
   // Re-fetch brands when this screen gains focus so a newly created brand
   // (from brand/new.tsx, including one created to resolve pendingBrandName)
   // appears here immediately when the user navigates back.
-  // Fetched independently — ratings depends on migration 006 (a newer,
+  // Fetched independently: ratings depends on migration 006 (a newer,
   // separate table), so it being unavailable shouldn't block brand selection
   // itself, which has worked since migration 001.
   const loadBrands = useCallback(async () => {
@@ -143,7 +143,7 @@ export default function NewDealScreen() {
     }
   }, [])
 
-  // useFocusEffect requires a sync callback — async functions return a Promise,
+  // useFocusEffect requires a sync callback. Async functions return a Promise,
   // which the hook misinterprets as a cleanup function and throws. Wrap the
   // async call so the outer callback returns void.
   useFocusEffect(
@@ -166,7 +166,7 @@ export default function NewDealScreen() {
   }, [brands, pendingBrandName])
 
   // Applies whatever the AI extraction returned onto the form fields. Every
-  // field stays editable afterwards — this never saves on its own.
+  // field stays editable afterwards; this never saves on its own.
   function applyExtractedFields(fields: ExtractedDealFields) {
     const hasAnyField = Object.values(fields).some((v) => v !== null)
     if (!hasAnyField) {
@@ -284,7 +284,7 @@ export default function NewDealScreen() {
     ]
     for (const { label, value } of datesToValidate) {
       if (value.trim() && parseDate(value) === null) {
-        // Defensive only — every date on this screen now comes from the
+        // Defensive only: every date on this screen now comes from the
         // calendar picker, so an unparseable one would mean a bug, not typing.
         toast(`${label} isn't a valid date`, { tone: 'warning' })
         return
@@ -409,7 +409,7 @@ export default function NewDealScreen() {
             Pressable wraps the entire form so tapping any non-interactive area
             (section labels, gaps between fields) calls Keyboard.dismiss().
             Buttons and TextInputs absorb their own touches via the RN responder
-            system, so this only fires on background taps — it doesn't interfere
+            system, so this only fires on background taps, so it doesn't interfere
             with form interactions.
           */}
           <Pressable onPress={() => Keyboard.dismiss()}>
@@ -626,7 +626,7 @@ export default function NewDealScreen() {
 
           {/* ── Timeline ──────────────────────────────────────────
               Real date pickers. These were four bare TextInputs asking the
-              creator to hand-type "2025-09-01" — the worst input pattern in
+              creator to hand-type "2025-09-01", the worst input pattern in
               an app whose first promise is that she never misses a deadline. */}
           <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Timeline</Text>
           <View style={styles.dateFields}>
@@ -704,7 +704,7 @@ export default function NewDealScreen() {
               </View>
 
               {/* Per-month value, the same figure the deal screen's ad-rights
-                  line item shows — useful here while the rate is negotiable. */}
+                  line item shows; useful here while the rate is negotiable. */}
               {perMonthAdRights != null ? (
                 <Text style={[styles.adRightsExpiryNote, { color: c.accentText }]}>
                   {formatCurrency(perMonthAdRights)} per month

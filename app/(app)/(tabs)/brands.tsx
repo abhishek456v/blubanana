@@ -34,7 +34,7 @@ export default function BrandsScreen() {
   const [refreshing, setRefreshing] = useState(false)
   const [query, setQuery] = useState('')
 
-  // Fetched independently — ratings depend on migration 006 (a newer,
+  // Fetched independently: ratings depend on migration 006 (a newer,
   // separate table), so that being unavailable shouldn't block the brand list
   // itself, which has worked since migration 001.
   const load = useCallback(
@@ -128,7 +128,7 @@ export default function BrandsScreen() {
         />
       </View>
 
-      {/* Always visible, not gated on a brand count — a search field that
+      {/* Always visible, not gated on a brand count: a search field that
           appears at four rows means the control moves as the list grows. */}
       <TextField
         placeholder="Search brands"
@@ -164,7 +164,7 @@ export default function BrandsScreen() {
         keyExtractor={(item) => item.id}
         renderItem={({ item, index }) => {
           const summary = summarizeRatings(ratingsByBrand.get(item.id) ?? [])
-          // POC — the brand-side person the creator actually deals with.
+          // POC: the brand-side person the creator actually deals with.
           const poc = [item.contact_person, item.contact_email].filter(Boolean).join(' · ')
 
           return (

@@ -24,7 +24,7 @@ const TRACK_PADDING = 3
  * iOS-style segmented control with a sliding thumb.
  *
  * For 2–4 mutually exclusive views (the intake mode switcher, revenue period
- * toggles). Beyond four, use a `Chip` row instead — the labels get too tight
+ * toggles). Beyond four, use a `Chip` row instead: the labels get too tight
  * to read and the thumb travel stops tracking the eye.
  *
  * The thumb slides between segments rather than jumping. That continuity is

@@ -1,7 +1,7 @@
 import type { DealWithPaymentSummary } from './deals'
 import { getPaymentAlertTone } from './paymentReminders'
 
-// Revenue dashboard — every number here is derived client-side from deals +
+// Revenue dashboard. Every number here is derived client-side from deals +
 // payments already being fetched elsewhere. No new schema, no new API calls;
 // this is purely a different view of existing data.
 
@@ -16,7 +16,7 @@ export interface RevenueSummary {
    * Deals signed this month and what they are worth.
    *
    * This is the number that says whether the month is going well, and it says
-   * it *now* — earnings only show up 45 to 90 days after the work, so a
+   * it *now*: earnings only show up 45 to 90 days after the work, so a
    * dashboard built on received payments alone reports on a quarter already
    * gone. Keyed off `created_at`, which is when the deal was logged; the
    * schema has no separate "confirmed" timestamp to key off instead.

@@ -9,14 +9,14 @@ export interface MarkProps {
 /**
  * The CreatorDesk mark: an open ring, cut on the right.
  *
- * Reads as a C, but the opening is the point — this is a product about a
+ * Reads as a C, but the opening is the point: this is a product about a
  * business loop that does not close on its own.
  *
  * The single source of truth for the mark inside the app. The same geometry is
  * generated as PNGs by `scripts/generate-icons.mjs` (app icon, splash,
  * favicon) and inlined into the invoice PDF by `lib/invoiceHtml.ts`. Those
  * three are separate implementations because they render in three environments
- * that share no runtime — but they draw the same arc, from the same numbers,
+ * that share no runtime, but they draw the same arc, from the same numbers,
  * and if one changes the others must too.
  */
 export function Mark({ size = 24, color = Colors.light.accent }: MarkProps) {

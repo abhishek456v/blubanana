@@ -29,7 +29,7 @@ export interface CardProps {
 
 /**
  * The card/section container used across deal detail, revenue, settings and
- * the invoice screens — each of which previously hand-rolled its own
+ * the invoice screens, each of which previously hand-rolled its own
  * `styles.card` block with the same three properties.
  */
 export function Card({
@@ -66,7 +66,7 @@ export function Card({
 
 export interface CardSectionProps {
   title: string
-  /** Right-aligned affordance — an "Edit" link, a count, a status pill. */
+  /** Right-aligned affordance: an "Edit" link, a count, a status pill. */
   action?: ReactNode
   subtitle?: string
   children: ReactNode

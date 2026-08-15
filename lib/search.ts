@@ -7,7 +7,7 @@ import type { Brand, Deal, Invoice } from '@/types'
 //
 // Queried server-side rather than by filtering an already-fetched list. The
 // client only ever holds the current screen's rows, so a client-side search
-// would quietly search a subset and report "no match" for records that exist —
+// would quietly search a subset and report "no match" for records that exist,
 // the worst possible failure for a search box.
 
 export type SearchResultKind = 'deal' | 'brand' | 'invoice'
@@ -16,7 +16,7 @@ export interface SearchResult {
   kind: SearchResultKind
   id: string
   title: string
-  /** One line of context — the brand, the amount, the status. */
+  /** One line of context: the brand, the amount, the status. */
   subtitle: string
   /** Sort key: lower wins. Exact prefix matches float to the top. */
   rank: number
@@ -32,7 +32,7 @@ const PER_KIND_LIMIT = 6
  * Escapes a user's text for a PostgREST `ilike` pattern.
  *
  * `%` and `_` are wildcards, and a comma would terminate the argument inside an
- * `.or()` filter list — a brand called "Nykaa, Inc" would otherwise produce a
+ * `.or()` filter list: a brand called "Nykaa, Inc" would otherwise produce a
  * malformed query rather than a search.
  */
 function escapePattern(query: string): string {
@@ -69,7 +69,7 @@ export async function search(rawQuery: string): Promise<SearchResult[]> {
   const DEAL_SELECT = 'id, deliverable_description, rate, status, brand:brands(name)'
 
   // Deals are matched two ways, as two queries: by their own text, and by
-  // their brand's name — "what was that Nyka one?" is a deal question, and
+  // their brand's name: "what was that Nyka one?" is a deal question, and
   // text-only matching answered it with just the brand row. Two queries
   // because PostgREST cannot OR across the parent and an embedded table in
   // one filter: a top-level .or() plus a referencedTable .or() would AND
@@ -110,7 +110,7 @@ export async function search(rawQuery: string): Promise<SearchResult[]> {
     ),
   ])
 
-  // Merged by id — a deal whose description and brand both match arrives twice.
+  // Merged by id, since a deal whose description and brand both match arrives twice.
   const dealById = new Map<string, (typeof dealsByText)[number]>()
   for (const deal of [...dealsByBrand, ...dealsByText]) {
     dealById.set((deal as { id: string }).id, deal)
@@ -134,7 +134,7 @@ export async function search(rawQuery: string): Promise<SearchResult[]> {
   }
 
   // Through `unknown` because supabase-js, without generated DB types, infers
-  // every embedded relation as an array — at runtime a to-one embed over the
+  // every embedded relation as an array; at runtime a to-one embed over the
   // deals.brand_id foreign key is a single object (lib/deals.ts relies on the
   // same behaviour).
   for (const deal of deals as unknown as (Pick<
@@ -147,7 +147,7 @@ export async function search(rawQuery: string): Promise<SearchResult[]> {
       id: deal.id,
       title: brandName,
       subtitle: deal.deliverable_description || 'Deal',
-      // Whichever path matched better — a deal found via its brand's name
+      // Whichever path matched better: a deal found via its brand's name
       // should rank like that name, not like its unrelated description.
       rank: Math.min(rankOf(deal.deliverable_description ?? '', query), rankOf(brandName, query)),
     })
@@ -166,7 +166,7 @@ export async function search(rawQuery: string): Promise<SearchResult[]> {
     })
   }
 
-  // Brands before deals before invoices at equal rank — searching a name is
+  // Brands before deals before invoices at equal rank: searching a name is
   // the common case, and the brand is the thing the deals hang off.
   const kindOrder: Record<SearchResultKind, number> = { brand: 0, deal: 1, invoice: 2 }
   return results.sort(

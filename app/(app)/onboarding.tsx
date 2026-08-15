@@ -31,7 +31,7 @@ type Step = 'you' | 'money'
  *
  * Step one is who they are (niche, reach, phone); step two is how they get
  * paid (UPI or bank, GSTIN). Split in that order because step one is easy and
- * builds momentum, and step two is the one that actually unlocks something —
+ * builds momentum, and step two is the one that actually unlocks something:
  * invoices can't be generated without payment details.
  *
  * Every field is skippable. The gate (lib/onboarding) never offers this screen
@@ -95,7 +95,7 @@ export default function OnboardingScreen() {
           <Animated.View entering={FadeInDown.duration(Duration.slow)} style={styles.header}>
             <Mark size={34} color={c.accent} />
 
-            {/* Two dots, not a percent bar — there are exactly two steps and
+            {/* Two dots, not a percent bar: there are exactly two steps and
                 the dots say which one without pretending to more precision. */}
             <View style={styles.dots}>
               <View

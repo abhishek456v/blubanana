@@ -4,15 +4,15 @@ import type { StatSnapshot } from './social'
 // Rate benchmarking.
 //
 // The question this answers is the one creators consistently get wrong: "my
-// audience grew — should I be charging more?" Left to memory, the answer is
+// audience grew, so should I be charging more?" Left to memory, the answer is
 // almost always "I'll raise it next time", and next time never arrives.
 //
 // Two sources of reach, in order of preference:
 //
-//   1. `creator_stat_snapshots` — real daily figures from a connected
+//   1. `creator_stat_snapshots`: real daily figures from a connected
 //      Instagram/YouTube account, including engagement rate. Lets the nudge
 //      say something true about *engagement*, not just follower count.
-//   2. `creator_follower_count_at_time` — a number the creator typed in,
+//   2. `creator_follower_count_at_time`: a number the creator typed in,
 //      captured when the deal was created. Always available, much coarser.
 //
 // It degrades rather than disappearing: with no connected account the nudge
@@ -75,7 +75,7 @@ function reachNear(snapshots: StatSnapshot[], iso: string): StatSnapshot | null 
  *
  * Returns null far more often than not, deliberately. This surfaces as a
  * banner on Home, and a banner that appears every time you open the app is one
- * you stop seeing — so it only fires on a genuine, sustained gap: at least two
+ * you stop seeing, so it only fires on a genuine, sustained gap: at least two
  * months apart, at least 15% growth in reach, and a rate that grew at less
  * than half that pace.
  */
@@ -145,7 +145,7 @@ export function getRateBenchmarkNudge(
     engagementGrowthPercent,
     fromConnectedAccount: pastReach.connected && currentReach.connected,
     // What the old rate would be if it had tracked reach. Rounded to the
-    // nearest ₹500 — a suggestion of "₹18,000" is one a creator can say out
+    // nearest ₹500: a suggestion of "₹18,000" is one a creator can say out
     // loud in a negotiation; "₹17,847" is not.
     suggestedRate: Math.round((past.rate * (1 + followerGrowthPercent)) / 500) * 500,
   }

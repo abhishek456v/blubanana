@@ -3,7 +3,7 @@ import { getWorkspaceId } from './workspace'
 import type { BrandRating } from '@/types'
 
 // Client reputation score (Phase 2). One review per deal, prompted once a
-// deal reaches 'paid' — see the deal detail screen's "Rate this
+// deal reaches 'paid'; see the deal detail screen's "Rate this
 // collaboration" card. RLS on brand_ratings restricts reads/writes to the
 // authenticated user's own rows.
 
@@ -43,7 +43,7 @@ export async function getRatingForDeal(dealId: string): Promise<BrandRating | nu
   return data as BrandRating | null
 }
 
-// Fetches every rating for the creator in one round trip — used by the
+// Fetches every rating for the creator in one round trip, used by the
 // Brands list to show each row's score without an N+1 query per brand.
 export async function getAllRatings(): Promise<BrandRating[]> {
   const { data, error } = await supabase
@@ -71,7 +71,7 @@ export interface BrandReputationSummary {
 }
 
 // Powers the "you worked with them before" flag shown wherever a brand is
-// picked for a new deal (deal/new.tsx) — the whole point of tracking this
+// picked for a new deal (deal/new.tsx), the whole point of tracking this
 // (product brief: "never work with a bad brand twice").
 export function summarizeRatings(ratings: BrandRating[]): BrandReputationSummary | null {
   if (ratings.length === 0) return null

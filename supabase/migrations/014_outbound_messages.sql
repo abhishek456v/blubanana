@@ -1,9 +1,9 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- CreatorDesk — the outbound message log.
+-- CreatorDesk: the outbound message log.
 -- Run this once in the Supabase dashboard SQL editor, after 013.
 --
--- Every message the app drafts for a brand — delivery notifications, the four
--- escalating payment chasers, ad-rights follow-ups — is a row here before it
+-- Every message the app drafts for a brand (delivery notifications, the four
+-- escalating payment chasers, ad-rights follow-ups) is a row here before it
 -- goes anywhere. Three reasons that matters more than it looks:
 --
 --   1. The functional spec's hardest rule is "nothing is ever sent to a brand
@@ -21,7 +21,7 @@
 -- ON WHAT "SENT" MEANS HERE
 --
 -- Messages go out through a wa.me link that opens the creator's own WhatsApp
--- with the text pre-filled — her real number, her real thread with the brand.
+-- with the text pre-filled: her real number, her real thread with the brand.
 -- The trade-off is that the handoff is the last thing this app can observe:
 -- once WhatsApp opens, there is no callback telling us she pressed send.
 --
@@ -83,7 +83,7 @@ create table if not exists outbound_messages (
 
   -- Human approval enforced by the database, not by a code convention. A row
   -- physically cannot reach 'approved' or 'sent' without a recorded approver,
-  -- so no future code path — or hand-run UPDATE — can bypass it.
+  -- so no future code path, or hand-run UPDATE, can bypass it.
   constraint approval_required_before_send check (
     status in ('draft', 'cancelled')
     or (approved_by is not null and approved_at is not null)

@@ -3,8 +3,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // INVARIANT: money is a whole number of rupees.
 //
-// Every money value in this codebase — `rate`, `amount`, `unit_amount`,
-// `total_amount`, `gst_amount`, `tds_amount`, `ad_rights_fee` — is an integer
+// Every money value in this codebase (`rate`, `amount`, `unit_amount`,
+// `total_amount`, `gst_amount`, `tds_amount`, `ad_rights_fee`) is an integer
 // count of RUPEES. Not paise, and never a float.
 //
 // Why not float: `0.1 + 0.2 !== 0.3`. Floating point is how money silently
@@ -12,7 +12,7 @@
 //
 // Why not paise, given the architecture spec asks for the smallest currency
 // unit: that rule exists to rule out floats, which integers already do. Paise
-// would add precision this product cannot use —
+// would add precision this product cannot use:
 //
 //   - deal rates, fees and payments in this market are whole rupees
 //   - GST is the only place a fraction arises, and under s.170 of the CGST Act
@@ -23,14 +23,14 @@
 //
 // WHEN TO REVISIT: the first non-INR currency. USD has real cents, and at that
 // point this becomes a currency migration (per-row currency code, conversion,
-// display formatting) rather than a change of scale — so it should be designed
+// display formatting) rather than a change of scale, so it should be designed
 // then, not pre-empted now.
 //
 // If you are adding a money column: make it `integer`, name it so the audit
 // trigger in migration 012 picks it up, and add it to `watched` there.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// `podcast` was removed in migration 007 — podcasts are published on YouTube
+// `podcast` was removed in migration 007; podcasts are published on YouTube
 // or Instagram, so it was never a destination of its own. Existing podcast
 // deals were remapped to `youtube_long`.
 export type Platform =
@@ -75,7 +75,7 @@ export type DealStatus =
 export type PaymentStatus = 'pending' | 'reminder_sent' | 'overdue' | 'paid'
 
 // Workflow reminder sequence (PRODUCT.md 2.3). Only one stage is ever active
-// per deal at a time — 'live_link_submission' has no dedicated date column,
+// per deal at a time: 'live_link_submission' has no dedicated date column,
 // it's scheduled for the day after publish_date.
 export type ReminderStage =
   | 'script_due'
@@ -89,7 +89,7 @@ export interface Creator {
   name: string
   phone: string | null
   follower_count: number | null
-  // Billing/invoice details (Phase 3 tax & invoicing) — all optional, filled
+  // Billing/invoice details (Phase 3 tax & invoicing), all optional, filled
   // in from Settings before the creator generates their first invoice.
   upi_id: string | null
   bank_account_number: string | null
@@ -127,16 +127,16 @@ export interface Deal {
   status: DealStatus
   live_link: string | null
   notes: string | null
-  // Workflow reminder scheduling state — a client-side cache of what's
+  // Workflow reminder scheduling state: a client-side cache of what's
   // currently scheduled as a local OS notification (PRODUCT.md 2.3).
   reminder_stage: ReminderStage | null
   reminder_fire_at: string | null
   reminder_notification_id: string | null
-  // Furthest stage explicitly marked Done — distinct from reminder_stage so
+  // Furthest stage explicitly marked Done, distinct from reminder_stage so
   // a date added retroactively to an earlier, never-completed stage can
   // still resurface it (see lib/reminders.ts rescheduleWorkflowReminder).
   reminder_completed_through: ReminderStage | null
-  // Ad rights — an optional add-on term: the brand pays extra for the right
+  // Ad rights, an optional add-on term. The brand pays extra for the right
   // to reuse the creator's content in paid ads for a fixed window.
   // expires_date is stored, not derived, so it can be queried directly and
   // so the 30-day-before reminder has a stable date to schedule against.
@@ -146,13 +146,13 @@ export interface Deal {
   ad_rights_start_date: string | null
   ad_rights_expires_date: string | null
   ad_rights_reminder_notification_id: string | null
-  // Rate benchmarking (Phase 2, simplified — no social API integration).
+  // Rate benchmarking (Phase 2, simplified: no social API integration).
   // A snapshot of the creator's follower count when this deal was created,
   // so later deals can be compared against it without needing historical
   // Instagram/YouTube data.
   creator_follower_count_at_time: number | null
   // Manual content performance entry (Phase 2). Automated sync from
-  // Instagram/YouTube needs OAuth app credentials that don't exist yet —
+  // Instagram/YouTube needs OAuth app credentials that don't exist yet;
   // this is the creator-entered stand-in.
   performance_views: number | null
   performance_likes: number | null
@@ -165,7 +165,7 @@ export interface Deal {
 }
 
 /**
- * One line item on a deal — a reel, three stories, an auto-DM setup, the ad
+ * One line item on a deal: a reel, three stories, an auto-DM setup, the ad
  * rights. Added in migration 007; replaces the single
  * `Deal.deliverable_description` text field, which could not express a
  * collaboration made of several dated, separately-priced pieces.
@@ -189,7 +189,7 @@ export interface Deliverable {
   duration_months: number | null
   starts_on: string | null
   expires_on: string | null
-  // Manual performance entry — no Instagram/YouTube API integration yet.
+  // Manual performance entry; no Instagram/YouTube API integration yet.
   views: number | null
   likes: number | null
   comments: number | null
@@ -210,7 +210,7 @@ export interface Payment {
   due_date: string | null
   status: PaymentStatus
   paid_date: string | null
-  // Payment reminder scheduling state — same client-side cache pattern as
+  // Payment reminder scheduling state: same client-side cache pattern as
   // Deal's reminder_* fields (PRODUCT.md 2.4).
   due_soon_notification_id: string | null
   due_today_notification_id: string | null
@@ -219,7 +219,7 @@ export interface Payment {
 }
 
 // One post-deal review, prompted once a deal reaches 'paid' (Phase 2 client
-// reputation score). One per deal — deal_id is unique.
+// reputation score). One per deal; deal_id is unique.
 export interface BrandRating {
   id: string
   workspace_id: string
@@ -235,12 +235,12 @@ export interface BrandRating {
 }
 
 // Phase 3 tax & invoicing. Brand contact fields are snapshotted at
-// generation time — editing/deleting the brand later never changes a
+// generation time, so editing/deleting the brand later never changes a
 // previously issued invoice.
 /**
  * One billed line on an invoice (migration 008).
  *
- * Exists so a single invoice can cover several deals — three reels for the
+ * Exists so a single invoice can cover several deals: three reels for the
  * same brand across a month, billed together, which is what a brand's finance
  * team expects against one PO.
  */
@@ -263,7 +263,7 @@ export interface InvoiceLineItem {
 export interface Invoice {
   id: string
   workspace_id: string
-  /** Null on a consolidated invoice — the deals live on the line items. */
+  /** Null on a consolidated invoice: the deals live on the line items. */
   deal_id: string | null
   invoice_number: string
   invoice_date: string
@@ -284,7 +284,7 @@ export interface Invoice {
 }
 
 // Best-effort fields pulled from a screenshot or voice transcript by the
-// extract-deal edge function. Every field is optional/nullable — the AI may
+// extract-deal edge function. Every field is optional/nullable, since the AI may
 // miss some, and the creator always reviews/edits before saving (PRODUCT.md 2.1).
 export interface ExtractedDeliverable {
   kind: DeliverableKind

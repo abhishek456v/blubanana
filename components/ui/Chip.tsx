@@ -29,7 +29,7 @@ const SIZES = {
 } as const
 
 /**
- * Selectable pill — the filter rows on the dashboard, the platform picker on
+ * Selectable pill: the filter rows on the dashboard, the platform picker on
  * both deal screens, and the tag rows on brand detail.
  *
  * Selection cross-fades rather than snapping. With a horizontal filter row

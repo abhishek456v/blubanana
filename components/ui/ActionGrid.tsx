@@ -41,7 +41,7 @@ export interface ActionGridProps {
  * five-action grid on a two-column phone wraps instead of squeezing.
  */
 // Ink on the amber fill. Dark rather than white: white on #F5A623 is 2.2:1,
-// which fails AA, while this clears it comfortably in both themes — and the
+// which fails AA, while this clears it comfortably in both themes. The
 // accent tile is the same amber on light and dark, so one value serves both.
 const ON_ACCENT = '#231A0B'
 const ON_ACCENT_MUTED = 'rgba(35,26,11,0.72)'

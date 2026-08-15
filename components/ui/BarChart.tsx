@@ -23,7 +23,7 @@ export interface BarChartProps {
   /** Called on bar tap. Omit to make the chart display-only. */
   onSelect?: (index: number) => void
   /**
-   * Bar drawn at full accent. Defaults to the last one — on a six-month chart
+   * Bar drawn at full accent. Defaults to the last one: on a six-month chart
    * that is the current month, which is the bar being read against the others.
    */
   highlightIndex?: number
@@ -35,7 +35,7 @@ export interface BarChartProps {
   /**
    * Grow the plot to whatever height the container gives it, instead of the
    * fixed `height`. For a chart in a bento cell that is stretched to match a
-   * taller column — otherwise the card grows and the chart doesn't.
+   * taller column; otherwise the card grows and the chart doesn't.
    */
   fill?: boolean
   /**
@@ -60,7 +60,7 @@ export interface BarChartProps {
  * that reveals the exact figure, and a zero state that doesn't collapse to a
  * flat line.
  *
- * Deliberately built from Views rather than SVG — these are rectangles, and
+ * Deliberately built from Views rather than SVG: these are rectangles, and
  * Views give rounded corners and layout-driven sizing for free while
  * animating on the UI thread. SVG is reserved for the curves in `Sparkline`.
  */
@@ -180,7 +180,7 @@ interface BarProps {
 }
 
 function Bar({ fraction, index, color, minHeight, maxWidth }: BarProps) {
-  // Bars rise left-to-right rather than all at once — the sweep is what makes
+  // Bars rise left-to-right rather than all at once, since the sweep is what makes
   // the trend legible before any number is read.
   const grown = useDerivedValue(
     () =>

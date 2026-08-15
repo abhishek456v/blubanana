@@ -28,7 +28,7 @@ interface DeliverablesCardProps {
  * The "what did I actually sell them?" card.
  *
  * Replaces a single free-text deliverable field. A collaboration is normally a
- * reel *and* three stories *and* an auto-DM setup — and increasingly the ad
+ * reel *and* three stories *and* an auto-DM setup, and increasingly the ad
  * rights on top, which is often the most valuable line and the easiest to
  * forget to charge for.
  */

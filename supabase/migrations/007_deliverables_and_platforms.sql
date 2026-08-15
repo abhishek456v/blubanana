@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- CreatorDesk — typed deliverables, and a corrected platform list.
+-- CreatorDesk: typed deliverables, and a corrected platform list.
 -- Run this once in the Supabase dashboard SQL editor, after 006.
 --
 -- Two changes:
@@ -7,7 +7,7 @@
 -- 1. A deal stops being "one deliverable described in a text field" and
 --    becomes a list of typed items. A single collaboration is normally a reel
 --    *and* three stories *and* an auto-DM setup, each with its own due date,
---    its own rate and its own performance numbers — none of which fits in
+--    its own rate and its own performance numbers, none of which fits in
 --    `deals.deliverable_description`.
 --
 --    Ad rights become one of those item types rather than five columns bolted
@@ -18,7 +18,7 @@
 --
 -- Deliberately NOT done here: `deals.rate` is not recomputed by a trigger from
 -- the deliverable rates. Money columns should not be rewritten by something
--- invisible at the call site — `lib/deliverables.ts` recalculates and writes
+-- invisible at the call site; `lib/deliverables.ts` recalculates and writes
 -- the deal total explicitly whenever deliverables change.
 -- ─────────────────────────────────────────────────────────────────────────────
 

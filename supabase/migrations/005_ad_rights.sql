@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- CreatorDesk — Ad Rights tracking on deals.
+-- CreatorDesk: Ad Rights tracking on deals.
 -- Run this once in the Supabase dashboard SQL editor (or via supabase db push).
 --
 -- Ad rights are an optional add-on term on a deal: the brand pays an extra
@@ -7,7 +7,7 @@
 -- window. expires_date is stored (not computed on read) so it can be
 -- queried directly for the "flag if still running past expiry" use case and
 -- so the 30-day-before reminder has a stable date to schedule against.
--- reminder_notification_id mirrors payments.due_soon_notification_id — a
+-- reminder_notification_id mirrors payments.due_soon_notification_id: a
 -- client-side cache of the local OS notification currently scheduled.
 -- ─────────────────────────────────────────────────────────────────────────────
 

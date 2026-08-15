@@ -4,7 +4,7 @@ import { COMMERCIAL_KINDS } from '@/constants/labels'
 
 // Content performance.
 //
-// Every number here comes from figures the creator typed in herself — there is
+// Every number here comes from figures the creator typed in herself: there is
 // no Instagram Graph API or YouTube Data API connection yet, and both need app
 // credentials that don't exist. The shape of these functions is the same
 // either way, so wiring a real sync later means changing where the numbers are
@@ -14,11 +14,11 @@ export interface DeliverablePerformance {
   deliverable: Deliverable
   deal: DealWithPaymentSummary
   views: number
-  /** Likes + comments + saves + shares — the actions a viewer chose to take. */
+  /** Likes + comments + saves + shares: the actions a viewer chose to take. */
   engagements: number
   /**
    * Engagements as a share of reach, or of views when reach is missing.
-   * Null when neither denominator was entered — a rate computed against zero
+   * Null when neither denominator was entered: a rate computed against zero
    * is worse than an honest blank on a screen about how well work performed.
    */
   engagementRate: number | null
@@ -56,7 +56,7 @@ function mean(values: number[]): number | null {
 /**
  * Joins deliverables to their deals and derives the per-item figures.
  *
- * Ad rights and auto-DM lines are excluded — they are commercial terms, not
+ * Ad rights and auto-DM lines are excluded: they are commercial terms, not
  * posts, so they have no reach to measure and would drag every average down
  * toward zero if counted.
  */
@@ -81,7 +81,7 @@ export function buildPerformance(
       const denominator = deliverable.reach ?? deliverable.views ?? 0
 
       if (views === 0 && engagements === 0) {
-        // Only count it as "missing numbers" if it actually went live —
+        // Only count it as "missing numbers" if it actually went live;
         // an unpublished reel isn't waiting on data entry.
         if (deliverable.published_at || deliverable.live_link) missingCount += 1
         continue
@@ -142,13 +142,13 @@ export function buildPerformance(
   }
 }
 
-/** `4.2%` — engagement rates are small fractions, so one decimal is enough. */
+/** `4.2%`: engagement rates are small fractions, so one decimal is enough. */
 export function formatRate(rate: number | null): string {
   if (rate === null) return '—'
   return `${(rate * 100).toFixed(1)}%`
 }
 
-/** `1.2M` / `48.5K` / `820` — view counts, in the notation creators use. */
+/** `1.2M` / `48.5K` / `820`: view counts, in the notation creators use. */
 export function formatCount(value: number | null | undefined): string {
   if (value == null) return '—'
   const abs = Math.abs(value)

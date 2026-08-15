@@ -51,7 +51,7 @@ const VIEWS = [
 ]
 
 /**
- * Work — the creator's own record of everything she has shipped.
+ * Work: the creator's own record of everything she has shipped.
  *
  * Two questions, one destination. *Archive* is "what have I made", a
  * year-by-year back catalogue that doubles as the single place to find an old

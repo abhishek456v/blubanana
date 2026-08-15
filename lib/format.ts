@@ -18,7 +18,7 @@ export function parseLocalDate(dateStr: string): Date {
   return new Date(year, month - 1, day)
 }
 
-/** Today at local midnight — the baseline for every day-difference below. */
+/** Today at local midnight: the baseline for every day-difference below. */
 export function startOfToday(): Date {
   const now = new Date()
   return new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -30,14 +30,14 @@ export function daysFromToday(dateStr: string): number {
   return Math.round((parseLocalDate(dateStr).getTime() - startOfToday().getTime()) / MS_PER_DAY)
 }
 
-/** `₹12,000` — Indian digit grouping (1,00,000 rather than 100,000). */
+/** `₹12,000`: Indian digit grouping (1,00,000 rather than 100,000). */
 export function formatCurrency(amount: number | null | undefined): string {
   if (amount == null) return '—'
   return `₹${Math.round(amount).toLocaleString('en-IN')}`
 }
 
 /**
- * `₹12.5K` / `₹4.2L` / `₹1.1Cr` — for stat tiles and chart axes where the
+ * `₹12.5K` / `₹4.2L` / `₹1.1Cr`, for stat tiles and chart axes where the
  * full figure would wrap. Uses lakh/crore rather than M/B because that is how
  * the number is spoken by the people using this app.
  */
@@ -64,7 +64,7 @@ export function formatDate(dateStr: string | null | undefined): string {
   return parseLocalDate(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
 }
 
-/** `12 Sep 2026` — for invoices and anything spanning a year boundary. */
+/** `12 Sep 2026`, for invoices and anything spanning a year boundary. */
 export function formatDateLong(dateStr: string | null | undefined): string {
   if (!dateStr) return ''
   return parseLocalDate(dateStr).toLocaleDateString('en-IN', {
@@ -77,7 +77,7 @@ export function formatDateLong(dateStr: string | null | undefined): string {
 /**
  * Deadline phrasing: `Today`, `Tomorrow`, `In 3 days`, `4 days ago`.
  *
- * Falls back to an absolute date beyond a week in either direction — past
+ * Falls back to an absolute date beyond a week in either direction. Past
  * that, "in 23 days" is harder to act on than "6 Sep", and the creator is
  * checking a calendar at that point anyway.
  */
@@ -99,7 +99,7 @@ export function financialYearOf(date: Date = new Date()): string {
   return `${year}-${String((year + 1) % 100).padStart(2, '0')}`
 }
 
-/** `2026-08-14` — the storage format, from a Date. */
+/** `2026-08-14`: the storage format, from a Date. */
 export function toDateString(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')

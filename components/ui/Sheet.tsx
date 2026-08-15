@@ -35,7 +35,7 @@ const DISMISS_VELOCITY = 800
  * Modal surface for in-screen flows: the date picker, confirmation prompts,
  * action menus.
  *
- * Adapts rather than being two components — on phones it is a bottom sheet
+ * Adapts rather than being two components: on phones it is a bottom sheet
  * with a grabber and drag-to-dismiss; at the `wide` breakpoint it becomes a
  * centred card, because a sheet climbing out of the bottom edge of a desktop
  * browser reads as a phone emulator.
@@ -110,7 +110,7 @@ export function Sheet({ visible, onClose, title, children, dismissable = true, s
 
   return (
     <Modal transparent visible animationType="none" statusBarTranslucent onRequestClose={onClose}>
-      {/* Gesture Handler needs its own root inside a Modal on Android — the
+      {/* Gesture Handler needs its own root inside a Modal on Android: the
           app-level root does not extend into the modal's separate window. */}
       <GestureHandlerRootView style={styles.root}>
         <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, backdropStyle]}>

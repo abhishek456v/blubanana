@@ -20,7 +20,7 @@ export interface EmptyStateProps {
  *
  * The previous version of these was two lines of centred text. An empty
  * dashboard is the very first thing a new creator sees, so it gets the
- * display face, a tinted icon and — critically — the action that resolves it,
+ * display face, a tinted icon and, critically, the action that resolves it,
  * rather than prose telling the user where to look for a button.
  */
 export function EmptyState({ icon, title, message, actionLabel, onAction, style }: EmptyStateProps) {

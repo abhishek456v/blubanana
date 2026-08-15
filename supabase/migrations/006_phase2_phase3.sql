@@ -1,12 +1,12 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- CreatorDesk — Phase 2 & 3 features.
+-- CreatorDesk: Phase 2 & 3 features.
 -- Run this once in the Supabase dashboard SQL editor (or via supabase db push),
 -- after 004 and 005.
 --
 -- Covers: client reputation scoring, rate benchmarking (follower snapshot),
 -- manual content performance tracking, tax/GST invoicing, and the shareable
 -- public creator profile card. Niche-based rate intelligence and live
--- Instagram/YouTube performance sync are intentionally NOT included here —
+-- Instagram/YouTube performance sync are intentionally NOT included here:
 -- the former needs a real user population to benchmark against, the latter
 -- needs Instagram Graph API / YouTube Data API credentials that haven't been
 -- set up yet.
@@ -30,11 +30,11 @@ alter table profiles
 
 alter table deals
   -- Snapshot of the creator's follower count at the moment this deal was
-  -- created — lib/rateBenchmark.ts compares rate-per-follower across deals
+  -- created. lib/rateBenchmark.ts compares rate-per-follower across deals
   -- over time using this, without needing any social API integration.
   add column if not exists creator_follower_count_at_time integer,
   -- Manual content performance entry (PRODUCT.md explicitly deferred
-  -- automated Instagram/YouTube polling to Phase 2 — this is the
+  -- automated Instagram/YouTube polling to Phase 2; this is the
   -- creator-entered stand-in until real API credentials exist).
   add column if not exists performance_views      integer,
   add column if not exists performance_likes      integer,
@@ -72,7 +72,7 @@ create policy "brand_ratings: own rows"
 -- ── Tax & invoicing ────────────────────────────────────────────────────────
 -- Brand contact details are snapshotted at generation time (not joined live)
 -- so editing/deleting a brand later never changes a previously issued
--- invoice — standard invoicing practice.
+-- invoice, which is standard invoicing practice.
 
 create table if not exists invoices (
   id                   uuid        primary key default gen_random_uuid(),
@@ -106,7 +106,7 @@ create policy "invoices: own rows"
 
 -- ── Shareable public creator profile card ─────────────────────────────────
 -- A narrow, explicitly-opt-in public view. Only exposes what's needed for a
--- brand-facing media-kit-style card — never payment details, brand
+-- brand-facing media-kit-style card: never payment details, brand
 -- contacts, or notes. The WHERE clause is the actual security boundary
 -- (views run with the definer's privileges, bypassing RLS on the
 -- underlying tables), so keep any future column additions here deliberate.

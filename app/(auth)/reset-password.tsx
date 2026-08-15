@@ -45,7 +45,7 @@ export default function ResetPasswordScreen() {
     }
 
     // Sign out of the recovery session and send the creator back to sign in
-    // with the new password — cleaner than silently treating a recovery
+    // with the new password. Cleaner than silently treating a recovery
     // session as a real login, and it sidesteps app/_layout.tsx's redirect
     // needing to know the reset finished from in here.
     await supabase.auth.signOut()

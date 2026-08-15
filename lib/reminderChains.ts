@@ -4,8 +4,8 @@ import type { Deal, ReminderStage } from '@/types'
 
 // Durable reminder chains (migration 015).
 //
-// The chain rule — one live reminder per chain, the next waiting on a response
-// to the current one — is enforced by a partial unique index in the database,
+// The chain rule (one live reminder per chain, the next waiting on a response
+// to the current one) is enforced by a partial unique index in the database,
 // not here. This file is the convenient path; Postgres is the guarantee. If a
 // function below ever races with itself, the second write fails loudly instead
 // of quietly producing two nudges for the same piece of work.
@@ -71,7 +71,7 @@ const WORKFLOW_STAGES: { stage: ReminderStage; dateField: keyof Deal; title: str
   { stage: 'publish', dateField: 'publish_date', title: 'Publish day' },
 ]
 
-/** 9am local on the stage date — early enough to act, late enough to be awake. */
+/** 9am local on the stage date: early enough to act, late enough to be awake. */
 function morningOf(dateStr: string): Date {
   const [year, month, day] = dateStr.split('-').map(Number)
   return new Date(year, month - 1, day, 9, 0, 0, 0)
@@ -81,7 +81,7 @@ function morningOf(dateStr: string): Date {
  * Builds (or rebuilds) the workflow chain for a deal.
  *
  * Stages with no date are skipped entirely rather than scheduled with a guessed
- * one — a story repost has no script day, and inventing a deadline is worse
+ * one: a story repost has no script day, and inventing a deadline is worse
  * than having none.
  *
  * Already-answered reminders are never touched. Changing a deal's dates
@@ -111,7 +111,7 @@ export async function buildWorkflowChain(deal: Deal): Promise<Reminder | null> {
   const now = Date.now()
 
   // The next stage that has a date and hasn't been completed. Past-dated
-  // stages still schedule — an overdue nudge is the entire point.
+  // stages still schedule; an overdue nudge is the entire point.
   const next = WORKFLOW_STAGES.find((s, index) => {
     if (index <= completedIndex) return false
     return Boolean(deal[s.dateField])
@@ -159,7 +159,7 @@ export async function getLiveReminder(chainId: string): Promise<Reminder | null>
   return (data as Reminder) ?? null
 }
 
-/** Everything due now across all chains — what the client schedules locally. */
+/** Everything due now across all chains: what the client schedules locally. */
 export async function getDueReminders(): Promise<Reminder[]> {
   const { data, error } = await supabase
     .from('reminders')
@@ -172,7 +172,7 @@ export async function getDueReminders(): Promise<Reminder[]> {
   return (data ?? []) as Reminder[]
 }
 
-/** Scheduled reminders yet to fire — the set the client mirrors to the OS. */
+/** Scheduled reminders yet to fire: the set the client mirrors to the OS. */
 export async function getPendingReminders(): Promise<Reminder[]> {
   const { data, error } = await supabase
     .from('reminders')
@@ -190,12 +190,12 @@ export type ReminderResponse = 'done' | 'snooze_12h' | 'snooze_tomorrow'
  * Records a response and advances the chain.
  *
  * A snooze creates a *new* row rather than moving the existing one, so the
- * full nudge history survives — three snoozes on one stage is a real signal
+ * full nudge history survives: three snoozes on one stage is a real signal
  * that a deadline is slipping, and mutating in place would erase it.
  *
  * Order matters: the current reminder must leave the live states before the
  * replacement is inserted, or the unique index rejects the write. That
- * rejection would be correct — it just makes for a confusing error — so the
+ * rejection would be correct (it just makes for a confusing error), so the
  * sequence is explicit here.
  */
 export async function respondToChainReminder(
@@ -258,7 +258,7 @@ export async function respondToChainReminder(
  *
  * Called from `lib/reminders.ts` at the moment the OS notification is
  * scheduled, so the database row and the notification always describe the same
- * thing. Passing `stage: null` just clears the chain — the deal has no further
+ * thing. Passing `stage: null` just clears the chain: the deal has no further
  * scheduled work.
  *
  * The old live row is cancelled before the new one is inserted, because the
@@ -279,7 +279,7 @@ export async function syncChainReminder(params: {
 
   // Idempotent: if the live row already describes this exact stage and time,
   // leave it alone. `rescheduleWorkflowReminder` short-circuits when nothing
-  // changed, and cancel-then-reinsert on every save would reset snooze_count —
+  // changed, and cancel-then-reinsert on every save would reset snooze_count,
   // destroying the very history escalation is based on.
   if (
     existing &&
@@ -345,7 +345,7 @@ export async function rebuildLocalNotifications(
 
   for (const reminder of pending) {
     // Already-due reminders are surfaced in-app by the deal screen rather than
-    // scheduled — asking the OS to fire in the past does nothing useful.
+    // scheduled, since asking the OS to fire in the past does nothing useful.
     if (new Date(reminder.scheduled_for).getTime() <= now) continue
 
     const notificationId = await schedule(reminder)
@@ -361,7 +361,7 @@ export async function rebuildLocalNotifications(
   return restored
 }
 
-/** Cancels a chain outright — deal closed, or work no longer needed. */
+/** Cancels a chain outright: deal closed, or work no longer needed. */
 export async function cancelChain(chainId: string): Promise<void> {
   const { error } = await supabase
     .from('reminders')

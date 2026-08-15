@@ -1,9 +1,9 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- CreatorDesk — reminder scheduling state (PRODUCT.md 2.3, 2.4)
+-- CreatorDesk: reminder scheduling state (PRODUCT.md 2.3, 2.4)
 -- Run this once in the Supabase dashboard SQL editor (or via supabase db push).
 --
 -- These columns are a client-side cache of what's currently scheduled as a
--- local OS notification on-device — Postgres can't schedule those itself.
+-- local OS notification on-device; Postgres can't schedule those itself.
 -- Plain nullable columns (not a separate table) because there is only ever
 -- one active reminder per deal/payment at a time, not a history log.
 -- ─────────────────────────────────────────────────────────────────────────────

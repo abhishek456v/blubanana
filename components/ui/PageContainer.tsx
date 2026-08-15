@@ -6,8 +6,8 @@ import { useBreakpoint } from '@/hooks/useBreakpoint'
 export interface PageContainerProps {
   children: ReactNode
   /**
-   * `stack`   — one column, capped for reading length. Forms, detail screens.
-   * `spread`  — widens on desktop so content can lay out in columns. Dashboards.
+   * `stack`:  one column, capped for reading length. Forms, detail screens.
+   * `spread`: widens on desktop so content can lay out in columns. Dashboards.
    */
   width?: 'stack' | 'spread'
   style?: StyleProp<ViewStyle>
@@ -16,7 +16,7 @@ export interface PageContainerProps {
 /**
  * The one place that decides how wide a page's content is.
  *
- * Every screen previously carried its own `contentWide` style — the same
+ * Every screen previously carried its own `contentWide` style: the same
  * `maxWidth: 720, alignSelf: 'center'` pasted eighteen times. That is why a
  * desktop window showed a narrow column marooned in the middle: the cap was
  * tuned for reading line length and then applied to dashboards, which are not

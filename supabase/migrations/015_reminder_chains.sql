@@ -1,17 +1,17 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- CreatorDesk — durable reminder chains.
+-- CreatorDesk: durable reminder chains.
 -- Run this once in the Supabase dashboard SQL editor, after 014.
 --
 -- Reminders currently exist only as local OS notifications, with a couple of
 -- cache columns on `deals` recording what was scheduled. That makes the
--- product's first promise — "she never misses a deadline" — depend on the
+-- product's first promise, "she never misses a deadline", depend on the
 -- phone not tidying up: reinstall the app, switch device, or let the OS clear
 -- notifications, and the entire schedule is gone with no way to rebuild it.
 --
 -- Moving the schedule into the database fixes that. Delivery still happens
 -- through local notifications for now (no push credentials yet), but the app
 -- can rebuild them from the database at any time, on any device. When push is
--- set up, a scheduled job delivers from the same rows — the data model does
+-- set up, a scheduled job delivers from the same rows; the data model does
 -- not change, only who reads it.
 --
 -- Safe to re-run.
@@ -23,7 +23,7 @@
 -- after the current one is answered."
 --
 -- That is what stops the app becoming background noise. It is enforced by the
--- partial unique index below, not by application logic — so a scheduler bug, a
+-- partial unique index below, not by application logic, so a scheduler bug, a
 -- double-tap, or a retried job physically cannot produce two live nudges for
 -- the same piece of work.
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -122,7 +122,7 @@ create trigger reminders_updated_at
 -- and the chain stalls waiting for a response that already happened.
 --
 -- Shifts a timestamp forward to the next moment outside the workspace's quiet
--- window. Deliberately never shifts backward — a reminder may be late, but it
+-- window. Deliberately never shifts backward: a reminder may be late, but it
 -- must never fire before the work was due.
 
 create or replace function next_wakeful_time(p_workspace uuid, p_at timestamptz)

@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- CreatorDesk — audit log for money and status changes.
+-- CreatorDesk: audit log for money and status changes.
 -- Run this once in the Supabase dashboard SQL editor, after 010.
 --
 -- The functional spec's rule: "Money data is never silently modified. Every
@@ -8,7 +8,7 @@
 --
 -- Written as a database trigger rather than as calls in the service layer, and
 -- that choice is the whole point. A service-layer audit records what the app
--- meant to do; a trigger records what actually happened to the row — including
+-- meant to do; a trigger records what actually happened to the row, including
 -- a hand-run UPDATE in the SQL editor at 2am, which is exactly the change
 -- you'd most want a record of during a payment dispute.
 --

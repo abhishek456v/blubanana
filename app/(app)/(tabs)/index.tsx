@@ -89,7 +89,7 @@ export default function HomeScreen() {
       if (mode === 'refresh') setRefreshing(true)
       try {
         // The profile only supplies the greeting, so a failure there must not
-        // cost the creator her deals — hence the separate catch.
+        // cost the creator her deals. Hence the separate catch.
         const [dealData] = await Promise.all([
           getDeals(),
           // Real reach makes the rate nudge able to talk about engagement, not
@@ -121,7 +121,7 @@ export default function HomeScreen() {
 
   // The onboarding gate lives here, not in a route guard: both auth redirects
   // land on this tab, so it is the one place every fresh sign-up passes.
-  // Checked once per mount — an offer, not a wall.
+  // Checked once per mount: an offer, not a wall.
   useEffect(() => {
     let active = true
     shouldOfferOnboarding().then((offer) => {
@@ -204,7 +204,7 @@ export default function HomeScreen() {
             : `Across ${unpaidCount} unpaid ${unpaidCount === 1 ? 'deal' : 'deals'}, all on track.`
       }
       action={{ label: 'Money', onPress: () => router.push('/(app)/(tabs)/money' as never) }}
-      // Doubles as the donut's legend — same two colours, same two figures —
+      // Doubles as the donut's legend (same two colours, same two figures),
       // so the ring never needs a separate key beside it.
       stats={[
         { label: 'On track', value: formatCurrencyCompact(onTrack), dotColor: c.accent },
@@ -348,7 +348,7 @@ export default function HomeScreen() {
         ]}
         leadingAction={<HeaderUtilities />}
       >
-        {/* Row A — the answer, then the two numbers that qualify it. */}
+        {/* Row A: the answer, then the two numbers that qualify it. */}
         <View style={isDesktop ? styles.rowA : styles.stack}>
           <View style={isDesktop ? styles.heroCell : undefined}>{hero}</View>
           <View style={isDesktop ? styles.asideCell : undefined}>{sideTiles}</View>
@@ -366,7 +366,7 @@ export default function HomeScreen() {
         </Animated.View>
       ) : null}
 
-      {/* Row B — the trend beside the to-do list, with the quick actions
+      {/* Row B: the trend beside the to-do list, with the quick actions
           filling the rest of the right column. Without them the attention
           card stretched to the chart's height and carried 150px of nothing. */}
       <View style={[styles.section, isDesktop ? styles.rowB : styles.stack]}>
@@ -495,7 +495,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   // A dashboard is not prose, so the reading-length cap that suits a form is
-  // wrong here — it left a 720px column stranded in the middle of a 1440px
+  // wrong here. It left a 720px column stranded in the middle of a 1440px
   // window.
   listContent: {
     paddingHorizontal: Spacing.md,
@@ -544,7 +544,7 @@ const styles = StyleSheet.create({
     gap: ColumnGap,
   },
   // Wraps, because three tiles at their 148px minimum plus gaps is 464px and a
-  // phone gives 358 — without this the third tile ran off the right edge.
+  // phone gives 358. Without this the third tile ran off the right edge.
   tileRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -555,7 +555,7 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     gap: Spacing.md,
   },
-  // Unlike the chart card this one must *not* flex to fill its column — the
+  // Unlike the chart card this one must *not* flex to fill its column: the
   // quick actions sit under it, and a stretched attention card would push
   // them off the fold.
   needsCard: {

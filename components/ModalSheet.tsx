@@ -16,10 +16,10 @@ interface ModalSheetProps {
 // Wraps deal/new, brand/new, profile/edit, and deal/[id]. On wide screens
 // these present as a floating card over a dimmed backdrop instead of a
 // full-page native-stack push, so the sidebar (DESIGN.md 4) stays visible
-// behind them — the caller's Stack.Screen sets headerShown: false and
+// behind them. The caller's Stack.Screen sets headerShown: false and
 // presentation: 'transparentModal' for the same breakpoint (see
 // app/(app)/_layout.tsx), so this is the only chrome the screen gets.
-// On mobile widths this is a passthrough — the screen keeps its native
+// On mobile widths this is a passthrough: the screen keeps its native
 // Stack header and full-page layout, unchanged.
 export function ModalSheet({ title, headerRight, children }: ModalSheetProps) {
   const isWide = useIsWideScreen()
@@ -28,7 +28,7 @@ export function ModalSheet({ title, headerRight, children }: ModalSheetProps) {
   /**
    * Dismiss to somewhere that exists.
    *
-   * `router.back()` alone strands the user on a cold load — a deep link, a
+   * `router.back()` alone strands the user on a cold load: a deep link, a
    * notification tap, or a browser refresh puts this screen first in the
    * history, so there is nothing behind it to go back to and the close button
    * does nothing. Falling through to the app root means dismiss always lands
@@ -41,7 +41,7 @@ export function ModalSheet({ title, headerRight, children }: ModalSheetProps) {
   const { c } = useTheme()
   // The Stack keeps this screen mounted after router.back() navigates away
   // from it (for back-gesture support), so the backdrop must not render
-  // once unfocused — an absolute, full-viewport Pressable left behind would
+  // once unfocused: an absolute, full-viewport Pressable left behind would
   // silently swallow every click on the screen underneath.
   const isFocused = useIsFocused()
 
@@ -52,7 +52,7 @@ export function ModalSheet({ title, headerRight, children }: ModalSheetProps) {
     <Pressable style={styles.backdrop} onPress={dismiss}>
       <Pressable
         style={[styles.card, { backgroundColor: c.bgSurfaceRaised, borderColor: c.border }]}
-        // Stops the tap from bubbling to the backdrop's dismiss handler —
+        // Stops the tap from bubbling to the backdrop's dismiss handler;
         // react-native-web's Pressable uses real DOM click bubbling.
         onPress={(e) => e.stopPropagation()}
       >

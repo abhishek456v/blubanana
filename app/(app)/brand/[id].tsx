@@ -74,7 +74,7 @@ export default function BrandDetailScreen() {
 
   const summary = summarizeRatings(ratings)
 
-  // What this brand is actually worth to her — the answer to "should I say yes
+  // What this brand is actually worth to her: the answer to "should I say yes
   // again?", which a star rating alone doesn't give.
   const earned = useMemo(
     () =>

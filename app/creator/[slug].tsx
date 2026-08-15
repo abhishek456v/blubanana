@@ -12,13 +12,13 @@ import { Mark, Skeleton } from '@/components/ui'
 import type { Platform } from '@/types'
 
 /**
- * Public, unauthenticated route — the brand-facing media kit.
+ * Public, unauthenticated route: the brand-facing media kit.
  *
  * This is the only screen in the product a brand ever sees, and it is shown
  * mid-negotiation, so it carries more visual weight than anything inside the
  * app. It reads only from the `public_creator_profiles` view (migration 006),
  * which already restricts to opted-in creators and a narrow, safe set of
- * columns — no rates, no client names, no contact details. See app/_layout.tsx
+ * columns: no rates, no client names, no contact details. See app/_layout.tsx
  * for the redirect bypass that keeps it reachable with no session at all.
  */
 export default function PublicCreatorProfileScreen() {

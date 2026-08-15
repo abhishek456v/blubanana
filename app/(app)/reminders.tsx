@@ -65,12 +65,12 @@ const RESPONSES: {
  * Reminders.
  *
  * Two questions, split by time. *Today* is everything asking for an answer
- * right now — scheduled reminders whose moment has arrived, plus the alerts
+ * right now: scheduled reminders whose moment has arrived, plus the alerts
  * derived from deal state (a payment eight days late, a published post with no
  * link). *Upcoming* is the diary: what is coming and when.
  *
  * Only the scheduled reminders carry the three response buttons. A derived
- * alert has nothing to snooze — it clears when the fact behind it changes, so
+ * alert has nothing to snooze. It clears when the fact behind it changes, so
  * it opens the deal instead.
  */
 export default function RemindersScreen() {
@@ -166,7 +166,7 @@ export default function RemindersScreen() {
           {/* Two tiles on a phone, three on desktop. Wrapping 2+1 put the
               third tile on its own line where, on native, it rendered
               underneath the segmented control below it. The dropped tile is
-              also the least useful one here — "Coming up" is just the count
+              also the least useful one here: "Coming up" is just the count
               of the Upcoming tab, which is one tap away. */}
           <View style={styles.tiles}>
             <StatTile

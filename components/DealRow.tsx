@@ -33,7 +33,7 @@ interface DealRowProps {
   deal: Deal
   onPress?: () => void
   /**
-   * Overrides the derived deadline line — used by Home's "Needs you" section
+   * Overrides the derived deadline line, used by Home's "Needs you" section
    * to say *why* the row is surfaced there rather than repeating the deadline.
    */
   reason?: string
@@ -132,7 +132,7 @@ export function DealRow({
             </Text>
           ) : null}
 
-          {/* Ad rights only earn a line when they're running out — otherwise
+          {/* Ad rights only earn a line when they're running out; otherwise
               every row with rights carries a permanent line of noise. */}
           {!reason && adRightsStatus && adRightsStatus !== 'active' && deal.ad_rights_expires_date ? (
             <Text style={[styles.meta, { color: adRightsColor }]} numberOfLines={1}>

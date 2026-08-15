@@ -4,7 +4,7 @@ import type { Creator, Invoice, InvoiceLineItem } from '@/types'
 // Plain inline-styled HTML with no external stylesheet or webfont, because
 // expo-print renders this in an isolated context with no network.
 //
-// This document is the most formal thing the product produces — it goes to a
+// This document is the most formal thing the product produces: it goes to a
 // brand's finance team, and it is the creator's evidence if a payment is ever
 // disputed. It is worth more care than a screen.
 
@@ -52,7 +52,7 @@ function twoDigits(n: number): string {
 }
 
 /**
- * "Forty Seven Thousand Two Hundred Rupees Only" — the amount in words.
+ * "Forty Seven Thousand Two Hundred Rupees Only": the amount in words.
  *
  * Standard practice on an Indian invoice, and the line a finance team checks
  * the figures against. Uses the Indian grouping (crore / lakh / thousand)

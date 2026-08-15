@@ -7,9 +7,9 @@ import { getAttentionItems, type AttentionItem } from './insights'
 // Deliberately built from what already exists rather than a new
 // `notifications` table. Two sources, two different shapes of truth:
 //
-//   * `reminders` — scheduled rows the creator can answer (done / snooze).
+//   * `reminders`: scheduled rows the creator can answer (done / snooze).
 //     These are commitments with a time attached.
-//   * attention items — derived every render from deal state (payment eight
+//   * attention items: derived every render from deal state (payment eight
 //     days late, published with no link). Nothing to snooze; they clear when
 //     the underlying fact changes.
 //
@@ -38,7 +38,7 @@ export interface AlertFeed {
   today: Alert[]
   /** Reminders still in the future. */
   upcoming: ReminderAlert[]
-  /** What the bell badge shows — the count of things needing a look now. */
+  /** What the bell badge shows: the count of things needing a look now. */
   dueCount: number
   deals: DealWithPaymentSummary[]
 }
@@ -125,7 +125,7 @@ function sortAlerts(a: Alert, b: Alert): number {
   return time(a) - time(b)
 }
 
-/** "Overdue by 3 days" / "in 2 hours" — the time line on a reminder row. */
+/** "Overdue by 3 days" / "in 2 hours": the time line on a reminder row. */
 export function describeWhen(at: Date, now: Date = new Date()): string {
   const diffMs = at.getTime() - now.getTime()
   const past = diffMs < 0

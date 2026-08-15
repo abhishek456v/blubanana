@@ -19,7 +19,7 @@ export interface HeaderUtilitiesProps {
  * the same three components inline, and five copies of that is exactly how the
  * order and spacing drift apart between screens.
  *
- * The bell sits between the others because it is the one that changes — a
+ * The bell sits between the others because it is the one that changes: a
  * control that sometimes carries a badge should not move the control beside
  * it when the badge appears.
  */

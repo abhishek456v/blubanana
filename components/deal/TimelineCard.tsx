@@ -29,7 +29,7 @@ const STAGE_INDEX: Record<DealStatus, number> = {
  *
  * Replaces a 2×2 grid of bare `TextInput`s labelled "Timeline (YYYY-MM-DD)".
  * Two problems with that: hand-typing an ISO date is the worst input pattern
- * in the app, and four dates in boxes never showed *which one is next* —
+ * in the app, and four dates in boxes never showed *which one is next*,
  * which is the only thing the screen needs to say, given the product's first
  * promise is that she never misses a deadline.
  */
@@ -44,8 +44,8 @@ export function TimelineCard({
   const current = STAGE_INDEX[status]
 
   const stageState = (index: number, date: string): StageState => {
-    // A stage with no date was never part of this deal — a story repost has
-    // no script day — so it reads as skipped rather than pending forever.
+    // A stage with no date was never part of this deal (a story repost has
+    // no script day), so it reads as skipped rather than pending forever.
     if (!date && index > current) return 'skipped'
     if (index < current) return 'done'
     if (index === current) return 'current'

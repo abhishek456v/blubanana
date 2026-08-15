@@ -1,4 +1,4 @@
--- 016 — Schema-qualify the attachments storage policy (hardening only).
+-- 016: Schema-qualify the attachments storage policy (hardening only).
 --
 -- ── Corrected diagnosis ──────────────────────────────────────────────────────
 --
@@ -13,12 +13,12 @@
 -- could never pass: Postgres stores a policy as a parse tree bound to table
 -- OIDs, so `memberships` and `public.memberships` produce the identical stored
 -- policy, and pg_get_expr deparses it back *without* the schema whenever
--- `public` is visible to the reading session — as it always is in the SQL
+-- `public` is visible to the reading session, as it always is in the SQL
 -- editor. The check was asserting something Postgres does not store.
 --
 -- The real cause of the storage failure is migration 017's bug: this policy's
 -- EXISTS subquery pulls `memberships` into the query plan, memberships' own
--- RLS expands, and 010's self-referencing "owner manages" policy recurses —
+-- RLS expands, and 010's self-referencing "owner manages" policy recurses:
 -- 42P17 at planning time. storage-api maps 42P17 to
 -- DatabaseInvalidObjectDefinition. PostgREST surfaces the same 42P17 as the
 -- HTTP 500 on /rest/v1/memberships. One bug, two symptoms; **017 fixes both.**
@@ -27,7 +27,7 @@
 --
 -- Recreates the policy with the schema spelled out. Behaviourally a no-op
 -- (same OID either way), but it makes the policy re-creatable verbatim from a
--- session whose search_path lacks `public` — where the unqualified form would
+-- session whose search_path lacks `public`, where the unqualified form would
 -- fail to parse at CREATE time. Cheap insurance, nothing more. Attachments
 -- stay broken until 017 runs, whichever order these two are applied in.
 --
@@ -64,7 +64,7 @@ create policy "attachments: workspace members"
 -- ── Verification ─────────────────────────────────────────────────────────────
 -- Asserts what is actually knowable: the policy exists, still gates on the
 -- memberships table, and still compares the folder segment. (Schema
--- qualification is not stored, so it cannot be verified — see above.)
+-- qualification is not stored, so it cannot be verified; see above.)
 
 do $$
 declare
@@ -91,7 +91,7 @@ begin
     raise exception '016: the policy no longer checks the folder segment: %', policy_body;
   end if;
 
-  raise notice '016 ok — attachments policy recreated (hardening; the live fix is 017)';
+  raise notice '016 ok: attachments policy recreated (hardening; the live fix is 017)';
 end $$;
 
 

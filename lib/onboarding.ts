@@ -5,14 +5,14 @@ import { getProfile } from './profile'
 // Whether to offer the two-step onboarding (profile basics, then payment
 // details) when the creator lands on Home.
 //
-// There is no `onboarded_at` column, on purpose — migrations here are applied
+// There is no `onboarded_at` column, on purpose: migrations here are applied
 // by hand, and a device flag plus "is the profile still empty?" answers the
 // question without one. The combination handles both directions:
 //
 //   * fresh sign-up on this device        → empty profile, no flag → offer
 //   * skipped once                        → flag set              → never again
 //   * sign-in on a new device, filled     → profile has data      → don't offer
-//   * sign-in on a new device, still empty→ offer once more, which is right —
+//   * sign-in on a new device, still empty→ offer once more, which is right:
 //     the details are genuinely missing and invoices need them.
 
 const KEY_PREFIX = 'creatordesk.onboarding.dismissed.'
@@ -33,7 +33,7 @@ export async function shouldOfferOnboarding(): Promise<boolean> {
 
     const profile = await getProfile()
     // Any sign of a filled profile means onboarding already happened, here or
-    // elsewhere. `name` doesn't count — sign-up sets it.
+    // elsewhere. `name` doesn't count, since sign-up sets it.
     return (
       !profile.phone &&
       !profile.niche &&
@@ -43,7 +43,7 @@ export async function shouldOfferOnboarding(): Promise<boolean> {
       !profile.gstin
     )
   } catch {
-    // On any doubt, stay out of the way — Home must never be blocked by a
+    // On any doubt, stay out of the way: Home must never be blocked by a
     // failing nicety.
     return false
   }

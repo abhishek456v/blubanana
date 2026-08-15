@@ -77,7 +77,7 @@ export default function NewBrandScreen() {
               returnKeyType="next"
             />
 
-            {/* POC — the person at the brand she actually deals with. */}
+            {/* POC: the person at the brand she actually deals with. */}
             <TextField
               label="POC"
               placeholder="Who you talk to"

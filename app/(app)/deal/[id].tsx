@@ -106,7 +106,7 @@ export default function DealDetailScreen() {
   const [saving, setSaving] = useState(false)
   const [advancing, setAdvancing] = useState(false)
 
-  // Editable form state — populated from deal once loaded.
+  // Editable form state, populated from deal once loaded.
   const [platform, setPlatform] = useState<PlatformType>('instagram_reel')
   const [deliverable, setDeliverable] = useState('')
   const [rate, setRate] = useState('')
@@ -119,7 +119,7 @@ export default function DealDetailScreen() {
   const [notes, setNotes] = useState('')
 
   // Ad-rights terms live on the `ad_rights` deliverable now, not in local
-  // form state — see handleDeliverablesChange, which mirrors them onto the
+  // form state. See handleDeliverablesChange, which mirrors them onto the
   // deal's own ad_rights_* columns for the expiry reminder.
 
   // Typed line items (migration 007). `deliverable`/`rate` above are still
@@ -127,7 +127,7 @@ export default function DealDetailScreen() {
   const [deliverables, setDeliverables] = useState<Deliverable[]>([])
   const [savingDeliverables, setSavingDeliverables] = useState(false)
 
-  // Attachments (PRODUCT.md 1 — contracts/briefs, stored in Supabase Storage).
+  // Attachments (PRODUCT.md 1: contracts/briefs, stored in Supabase Storage).
   const [attachments, setAttachments] = useState<DealAttachment[]>([])
   const [loadingAttachments, setLoadingAttachments] = useState(true)
   // Distinct from "none uploaded". A storage failure used to render the empty
@@ -136,7 +136,7 @@ export default function DealDetailScreen() {
   const [attachmentsError, setAttachmentsError] = useState(false)
   const [uploadingAttachment, setUploadingAttachment] = useState(false)
 
-  // Client reputation score (Phase 2) — post-deal survey, prompted once.
+  // Client reputation score (Phase 2): post-deal survey, prompted once.
   const [existingRating, setExistingRating] = useState<BrandRating | null>(null)
   const [ratingValue, setRatingValue] = useState(5)
   const [paidOnTime, setPaidOnTime] = useState<boolean | null>(null)
@@ -146,14 +146,14 @@ export default function DealDetailScreen() {
   const [ratingNotes, setRatingNotes] = useState('')
   const [submittingRating, setSubmittingRating] = useState(false)
 
-  // Manual content performance entry (Phase 2 — see lib/deals.ts updatePerformance).
+  // Manual content performance entry (Phase 2; see lib/deals.ts updatePerformance).
   const [perfViews, setPerfViews] = useState('')
   const [perfLikes, setPerfLikes] = useState('')
   const [perfComments, setPerfComments] = useState('')
   const [perfSaves, setPerfSaves] = useState('')
   const [savingPerformance, setSavingPerformance] = useState(false)
 
-  // Tax & invoicing (Phase 3) — at most one invoice per deal, generated
+  // Tax & invoicing (Phase 3): at most one invoice per deal, generated
   // from the "Create Invoice" button below.
   const [invoice, setInvoice] = useState<Invoice | null>(null)
 
@@ -175,7 +175,7 @@ export default function DealDetailScreen() {
         const data = await getDeal(id)
         if (!active) return
 
-        // Lazily enforce pending/reminder_sent → overdue before rendering —
+        // Lazily enforce pending/reminder_sent → overdue before rendering:
         // there's no reliable background execution to do this the moment
         // the due date actually passes (lib/paymentReminders.ts).
         if (data.payment) {
@@ -204,7 +204,7 @@ export default function DealDetailScreen() {
         setPerfComments(data.performance_comments != null ? String(data.performance_comments) : '')
         setPerfSaves(data.performance_saves != null ? String(data.performance_saves) : '')
 
-        // Best-effort — deliverable/reputation/invoice lookups never block the
+        // Best-effort: deliverable/reputation/invoice lookups never block the
         // deal from loading.
         getDeliverables(data.id)
           .then((items) => active && setDeliverables(items))
@@ -249,7 +249,7 @@ export default function DealDetailScreen() {
 
   /**
    * Saves the line items immediately rather than waiting for the screen's
-   * Save button — the editor sheet already has its own explicit Save, so
+   * Save button. The editor sheet already has its own explicit Save, so
    * requiring a second one further down the page is the kind of thing that
    * silently loses a creator's edits.
    */
@@ -280,7 +280,7 @@ export default function DealDetailScreen() {
 
       // Mirror the ad-rights line item onto the deal's own columns. Those are
       // what schedule the 30-day expiry reminder and what getAdRightsStatus
-      // reads on the dashboard, so they cannot be left behind — and clearing
+      // reads on the dashboard, so they cannot be left behind. Clearing
       // them when the item is removed is what cancels a stale reminder.
       const adRights = saved.find((item) => item.kind === 'ad_rights')
       const adRightsFields = await updateAdRights(deal, {
@@ -368,7 +368,7 @@ export default function DealDetailScreen() {
     ]
     for (const { label, value } of datesToValidate) {
       if (value.trim() && parseDate(value) === null) {
-        // Defensive only — every date on this screen now comes from the
+        // Defensive only: every date on this screen now comes from the
         // calendar picker, so an unparseable one would mean a bug, not typing.
         toast(`${label} isn't a valid date`, { tone: 'warning' })
         return
@@ -424,7 +424,7 @@ export default function DealDetailScreen() {
 
   // Moving off 'published' is special-cased (PRODUCT.md 2.5): it requires a
   // live link, saves it, generates the brand-notification wa.me message, and
-  // clears the live-link-submission reminder if that's what's outstanding —
+  // clears the live-link-submission reminder if that's what's outstanding,
   // all in one tap, since entering the link *is* what that reminder was for.
   async function handlePublishedToPaymentAwaited() {
     if (!deal || !deal.brand || advancing) return
@@ -493,7 +493,7 @@ export default function DealDetailScreen() {
     setAdvancing(true)
     try {
       await advanceDealStatus(deal)
-      // Update local state immediately — dashboard refreshes via useFocusEffect when
+      // Update local state immediately. Dashboard refreshes via useFocusEffect when
       // the user navigates back, so no extra work is needed there.
       setDeal((prev) => {
         if (!prev) return prev
@@ -556,7 +556,7 @@ export default function DealDetailScreen() {
     setSendingReminder(true)
     try {
       // Tone is driven by how many chasers have actually gone out, not by how
-      // overdue the payment is — someone who only started chasing today should
+      // overdue the payment is. Someone who only started chasing today should
       // not open with the wording of a fourth follow-up.
       const escalationLevel = await nextEscalationLevel(payment.id)
 
@@ -733,7 +733,7 @@ export default function DealDetailScreen() {
   // ── Main screen ────────────────────────────────────────────────────────────
 
   // Shared between the native Stack header and the inline save control
-  // header (desktop) — see app/(app)/_layout.tsx for which one is active.
+  // header (desktop). See app/(app)/_layout.tsx for which one is active.
   const saveButton = (
     <TouchableOpacity
       onPress={handleSave}
@@ -751,7 +751,7 @@ export default function DealDetailScreen() {
     <>
       {/*
         Stack.Screen placed inside the component so headerRight closes over
-        handleSave and saving — React re-renders keep the closure current.
+        handleSave and saving; React re-renders keep the closure current.
       */}
       <Stack.Screen
         options={{
@@ -773,8 +773,8 @@ export default function DealDetailScreen() {
           >
             <Pressable onPress={() => Keyboard.dismiss()}>
 
-              {/* Two columns on desktop. The cut is between the deal itself —
-                  status, brand, deliverables, money, dates — and everything
+              {/* Two columns on desktop. The cut is between the deal itself (
+                  status, brand, deliverables, money, dates) and everything
                   attached to it: rights, messages, files, performance, invoice.
                   Below `desktop` they stack in exactly this order, so the mobile
                   reading order is unchanged. */}
@@ -839,7 +839,7 @@ export default function DealDetailScreen() {
                       </Text>
 
                       {/* Actual stars. This was five numbered square buttons,
-                          which read as a form field rather than a judgement —
+                          which read as a form field rather than a judgement,
                           the wrong feel for "would you work with them again?" */}
                       <View style={styles.ratingStars}>
                         <StarRating value={ratingValue} onChange={setRatingValue} size={30} />
@@ -918,7 +918,7 @@ export default function DealDetailScreen() {
 
                   {/* ── Workflow reminder ────────────────────────────── */}
                   {/*
-                    Notifications never carry action buttons — tapping one just
+                    Notifications never carry action buttons; tapping one just
                     deep-links here (app/_layout.tsx), where these three
                     responses live (PRODUCT.md 2.3). "Done" is the only filled
                     pill anywhere on this screen; the other two stay outline so

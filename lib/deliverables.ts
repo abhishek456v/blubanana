@@ -7,7 +7,7 @@ import {
   DELIVERABLE_LABELS,
 } from '@/constants/labels'
 
-// Deliverables are the line items on a deal — a reel, three stories, the ad
+// Deliverables are the line items on a deal: a reel, three stories, the ad
 // rights. RLS scopes every query to the caller's workspaces, so none of these
 // filter by workspace manually on read.
 
@@ -115,7 +115,7 @@ export async function replaceDeliverables(
 }
 
 /**
- * Human summary of the line items — "Reel + Story ×3".
+ * Human summary of the line items: "Reel + Story ×3".
  *
  * Ad rights are left out: they are a licence term, not something the creator
  * makes, and including them reads oddly in the places this string surfaces
@@ -139,7 +139,7 @@ export function summarizeDeliverables(items: DeliverableInput[]): string {
  * Writes the deal's headline rate as the sum of its content deliverables.
  *
  * Ad rights are excluded. That fee has always been stored and reported
- * separately from `deals.rate` — folding it in here would silently change
+ * separately from `deals.rate`; folding it in here would silently change
  * every historical revenue figure the creator has already seen. `totalDealValue`
  * below is what surfaces the combined number in the UI.
  *
@@ -160,8 +160,8 @@ export async function syncDealFromDeliverables(
     .from('deals')
     .update({
       rate: contentItems.reduce((sum, item) => sum + (item.rate ?? 0), 0),
-      // Everything built before deliverables existed — list rows, invoice
-      // descriptions, the WhatsApp delivery message — still reads this single
+      // Everything built before deliverables existed (list rows, invoice
+      // descriptions, the WhatsApp delivery message) still reads this single
       // text field, so it is kept as a rendering of the real line items rather
       // than left to drift.
       deliverable_description: summarizeDeliverables(items),
@@ -171,7 +171,7 @@ export async function syncDealFromDeliverables(
   if (error) throw error
 }
 
-/** Content fee plus any ad-rights fee — what the brand actually pays. */
+/** Content fee plus any ad-rights fee: what the brand actually pays. */
 export function totalDealValue(deliverables: Deliverable[]): number {
   return deliverables.reduce((sum, d) => sum + d.rate, 0)
 }
@@ -185,7 +185,7 @@ export function contentValue(deliverables: Deliverable[]): number {
 export interface AdRightsBreakdown {
   totalFee: number
   months: number
-  /** Rounded to the rupee — this is a negotiating aid, not an invoice line. */
+  /** Rounded to the rupee; this is a negotiating aid, not an invoice line. */
   perMonth: number
   expiresOn: string | null
 }
@@ -198,7 +198,7 @@ export interface AdRightsBreakdown {
  * quote comparable to the next brand's offer, and nothing in the app derived
  * it before.
  *
- * Returns null unless both a fee and a duration exist — a per-month figure
+ * Returns null unless both a fee and a duration exist: a per-month figure
  * computed from a missing duration would be a fabricated number on a screen
  * about money.
  */
@@ -241,7 +241,7 @@ export function adRightsExpiry(startsOn: string | null, months: number | null): 
   return `${start.getFullYear()}-${mm}-${dd}`
 }
 
-/** Human summary for a row — "Story ×3", "Reel", "Ad rights · 6 months". */
+/** Human summary for a row: "Story ×3", "Reel", "Ad rights · 6 months". */
 export function describeDeliverable(deliverable: Deliverable, label: string): string {
   if (deliverable.kind === 'ad_rights' && deliverable.duration_months) {
     return `${label} · ${deliverable.duration_months} months`

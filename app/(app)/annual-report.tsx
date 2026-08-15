@@ -33,7 +33,7 @@ export default function AnnualReportScreen() {
   const [loading, setLoading] = useState(true)
   const [fyStartYear, setFyStartYear] = useState(currentFinancialYearStart())
 
-  // Fetched independently — invoices/ratings depend on migration 006 (newer,
+  // Fetched independently: invoices/ratings depend on migration 006 (newer,
   // separate tables), so either being unavailable shouldn't block the
   // deal-based numbers, which have worked since migration 001.
   const load = useCallback(async () => {

@@ -55,13 +55,13 @@ export default function SignUpScreen() {
       return
     }
 
-    // With email confirmation enabled, there is no session yet — tell the
+    // With email confirmation enabled, there is no session yet, so tell the
     // creator to check their inbox rather than leaving them on a form that
     // looks like it did nothing.
     if (data.session === null) {
       setAwaitingConfirmation(true)
     }
-    // With confirmation disabled (recommended for dev — see README), useAuth
+    // With confirmation disabled (recommended for dev; see README), useAuth
     // picks up the session and the root layout redirects automatically.
   }
 

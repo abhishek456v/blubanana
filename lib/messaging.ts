@@ -8,7 +8,7 @@ import { buildWhatsAppLink } from './whatsapp'
 //
 // The product rule this implements is the spec's strictest: nothing reaches a
 // brand without explicit approval. That is enforced by a check constraint on
-// the table, not by this file — these functions are the convenient path, and
+// the table, not by this file: these functions are the convenient path, and
 // the database is the guarantee.
 
 export type MessageChannel = 'whatsapp' | 'email' | 'sms'
@@ -36,7 +36,7 @@ export interface OutboundMessage {
   status: MessageStatus
   approved_by: string | null
   approved_at: string | null
-  /** When the message was handed to WhatsApp — NOT proof of delivery. */
+  /** When the message was handed to WhatsApp. NOT proof of delivery. */
   handed_off_at: string | null
   created_at: string
   updated_at: string
@@ -52,7 +52,7 @@ export interface DraftMessageInput {
   escalationLevel?: number
 }
 
-/** Creates a draft. Drafts are inert — nothing can send from this state. */
+/** Creates a draft. Drafts are inert: nothing can send from this state. */
 export async function draftMessage(input: DraftMessageInput): Promise<OutboundMessage> {
   const { data, error } = await supabase
     .from('outbound_messages')
@@ -80,7 +80,7 @@ export async function draftMessage(input: DraftMessageInput): Promise<OutboundMe
  *
  * Approval is written *before* the handoff, deliberately. If it were written
  * after, a creator who approves and then has the WhatsApp launch fail would
- * end up with a message the app believes was never approved — and the reminder
+ * end up with a message the app believes was never approved, and the reminder
  * engine would draft another one tomorrow.
  *
  * Returns false when there is no usable phone number, so the caller can prompt
@@ -118,7 +118,7 @@ export async function approveAndHandOff(
   return true
 }
 
-/** Drafts and hands off in one step — the common case from a deal screen. */
+/** Drafts and hands off in one step: the common case from a deal screen. */
 export async function sendNow(
   input: DraftMessageInput,
   phone: string | null
@@ -152,7 +152,7 @@ export async function getMessagesForDeal(dealId: string): Promise<OutboundMessag
  * The most recent chaser sent for a payment, if any.
  *
  * The reminder engine checks this before drafting another. Without it, opening
- * the deal screen twice in a day would offer two identical nudges — and an app
+ * the deal screen twice in a day would offer two identical nudges, and an app
  * that nags is one the creator stops reading.
  */
 export async function getLastChaser(paymentId: string): Promise<OutboundMessage | null> {

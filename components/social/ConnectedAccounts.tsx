@@ -29,7 +29,7 @@ const PLATFORMS: { key: SocialPlatform; label: string; icon: keyof typeof Ionico
  * Connect / disconnect the creator's own Instagram and YouTube.
  *
  * The reach figures this pulls are what make the "your audience grew and your
- * rate didn't" nudge possible — that sentence cannot be written from a
+ * rate didn't" nudge possible; that sentence cannot be written from a
  * follower count typed in by hand four months ago.
  *
  * Nothing is ever posted. Read-only, and the copy says so, because asking a

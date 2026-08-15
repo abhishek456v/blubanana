@@ -22,7 +22,7 @@ export interface DonutChartProps {
   segments: DonutSegment[]
   size?: number
   strokeWidth?: number
-  /** Big text in the hole — usually the total. */
+  /** Big text in the hole, usually the total. */
   centerLabel?: string
   /** Small text under it. */
   centerCaption?: string
@@ -37,7 +37,7 @@ export interface DonutChartProps {
 }
 
 /**
- * Proportional ring — where the money sits, split paid / pending / overdue.
+ * Proportional ring: where the money sits, split paid / pending / overdue.
  *
  * Distinct from `ProgressRing`, which shows one value against a whole. This
  * shows how a whole divides, which is the question Money and Home actually ask

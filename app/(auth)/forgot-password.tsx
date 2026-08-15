@@ -39,7 +39,7 @@ export default function ForgotPasswordScreen() {
       toast(sendError.message, { tone: 'error' })
       return
     }
-    // Supabase never reveals whether the address exists, by design — the same
+    // Supabase never reveals whether the address exists, by design; the same
     // confirmation shows either way.
     setSent(true)
   }

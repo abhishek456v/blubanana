@@ -72,7 +72,7 @@ interface DeliverableEditorProps {
  * Add or edit one line item on a deal.
  *
  * Ad rights get their own set of fields because they are priced as a licence,
- * not as a piece of content — a duration and a window rather than a due date.
+ * not as a piece of content: a duration and a window rather than a due date.
  * The monthly figure updates as the fee and duration are typed, which is the
  * number that makes an ad-rights quote comparable to the next brand's offer.
  */
@@ -270,7 +270,7 @@ function Stepper({ value, onChange }: { value: number; onChange: (value: number)
   )
 }
 
-/** Label for a saved row — "Story ×3", "Ad rights · 6 months". */
+/** Label for a saved row: "Story ×3", "Ad rights · 6 months". */
 export function deliverableSummary(deliverable: Deliverable): string {
   const label = DELIVERABLE_LABELS[deliverable.kind]
   if (deliverable.kind === 'ad_rights' && deliverable.duration_months) {

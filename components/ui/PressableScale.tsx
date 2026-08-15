@@ -18,7 +18,7 @@ export interface PressableScaleProps extends Omit<PressableProps, 'style' | 'chi
   scaleTo?: number
   /**
    * Haptic fired on press-in, or `false` for none. Press-in rather than
-   * press-out so the feedback lands with the finger, not after it lifts —
+   * press-out so the feedback lands with the finger, not after it lifts,
    * the same timing iOS uses.
    */
   haptic?: HapticKind | false

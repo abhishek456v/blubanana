@@ -47,7 +47,7 @@ function monthCells(year: number, month: number): (number | null)[] {
  * Date input.
  *
  * Both deal screens previously asked the creator to hand-type `2025-09-01`
- * into a bare `TextInput` with regex validation — four times each, in a
+ * into a bare `TextInput` with regex validation, four times each, in a
  * "Timeline" grid. For an app whose entire premise is not missing deadlines,
  * that was the weakest surface in the product.
  *
@@ -82,7 +82,7 @@ export function DateField({
 
   function openPicker() {
     // Always reopen on the selected month rather than wherever the user last
-    // browsed to — otherwise editing a date shows an unrelated month.
+    // browsed to; otherwise editing a date shows an unrelated month.
     setCursor(value ? parseLocalDate(value) : startOfToday())
     setOpen(true)
   }

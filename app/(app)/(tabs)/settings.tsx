@@ -40,7 +40,7 @@ const THEME_OPTIONS: { key: ThemeMode; label: string }[] = [
 ]
 import type { Creator } from '@/types'
 
-// Native has no window.location — the public profile card only resolves to a
+// Native has no window.location. The public profile card only resolves to a
 // real URL on the web build, so native shows the path with a note instead of
 // a broken link.
 function publicProfileUrl(slug: string): string {

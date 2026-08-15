@@ -80,7 +80,7 @@ export interface RevealProps {
  * Reveals its children once, as they come into view.
  *
  * Screens already stagger their first screenful with `entering` animations,
- * but in a ScrollView every child mounts immediately — so everything below the
+ * but in a ScrollView every child mounts immediately, so everything below the
  * fold had finished animating before the creator ever scrolled to it, and the
  * lower half of every screen simply existed rather than arriving.
  *

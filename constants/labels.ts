@@ -69,7 +69,7 @@ export const DELIVERABLE_LABELS: Record<DeliverableKind, string> = {
 
 /**
  * Ordered for the picker: the things creators sell most often first, the two
- * commercial add-ons last (they behave differently — no platform, and ad
+ * commercial add-ons last (they behave differently: no platform, and ad
  * rights carries a duration).
  */
 export const DELIVERABLE_KINDS: { key: DeliverableKind; label: string }[] = [

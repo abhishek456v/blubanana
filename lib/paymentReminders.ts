@@ -4,7 +4,7 @@ import { scheduleAsync, cancelAsync, type NotificationContent } from './notifica
 // Payment due-date reminder scheduling (PRODUCT.md 2.4): a local notification
 // 3 days before due_date, and another on due_date itself if still pending.
 // Both deep-link to the deal screen, where the actual wa.me message is built
-// and sent by the creator (see lib/whatsapp.ts) — nothing here ever sends
+// and sent by the creator (see lib/whatsapp.ts). Nothing here ever sends
 // anything, it only decides when to nudge her to.
 
 const DEFAULT_REMINDER_HOUR = 9
@@ -40,7 +40,7 @@ async function cancelExisting(
   await cancelAsync(payment.due_today_notification_id)
 }
 
-// Called whenever due_date is (re)calculated — cancels whatever was
+// Called whenever due_date is (re)calculated. Cancels whatever was
 // previously scheduled and schedules fresh against the current due_date.
 // Thresholds already in the past (e.g. editing a deal whose due date is
 // already within 3 days) are silently skipped rather than firing immediately.
@@ -82,7 +82,7 @@ export async function cancelPaymentReminders(
 
 // There's no reliable background JS execution for local notifications in
 // Expo's managed workflow, so "pending/reminder_sent past its due_date
-// becomes overdue" is enforced lazily here instead — call on every deal load.
+// becomes overdue" is enforced lazily here instead; call on every deal load.
 export function isPaymentOverdue(payment: Pick<Payment, 'due_date' | 'status'>): boolean {
   if (!payment.due_date) return false
   if (payment.status === 'paid' || payment.status === 'overdue') return false
@@ -95,7 +95,7 @@ export function isPaymentOverdue(payment: Pick<Payment, 'due_date' | 'status'>):
 }
 
 // Drives whether the deal screen shows a "Send WhatsApp reminder" button and
-// which message tone to use — same 3-day/due-date thresholds as the
+// which message tone to use, with the same 3-day/due-date thresholds as the
 // scheduled notifications, computed fresh so it's correct even if the
 // notification never fired (permission denied, app never opened, etc).
 export function getPaymentAlertTone(

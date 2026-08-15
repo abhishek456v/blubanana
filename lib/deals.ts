@@ -74,7 +74,7 @@ export async function createDeal(input: CreateDealInput): Promise<Deal> {
     ? calculateAdRightsExpiry(adRights.ad_rights_start_date, adRights.ad_rights_duration_months)
     : null
 
-  // Snapshot for rate benchmarking (lib/rateBenchmark.ts) — best-effort, a
+  // Snapshot for rate benchmarking (lib/rateBenchmark.ts). Best-effort: a
   // missing snapshot just means this one deal won't count as a comparison
   // point later, not a save failure.
   const { data: profile } = await supabase
@@ -133,7 +133,7 @@ export async function createDeal(input: CreateDealInput): Promise<Deal> {
 
   if (paymentError) throw paymentError
 
-  // Scheduling local reminders is best-effort — a failure here must never
+  // Scheduling local reminders is best-effort: a failure here must never
   // fail the deal save, since both rows already exist at this point.
   try {
     const reminderFields = await rescheduleWorkflowReminder(deal as Deal)
@@ -163,7 +163,7 @@ export async function createDeal(input: CreateDealInput): Promise<Deal> {
 // ─── Deal detail ────────────────────────────────────────────────────────────
 
 // payments.deal_id is unique, so PostgREST infers a to-one relationship and
-// embeds it as a single object — not an array — regardless of the '*'
+// embeds it as a single object, not an array, regardless of the '*'
 // select shorthand. The `payment:` alias here makes that explicit.
 export type DealWithPayments = Deal & { payment: Payment | null }
 
@@ -209,7 +209,7 @@ export async function updateDeal(
   const touchesTimeline = TIMELINE_FIELDS.some((key) => key in fields)
   if (!touchesTimeline) return updated as Deal
 
-  // Rescheduling is best-effort — a failure here must never fail the edit
+  // Rescheduling is best-effort: a failure here must never fail the edit
   // the creator was actually trying to make.
   try {
     const reminderFields = await rescheduleWorkflowReminder(updated as Deal)
@@ -226,7 +226,7 @@ export async function updateDeal(
   }
 }
 
-// Manual content performance entry (Phase 2 — see types/index.ts on why
+// Manual content performance entry (Phase 2; see types/index.ts on why
 // this is manual, not a live Instagram/YouTube sync).
 export async function updatePerformance(
   dealId: string,
@@ -266,7 +266,7 @@ export async function updatePaymentRecord(
   if (error) throw error
 }
 
-// Updates a deal's ad rights block. Always writes the full set of fields —
+// Updates a deal's ad rights block. Always writes the full set of fields:
 // when granted is false, everything else is cleared out rather than left as
 // stale data from a previous toggle-on. Recalculates expires_date and
 // reschedules the 30-day reminder to match.
@@ -336,7 +336,7 @@ export async function syncPaymentStatus(
 }
 
 // Called when the creator taps "Send WhatsApp reminder" on the due-soon
-// card — only moves status forward the first time (pending → reminder_sent);
+// card. Only moves status forward the first time (pending → reminder_sent);
 // a resend while already reminder_sent/overdue is a no-op status-wise.
 export async function markPaymentReminderSent(
   dealId: string,

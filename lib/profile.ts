@@ -44,7 +44,7 @@ export async function updateProfile(
   return data as Creator
 }
 
-// Random unguessable slug, not the raw profile UUID — public_creator_profiles
+// Random unguessable slug, not the raw profile UUID: public_creator_profiles
 // (migration 006) is keyed on this so the internal id never appears in a
 // shared URL. 10 base36 chars ≈ 51 bits of entropy, plenty for a media-kit
 // link that isn't protecting anything sensitive (the view only exposes name/
@@ -79,7 +79,7 @@ export interface PublicCreatorProfile {
 }
 
 // Reads from the public_creator_profiles VIEW (migration 006), not the
-// profiles table — works with no session at all, since that view is
+// profiles table. It works with no session at all, since that view is
 // grant-select'd to the anon role and already filters to opted-in creators
 // only. Used by the unauthenticated app/creator/[slug].tsx route.
 export async function getPublicCreatorProfile(slug: string): Promise<PublicCreatorProfile | null> {

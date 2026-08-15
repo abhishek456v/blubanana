@@ -17,7 +17,7 @@ export interface ProgressRingProps {
   size?: number
   strokeWidth?: number
   color?: string
-  /** Big text inside the ring — usually the engagement rate. */
+  /** Big text inside the ring, usually the engagement rate. */
   label?: string
   /** Small text under the label. */
   caption?: string

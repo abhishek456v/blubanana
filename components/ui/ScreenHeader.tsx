@@ -10,7 +10,7 @@ import { PressableScale } from './PressableScale'
 export interface HeaderAction {
   icon: keyof typeof Ionicons.glyphMap
   onPress: () => void
-  /** Screen-reader label. Required — these are icon-only buttons. */
+  /** Screen-reader label. Required, since these are icon-only buttons. */
   label: string
   /** Fills the button with the accent. Use for the one primary action. */
   primary?: boolean
@@ -20,23 +20,23 @@ export interface ScreenHeaderProps {
   title: string
   /** One short line under the title. Keep it to a sentence. */
   subtitle?: string
-  /** Small uppercase-free label above the title — "Tuesday", "FY 2026-27". */
+  /** Small uppercase-free label above the title: "Tuesday", "FY 2026-27". */
   eyebrow?: string
   actions?: HeaderAction[]
   /**
    * Rendered alongside `actions`, for a control that owns its own rendering
-   * rather than being an icon button — the theme toggle, an avatar.
+   * rather than being an icon button: the theme toggle, an avatar.
    */
   leadingAction?: ReactNode
   /**
    * Shows a back chevron above the title. For pushed screens that turn the
-   * native header off — without it they are a dead end on desktop, where
+   * native header off. Without it they are a dead end on desktop, where
    * there is no OS back gesture and the sidebar is not on screen.
    */
   onBack?: () => void
-  /** Text beside the back chevron — where the user came from. */
+  /** Text beside the back chevron: where the user came from. */
   backLabel?: string
-  /** Rendered under the title block — a search field, filter row, metrics. */
+  /** Rendered under the title block: a search field, filter row, metrics. */
   children?: ReactNode
   style?: StyleProp<ViewStyle>
 }

@@ -4,7 +4,7 @@ import { syncChainReminder } from './reminderChains'
 
 // Workflow reminder sequencing (PRODUCT.md 2.3): script due → shoot day →
 // editing → publishing → live link submission. Only one reminder is ever
-// outstanding per deal — the next stage's reminder is scheduled only once
+// outstanding per deal: the next stage's reminder is scheduled only once
 // the creator responds to the current one (or, for the very first stage,
 // once a deal has a date to schedule against at all).
 
@@ -16,7 +16,7 @@ export const STAGE_ORDER: ReminderStage[] = [
   'live_link_submission',
 ]
 
-// PRODUCT.md doesn't specify a time of day for date-only reminders — 9am
+// PRODUCT.md doesn't specify a time of day for date-only reminders, so 9am
 // local is a reasonable default for a creator checking her day's work.
 const DEFAULT_REMINDER_HOUR = 9
 
@@ -27,7 +27,7 @@ function addDays(dateStr: string, days: number): string {
   return new Date(year, month - 1, day + days).toISOString().split('T')[0]
 }
 
-// live_link_submission has no dedicated timeline column — it's derived as
+// live_link_submission has no dedicated timeline column; it's derived as
 // the day after publish_date.
 function getStageDateString(deal: TimelineDeal, stage: ReminderStage): string | null {
   switch (stage) {
@@ -85,7 +85,7 @@ export interface ReminderFields {
   reminder_stage: ReminderStage | null
   reminder_fire_at: string | null
   reminder_notification_id: string | null
-  // Furthest stage explicitly marked Done — a monotonically-advancing floor
+  // Furthest stage explicitly marked Done: a monotonically-advancing floor
   // that's distinct from reminder_stage (see rescheduleWorkflowReminder).
   reminder_completed_through: ReminderStage | null
 }
@@ -131,7 +131,7 @@ async function applyReminder(
   const notificationId = await scheduleAsync(content, fireAt)
 
   // Mirror into the durable chain (migration 015) so the schedule survives a
-  // reinstall, a device switch, or the OS clearing its notification queue —
+  // reinstall, a device switch, or the OS clearing its notification queue,
   // none of which the local notification alone survives.
   //
   // Best-effort, for the same reason the OS scheduling above is: a reminder
@@ -160,7 +160,7 @@ async function applyReminder(
 
 // Called whenever a deal's timeline dates are created or edited. Always
 // searches forward from the stage just past reminder_completed_through
-// (the furthest stage explicitly marked Done) — NOT from the current
+// (the furthest stage explicitly marked Done), NOT from the current
 // reminder_stage. Those two can differ: reminder_stage may be sitting on a
 // later stage simply because an earlier stage had no date yet when it was
 // last computed. Using reminder_stage itself as the floor would mean a date
@@ -241,7 +241,7 @@ export async function respondToWorkflowReminder(
   return applyReminder(deal, deal.reminder_stage, fireAt, deal.reminder_completed_through)
 }
 
-// Safety net for when a deal is fully closed out (status reaches 'paid') —
+// Safety net for when a deal is fully closed out (status reaches 'paid'):
 // cancels any still-scheduled reminder regardless of what stage it's on.
 export async function clearWorkflowReminder(
   deal: Pick<Deal, 'reminder_notification_id'>

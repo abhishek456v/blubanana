@@ -3,7 +3,7 @@ import { getWorkspaceId } from './workspace'
 import type { Invoice, InvoiceLineItem } from '@/types'
 
 // Tax & invoicing (Phase 3). RLS on invoices restricts reads/writes to the
-// authenticated user's own rows. No payment gateway integration here —
+// authenticated user's own rows. No payment gateway integration here:
 // PRODUCT.md section 0 explicitly deferred Razorpay/Stripe to after Phase 1,
 // and invoicing doesn't need one (it's a document, not a checkout).
 
@@ -20,7 +20,7 @@ export interface LineItemInput {
 export interface CreateInvoiceInput {
   /**
    * The originating deal for a single-deal invoice, or null when several deals
-   * are consolidated onto one document — those carry their deals on the line
+   * are consolidated onto one document; those carry their deals on the line
    * items instead.
    */
   deal_id: string | null
@@ -50,7 +50,7 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
   } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
 
-  // Best-effort sequential numbering — count-based, not a DB sequence, since
+  // Best-effort sequential numbering: count-based, not a DB sequence, since
   // this app's usage volume (one creator, manually-triggered invoices) makes
   // a race condition here vanishingly unlikely, and it keeps the numbering
   // human-readable (INV-001, INV-002...) without a separate counter table.
@@ -77,7 +77,7 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
 
   // The subtotal is always the sum of the lines. Deriving it here rather than
   // accepting it as a parameter means the printed total and the printed lines
-  // cannot disagree — the one thing on an invoice that must never happen.
+  // cannot disagree, the one thing on an invoice that must never happen.
   const amount = lines.reduce((sum, line) => sum + line.amount, 0)
   const gstAmount = input.gst_applicable ? Math.round((amount * GST_RATE) / 100) : 0
   const totalAmount = amount + gstAmount

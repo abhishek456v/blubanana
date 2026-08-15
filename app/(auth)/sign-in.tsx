@@ -40,7 +40,7 @@ export default function SignInScreen() {
       toast(error.message, { tone: 'error' })
     }
     // On success, useAuth picks up the new session and the root layout
-    // redirects into (app)/ — no manual navigation needed here.
+    // redirects into (app)/, with no manual navigation needed here.
   }
 
   return (

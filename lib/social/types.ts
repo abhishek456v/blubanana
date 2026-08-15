@@ -3,7 +3,7 @@
 // Instagram and YouTube will both change their APIs, their scopes and their
 // review requirements inside eighteen months, and a third platform will
 // eventually be added. None of that should require touching a screen or a
-// service — only adding a file next to this one.
+// service, only adding a file next to this one.
 
 export type SocialPlatform = 'instagram' | 'youtube'
 
@@ -42,7 +42,7 @@ export interface StatSnapshot {
   created_at: string
 }
 
-/** What a provider returns from a sync. Every field optional — platforms differ. */
+/** What a provider returns from a sync. Every field optional, since platforms differ. */
 export interface FetchedStats {
   handle: string
   externalAccountId: string | null
@@ -69,7 +69,7 @@ export interface FetchedPostStats {
  * A platform integration.
  *
  * `startConnect` returns a URL the app opens in a browser. The redirect lands
- * on an Edge Function that performs the code-for-token exchange server-side —
+ * on an Edge Function that performs the code-for-token exchange server-side:
  * the client never handles a token, and the OAuth client secret never ships in
  * the app binary.
  */
@@ -89,7 +89,7 @@ export interface SocialProvider {
   /**
    * Performance for one published post.
    *
-   * Returns null when the platform cannot resolve the URL — an unlisted video,
+   * Returns null when the platform cannot resolve the URL: an unlisted video,
    * a deleted post, a personal account without insights. The caller falls back
    * to whatever the creator entered by hand, which must always stay possible.
    */

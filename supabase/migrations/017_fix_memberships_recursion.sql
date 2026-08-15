@@ -1,10 +1,10 @@
--- 017 — Break the infinite recursion in the memberships policy.
+-- 017: Break the infinite recursion in the memberships policy.
 --
 -- Fixes a live, severe bug with two visible symptoms:
 --
---   * any read of `memberships` — HTTP 500, 42P17
+--   * any read of `memberships`: HTTP 500, 42P17
 --     "infinite recursion detected in policy for relation memberships"
---   * every Storage attachments call — HTTP 400
+--   * every Storage attachments call: HTTP 400
 --     "DatabaseInvalidObjectDefinition": the attachments policy's EXISTS
 --     subquery pulls memberships into the plan, the recursion fires there
 --     too, and storage-api maps 42P17 to that error.
@@ -15,14 +15,14 @@
 --     using (exists (select 1 from memberships owner_row where ...));
 --
 -- A policy ON memberships that SELECTs FROM memberships re-enters itself.
--- 009's own comment names this trap verbatim — "a policy that queries
--- memberships to decide access to memberships recurses infinitely" — and is
+-- 009's own comment names this trap verbatim, "a policy that queries
+-- memberships to decide access to memberships recurses infinitely", and is
 -- why `auth_workspace_ids()` was made SECURITY DEFINER. 010 then wrote the
 -- recursive form anyway.
 --
 -- Why it went unnoticed: nothing in the app reads `memberships` directly on a
 -- pure read path. It is reached through `getWorkspaceId()`, which every *write*
--- goes through — creating a deal, a brand, an invoice, a deliverable, a rating,
+-- goes through: creating a deal, a brand, an invoice, a deliverable, a rating,
 -- a reminder chain, an outbound message. Reads of existing rows kept working
 -- because their policies call the SECURITY DEFINER function instead, so the app
 -- looked healthy while every insert was failing.
@@ -122,7 +122,7 @@ begin
     raise exception '017: auth_owned_workspace_ids() was not created';
   end if;
 
-  raise notice '017 ok — memberships policies no longer self-reference';
+  raise notice '017 ok: memberships policies no longer self-reference';
 end $$;
 
 

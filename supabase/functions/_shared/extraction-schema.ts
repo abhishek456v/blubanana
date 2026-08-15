@@ -1,4 +1,4 @@
-// Shared between extract-deal's image and transcript paths — PRODUCT.md 2.1
+// Shared between extract-deal's image and transcript paths. PRODUCT.md 2.1
 // requires "same extraction prompt" for both intake methods so results are
 // consistent regardless of entry point.
 
@@ -58,11 +58,11 @@ export function buildSystemPrompt(): string {
 The input is either a screenshot of a brand's message/brief, or a transcript of
 a voice note the creator recorded describing a new deal.
 
-Return ONLY a JSON object with exactly these fields — no prose, no markdown:
+Return ONLY a JSON object with exactly these fields, with no prose and no markdown:
 
 {
   "brand_name": string | null,        // the brand/company name, e.g. "Nykaa"
-  "platform": string | null,          // primary platform, one of: ${VALID_PLATFORMS.join(', ')} — null if unclear
+  "platform": string | null,          // primary platform, one of: ${VALID_PLATFORMS.join(', ')}; null if unclear
   "deliverable_description": string | null,  // short human summary, e.g. "1 Reel + 3 Stories"
   "deliverables": [                   // itemised breakdown; [] if genuinely unclear
     {
@@ -81,7 +81,7 @@ Return ONLY a JSON object with exactly these fields — no prose, no markdown:
   "notes": string | null              // any other relevant context that doesn't fit above
 }
 
-INDIAN CREATOR SHORTHAND — the input is usually Hindi-English code-mixed, full
+INDIAN CREATOR SHORTHAND: the input is usually Hindi-English code-mixed, full
 of abbreviations and emoji. Read it the way the creator would:
   - "15k" / "15K" / "15 thousand" → 15000. "1.5L" / "1.5 lakh" → 150000.
   - "45 din me payment" / "45 days me" → payment_terms "45 days from publish".
@@ -96,12 +96,12 @@ of abbreviations and emoji. Read it the way the creator would:
   - "barter" / "PR only" / "gifting" → rate 0, and say so in notes.
 
 Set "rate" to the TOTAL the creator receives. If the message prices each item
-separately, also fill each deliverable's own "rate" — the individual rates
+separately, also fill each deliverable's own "rate"; the individual rates
 should add up to the total.
 
-Today's date is ${today} — resolve relative dates ("next Friday", "agle
+Today's date is ${today}. Resolve relative dates ("next Friday", "agle
 hafte", "in 2 weeks") to absolute YYYY-MM-DD using this as the reference
-point. If a field is not present in the input, use null — never guess or
+point. If a field is not present in the input, use null, and never guess or
 invent a value. The creator reviews and edits every field before saving, so
 leaving something null when uncertain is always better than guessing.`
 }

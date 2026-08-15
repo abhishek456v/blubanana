@@ -13,7 +13,7 @@ export interface MetricCardProps {
   label: string
   value: number
   format?: (value: number) => string
-  /** Small caption under the figure — "3 deals", "vs ₹32,000 last month". */
+  /** Small caption under the figure: "3 deals", "vs ₹32,000 last month". */
   caption?: string
   /** Signed percentage. Positive renders green with an up arrow. */
   trend?: number | null
@@ -29,7 +29,7 @@ export interface MetricCardProps {
  *
  * DESIGN.md §4 specifies "label in Caption style above a Display-weight
  * number"; this is that, plus the count-up. The figures here are the reason
- * the creator opens the app — money earned, money owed — so they get the
+ * the creator opens the app (money earned, money owed), so they get the
  * display face and enough room to breathe.
  */
 export function MetricCard({
@@ -114,7 +114,7 @@ export function MetricCard({
 
 const styles = StyleSheet.create({
   // The wrapper carries the flex so the animated entrance doesn't fight the
-  // grid's sizing — Reanimated writes transforms onto this node.
+  // grid's sizing; Reanimated writes transforms onto this node.
   wrapper: {
     flex: 1,
     minWidth: 150,

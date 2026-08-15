@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- CreatorDesk — Phase 2, stage 1 of 3: workspaces (EXPAND).
+-- CreatorDesk: Phase 2, stage 1 of 3: workspaces (EXPAND).
 -- Run this once in the Supabase dashboard SQL editor, after 008.
 --
 -- This stage is deliberately NON-BREAKING. It adds the workspace tables and a
@@ -8,9 +8,9 @@
 -- untouched, so the app keeps working exactly as it does today while this sits
 -- in place.
 --
---   009 (this file)  EXPAND    — add + backfill, nothing enforced
---   010              MIGRATE   — NOT NULL, workspace-based RLS, forced RLS
---   011              CONTRACT  — drop creator_id, once 010 has been live a while
+--   009 (this file)  EXPAND      add + backfill, nothing enforced
+--   010              MIGRATE     NOT NULL, workspace-based RLS, forced RLS
+--   011              CONTRACT    drop creator_id, once 010 has been live a while
 --
 -- Split this way because 010 rewrites every access-control policy against a
 -- live database. If it goes wrong, the fix should be "run 010's down script",
@@ -22,7 +22,7 @@
 -- A NOTE ON THE ISOLATION MECHANISM
 --
 -- The architecture spec calls for `SET LOCAL app.workspace_id` per transaction,
--- read from a JWT by a Node API. This app has no such API — the client talks to
+-- read from a JWT by a Node API. This app has no such API: the client talks to
 -- PostgREST directly, and there is no server-side transaction to set that on.
 --
 -- The Supabase-native equivalent is a policy that resolves the caller's
@@ -54,7 +54,7 @@ end $$;
 
 -- ── Workspaces and membership ────────────────────────────────────────────────
 -- The tenant is a workspace, not a user. On day one every workspace has exactly
--- one member and the product looks single-user — but the day a creator hires a
+-- one member and the product looks single-user, but the day a creator hires a
 -- manager, or an agency wants three seats, no table changes shape.
 
 create table if not exists workspaces (
@@ -95,7 +95,7 @@ create unique index if not exists memberships_one_owner
 
 -- ── The lookup every policy will use ─────────────────────────────────────────
 -- SECURITY DEFINER so it can read memberships regardless of the policies on
--- memberships itself — without this, a policy that queries memberships to
+-- memberships itself. Without this, a policy that queries memberships to
 -- decide access to memberships recurses infinitely.
 --
 -- STABLE lets Postgres evaluate it once per query as an InitPlan rather than
@@ -195,7 +195,7 @@ create policy "workspaces: owner can update"
   ));
 
 -- A user must be able to read their own membership rows to discover which
--- workspaces they belong to at all — that read is what bootstraps everything
+-- workspaces they belong to at all: that read is what bootstraps everything
 -- else, so it cannot itself depend on knowing the workspace.
 drop policy if exists "memberships: own or same workspace" on memberships;
 create policy "memberships: own or same workspace"
@@ -205,7 +205,7 @@ create policy "memberships: own or same workspace"
 
 -- ── New signups get a workspace ──────────────────────────────────────────────
 -- Without this, anyone signing up between 009 and 010 lands with a profile and
--- no workspace, and every row they create would have a null workspace_id —
+-- no workspace, and every row they create would have a null workspace_id,
 -- which 010 then refuses to make NOT NULL. Extends the existing
 -- handle_new_user trigger rather than adding a second one, so profile,
 -- workspace and membership are created in a single transaction.

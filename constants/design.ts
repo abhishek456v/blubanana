@@ -1,9 +1,9 @@
 import { Platform } from 'react-native'
 
-// Design tokens from DESIGN.md — always pull from here, never hardcode values.
+// Design tokens from DESIGN.md. Always pull from here, never hardcode values.
 
 // `bgContrast` is the one that makes the dashboard look designed rather than
-// flat: a card that inverts against the page — near-black on the light theme,
+// flat: a card that inverts against the page, near-black on the light theme,
 // cream on the dark one. Used for the single most important figure on a screen.
 //
 // Exactly one contrast card per screen. Two competing for attention means
@@ -28,7 +28,7 @@ export const Colors = {
     fillPrimary: '#F5A623',
     onFillPrimary: '#FFFFFF',
     accent: '#F5A623',
-    // Amber as *text*. The brand amber is 1.96:1 on the page — unreadable —
+    // Amber as *text*. The brand amber is 1.96:1 on the page, unreadable,
     // so anywhere the accent carries words rather than fills a shape, it is
     // darkened to clear AA. Fills, icons on tinted grounds, chart bars and
     // borders keep `accent`.
@@ -67,7 +67,7 @@ export const Colors = {
     onFillPrimary: '#FFFFFF',
     accent: '#F5A623',
     // On a dark ground the brand amber already clears AA (9.2:1), so the text
-    // variant is the accent itself — the token exists so screens can use one
+    // variant is the accent itself; the token exists so screens can use one
     // name in both themes.
     accentText: '#F5A623',
     accentLight: 'rgba(245,166,35,0.14)',
@@ -86,7 +86,7 @@ export const Colors = {
   },
 } as const
 
-// Flat, hashed-by-name avatar background colors (Contacts/Messages-style —
+// Flat, hashed-by-name avatar background colors (Contacts/Messages-style:
 // no gradients, since expo-linear-gradient isn't a dependency and a flat
 // chip reads just as premium without it). Same list works in both color
 // schemes; text on top is always white.
@@ -102,7 +102,7 @@ export const AvatarPalette = [
 ] as const
 
 // A 4-based scale with no gaps. The previous version jumped 8 -> 16, so
-// screens invented 10, 12 and 14 to fill it — 42 hand-picked values across the
+// screens invented 10, 12 and 14 to fill it: 42 hand-picked values across the
 // app, which is what "random spacing" looks like in a codebase. `base` closes
 // that gap and is the default gap between siblings.
 export const Spacing = {
@@ -131,9 +131,9 @@ export const Radius = {
 // 'InstrumentSans_400Regular'` and `fontWeight: '600'` together makes native
 // look for a semibold cut of a
 // family that has exactly one cut, fail, and silently fall back to the system
-// face — which is why type looked consistent on web and mismatched on device.
+// face, which is why type looked consistent on web and mismatched on device.
 // Steps wide enough to read as different levels. `heading` used to be 16
-// against a 15 body — a one-pixel difference that the eye cannot see, so a
+// against a 15 body, a one-pixel difference that the eye cannot see, so a
 // card title and its body text carried the same weight and the hierarchy came
 // out flat. The top of the scale moved up rather than the bottom moving down,
 // so nothing got smaller or harder to read.
@@ -148,8 +148,8 @@ export const Typography = {
 } as const
 
 // One family, four cuts. Weight carries the hierarchy that a second face used
-// to carry, so `display` and `displayBold` still exist as names — screens ask
-// for a role, not a font — they just resolve into the same family now.
+// to carry, so `display` and `displayBold` still exist as names (screens ask
+// for a role, not a font); they just resolve into the same family now.
 //
 // Never pair these with `fontWeight`: each cut is its own file, and asking for
 // a weight the named family does not contain drops native back to the system
@@ -164,7 +164,7 @@ export const FontFamily = {
 
 // Below `wide`, the app uses the mobile layout (bottom tab bar, edge-to-edge
 // content). At or above it, DESIGN.md 4 calls for a sidebar instead of a
-// bottom tab bar — 768 matches react-navigation's own tablet threshold, so
+// bottom tab bar. 768 matches react-navigation's own tablet threshold, so
 // the sidebar switch and the library's internal label-layout switch agree.
 // Three tiers, not two.
 //
@@ -184,14 +184,14 @@ export const Breakpoints = {
 export const SidebarWidth = 240
 
 // Caps how wide a single column of text or form inputs gets. Reading line
-// length, not screen width, is what sets this — beyond roughly this, the eye
+// length, not screen width, is what sets this; beyond roughly this, the eye
 // loses the start of the next line.
 export const ContentMaxWidth = 720
 
 /**
  * Cap for a desktop page that lays out in columns rather than one stack.
  *
- * Wider than ContentMaxWidth because the constraint there — line length — does
+ * Wider than ContentMaxWidth because the constraint there, line length, does
  * not apply once content is arranged side by side. On a 1440px laptop this
  * leaves the sidebar plus ~1160px of used space instead of a 720px column
  * floating in the middle of it.
@@ -201,8 +201,8 @@ export const DesktopContentMaxWidth = 1160
 /** Gap between columns in a desktop two-column body. */
 export const ColumnGap = 20
 
-// Sign-in/sign-up have no sidebar to sit next to — they're centered,
-// standalone screens — so they get their own, narrower cap instead of
+// Sign-in/sign-up have no sidebar to sit next to (they're centered,
+// standalone screens), so they get their own, narrower cap instead of
 // ContentMaxWidth (which assumes a sidebar already ate ~240px).
 export const AuthFormMaxWidth = 400
 
@@ -210,7 +210,7 @@ export const AuthFormMaxWidth = 400
 // Elevation
 //
 // DESIGN.md §5 rules out decorative shadow effects, so these exist only to
-// establish *layer order* — what sits above what. Values are deliberately low
+// establish *layer order*: what sits above what. Values are deliberately low
 // and warm-tinted (pure black shadow over a warm palette reads grey and
 // cheap). Dark mode leans on a heavier, tighter shadow because a light-on-
 // dark surface separates by luminance far less than the reverse.
@@ -223,12 +223,12 @@ export const AuthFormMaxWidth = 400
  * Two-layer shadows.
  *
  * A single tight shadow (small blur, small offset) is what makes a card read
- * as a sticker pasted onto the page — the whole shape darkens uniformly and
+ * as a sticker pasted onto the page: the whole shape darkens uniformly and
  * the edge stays hard. Real depth is two overlapping falloffs:
  *
- *   contact — small, tight, barely visible. Anchors the element to the
+ *   contact:  small, tight, barely visible. Anchors the element to the
  *             surface and keeps the bottom edge from floating.
- *   ambient — large, wide, very faint. Does the actual lifting, and is the
+ *   ambient:  large, wide, very faint. Does the actual lifting, and is the
  *             layer that reads as soft rather than dirty.
  *
  * Blur runs roughly 3x the offset on the ambient layer. Below about 2x the
@@ -248,8 +248,8 @@ const layered = (
     // Web takes both layers. React Native Web maps boxShadow straight through,
     // so this is the full effect.
     web: { boxShadow: `${contact}, ${ambient}` } as object,
-    // Native gets one shadow per view, so it takes the ambient layer — the one
-    // doing the lifting — and Android's elevation alongside it.
+    // Native gets one shadow per view, so it takes the ambient layer (the one
+    // doing the lifting), plus Android's elevation alongside it.
     default: {
       shadowColor: native.color,
       shadowOffset: { width: 0, height: native.offsetY },

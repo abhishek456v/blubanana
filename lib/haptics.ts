@@ -16,7 +16,7 @@ export type HapticKind =
  * Every call site treats haptics as decoration, never as something to await or
  * handle failure from, so this swallows both. It has to: the web build has no
  * haptics engine at all, and on Android the call rejects on devices without a
- * vibrator or when the user has disabled system haptics — none of which should
+ * vibrator or when the user has disabled system haptics, none of which should
  * ever surface as an error in a button handler.
  *
  * Guidance on which to use:

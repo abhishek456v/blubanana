@@ -26,7 +26,7 @@ export interface SkeletonProps {
  * it holds the layout, so content lands where the eye is already looking
  * instead of the page reflowing on arrival.
  *
- * The pulse is an opacity breath rather than a swept gradient — DESIGN.md
+ * The pulse is an opacity breath rather than a swept gradient. DESIGN.md
  * rules out gradients, and a pulse costs one shared value instead of a
  * masked, translating overlay per row.
  */
@@ -57,7 +57,7 @@ export function Skeleton({ width = '100%', height = 14, radius = Radius.sm, styl
 }
 
 /**
- * Placeholder shaped like a `DealRow` — avatar, two text lines, trailing pill.
+ * Placeholder shaped like a `DealRow`: avatar, two text lines, trailing pill.
  * Matching the real row's geometry is the whole point; a generic grey bar
  * still causes a visible jump when the data lands.
  */

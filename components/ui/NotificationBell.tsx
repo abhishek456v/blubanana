@@ -20,7 +20,7 @@ export interface NotificationBellProps {
  *
  * Refetches on focus rather than polling. The feed is derived from deals plus
  * scheduled reminders, both of which only change through this app, so
- * refreshing when a screen comes forward is enough — a timer would spend
+ * refreshing when a screen comes forward is enough; a timer would spend
  * requests to learn nothing on a screen nobody is looking at.
  *
  * A zero count renders no badge at all. A grey "0" is a worse signal than

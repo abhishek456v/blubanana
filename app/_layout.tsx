@@ -1,4 +1,4 @@
-// Must be the first import in the entry tree — Gesture Handler patches the
+// Must be the first import in the entry tree: Gesture Handler patches the
 // native touch pipeline at module load, and anything that renders before it
 // runs will not receive gestures on Android.
 import 'react-native-gesture-handler'
@@ -30,7 +30,7 @@ SplashScreen.preventAutoHideAsync()
 setForegroundHandler()
 
 // A password-reset email link carries its session as a URL fragment
-// (#access_token=...&type=recovery) — Supabase's implicit auth flow. Web
+// (#access_token=...&type=recovery), Supabase's implicit auth flow. Web
 // picks this up on its own (lib/supabase.ts detectSessionInUrl: true);
 // native has no window.location for the client to read, so this parses the
 // deep link by hand and hands the tokens to setSession.
@@ -50,7 +50,7 @@ export default function RootLayout() {
   const router = useRouter()
 
   // A password-recovery session must never fall through to the normal
-  // "session exists → go to the app" redirect below — it's not a real
+  // "session exists → go to the app" redirect below. It's not a real
   // sign-in, just enough of a session for updateUser({ password }) to work.
   // Kept as local state here (not in useAuth) since only this one redirect
   // decision needs it, and a plain setState in the component that owns the
@@ -87,8 +87,8 @@ export default function RootLayout() {
     if (loading || !fontsLoaded) return
 
     // The shareable creator profile card (Phase 3) is the one route meant to
-    // be opened by someone with no account at all — a brand clicking a link
-    // — so it's excluded from the sign-in redirect entirely.
+    // be opened by someone with no account at all, say a brand clicking a link,
+    // so it's excluded from the sign-in redirect entirely.
     if (segments[0] === 'creator') return
 
     const inAuthGroup = segments[0] === '(auth)'
@@ -106,7 +106,7 @@ export default function RootLayout() {
   }, [session, loading, fontsLoaded, segments, isPasswordRecovery])
 
   // Native-only: catch password-recovery deep links (creatordesk://reset-
-  // password#...). Web doesn't need this — the Supabase client parses
+  // password#...). Web doesn't need this: the Supabase client parses
   // window.location itself and fires PASSWORD_RECOVERY, caught above.
   useEffect(() => {
     if (Platform.OS === 'web') return
@@ -156,7 +156,7 @@ export default function RootLayout() {
     })
   }, [session, loading])
 
-  // Workflow/payment reminder notifications are never actionable in-place —
+  // Workflow/payment reminder notifications are never actionable in-place:
   // tapping one just deep-links into the relevant deal, where the response
   // buttons/WhatsApp send button live (PRODUCT.md 2.3, 2.4).
   // expo-notifications' response APIs aren't implemented on web at all
@@ -189,7 +189,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={styles.root}>
       {/* Every useSafeAreaInsets() in the app reads from here. Without it the
           hook reports zeros rather than throwing, so the tab bar sat in the
-          home-indicator strip and swallowed its own taps — with nothing in the
+          home-indicator strip and swallowed its own taps, with nothing in the
           logs to show for it. */}
       <SafeAreaProvider>
         {/* FeedbackProvider hosts the toast and confirmation surfaces. It sits

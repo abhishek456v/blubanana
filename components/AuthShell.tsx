@@ -7,7 +7,7 @@ import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 const BENEFITS = ['Never miss a deal', 'Never miss a deadline', 'Never miss a payment']
 
 // Wraps every (auth) screen. On wide viewports it adds a branded left panel
-// next to the form — the panel always uses the dark palette regardless of
+// next to the form. The panel always uses the dark palette regardless of
 // the device's light/dark setting, since it's a fixed brand statement, not
 // content that should follow the reader's theme (same pattern as most SaaS
 // login pages). Below the wide breakpoint it's a pure passthrough.

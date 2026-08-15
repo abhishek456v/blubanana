@@ -54,7 +54,7 @@ function sanitize(raw: unknown): ExtractedDealFields {
       : null
   const rate = (v: unknown) => {
     const n = typeof v === 'number' ? v : typeof v === 'string' ? Number(v) : NaN
-    // Zero is meaningful — a barter deal really is worth 0 — so only reject
+    // Zero is meaningful (a barter deal really is worth 0), so only reject
     // values that aren't numbers at all, or are negative.
     return Number.isFinite(n) && n >= 0 ? Math.round(n) : null
   }

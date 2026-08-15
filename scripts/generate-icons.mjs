@@ -24,7 +24,7 @@ const ACCENT = '#F5A623' // Colors.*.accent
 /**
  * The CreatorDesk mark: an open ring, cut on the right.
  *
- * Reads as a C, but the opening is the point — this is a product about a
+ * Reads as a C, but the opening is the point: this is a product about a
  * business loop that never quite closes on its own. Round caps and a heavy
  * stroke keep it legible down to a 16px favicon, where a thin or fussy mark
  * turns to mush.

@@ -65,7 +65,7 @@ const TONE_ICON: Record<ToastTone, keyof typeof Ionicons.glyphMap> = {
  * App-wide toast and confirmation host.
  *
  * This exists because `Alert.alert` is literally `static alert() {}` in
- * react-native-web — every validation message and every "are you sure?" in
+ * react-native-web: every validation message and every "are you sure?" in
  * this app vanished silently on web. `lib/alert.ts` patched that by falling
  * through to `window.alert`/`window.confirm`, which is correct but drops the
  * user into unstyled browser chrome mid-flow.

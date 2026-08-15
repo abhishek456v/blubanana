@@ -12,7 +12,7 @@ import type {
  * This exists so the entire connect → sync → chart flow can be finished and
  * tested now, rather than being written blind and debugged for the first time
  * on the day real credentials arrive. When they do, `instagram.ts` implements
- * the same interface and the registry swaps which one is used — no screen and
+ * the same interface and the registry swaps which one is used, with no screen and
  * no service changes.
  *
  * Two properties matter for it to be useful rather than merely present:
@@ -21,8 +21,8 @@ import type {
  *    so a screenshot taken today matches one taken tomorrow and a chart does
  *    not reshuffle on every reload.
  *  - **Trending.** Followers drift upward day over day, because a flat line
- *    would make the growth-versus-rate comparison — the whole point of
- *    collecting this — untestable.
+ *    would make the growth-versus-rate comparison (the whole point of
+ *    collecting this) untestable.
  */
 export class MockSocialProvider implements SocialProvider {
   readonly platform: SocialPlatform
@@ -85,7 +85,7 @@ export class MockSocialProvider implements SocialProvider {
   }
 }
 
-/** Small deterministic string hash — same input, same figures, every time. */
+/** Small deterministic string hash: same input, same figures, every time. */
 function hash(value: string): number {
   let h = 0
   for (let i = 0; i < value.length; i++) {

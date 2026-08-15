@@ -3,7 +3,7 @@ import { supabase } from './supabase'
 // The tenant is a workspace, not a user (migration 009).
 //
 // Every insert has to carry a workspace_id, and from migration 010 the column
-// is NOT NULL with RLS keyed off workspace membership — so a row written
+// is NOT NULL with RLS keyed off workspace membership, so a row written
 // without one is rejected by the database rather than silently misfiled.
 //
 // Reads do not need this: the RLS policies resolve the caller's workspaces
@@ -13,7 +13,7 @@ import { supabase } from './supabase'
 /**
  * Cached because it is needed on the hot path of every write and, for a solo
  * creator, never changes within a session. Cleared on sign-out so the next
- * account does not inherit the previous one's workspace — the single most
+ * account does not inherit the previous one's workspace: the single most
  * damaging thing this module could get wrong.
  */
 let cachedWorkspaceId: string | null = null
@@ -29,7 +29,7 @@ export function clearWorkspaceCache(): void {
  *
  * Today every user owns exactly one, so this takes the earliest active
  * membership. When multiple workspaces per user become real, this is the single
- * place that has to learn about a "current workspace" selection — every caller
+ * place that has to learn about a "current workspace" selection; every caller
  * already goes through it.
  */
 export async function getWorkspaceId(): Promise<string> {

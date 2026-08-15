@@ -27,7 +27,7 @@ export interface TextFieldProps extends Omit<TextInputProps, 'style'> {
   error?: string | null
   /** Persistent helper text. Hidden while an error is showing. */
   hint?: string
-  /** Static leading text inside the field — the ₹ on every rate input. */
+  /** Static leading text inside the field: the ₹ on every rate input. */
   prefix?: string
   trailing?: ReactNode
   containerStyle?: StyleProp<ViewStyle>
@@ -63,7 +63,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
   const focus = useSharedValue(0)
 
   // Border colour is driven off a shared value rather than React state so the
-  // transition runs on the UI thread — a focus ring that lags the keyboard
+  // transition runs on the UI thread. A focus ring that lags the keyboard
   // opening is worse than no transition at all.
   const animatedBorder = useAnimatedStyle(() => ({
     borderColor: interpolateColor(

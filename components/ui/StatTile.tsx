@@ -18,7 +18,7 @@ export interface StatTileProps {
   /** Draws a sparkline behind the figure. Needs 3+ points to render. */
   series?: number[]
   /**
-   * Inverts against the page — near-black on light, cream on dark.
+   * Inverts against the page: near-black on light, cream on dark.
    * DESIGN.md §2: exactly one per screen.
    */
   contrast?: boolean
@@ -32,7 +32,7 @@ export interface StatTileProps {
  * The dashboard stat tile.
  *
  * Replaces `MetricCard`, which rendered a label and a number on a flat surface
- * and nothing else — four of them side by side gave a screen no focal point at
+ * and nothing else. Four of them side by side gave a screen no focal point at
  * all. This adds the three things that make a figure readable at a glance: a
  * trend, a shape, and the option to invert.
  */

@@ -37,7 +37,7 @@ const SIZES = {
  * `submitButton` StyleSheet blocks that were re-declared in every form screen.
  *
  * While `loading`, the label stays mounted at zero opacity and the spinner
- * overlays it, so the button never changes width mid-submit — a resize on tap
+ * overlays it, so the button never changes width mid-submit. A resize on tap
  * is the single most common way a form gives away that it isn't native.
  */
 export function Button({
@@ -86,7 +86,7 @@ export function Button({
           opacity: isDisabled ? 0.45 : 1,
         },
         fullWidth && styles.fullWidth,
-        // The soft accent halo DESIGN.md §5 permits on primary actions —
+        // The soft accent halo DESIGN.md §5 permits on primary actions,
         // dropped while disabled so a dead button doesn't glow.
         variant === 'primary' && !isDisabled && accentGlow(isDark ? 0.3 : 0.28),
         style,

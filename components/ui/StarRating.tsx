@@ -12,7 +12,7 @@ export interface StarRatingProps {
   onChange?: (value: number) => void
   size?: number
   max?: number
-  /** Display-only — no press targets, no haptics. */
+  /** Display-only: no press targets, no haptics. */
   readonly?: boolean
   style?: StyleProp<ViewStyle>
 }
@@ -20,7 +20,7 @@ export interface StarRatingProps {
 /**
  * Star rating for the post-deal survey and the brand reputation display.
  *
- * Deal detail rendered this as five numbered square buttons — accurate, but
+ * Deal detail rendered this as five numbered square buttons: accurate, but
  * it read as a form field rather than a judgement, which is the wrong feel
  * for the question "would you work with them again?".
  *
@@ -70,7 +70,7 @@ interface StarProps {
 }
 
 function Star({ filled, size, readonly, color, emptyColor, onPress }: StarProps) {
-  // Overshoots to ~1.12 on fill and settles — the pop that makes the rating
+  // Overshoots to ~1.12 on fill and settles: the pop that makes the rating
   // feel like it registered rather than merely re-rendered.
   const scale = useDerivedValue(() => withSpring(filled ? 1 : 0.92, Spring.bouncy), [filled])
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))

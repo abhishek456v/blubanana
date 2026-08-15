@@ -4,7 +4,7 @@
 //   node scripts/drive.mjs                (screenshots the sign-in screen)
 //   node scripts/drive.mjs --email you@example.com --password ... --all
 //
-// Why this exists: everything else in the toolchain — tsc, the bundler — only
+// Why this exists: everything else in the toolchain (tsc, the bundler) only
 // proves the code compiles. It cannot tell you a screen rendered blank, a
 // contrast is unreadable, or a card is missing. This opens the app the way a
 // creator would and saves what it actually looks like.
@@ -35,7 +35,7 @@ const GOTO = args.reduce(
 )
 // Defaults to a phone width, since that is the layout that matters most and
 // is below the 768px `wide` breakpoint. Pass --width 1280 to render the
-// desktop sidebar / split-panel variants instead — they are a genuinely
+// desktop sidebar / split-panel variants instead; they are a genuinely
 // different code path, not just a reflow.
 const VIEWPORT = {
   width: Number(flag('width', '420')),
@@ -49,7 +49,7 @@ const problems = []
 
 async function shoot(page, name) {
   await mkdir(OUT, { recursive: true })
-  // Let entrance animations settle — Reanimated fades and staggers would
+  // Let entrance animations settle: Reanimated fades and staggers would
   // otherwise be caught mid-flight and every shot would look half-drawn.
   await page.waitForTimeout(900)
   const file = join(OUT, `${PREFIX}${name}.png`)
@@ -61,8 +61,8 @@ async function shoot(page, name) {
  * Taps a control by name.
  *
  * Role first, raw text last. react-navigation keeps every tab's scene mounted,
- * so a bare `getByText('Money')` can match the Money screen's own heading —
- * which is in the DOM but hidden — and then time out waiting for it to become
+ * so a bare `getByText('Money')` can match the Money screen's own heading,
+ * which is in the DOM but hidden, and then time out waiting for it to become
  * visible while the tab button sits there unclicked.
  */
 async function tap(page, text, { timeout = 4000 } = {}) {
@@ -90,7 +90,7 @@ async function tap(page, text, { timeout = 4000 } = {}) {
         await page.waitForTimeout(700)
         return true
       } catch {
-        // Covered or detached — try the next match / strategy.
+        // Covered or detached: try the next match / strategy.
       }
     }
   }
@@ -116,7 +116,7 @@ page.on('requestfailed', (req) => {
   if (req.url().includes('/_expo/') || req.url().includes('hot')) return
   problems.push(`request failed: ${req.url().slice(0, 120)}`)
 })
-// A 4xx/5xx is not a "failed request" to Playwright — the response arrived. It
+// A 4xx/5xx is not a "failed request" to Playwright: the response arrived. It
 // surfaces only as a bare "Failed to load resource: 400" in the console, with
 // no URL, which is useless for finding the query at fault.
 page.on('response', async (res) => {
@@ -128,10 +128,10 @@ page.on('response', async (res) => {
   } catch {
     // Body already consumed or the response was a redirect.
   }
-  problems.push(`HTTP ${res.status()} ${res.url().slice(0, 160)}${body ? ` — ${body}` : ''}`)
+  problems.push(`HTTP ${res.status()} ${res.url().slice(0, 160)}${body ? `: ${body}` : ''}`)
 })
 
-console.log(`opening ${BASE} — ${VIEWPORT.width}x${VIEWPORT.height}, ${COLOR_SCHEME}`)
+console.log(`opening ${BASE} at ${VIEWPORT.width}x${VIEWPORT.height}, ${COLOR_SCHEME}`)
 await page.goto(BASE, { waitUntil: 'networkidle', timeout: 120_000 })
 // The first paint is Metro still resolving modules; wait for real content.
 await page.waitForTimeout(3000)
@@ -147,7 +147,7 @@ if (EMAIL && PASSWORD) {
 
   // A fresh browser context has no onboarding-dismissed flag, so an account
   // with an unfilled profile gets redirected to onboarding on every run.
-  // Skip it — the driver's job is the screens behind it.
+  // Skip it; the driver's job is the screens behind it.
   if (await page.getByText('Skip', { exact: true }).first().isVisible().catch(() => false)) {
     console.log('skipping onboarding')
     await tap(page, 'Skip')

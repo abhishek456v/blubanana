@@ -21,7 +21,7 @@ const ACCOUNT_COLUMNS =
  * Which implementation backs each platform.
  *
  * Both are mocks today. When Meta and Google app review come through, this map
- * is the only thing that changes — every caller goes through the interface, so
+ * is the only thing that changes; every caller goes through the interface, so
  * no screen or service is touched.
  */
 const PROVIDERS: Record<SocialPlatform, SocialProvider> = {
@@ -124,7 +124,7 @@ export async function syncAccount(account: SocialAccount): Promise<SocialAccount
     return data as unknown as SocialAccount
   } catch (err) {
     // A failed sync is recorded on the row, not thrown at the screen. Token
-    // expiry is an expected state that resolves with a reconnect — surfacing
+    // expiry is an expected state that resolves with a reconnect, and surfacing
     // it as an error toast would train the creator to ignore real problems.
     const message = err instanceof Error ? err.message : 'Sync failed'
     await supabase
@@ -140,7 +140,7 @@ export async function syncAccount(account: SocialAccount): Promise<SocialAccount
  * Writes one snapshot for today, replacing any earlier one from the same day.
  *
  * The unique constraint on (workspace, platform, day, account) is what keeps
- * this table bounded — syncing ten times in an afternoon updates one row
+ * this table bounded: syncing ten times in an afternoon updates one row
  * instead of adding ten.
  */
 async function recordSnapshot(
@@ -167,7 +167,7 @@ async function recordSnapshot(
   if (error) throw error
 }
 
-/** Snapshots for one platform, oldest first — the shape a sparkline wants. */
+/** Snapshots for one platform, oldest first: the shape a sparkline wants. */
 export async function getStatHistory(
   platform: SocialPlatform,
   days = 90
@@ -197,7 +197,7 @@ export interface ReachSummary {
 /**
  * Reduces the snapshot history to what a card needs.
  *
- * Growth is null rather than 0 when there is only one snapshot — a brand-new
+ * Growth is null rather than 0 when there is only one snapshot: a brand-new
  * connection has no trend, and printing "0% growth" would read as stagnation
  * rather than as absence of data.
  */

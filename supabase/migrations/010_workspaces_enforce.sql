@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- CreatorDesk — Phase 2, stage 2 of 3: workspaces (MIGRATE / ENFORCE).
+-- CreatorDesk: Phase 2, stage 2 of 3: workspaces (MIGRATE / ENFORCE).
 -- Run this once in the Supabase dashboard SQL editor, after 009 has been
 -- applied AND its verification block reported zero orphans.
 --
@@ -12,7 +12,7 @@
 --   4. re-scopes the attachments storage policy to workspace membership
 --
 -- creator_id columns are NOT dropped here. They stay as a safety net until 011,
--- so this migration is reversible — the down script at the bottom restores the
+-- so this migration is reversible: the down script at the bottom restores the
 -- previous policies exactly.
 --
 -- Safe to re-run.
@@ -21,14 +21,14 @@
 -- WHY FORCE RLS IS APPLIED TO BUSINESS TABLES BUT NOT IDENTITY TABLES
 --
 -- The architecture spec says to FORCE row level security everywhere. That is
--- correct for its assumed design — a Node API connecting as a non-owner role.
+-- correct for its assumed design: a Node API connecting as a non-owner role.
 -- Applied literally here it would break account creation, and it is worth being
 -- explicit about why rather than quietly skipping it.
 --
 -- FORCE makes policies apply to the table OWNER as well. In Supabase the app
 -- connects as `authenticated`, which owns nothing, so RLS already applies to it
 -- with or without FORCE. What FORCE additionally constrains is the `postgres`
--- role — and therefore every SECURITY DEFINER function owned by it.
+-- role, and therefore every SECURITY DEFINER function owned by it.
 --
 -- `handle_new_user()` is exactly such a function: it fires on auth.users insert
 -- and writes profiles, workspaces and memberships. In that context auth.uid()
@@ -39,7 +39,7 @@
 -- So: FORCE on the seven business tables, where it is pure upside and defends
 -- against a future careless SECURITY DEFINER function. ENABLE without FORCE on
 -- profiles/workspaces/memberships, where the owner bypass is load-bearing.
--- Isolation for the app is identical either way — `authenticated` is never an
+-- Isolation for the app is identical either way; `authenticated` is never an
 -- owner, so it is always subject to policy.
 -- ─────────────────────────────────────────────────────────────────────────────
 
@@ -109,7 +109,7 @@ create policy "deals: workspace members" on deals for all
   using (workspace_id in (select auth_workspace_ids()))
   with check (workspace_id in (select auth_workspace_ids()));
 
--- payments — previously scoped through a subquery on deals; now direct, which
+-- payments: previously scoped through a subquery on deals; now direct, which
 -- also removes a per-row join from every payment read.
 drop policy if exists "payments: own deals only" on payments;
 drop policy if exists "payments: via deal" on payments;
@@ -194,7 +194,7 @@ create policy "memberships: owner manages"
 -- workspace the creator's own uuid, existing paths keep resolving unchanged.
 --
 -- The folder segment is compared as text against the member's workspaces rather
--- than cast to uuid — an object with a non-uuid first segment would make a cast
+-- than cast to uuid: an object with a non-uuid first segment would make a cast
 -- throw, and a storage policy that errors is a storage policy that denies
 -- everything.
 
@@ -247,7 +247,7 @@ end $$;
 
 
 -- ═════════════════════════════════════════════════════════════════════════════
--- DOWN SCRIPT — paste and run this to revert to creator_id isolation.
+-- DOWN SCRIPT: paste and run this to revert to creator_id isolation.
 -- creator_id is still populated on every table until 011, so this is a complete
 -- rollback, not a partial one.
 -- ═════════════════════════════════════════════════════════════════════════════

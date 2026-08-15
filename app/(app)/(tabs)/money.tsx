@@ -39,7 +39,7 @@ import {
  *
  * Leads with what was *locked* this month rather than what was received.
  * Creator payments land 45–90 days after the work, so a dashboard built only
- * on money received reports on a quarter that is already over — it cannot tell
+ * on money received reports on a quarter that is already over. It cannot tell
  * her whether this month is going well while there is still time to act on it.
  * Received, pending and overdue all sit directly underneath.
  *
@@ -57,7 +57,7 @@ export default function MoneyScreen() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
-  // Fetched independently rather than with Promise.all — invoices come from a
+  // Fetched independently rather than with Promise.all: invoices come from a
   // newer table than deals/payments, so one being unavailable should not blank
   // out the figures the other half can still compute.
   const load = useCallback(
@@ -198,7 +198,7 @@ export default function MoneyScreen() {
         </Card>
       ) : null}
 
-      {/* Invoices live here and nowhere else — they used to be reachable from
+      {/* Invoices live here and nowhere else. They used to be reachable from
           both Money and Settings, which meant neither felt like where they
           belonged. */}
       <View style={styles.links}>

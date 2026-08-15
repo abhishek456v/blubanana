@@ -20,7 +20,7 @@ export type StageState = 'done' | 'current' | 'upcoming' | 'skipped'
 export interface TimelineStage {
   key: string
   label: string
-  /** Formatted for display — pass through `formatRelativeDay` for deadlines. */
+  /** Formatted for display; pass through `formatRelativeDay` for deadlines. */
   detail?: string | null
   state: StageState
 }
@@ -34,8 +34,8 @@ export interface StageTimelineProps {
 const NODE_SIZE = 26
 
 /**
- * Vertical stepper for a deal's workflow — script, shoot, edit, publish, live
- * link — and the visual anchor of the deal screen.
+ * Vertical stepper for a deal's workflow (script, shoot, edit, publish, live
+ * link), and the visual anchor of the deal screen.
  *
  * The product's first promise is "she never misses a deadline", so the single
  * most important thing this screen can answer is *what is next*. A list of

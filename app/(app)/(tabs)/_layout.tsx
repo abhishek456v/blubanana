@@ -16,7 +16,7 @@ import { Mark, PressableScale } from '@/components/ui'
 /**
  * Five destinations, matching DESIGN.md §4's cap.
  *
- * "Work" is the creator's own record of everything she has shipped — the
+ * "Work" is the creator's own record of everything she has shipped: the
  * archive plus how each piece performed. It is separate from Home because
  * Home answers "what needs me today" and Work answers "what have I built",
  * which are different questions asked at different moments.
@@ -74,7 +74,7 @@ function TabIcon({
  * The sidebar, with a brand lockup above the nav.
  *
  * react-navigation has no slot above the tab list, so the default bar is
- * wrapped rather than reimplemented — the navigator keeps owning focus,
+ * wrapped rather than reimplemented. The navigator keeps owning focus,
  * accessibility and the active indicator, and this only adds a header.
  *
  * Without it the sidebar was an unlabelled strip of icons starting at the top
@@ -170,7 +170,7 @@ function useDueCount(): number {
 
 export default function TabsLayout() {
   const { c } = useTheme()
-  // Badged on Home because that is where "Needs you" lives — the badge and the
+  // Badged on Home because that is where "Needs you" lives: the badge and the
   // list it points at are on the same screen, so tapping it lands somewhere
   // that explains the number.
   const dueCount = useDueCount()
@@ -211,7 +211,7 @@ export default function TabsLayout() {
               backgroundColor: c.bgPage,
               borderTopColor: c.border,
               borderTopWidth: 1,
-              // The bar is a boundary, not a floating surface — a drop shadow
+              // The bar is a boundary, not a floating surface. A drop shadow
               // here would be the only one in the app pointing upward.
               elevation: 0,
               shadowOpacity: 0,

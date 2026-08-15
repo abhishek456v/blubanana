@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- CreatorDesk — invoice line items, so one invoice can cover several deals.
+-- CreatorDesk: invoice line items, so one invoice can cover several deals.
 -- Run this once in the Supabase dashboard SQL editor, after 007.
 --
 -- Today an invoice is one row with one `description` and one `amount`, tied to
@@ -8,7 +8,7 @@
 -- one PO is not what the brand's finance team asked for.
 --
 -- `invoices.deal_id` stays, nullable, and keeps pointing at the originating
--- deal for single-deal invoices — getInvoiceForDeal() and the deal screen's
+-- deal for single-deal invoices; getInvoiceForDeal() and the deal screen's
 -- "Invoice" section both still read it. Consolidated invoices leave it null
 -- and carry their deals on the line items instead.
 --

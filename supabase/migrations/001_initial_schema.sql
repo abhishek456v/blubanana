@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- CreatorDesk — Phase 1 schema
+-- CreatorDesk: Phase 1 schema
 -- Run this once in the Supabase dashboard SQL editor (or via supabase db push).
 -- ─────────────────────────────────────────────────────────────────────────────
 

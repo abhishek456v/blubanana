@@ -45,7 +45,7 @@ export default function InvoicesScreen() {
     }, [load])
   )
 
-  // Totals for the current financial year — the figure that matters when
+  // Totals for the current financial year: the figure that matters when
   // reconciling against what was actually billed.
   const summary = useMemo(() => {
     const currentFy = financialYearOf()
@@ -85,7 +85,7 @@ export default function InvoicesScreen() {
           </View>
         ) : isDesktop && invoices.length > 0 ? (
           // Desktop gets a real table (DESIGN.md §8: tables are a desktop
-          // affordance) — aligned rupee and date columns scan; phones keep the
+          // affordance). Aligned rupee and date columns scan; phones keep the
           // ListRow layout below.
           <FlatList
             data={[0]}

@@ -1,6 +1,6 @@
 // Pre-filled WhatsApp click-to-chat links (PRODUCT.md section 0's documented
 // shortcut in place of the WhatsApp Business API) for payment follow-ups
-// (PRODUCT.md 2.4). Nothing here ever sends anything — every consumer opens
+// (PRODUCT.md 2.4). Nothing here ever sends anything: every consumer opens
 // the resulting URL via Linking.openURL, which hands off to WhatsApp for the
 // creator to review and send herself.
 
@@ -24,12 +24,12 @@ function formatDate(dateStr: string): string {
  * The payment chaser, escalating from friendly to firm.
  *
  * `escalationLevel` counts how many chasers have already gone out, not how
- * overdue the payment is — a creator who only started chasing today should not
+ * overdue the payment is. A creator who only started chasing today should not
  * open in the tone of a fourth follow-up.
  *
  * Every level stays professional. These go to a brand the creator may want to
  * work with again, and a message she would be embarrassed to have sent is one
- * she will stop sending — which costs her far more than a firm tone would.
+ * she will stop sending, which costs her far more than a firm tone would.
  * The escalation is in the directness and in what is asked for, not in warmth.
  */
 export function buildPaymentReminderMessage(params: {
@@ -60,7 +60,7 @@ export function buildPaymentReminderMessage(params: {
   const due = formatDate(dueDate)
 
   // Included automatically so she never has to scroll back through six weeks
-  // of chat to find the link or the invoice number — the specific friction
+  // of chat to find the link or the invoice number: the specific friction
   // that stops creators chasing at all.
   const reference = [
     invoiceNumber ? `Invoice ${invoiceNumber}` : null,

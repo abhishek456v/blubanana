@@ -4,7 +4,7 @@ import { Platform } from 'react-native'
 // Low-level scheduling primitives shared by lib/reminders.ts (workflow
 // reminders, PRODUCT.md 2.3) and lib/paymentReminders.ts (payment due
 // reminders, PRODUCT.md 2.4). Neither of those files talks to
-// expo-notifications directly — everything goes through here.
+// expo-notifications directly; everything goes through here.
 
 // Renders the notification while the app is in the foreground. Sound/badge
 // are off since these are gentle nudges, not urgent alerts.
@@ -20,7 +20,7 @@ export function setForegroundHandler(): void {
 }
 
 // Android requires a channel before any notification can be shown. Safe to
-// call on every launch — creating an existing channel is a no-op.
+// call on every launch, since creating an existing channel is a no-op.
 export async function ensureAndroidChannelAsync(): Promise<void> {
   if (Platform.OS !== 'android') return
   await Notifications.setNotificationChannelAsync('default', {
@@ -29,7 +29,7 @@ export async function ensureAndroidChannelAsync(): Promise<void> {
   })
 }
 
-// Requests permission only if the user hasn't already been asked — the OS
+// Requests permission only if the user hasn't already been asked; the OS
 // won't re-prompt after a denial, so repeated calls are harmless.
 async function ensurePermissionsAsync(): Promise<boolean> {
   const current = await Notifications.getPermissionsAsync()
@@ -47,7 +47,7 @@ export interface NotificationContent {
 }
 
 // Schedules a local notification for a future date. Returns null (instead of
-// throwing) when permission is missing or scheduling otherwise fails —
+// throwing) when permission is missing or scheduling otherwise fails:
 // callers treat this as best-effort and must never let it block a deal/
 // payment save.
 export async function scheduleAsync(
@@ -79,6 +79,6 @@ export async function cancelAsync(notificationId: string | null | undefined): Pr
   try {
     await Notifications.cancelScheduledNotificationAsync(notificationId)
   } catch {
-    // Already fired or already cancelled — nothing to do.
+    // Already fired or already cancelled, so nothing to do.
   }
 }
