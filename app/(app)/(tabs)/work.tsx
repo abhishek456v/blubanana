@@ -228,6 +228,7 @@ export default function WorkScreen() {
                     deal={deal}
                     index={index}
                     stretch={isDesktop}
+                    variant={isDesktop ? 'card' : 'plain'}
                     onPress={() => router.push(`/(app)/deal/${deal.id}` as never)}
                   />
                 </View>

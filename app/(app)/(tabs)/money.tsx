@@ -163,7 +163,7 @@ export default function MoneyScreen() {
   )
 
   const chart = (
-    <Card style={styles.blockCard}>
+    <Card dense={isDesktop} style={styles.blockCard}>
       <View style={styles.cardHead}>
         <View style={styles.cardHeadText}>
           <Text style={[styles.cardTitle, { color: c.textPrimary }]}>Last six months</Text>
@@ -187,7 +187,7 @@ export default function MoneyScreen() {
   const side = (
     <View style={isDesktop ? styles.sideColumn : styles.stack}>
       {summary.bestPayingBrand ? (
-        <Card style={styles.sideCard}>
+        <Card dense={isDesktop} style={styles.sideCard}>
           <Text style={[styles.cardSub, { color: c.textMuted }]}>Best payer</Text>
           <Text style={[styles.bestBrand, { color: c.textPrimary }]} numberOfLines={1}>
             {summary.bestPayingBrand.name}

@@ -264,7 +264,7 @@ export default function HomeScreen() {
   )
 
   const cashFlow = (
-    <Card style={styles.blockCard}>
+    <Card dense={isDesktop} style={styles.blockCard}>
       <View style={styles.cardHead}>
         <View style={styles.cardHeadText}>
           <Text style={[styles.cardTitle, { color: c.textPrimary }]}>Cash flow</Text>
@@ -291,7 +291,7 @@ export default function HomeScreen() {
   )
 
   const needsYou = (
-    <Card style={styles.needsCard}>
+    <Card dense={isDesktop} style={styles.needsCard}>
       <View style={styles.cardHead}>
         <View style={styles.cardHeadText}>
           <Text style={[styles.cardTitle, { color: c.textPrimary }]}>Needs you</Text>
@@ -422,6 +422,7 @@ export default function HomeScreen() {
         reason={item.reason}
         reasonColor={tone}
         index={index}
+        dense={isDesktop}
         surface="raised"
         onPress={() => router.push(`/(app)/deal/${item.deal.id}` as never)}
       />
@@ -450,10 +451,11 @@ export default function HomeScreen() {
           <DealRow
             deal={item}
             index={index}
+            variant="plain"
+            dense={isDesktop}
             onPress={() => router.push(`/(app)/deal/${item.id}` as never)}
           />
         )}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListHeaderComponent={header}
         ListEmptyComponent={
           <EmptyState
