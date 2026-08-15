@@ -110,7 +110,7 @@ export function DeliverablesCard({ deliverables, onChange, disabled }: Deliverab
       {deliverables.length === 0 ? (
         <View style={styles.empty}>
           <Text style={[styles.emptyText, { color: c.textMuted }]}>
-            Nothing added yet. A reel, three stories, an auto DM, the ad rights — each priced on
+            Nothing added yet. A reel, three stories, an auto DM, the ad rights: each priced on
             its own.
           </Text>
           {!disabled ? (
@@ -212,7 +212,7 @@ function DeliverableRow({
           ) : null}
           {/* The per-month figure, surfaced without needing to open the row. */}
           {breakdown ? (
-            <Text style={[styles.rowCalc, { color: c.accent }]} numberOfLines={1}>
+            <Text style={[styles.rowCalc, { color: c.accentText }]} numberOfLines={1}>
               {formatCurrency(breakdown.perMonth)}/month
             </Text>
           ) : null}
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
   },
   headerText: {
     flex: 1,
-    gap: 2,
+    gap: Spacing.xxs,
   },
   title: {
     ...Typography.heading,

@@ -38,6 +38,15 @@ export interface BarChartProps {
    * taller column — otherwise the card grows and the chart doesn't.
    */
   fill?: boolean
+  /**
+   * Draw horizontal gridlines and label the top one.
+   *
+   * Without a scale a bar chart only shows relative shape: one tall bar and
+   * five stubs tells you July was the biggest month and nothing about whether
+   * that was a good one. The top gridline carries the figure the tallest bar
+   * represents, so every other bar can be read against it.
+   */
+  showScale?: boolean
   style?: StyleProp<ViewStyle>
 }
 
@@ -63,6 +72,7 @@ export function BarChart({
   highlightIndex,
   maxBarWidth = 52,
   fill = false,
+  showScale = true,
   style,
 }: BarChartProps) {
   const { c } = useTheme()
@@ -73,13 +83,36 @@ export function BarChart({
   const safeMax = max > 0 ? max : 1
   const highlighted = highlightIndex ?? data.length - 1
 
+  // Quarter lines. Only drawn when there is something to measure, since a
+  // grid over an all-zero chart implies a scale that does not exist.
+  const gridlines = showScale && max > 0 ? [1, 0.75, 0.5, 0.25] : []
+
   return (
     <View style={[fill && styles.fill, style]}>
       <View style={[styles.plot, fill ? styles.fill : { height }]}>
-        {/* A zero month draws a 3px sliver, which alone is ambiguous — it could
+        {gridlines.map((fraction) => (
+          <View
+            key={fraction}
+            pointerEvents="none"
+            style={[
+              styles.gridline,
+              { bottom: `${fraction * 100}%`, backgroundColor: c.border },
+            ]}
+          />
+        ))}
+
+        {/* The value the tallest bar stands for. Sits on the top gridline so
+            it reads as an axis label rather than a floating number. */}
+        {gridlines.length > 0 ? (
+          <Text pointerEvents="none" style={[styles.scaleLabel, { color: c.textMuted }]}>
+            {formatValue(max)}
+          </Text>
+        ) : null}
+
+        {/* A zero month draws a 3px sliver, which alone is ambiguous: it could
             be a tiny value or missing data. The baseline makes it read as a
             month that sat on zero. */}
-        <View style={[styles.baseline, { backgroundColor: c.border }]} />
+        <View style={[styles.baseline, { backgroundColor: c.borderStrong }]} />
 
         {data.map((datum, index) => {
           const isSelected = selected === index
@@ -185,6 +218,19 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     height: 1,
+  },
+  gridline: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 1,
+  },
+  scaleLabel: {
+    position: 'absolute',
+    right: 0,
+    top: -6,
+    ...Typography.label,
+    fontFamily: FontFamily.medium,
   },
   column: {
     flex: 1,

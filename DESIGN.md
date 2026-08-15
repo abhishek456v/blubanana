@@ -63,21 +63,30 @@ Everything else sits on `bgSurface`, separated by gaps rather than borders.
 
 ## 3. Typography
 
-**Syne** for display — figures, greetings, screen titles, card values.
-**Inter** for everything else — body, labels, inputs, meta.
+**Instrument Sans**, one family, four cuts. Hierarchy comes from weight and
+size, not from a second face.
 
-| Style | Size | Weight | Family |
-|---|---|---|---|
-| Hero figure | 34–40 | 700 | Syne |
-| Display | 28 | 600 | Syne |
-| Title | 20 | 600 | Syne |
-| Heading | 16 | 600 | Inter |
-| Body | 15 | 400 | Inter |
-| Caption | 13 | 400 | Inter |
-| Label | 12 | 500 | Inter |
+| Style | Size | Cut |
+|---|---|---|
+| Hero figure | 34–40 | 700 Bold |
+| Display | 28 | 600 SemiBold |
+| Title | 20 | 600 SemiBold |
+| Heading | 16 | 600 SemiBold |
+| Body | 15 | 400 Regular |
+| Caption | 13 | 400 Regular |
+| Label | 12 | 500 Medium |
 
-Money is always Syne. It is the thing the creator came for, and it should
-read differently from the words around it.
+`FontFamily.display` and `displayBold` still exist as names, so screens ask for
+a role rather than a font. They now resolve into the same family as the rest.
+
+**Never set `fontWeight` in a style.** Every cut is a separate file with the
+weight baked into its name, so a `fontWeight` alongside it makes native look
+for a variant that does not exist and fall back to the system face — silently,
+and only on device. `Typography` therefore carries sizes and nothing else; the
+weight you want is the `FontFamily` you pick.
+
+Money still wants to feel like the thing the creator came for: give it the
+display cut and a larger size rather than a different typeface.
 
 Sentence case throughout. No all-caps except the small uppercase eyebrow labels
 on stat tiles, where letterspacing carries the hierarchy instead of size.

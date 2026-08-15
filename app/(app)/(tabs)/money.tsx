@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useFocusEffect } from '@react-navigation/core'
@@ -26,6 +26,8 @@ import {
   HeaderUtilities,
   HeroCard,
   ListRow,
+  Reveal,
+  RevealScrollView,
   ScreenHeader,
   Skeleton,
   StatTile,
@@ -101,7 +103,7 @@ export default function MoneyScreen() {
       format={formatCurrency}
       caption={
         summary.lockedThisMonth.count === 0
-          ? 'No new deals logged this month yet — this is the number that moves first.'
+          ? 'No new deals logged this month yet. This is the number that moves first.'
           : `Across ${summary.lockedThisMonth.count} new ${summary.lockedThisMonth.count === 1 ? 'deal' : 'deals'} signed this month.`
       }
       action={{ label: 'Invoices', onPress: () => router.push('/(app)/invoices' as never) }}
@@ -161,7 +163,7 @@ export default function MoneyScreen() {
   )
 
   const chart = (
-    <Card style={styles.blockCard}>
+    <Card dense={isDesktop} style={styles.blockCard}>
       <View style={styles.cardHead}>
         <View style={styles.cardHeadText}>
           <Text style={[styles.cardTitle, { color: c.textPrimary }]}>Last six months</Text>
@@ -185,7 +187,7 @@ export default function MoneyScreen() {
   const side = (
     <View style={isDesktop ? styles.sideColumn : styles.stack}>
       {summary.bestPayingBrand ? (
-        <Card style={styles.sideCard}>
+        <Card dense={isDesktop} style={styles.sideCard}>
           <Text style={[styles.cardSub, { color: c.textMuted }]}>Best payer</Text>
           <Text style={[styles.bestBrand, { color: c.textPrimary }]} numberOfLines={1}>
             {summary.bestPayingBrand.name}
@@ -234,7 +236,7 @@ export default function MoneyScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.bgPage }]} edges={['top']}>
-      <ScrollView
+      <RevealScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -278,11 +280,13 @@ export default function MoneyScreen() {
           </View>
         ) : (
           <View style={isDesktop ? styles.rowB : styles.stack}>
-            <View style={isDesktop ? styles.chartCell : undefined}>{chart}</View>
-            <View style={isDesktop ? styles.sideCell : undefined}>{side}</View>
+            <Reveal style={isDesktop ? styles.chartCell : undefined}>{chart}</Reveal>
+            <Reveal delay={70} style={isDesktop ? styles.sideCell : undefined}>
+              {side}
+            </Reveal>
           </View>
         )}
-      </ScrollView>
+      </RevealScrollView>
     </SafeAreaView>
   )
 }
@@ -302,7 +306,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   stack: {
-    gap: 10,
+    gap: Spacing.base,
   },
   rowA: {
     flexDirection: 'row',
@@ -333,7 +337,7 @@ const styles = StyleSheet.create({
   tileRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: Spacing.base,
   },
   sideColumn: {
     flex: 1,
@@ -341,12 +345,12 @@ const styles = StyleSheet.create({
   },
   blockCard: {
     flex: 1,
-    padding: Spacing.md + 2,
+    padding: Spacing.md,
     gap: Spacing.md,
   },
   sideCard: {
-    padding: Spacing.md + 2,
-    gap: 2,
+    padding: Spacing.md,
+    gap: Spacing.xxs,
   },
   cardHead: {
     flexDirection: 'row',
@@ -356,7 +360,7 @@ const styles = StyleSheet.create({
   },
   cardHeadText: {
     flex: 1,
-    gap: 2,
+    gap: Spacing.xxs,
   },
   cardTitle: {
     ...Typography.heading,
@@ -375,7 +379,7 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.display,
   },
   links: {
-    gap: 10,
+    gap: Spacing.base,
   },
   linkIcon: {
     width: 38,

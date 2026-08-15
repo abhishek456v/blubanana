@@ -85,5 +85,6 @@ const styles = StyleSheet.create({
   },
   text: {
     ...Typography.label,
+    fontFamily: FontFamily.semiBold,
   },
 })

@@ -158,7 +158,7 @@ export default function YouScreen() {
             <View style={styles.toggleText}>
               <Text style={[styles.cardTitle, { color: c.textPrimary }]}>Profile card</Text>
               <Text style={[styles.cardHint, { color: c.textSecondary }]}>
-                A public page you can send a brand mid-negotiation — your niche, reach and deals
+                A public page you can send a brand mid-negotiation. Shows your niche, reach and deals
                 completed. Never shows payment or contact details.
               </Text>
             </View>
@@ -176,7 +176,7 @@ export default function YouScreen() {
 
           {profile?.public_profile_enabled && profile.public_share_slug ? (
             <View style={[styles.linkBox, { backgroundColor: c.bgPage }]}>
-              <Text style={[styles.link, { color: c.accent }]} selectable numberOfLines={1}>
+              <Text style={[styles.link, { color: c.accentText }]} selectable numberOfLines={1}>
                 {publicProfileUrl(profile.public_share_slug)}
               </Text>
             </View>
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   appearanceCard: {
-    gap: 2,
+    gap: Spacing.xxs,
   },
   themeControl: {
     marginTop: Spacing.md,
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
   },
   profileText: {
     flex: 1,
-    gap: 2,
+    gap: Spacing.xxs,
   },
   profileName: {
     ...Typography.title,
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
   cardHint: {
     ...Typography.caption,
     fontFamily: FontFamily.regular,
-    marginTop: 2,
+    marginTop: Spacing.xxs,
     lineHeight: 18,
   },
   linkBox: {
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.medium,
   },
   links: {
-    gap: 10,
+    gap: Spacing.base,
     marginTop: Spacing.xs,
   },
   linkIcon: {

@@ -205,7 +205,7 @@ export function DeliverableEditor({
               <View style={[styles.calc, { backgroundColor: c.accentLight }]}>
                 <Ionicons name="calculator-outline" size={17} color={c.accent} />
                 <View style={styles.calcText}>
-                  <Text style={[styles.calcValue, { color: c.accent }]}>
+                  <Text style={[styles.calcValue, { color: c.accentText }]}>
                     {formatCurrency(perMonth)} per month
                   </Text>
                   <Text style={[styles.calcHint, { color: c.textSecondary }]}>
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.md,
   },
   field: {
-    gap: 6,
+    gap: Spacing.sm,
   },
   label: {
     ...Typography.label,

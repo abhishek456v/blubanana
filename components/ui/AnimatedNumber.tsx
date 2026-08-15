@@ -6,6 +6,15 @@ export interface AnimatedNumberProps {
   /** Renders the tweened value. Defaults to a plain rounded integer. */
   format?: (value: number) => string
   duration?: number
+  /**
+   * Count up from zero on first paint instead of appearing at the final value.
+   *
+   * Off by default, and it should stay off for a grid of tiles — a screen
+   * where every figure spins at once reads as a slot machine. Turn it on for
+   * the one hero number a screen is actually about, where the count is what
+   * makes the amount feel earned rather than printed.
+   */
+  countOnMount?: boolean
   style?: StyleProp<TextStyle>
   numberOfLines?: number
 }
@@ -21,26 +30,31 @@ export interface AnimatedNumberProps {
  *
  * Tweening starts from the previously displayed number, so a dashboard
  * refreshing ₹40,000 → ₹52,000 counts the delta rather than restarting at
- * zero. First paint is not animated: landing on a screen where every figure
+ * zero. First paint is not animated by default: landing on a screen where every figure
  * is spinning up from zero reads as a slot machine, not as data.
  */
 export function AnimatedNumber({
   value,
   format = (v) => String(Math.round(v)),
   duration = 650,
+  countOnMount = false,
   style,
   numberOfLines,
 }: AnimatedNumberProps) {
-  const [displayed, setDisplayed] = useState(value)
-  const fromRef = useRef(value)
+  const [displayed, setDisplayed] = useState(countOnMount ? 0 : value)
+  const fromRef = useRef(countOnMount ? 0 : value)
   const isFirstRender = useRef(true)
 
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false
-      fromRef.current = value
-      setDisplayed(value)
-      return
+      // With countOnMount the first pass is the animation, so fall through to
+      // the tween below with `from` already sitting at zero.
+      if (!countOnMount) {
+        fromRef.current = value
+        setDisplayed(value)
+        return
+      }
     }
 
     const from = fromRef.current
@@ -66,7 +80,7 @@ export function AnimatedNumber({
 
     frame = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frame)
-  }, [value, duration])
+  }, [value, duration, countOnMount])
 
   return (
     <Text style={style} numberOfLines={numberOfLines}>

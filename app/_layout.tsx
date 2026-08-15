@@ -6,6 +6,7 @@ import 'react-native-gesture-handler'
 import { useEffect, useState } from 'react'
 import { Platform, StyleSheet } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { Slot, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import * as SplashScreen from 'expo-splash-screen'
@@ -13,11 +14,11 @@ import * as Notifications from 'expo-notifications'
 import * as Linking from 'expo-linking'
 import {
   useFonts,
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-} from '@expo-google-fonts/inter'
-import { Syne_600SemiBold, Syne_700Bold } from '@expo-google-fonts/syne'
+  InstrumentSans_400Regular,
+  InstrumentSans_500Medium,
+  InstrumentSans_600SemiBold,
+  InstrumentSans_700Bold,
+} from '@expo-google-fonts/instrument-sans'
 import { FeedbackProvider } from '@/components/ui'
 import { ThemeProvider } from '@/hooks/useTheme'
 import { useAuth } from '@/hooks/useAuth'
@@ -68,11 +69,10 @@ export default function RootLayout() {
   }, [])
 
   const [fontsLoaded] = useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Syne_600SemiBold,
-    Syne_700Bold,
+    InstrumentSans_400Regular,
+    InstrumentSans_500Medium,
+    InstrumentSans_600SemiBold,
+    InstrumentSans_700Bold,
   })
 
   // Hide splash once both fonts and auth state are ready.
@@ -187,15 +187,21 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={styles.root}>
-      {/* FeedbackProvider hosts the toast and confirmation surfaces. It sits
-          above the router so a toast raised on any screen survives the
-          navigation that usually follows it (save → toast → go back). */}
-      <ThemeProvider>
-        <FeedbackProvider>
-          <StatusBar style="auto" />
-          <Slot />
-        </FeedbackProvider>
-      </ThemeProvider>
+      {/* Every useSafeAreaInsets() in the app reads from here. Without it the
+          hook reports zeros rather than throwing, so the tab bar sat in the
+          home-indicator strip and swallowed its own taps — with nothing in the
+          logs to show for it. */}
+      <SafeAreaProvider>
+        {/* FeedbackProvider hosts the toast and confirmation surfaces. It sits
+            above the router so a toast raised on any screen survives the
+            navigation that usually follows it (save → toast → go back). */}
+        <ThemeProvider>
+          <FeedbackProvider>
+            <StatusBar style="auto" />
+            <Slot />
+          </FeedbackProvider>
+        </ThemeProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   )
 }

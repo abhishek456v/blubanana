@@ -823,7 +823,7 @@ export default function DealDetailScreen() {
                   {/* ── Client reputation score (Phase 2) ─────────────────── */}
                   {deal.status === 'paid' && existingRating ? (
                     <View style={[styles.ratingSummaryCard, { backgroundColor: c.accentLight }]}>
-                      <Text style={[styles.ratingSummaryText, { color: c.accent }]}>
+                      <Text style={[styles.ratingSummaryText, { color: c.accentText }]}>
                         You rated this collaboration {existingRating.rating}/5
                       </Text>
                     </View>
@@ -1153,7 +1153,7 @@ export default function DealDetailScreen() {
                     <View
                       style={[styles.adRightsBox, { backgroundColor: c.accentLight, borderColor: c.accent }]}
                     >
-                      <Text style={[styles.sectionLabel, styles.adRightsLabel, { color: c.accent }]}>
+                      <Text style={[styles.sectionLabel, styles.adRightsLabel, { color: c.accentText }]}>
                         Ad rights
                       </Text>
 
@@ -1168,7 +1168,7 @@ export default function DealDetailScreen() {
                           ]}
                         >
                           {getAdRightsStatus(deal) === 'expired'
-                            ? `Expired ${formatDateLong(adRightsItem.expires_on)} — the brand should have stopped running ads.`
+                            ? `Expired ${formatDateLong(adRightsItem.expires_on)}. The brand should have stopped running ads.`
                             : `Runs until ${formatDateLong(adRightsItem.expires_on)}. You'll get a reminder 30 days before.`}
                         </Text>
                       ) : (
@@ -1183,7 +1183,7 @@ export default function DealDetailScreen() {
                         activeOpacity={0.8}
                       >
                         <Ionicons name="search-outline" size={15} color={c.accent} />
-                        <Text style={[styles.metaAdLibraryButtonText, { color: c.accent }]}>
+                        <Text style={[styles.metaAdLibraryButtonText, { color: c.accentText }]}>
                           Check Meta Ad Library
                         </Text>
                       </TouchableOpacity>
@@ -1207,7 +1207,7 @@ export default function DealDetailScreen() {
                       </TouchableOpacity>
                     ) : attachments.length === 0 ? (
                       <Text style={[styles.attachmentsEmpty, { color: c.textMuted }]}>
-                        No attachments yet — contracts, briefs, anything worth keeping with this deal.
+                        No attachments yet. Contracts, briefs, anything worth keeping with this deal.
                       </Text>
                     ) : (
                       attachments.map((a, index) => (
@@ -1266,7 +1266,7 @@ export default function DealDetailScreen() {
                         Performance
                       </Text>
                       <Text style={[styles.performanceHint, { color: c.textMuted }]}>
-                        Entered manually for now — auto-sync from Instagram/YouTube needs those accounts connected, which isn't set up yet.
+                        Entered manually for now. Auto-sync from Instagram/YouTube needs those accounts connected, which isn't set up yet.
                       </Text>
                       <View style={styles.performanceGrid}>
                         <View style={styles.dateCell}>
@@ -1342,7 +1342,7 @@ export default function DealDetailScreen() {
                     }
                     activeOpacity={0.8}
                   >
-                    <Text style={[styles.addAttachmentText, { color: c.accent }]}>
+                    <Text style={[styles.addAttachmentText, { color: c.accentText }]}>
                       {invoice ? `View invoice (${invoice.invoice_number})` : 'Create invoice'}
                     </Text>
                   </TouchableOpacity>
@@ -1461,7 +1461,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.sm,
     paddingHorizontal: Spacing.md,
-    paddingVertical: 12,
+    paddingVertical: Spacing.base,
     borderRadius: Radius.md,
   },
   brandDisplayName: {
@@ -1471,7 +1471,7 @@ const styles = StyleSheet.create({
   // Platform pills
   platformScroll: {
     gap: Spacing.sm,
-    paddingBottom: 2,
+    paddingBottom: Spacing.xxs,
   },
   // Text inputs
   input: {
@@ -1713,7 +1713,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: Spacing.sm,
     paddingHorizontal: Spacing.md,
-    paddingVertical: 12,
+    paddingVertical: Spacing.base,
   },
   attachmentNameButton: {
     flex: 1,

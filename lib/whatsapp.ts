@@ -71,18 +71,18 @@ export function buildPaymentReminderMessage(params: {
   const tail = reference ? `\n\n${reference}` : ''
 
   if (tone === 'due_soon') {
-    return `Hi ${name}, quick heads-up — ${money} for ${deliverable} is due on ${due}. Anything you need from my end to get it processed?${tail}`
+    return `Hi ${name}, quick heads-up: ${money} for ${deliverable} is due on ${due}. Anything you need from my end to get it processed?${tail}`
   }
 
   switch (Math.min(escalationLevel, 3)) {
     case 0:
-      return `Hi ${name}, following up — ${money} for ${deliverable} was due on ${due} and I haven't received it yet. Could you share an update?${tail}`
+      return `Hi ${name}, following up on ${money} for ${deliverable}, which was due on ${due} and I haven't received it yet. Could you share an update?${tail}`
     case 1:
       return `Hi ${name}, checking in again on ${money} for ${deliverable}, due ${due}. Could you let me know where this is in your payment run?${tail}`
     case 2:
       return `Hi ${name}, ${money} for ${deliverable} is now well past its ${due} due date. Could you confirm a payment date, or put me in touch with your finance team?${tail}`
     default:
-      return `Hi ${name}, I still haven't received ${money} for ${deliverable}, due ${due}. I'd like to get this settled this week — could you confirm when it will be paid?${tail}`
+      return `Hi ${name}, I still haven't received ${money} for ${deliverable}, due ${due}. I'd like to get this settled this week. Could you confirm when it will be paid?${tail}`
   }
 }
 

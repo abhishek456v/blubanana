@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: Radius.md,
     padding: Spacing.md,
-    gap: 2,
+    gap: Spacing.xxs,
   },
   label: {
     ...Typography.caption,
@@ -132,18 +132,18 @@ const styles = StyleSheet.create({
   value: {
     ...Typography.display,
     fontFamily: FontFamily.display,
-    marginTop: 2,
+    marginTop: Spacing.xxs,
   },
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
-    marginTop: 2,
+    marginTop: Spacing.xxs,
   },
   trend: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: Spacing.xxs,
   },
   trendText: {
     ...Typography.label,

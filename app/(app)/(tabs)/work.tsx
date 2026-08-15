@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useFocusEffect } from '@react-navigation/core'
@@ -34,6 +34,8 @@ import {
   HeaderUtilities,
   HeroCard,
   ProgressRing,
+  Reveal,
+  RevealScrollView,
   ScreenHeader,
   SegmentedControl,
   SkeletonList,
@@ -106,7 +108,7 @@ export default function WorkScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.bgPage }]} edges={['top']}>
-      <ScrollView
+      <RevealScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -148,7 +150,7 @@ export default function WorkScreen() {
         ) : (
           <PerformanceView />
         )}
-      </ScrollView>
+      </RevealScrollView>
     </SafeAreaView>
   )
 
@@ -158,7 +160,7 @@ export default function WorkScreen() {
         <EmptyState
           icon="albums-outline"
           title="Nothing here yet"
-          message="Every deal you log shows up here, grouped by year — your whole body of work in one place."
+          message="Every deal you log shows up here, grouped by year. Your whole body of work in one place."
           actionLabel="Add a deal"
           onAction={() => router.push('/(app)/deal/new' as never)}
         />
@@ -210,7 +212,7 @@ export default function WorkScreen() {
         </View>
 
         {archive.map((year) => (
-          <View key={year.year} style={styles.yearBlock}>
+          <Reveal key={year.year} style={styles.yearBlock}>
             <View style={styles.yearHeader}>
               <Text style={[styles.yearTitle, { color: c.textPrimary }]}>{year.year}</Text>
               <Text style={[styles.yearMeta, { color: c.textSecondary }]}>
@@ -226,12 +228,13 @@ export default function WorkScreen() {
                     deal={deal}
                     index={index}
                     stretch={isDesktop}
+                    variant={isDesktop ? 'card' : 'plain'}
                     onPress={() => router.push(`/(app)/deal/${deal.id}` as never)}
                   />
                 </View>
               ))}
             </View>
-          </View>
+          </Reveal>
         ))}
       </View>
     )
@@ -305,7 +308,7 @@ export default function WorkScreen() {
                   <Text style={[styles.kindMeta, { color: c.textMuted }]}>
                     {kind.count} · {formatCount(kind.avgViews)} views
                   </Text>
-                  <Text style={[styles.kindRate, { color: c.accent }]}>
+                  <Text style={[styles.kindRate, { color: c.accentText }]}>
                     {formatRate(kind.avgEngagementRate)}
                   </Text>
                 </View>
@@ -352,7 +355,7 @@ export default function WorkScreen() {
             {isBest ? (
               <View style={[styles.bestBadge, { backgroundColor: c.accentLight }]}>
                 <Ionicons name="trophy" size={10} color={c.accent} />
-                <Text style={[styles.bestText, { color: c.accent }]}>Best</Text>
+                <Text style={[styles.bestText, { color: c.accentText }]}>Best</Text>
               </View>
             ) : null}
           </View>
@@ -368,7 +371,7 @@ export default function WorkScreen() {
           </Text>
         </View>
 
-        <Text style={[styles.perfRate, { color: c.accent }]}>
+        <Text style={[styles.perfRate, { color: c.accentText }]}>
           {formatRate(item.engagementRate)}
         </Text>
       </Card>
@@ -406,12 +409,12 @@ const styles = StyleSheet.create({
     gap: ColumnGap,
   },
   stack: {
-    gap: 10,
+    gap: Spacing.base,
   },
   tileRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: Spacing.base,
   },
   // Two per row on desktop: a single column of 1160px-wide rows carrying a
   // brand name and a figure is the stretched-phone layout DESIGN.md §4 rules
@@ -419,7 +422,7 @@ const styles = StyleSheet.create({
   listGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: Spacing.base,
   },
   listGridCell: {
     flexBasis: '48%',
@@ -429,7 +432,7 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   list: {
-    gap: 10,
+    gap: Spacing.base,
   },
   yearBlock: {
     gap: Spacing.sm,
@@ -462,7 +465,7 @@ const styles = StyleSheet.create({
     ...Typography.caption,
     fontFamily: FontFamily.regular,
     lineHeight: 19,
-    marginTop: 2,
+    marginTop: Spacing.xxs,
   },
   kindList: {
     marginTop: Spacing.md,
@@ -492,16 +495,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
-    paddingVertical: 14,
+    paddingVertical: Spacing.md,
   },
   perfCenter: {
     flex: 1,
-    gap: 2,
+    gap: Spacing.xxs,
   },
   perfTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: Spacing.sm,
   },
   perfBrand: {
     ...Typography.heading,
@@ -512,8 +515,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xxs,
     borderRadius: Radius.full,
   },
   bestText: {

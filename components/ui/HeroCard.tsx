@@ -84,6 +84,9 @@ export function HeroCard({
           <AnimatedNumber
             value={value}
             format={format}
+            // The one figure on the screen that earns a count-up.
+            countOnMount
+            duration={900}
             style={[styles.value, { color: c.onContrast }]}
             numberOfLines={1}
           />
@@ -150,8 +153,9 @@ const styles = StyleSheet.create({
   },
   card: {
     flex: 1,
-    borderRadius: Radius.lg,
-    padding: Spacing.lg - 2,
+    // The largest surface on any screen, so the largest radius.
+    borderRadius: Radius.xl,
+    padding: Spacing.lg,
     gap: Spacing.md,
   },
   topRow: {
@@ -170,7 +174,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 5,
     paddingHorizontal: 11,
-    paddingVertical: 6,
+    paddingVertical: Spacing.sm,
     borderRadius: Radius.full,
   },
   ghostText: {

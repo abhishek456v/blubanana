@@ -235,6 +235,7 @@ const styles = StyleSheet.create({
   },
   label: {
     ...Typography.body,
+    fontFamily: FontFamily.medium,
   },
   detail: {
     ...Typography.caption,

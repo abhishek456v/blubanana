@@ -99,7 +99,7 @@ export default function PublicCreatorProfileScreen() {
             <Text style={[styles.name, { color: c.textPrimary }]}>{profile.name}</Text>
             {profile.niche ? (
               <View style={[styles.nichePill, { backgroundColor: c.accentLight }]}>
-                <Text style={[styles.nicheText, { color: c.accent }]}>{profile.niche}</Text>
+                <Text style={[styles.nicheText, { color: c.accentText }]}>{profile.niche}</Text>
               </View>
             ) : null}
           </Animated.View>
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.lg,
     paddingHorizontal: Spacing.md,
     alignItems: 'center',
-    gap: 2,
+    gap: Spacing.xxs,
   },
   statValue: {
     fontFamily: FontFamily.displayBold,
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
   },
   platformPill: {
     paddingHorizontal: Spacing.md,
-    paddingVertical: 6,
+    paddingVertical: Spacing.sm,
     borderRadius: Radius.full,
     borderWidth: 1,
   },
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: Spacing.sm,
     paddingVertical: Spacing.xl,
   },
   footerText: {

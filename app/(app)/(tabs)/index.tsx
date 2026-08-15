@@ -160,6 +160,8 @@ export default function HomeScreen() {
         icon: 'add-circle' as const,
         label: 'New deal',
         caption: 'Scan, speak or type',
+        // The one thing a creator opens this app to do.
+        primary: true,
         onPress: () => router.push('/(app)/deal/new' as never),
       },
       {
@@ -196,7 +198,7 @@ export default function HomeScreen() {
       format={formatCurrency}
       caption={
         unpaidCount === 0
-          ? 'Nothing outstanding — every deal is settled.'
+          ? 'Nothing outstanding. Every deal is settled.'
           : metrics.overdue > 0
             ? `${formatCurrencyCompact(metrics.overdue)} of it is already past due.`
             : `Across ${unpaidCount} unpaid ${unpaidCount === 1 ? 'deal' : 'deals'}, all on track.`
@@ -262,7 +264,7 @@ export default function HomeScreen() {
   )
 
   const cashFlow = (
-    <Card style={styles.blockCard}>
+    <Card dense={isDesktop} style={styles.blockCard}>
       <View style={styles.cardHead}>
         <View style={styles.cardHeadText}>
           <Text style={[styles.cardTitle, { color: c.textPrimary }]}>Cash flow</Text>
@@ -289,7 +291,7 @@ export default function HomeScreen() {
   )
 
   const needsYou = (
-    <Card style={styles.needsCard}>
+    <Card dense={isDesktop} style={styles.needsCard}>
       <View style={styles.cardHead}>
         <View style={styles.cardHeadText}>
           <Text style={[styles.cardTitle, { color: c.textPrimary }]}>Needs you</Text>
@@ -420,6 +422,7 @@ export default function HomeScreen() {
         reason={item.reason}
         reasonColor={tone}
         index={index}
+        dense={isDesktop}
         surface="raised"
         onPress={() => router.push(`/(app)/deal/${item.deal.id}` as never)}
       />
@@ -448,10 +451,11 @@ export default function HomeScreen() {
           <DealRow
             deal={item}
             index={index}
+            variant="plain"
+            dense={isDesktop}
             onPress={() => router.push(`/(app)/deal/${item.id}` as never)}
           />
         )}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListHeaderComponent={header}
         ListEmptyComponent={
           <EmptyState
@@ -459,7 +463,7 @@ export default function HomeScreen() {
             title={filter === 'all' ? 'No deals yet' : 'Nothing here'}
             message={
               filter === 'all'
-                ? 'Screenshot a brand DM, talk it out, or type it in — a deal takes about thirty seconds to log.'
+                ? 'Screenshot a brand DM, talk it out, or type it in. A deal takes about thirty seconds to log.'
                 : 'Try another filter.'
             }
             actionLabel={filter === 'all' ? 'Add your first deal' : undefined}
@@ -510,7 +514,7 @@ const styles = StyleSheet.create({
   // because a 40px figure needs the room, and the chart gets more of row B
   // than the list because six bars compress badly.
   stack: {
-    gap: 10,
+    gap: Spacing.base,
   },
   rowA: {
     flexDirection: 'row',
@@ -544,18 +548,18 @@ const styles = StyleSheet.create({
   tileRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: Spacing.base,
   },
   blockCard: {
     flex: 1,
-    padding: Spacing.md + 2,
+    padding: Spacing.md,
     gap: Spacing.md,
   },
   // Unlike the chart card this one must *not* flex to fill its column — the
   // quick actions sit under it, and a stretched attention card would push
   // them off the fold.
   needsCard: {
-    padding: Spacing.md + 2,
+    padding: Spacing.md,
     gap: Spacing.md,
   },
   cardHead: {
@@ -566,7 +570,7 @@ const styles = StyleSheet.create({
   },
   cardHeadText: {
     flex: 1,
-    gap: 2,
+    gap: Spacing.xxs,
   },
   cardTitle: {
     ...Typography.heading,
@@ -597,7 +601,7 @@ const styles = StyleSheet.create({
 
   section: {
     marginBottom: Spacing.md,
-    gap: 10,
+    gap: Spacing.base,
   },
   sectionTitleRow: {
     flexDirection: 'row',
@@ -612,7 +616,7 @@ const styles = StyleSheet.create({
   countBadge: {
     minWidth: 22,
     height: 22,
-    paddingHorizontal: 6,
+    paddingHorizontal: Spacing.sm,
     borderRadius: Radius.full,
     alignItems: 'center',
     justifyContent: 'center',
@@ -623,7 +627,7 @@ const styles = StyleSheet.create({
   },
   filterRow: {
     gap: Spacing.sm,
-    paddingBottom: 2,
+    paddingBottom: Spacing.xxs,
   },
   list: {
     gap: Spacing.sm,

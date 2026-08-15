@@ -165,7 +165,7 @@ export default function InvoiceDetailScreen() {
               ) : null}
               <View style={[styles.totalRow, styles.finalRow, { borderTopColor: c.border }]}>
                 <Text style={[styles.finalLabel, { color: c.textPrimary }]}>Total due</Text>
-                <Text style={[styles.finalValue, { color: c.accent }]}>{formatINR(netDue)}</Text>
+                <Text style={[styles.finalValue, { color: c.accentText }]}>{formatINR(netDue)}</Text>
               </View>
             </View>
 
@@ -298,12 +298,12 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     marginTop: Spacing.md,
     paddingTop: Spacing.md,
-    gap: 2,
+    gap: Spacing.xxs,
   },
   paymentDetailsTitle: {
     ...Typography.label,
     fontFamily: FontFamily.medium,
-    marginBottom: 2,
+    marginBottom: Spacing.xxs,
   },
   shareButton: {
     height: 44,

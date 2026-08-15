@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Stack, useRouter } from 'expo-router'
 import { useFocusEffect } from '@react-navigation/core'
@@ -32,6 +32,8 @@ import {
   EmptyState,
   HeaderUtilities,
   PressableScale,
+  Reveal,
+  RevealScrollView,
   ScreenHeader,
   SegmentedControl,
   SkeletonList,
@@ -140,7 +142,7 @@ export default function RemindersScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.bgPage }]} edges={['top']}>
       <Stack.Screen options={{ title: 'Reminders' }} />
-      <ScrollView
+      <RevealScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -161,6 +163,11 @@ export default function RemindersScreen() {
           // No bell here: it is the control that opens this screen.
           leadingAction={<HeaderUtilities showBell={false} />}
         >
+          {/* Two tiles on a phone, three on desktop. Wrapping 2+1 put the
+              third tile on its own line where, on native, it rendered
+              underneath the segmented control below it. The dropped tile is
+              also the least useful one here — "Coming up" is just the count
+              of the Upcoming tab, which is one tap away. */}
           <View style={styles.tiles}>
             <StatTile
               label="Needs an answer"
@@ -176,12 +183,14 @@ export default function RemindersScreen() {
               caption={overdueCount > 0 ? 'past their date' : 'nothing late'}
               index={1}
             />
-            <StatTile
-              label="Coming up"
-              value={feed.upcoming.length}
-              caption="scheduled ahead"
-              index={2}
-            />
+            {isDesktop ? (
+              <StatTile
+                label="Coming up"
+                value={feed.upcoming.length}
+                caption="scheduled ahead"
+                index={2}
+              />
+            ) : null}
           </View>
 
           <SegmentedControl options={TABS} value={tab} onChange={setTab} />
@@ -196,7 +205,7 @@ export default function RemindersScreen() {
             message={
               tab === 'today'
                 ? 'No overdue payments, no missed deadlines, nothing to answer. Enjoy it.'
-                : 'Add dates to a deal — script, shoot, edit, publish — and each one shows up here before it lands.'
+                : 'Add script, shoot, edit and publish dates to a deal. Each one shows up here before it lands.'
             }
             actionLabel="Add a deal"
             onAction={() => router.push('/(app)/deal/new' as never)}
@@ -210,7 +219,7 @@ export default function RemindersScreen() {
             ))}
           </View>
         )}
-      </ScrollView>
+      </RevealScrollView>
     </SafeAreaView>
   )
 
@@ -340,16 +349,16 @@ const styles = StyleSheet.create({
   },
   tiles: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
+    gap: Spacing.base,
+    alignItems: 'stretch',
   },
   list: {
-    gap: 10,
+    gap: Spacing.base,
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: Spacing.base,
   },
   gridCell: {
     flexBasis: '48%',
@@ -370,7 +379,7 @@ const styles = StyleSheet.create({
   },
   cardText: {
     flex: 1,
-    gap: 2,
+    gap: Spacing.xxs,
   },
   cardTitle: {
     ...Typography.heading,

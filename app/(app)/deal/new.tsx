@@ -170,7 +170,7 @@ export default function NewDealScreen() {
   function applyExtractedFields(fields: ExtractedDealFields) {
     const hasAnyField = Object.values(fields).some((v) => v !== null)
     if (!hasAnyField) {
-      toast("Couldn't find deal details there — try again or fill in the form manually", { tone: 'error' })
+      toast("Couldn't find deal details there. Try again, or fill in the form manually", { tone: 'error' })
       return
     }
 
@@ -417,7 +417,7 @@ export default function NewDealScreen() {
           {/*
             Three entry points into one shared review step below (PRODUCT.md
             2.1): scan a screenshot, record a voice note, or just start typing.
-            Extraction only fills fields — nothing saves until "Save deal".
+            Extraction only fills fields. Nothing saves until "Save deal".
           */}
           <View style={styles.intakeRow}>
             <TouchableOpacity
@@ -483,7 +483,7 @@ export default function NewDealScreen() {
           ) : brands.length === 0 ? (
             <View style={[styles.noBrandsBox, { backgroundColor: c.bgSurface, borderColor: c.border }]}>
               <Text style={[styles.noBrandsText, { color: c.textSecondary }]}>
-                No brands yet — add a client first.
+                No brands yet. Add a client first.
               </Text>
               <TouchableOpacity
                 onPress={() => router.push('/(app)/brand/new' as never)}
@@ -534,7 +534,7 @@ export default function NewDealScreen() {
                     </Text>
                     {summary ? (
                       <View style={[styles.brandRatingPill, { backgroundColor: c.accentLight }]}>
-                        <Text style={[styles.brandRatingPillText, { color: c.accent }]}>
+                        <Text style={[styles.brandRatingPillText, { color: c.accentText }]}>
                           {summary.averageRating.toFixed(1)}
                           {summary.lastPaidOnTime === false ? ' · paid late before' : ''}
                         </Text>
@@ -658,7 +658,7 @@ export default function NewDealScreen() {
 
           {/* ── Ad rights (optional) ──────────────────────────── */}
           <View style={styles.adRightsHeader}>
-            <Text style={[styles.sectionLabel, styles.adRightsLabel, { color: c.accent }]}>
+            <Text style={[styles.sectionLabel, styles.adRightsLabel, { color: c.accentText }]}>
               Ad rights
             </Text>
             <Switch
@@ -706,7 +706,7 @@ export default function NewDealScreen() {
               {/* Per-month value, the same figure the deal screen's ad-rights
                   line item shows — useful here while the rate is negotiable. */}
               {perMonthAdRights != null ? (
-                <Text style={[styles.adRightsExpiryNote, { color: c.accent }]}>
+                <Text style={[styles.adRightsExpiryNote, { color: c.accentText }]}>
                   {formatCurrency(perMonthAdRights)} per month
                   {adRightsExpiryPreview
                     ? ` · ends ${formatDate(adRightsExpiryPreview)}`
@@ -720,7 +720,7 @@ export default function NewDealScreen() {
           <View style={styles.fieldStack}>
             <TextField
               label="Notes"
-              placeholder="Anything the chat didn't capture — brief quirks, who to chase"
+              placeholder="Anything the chat missed: brief quirks, who to chase"
               value={notes}
               onChangeText={setNotes}
               multiline
@@ -892,7 +892,7 @@ const styles = StyleSheet.create({
   // Platform picker
   platformScroll: {
     gap: Spacing.sm,
-    paddingBottom: 2,
+    paddingBottom: Spacing.xxs,
   },
   // Rate
   // Ad rights

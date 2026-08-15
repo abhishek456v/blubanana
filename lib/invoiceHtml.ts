@@ -297,7 +297,7 @@ export function buildInvoiceHtml(
     // Only a registered creator may charge GST. Saying so explicitly stops a
     // finance team assuming tax was forgotten and holding up the payment.
     !invoice.gst_applicable
-      ? `<div class="note" style="margin-top:18px;">GST not applicable${creator.gstin ? '' : ' — not GST registered'}.</div>`
+      ? `<div class="note" style="margin-top:18px;">GST not applicable${creator.gstin ? '' : ' (not GST registered)'}.</div>`
       : ''
   }
 

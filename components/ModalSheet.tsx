@@ -24,6 +24,20 @@ interface ModalSheetProps {
 export function ModalSheet({ title, headerRight, children }: ModalSheetProps) {
   const isWide = useIsWideScreen()
   const router = useRouter()
+
+  /**
+   * Dismiss to somewhere that exists.
+   *
+   * `router.back()` alone strands the user on a cold load — a deep link, a
+   * notification tap, or a browser refresh puts this screen first in the
+   * history, so there is nothing behind it to go back to and the close button
+   * does nothing. Falling through to the app root means dismiss always lands
+   * somewhere.
+   */
+  const dismiss = () => {
+    if (router.canGoBack()) router.back()
+    else router.replace('/(app)/(tabs)' as never)
+  }
   const { c } = useTheme()
   // The Stack keeps this screen mounted after router.back() navigates away
   // from it (for back-gesture support), so the backdrop must not render
@@ -35,7 +49,7 @@ export function ModalSheet({ title, headerRight, children }: ModalSheetProps) {
   if (!isFocused) return null
 
   return (
-    <Pressable style={styles.backdrop} onPress={() => router.back()}>
+    <Pressable style={styles.backdrop} onPress={dismiss}>
       <Pressable
         style={[styles.card, { backgroundColor: c.bgSurfaceRaised, borderColor: c.border }]}
         // Stops the tap from bubbling to the backdrop's dismiss handler —
@@ -49,7 +63,7 @@ export function ModalSheet({ title, headerRight, children }: ModalSheetProps) {
           <View style={styles.headerRight}>
             {headerRight}
             <TouchableOpacity
-              onPress={() => router.back()}
+              onPress={dismiss}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <Ionicons name="close" size={20} color={c.textSecondary} />

@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
+    paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.md,
     borderRadius: Radius.md,
     gap: Spacing.sm,
@@ -100,6 +100,6 @@ const styles = StyleSheet.create({
     gap: 7,
   },
   list: {
-    gap: 10,
+    gap: Spacing.base,
   },
 })

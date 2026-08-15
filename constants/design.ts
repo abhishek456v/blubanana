@@ -1,3 +1,5 @@
+import { Platform } from 'react-native'
+
 // Design tokens from DESIGN.md — always pull from here, never hardcode values.
 
 // `bgContrast` is the one that makes the dashboard look designed rather than
@@ -21,11 +23,16 @@ export const Colors = {
     border: 'rgba(20,18,16,0.08)',
     borderStrong: 'rgba(20,18,16,0.16)',
     textPrimary: '#1C1815',
-    textSecondary: '#6B6259',
-    textMuted: '#9A9186',
+    textSecondary: '#585049',
+    textMuted: '#756E66',
     fillPrimary: '#F5A623',
     onFillPrimary: '#FFFFFF',
     accent: '#F5A623',
+    // Amber as *text*. The brand amber is 1.96:1 on the page — unreadable —
+    // so anywhere the accent carries words rather than fills a shape, it is
+    // darkened to clear AA. Fills, icons on tinted grounds, chart bars and
+    // borders keep `accent`.
+    accentText: '#956515',
     accentLight: 'rgba(245,166,35,0.12)',
     // Between `accentLight` (a tint you put text on) and `accent` (the thing
     // itself). Chart bars need this: at 12% alpha a bar reads as a loading
@@ -54,11 +61,15 @@ export const Colors = {
     border: 'rgba(255,255,255,0.07)',
     borderStrong: 'rgba(255,255,255,0.16)',
     textPrimary: '#F5F0E8',
-    textSecondary: '#A89F94',
-    textMuted: '#6B6259',
+    textSecondary: '#BAB3AA',
+    textMuted: '#948E87',
     fillPrimary: '#F5A623',
     onFillPrimary: '#FFFFFF',
     accent: '#F5A623',
+    // On a dark ground the brand amber already clears AA (9.2:1), so the text
+    // variant is the accent itself — the token exists so screens can use one
+    // name in both themes.
+    accentText: '#F5A623',
     accentLight: 'rgba(245,166,35,0.14)',
     // Higher than the light theme's: an amber at 46% over a near-black ground
     // reads olive, not amber.
@@ -90,12 +101,19 @@ export const AvatarPalette = [
   '#F472B6', // pink
 ] as const
 
+// A 4-based scale with no gaps. The previous version jumped 8 -> 16, so
+// screens invented 10, 12 and 14 to fill it — 42 hand-picked values across the
+// app, which is what "random spacing" looks like in a codebase. `base` closes
+// that gap and is the default gap between siblings.
 export const Spacing = {
+  xxs: 2,
   xs: 4,
   sm: 8,
+  base: 12,
   md: 16,
   lg: 24,
   xl: 32,
+  xxl: 48,
 } as const
 
 export const Radius = {
@@ -106,25 +124,42 @@ export const Radius = {
   full: 999,
 } as const
 
+// Sizes only. Weight comes from `FontFamily`, never from `fontWeight`.
+//
+// Instrument Sans ships as a separate file per weight, so the weight is already
+// baked into the family name. Asking for `fontFamily:
+// 'InstrumentSans_400Regular'` and `fontWeight: '600'` together makes native
+// look for a semibold cut of a
+// family that has exactly one cut, fail, and silently fall back to the system
+// face — which is why type looked consistent on web and mismatched on device.
+// Steps wide enough to read as different levels. `heading` used to be 16
+// against a 15 body — a one-pixel difference that the eye cannot see, so a
+// card title and its body text carried the same weight and the hierarchy came
+// out flat. The top of the scale moved up rather than the bottom moving down,
+// so nothing got smaller or harder to read.
 export const Typography = {
-  display: { fontSize: 28, fontWeight: '600' as const },
-  title: { fontSize: 20, fontWeight: '600' as const },
-  heading: { fontSize: 16, fontWeight: '600' as const },
-  body: { fontSize: 15, fontWeight: '400' as const },
-  bodyStrong: { fontSize: 15, fontWeight: '500' as const },
-  caption: { fontSize: 13, fontWeight: '400' as const },
-  label: { fontSize: 12, fontWeight: '500' as const },
+  display: { fontSize: 30 },
+  title: { fontSize: 22 },
+  heading: { fontSize: 17 },
+  body: { fontSize: 15 },
+  bodyStrong: { fontSize: 15 },
+  caption: { fontSize: 13 },
+  label: { fontSize: 12 },
 } as const
 
+// One family, four cuts. Weight carries the hierarchy that a second face used
+// to carry, so `display` and `displayBold` still exist as names — screens ask
+// for a role, not a font — they just resolve into the same family now.
+//
+// Never pair these with `fontWeight`: each cut is its own file, and asking for
+// a weight the named family does not contain drops native back to the system
+// face. See the note on Typography below.
 export const FontFamily = {
-  regular: 'Inter_400Regular',
-  medium: 'Inter_500Medium',
-  semiBold: 'Inter_600SemiBold',
-  // Syne is the display/editorial voice — screen titles, the dashboard
-  // greeting, big currency numbers. Everything else (body, labels, inputs)
-  // stays on Inter so the UI doesn't read as "all headline."
-  display: 'Syne_600SemiBold',
-  displayBold: 'Syne_700Bold',
+  regular: 'InstrumentSans_400Regular',
+  medium: 'InstrumentSans_500Medium',
+  semiBold: 'InstrumentSans_600SemiBold',
+  display: 'InstrumentSans_600SemiBold',
+  displayBold: 'InstrumentSans_700Bold',
 } as const
 
 // Below `wide`, the app uses the mobile layout (bottom tab bar, edge-to-edge
@@ -184,43 +219,111 @@ export const AuthFormMaxWidth = 400
 // `elevation`, so one spread covers all three platforms.
 // ---------------------------------------------------------------------------
 
-const shadow = (
-  color: string,
-  opacity: number,
-  radius: number,
-  offsetY: number,
-  androidElevation: number
-) => ({
-  shadowColor: color,
-  shadowOffset: { width: 0, height: offsetY },
-  shadowOpacity: opacity,
-  shadowRadius: radius,
-  elevation: androidElevation,
-})
+/**
+ * Two-layer shadows.
+ *
+ * A single tight shadow (small blur, small offset) is what makes a card read
+ * as a sticker pasted onto the page — the whole shape darkens uniformly and
+ * the edge stays hard. Real depth is two overlapping falloffs:
+ *
+ *   contact — small, tight, barely visible. Anchors the element to the
+ *             surface and keeps the bottom edge from floating.
+ *   ambient — large, wide, very faint. Does the actual lifting, and is the
+ *             layer that reads as soft rather than dirty.
+ *
+ * Blur runs roughly 3x the offset on the ambient layer. Below about 2x the
+ * shadow reads as a hard smudge; that ratio is the difference between the two
+ * cards in every "good shadow vs bad shadow" comparison.
+ *
+ * Warm-tinted on light, because a neutral black shadow over a cream palette
+ * greys it. Dark mode needs far more opacity: a light surface on a dark ground
+ * separates by luminance much less than the reverse.
+ */
+const layered = (
+  contact: string,
+  ambient: string,
+  native: { color: string; opacity: number; radius: number; offsetY: number; elevation: number }
+) =>
+  Platform.select({
+    // Web takes both layers. React Native Web maps boxShadow straight through,
+    // so this is the full effect.
+    web: { boxShadow: `${contact}, ${ambient}` } as object,
+    // Native gets one shadow per view, so it takes the ambient layer — the one
+    // doing the lifting — and Android's elevation alongside it.
+    default: {
+      shadowColor: native.color,
+      shadowOffset: { width: 0, height: native.offsetY },
+      shadowOpacity: native.opacity,
+      shadowRadius: native.radius,
+      elevation: native.elevation,
+    },
+  }) as {
+    boxShadow?: string
+    shadowColor?: string
+    shadowOffset?: { width: number; height: number }
+    shadowOpacity?: number
+    shadowRadius?: number
+    elevation?: number
+  }
 
 export const Elevation = {
   light: {
-    /** Raised rows and cards that need to lift off the page a little. */
-    sm: shadow('#2A1F14', 0.05, 6, 2, 2),
+    /** Raised rows and cards that lift off the page a little. */
+    sm: layered(
+      '0px 1px 2px rgba(42,31,20,0.04)',
+      '0px 4px 14px rgba(42,31,20,0.06)',
+      { color: '#2A1F14', opacity: 0.06, radius: 14, offsetY: 4, elevation: 2 }
+    ),
     /** Sheets, popovers, floating panels. */
-    md: shadow('#2A1F14', 0.1, 20, 8, 8),
+    md: layered(
+      '0px 2px 4px rgba(42,31,20,0.04)',
+      '0px 12px 32px rgba(42,31,20,0.09)',
+      { color: '#2A1F14', opacity: 0.09, radius: 32, offsetY: 12, elevation: 8 }
+    ),
     /** The one thing floating above everything (FAB, toast). */
-    lg: shadow('#2A1F14', 0.16, 32, 14, 16),
+    lg: layered(
+      '0px 4px 8px rgba(42,31,20,0.05)',
+      '0px 24px 56px rgba(42,31,20,0.13)',
+      { color: '#2A1F14', opacity: 0.13, radius: 56, offsetY: 24, elevation: 16 }
+    ),
   },
   dark: {
-    sm: shadow('#000000', 0.3, 6, 2, 2),
-    md: shadow('#000000', 0.45, 20, 8, 8),
-    lg: shadow('#000000', 0.6, 32, 14, 16),
+    sm: layered(
+      '0px 1px 2px rgba(0,0,0,0.22)',
+      '0px 4px 14px rgba(0,0,0,0.28)',
+      { color: '#000000', opacity: 0.28, radius: 14, offsetY: 4, elevation: 2 }
+    ),
+    md: layered(
+      '0px 2px 4px rgba(0,0,0,0.28)',
+      '0px 12px 32px rgba(0,0,0,0.40)',
+      { color: '#000000', opacity: 0.4, radius: 32, offsetY: 12, elevation: 8 }
+    ),
+    lg: layered(
+      '0px 4px 8px rgba(0,0,0,0.32)',
+      '0px 24px 56px rgba(0,0,0,0.5)',
+      { color: '#000000', opacity: 0.5, radius: 56, offsetY: 24, elevation: 16 }
+    ),
   },
 } as const
 
 /**
- * The "soft accent glow" DESIGN.md §5 allows on primary buttons and hero
- * elements. Not a drop shadow — an amber halo, so a filled button reads as
- * lit rather than as a card sitting on the page.
+ * The soft accent glow DESIGN.md §5 allows on primary buttons.
+ *
+ * Not a drop shadow but a halo: no vertical offset, so the light reads as
+ * coming *from* the button rather than falling beneath it. That is what makes
+ * a filled button look lit instead of like a card sitting on the page.
  */
-export const accentGlow = (opacity = 0.35) =>
-  shadow(Colors.light.accent, opacity, 16, 4, 0)
+export const accentGlow = (opacity = 0.3) =>
+  Platform.select({
+    web: { boxShadow: `0px 6px 20px rgba(245,166,35,${opacity})` } as object,
+    default: {
+      shadowColor: Colors.light.accent,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: opacity,
+      shadowRadius: 20,
+      elevation: 0,
+    },
+  }) as object
 
 /** Standard touch expansion for small icon-only controls (close, dismiss). */
 export const HitSlop = { top: 10, bottom: 10, left: 10, right: 10 } as const

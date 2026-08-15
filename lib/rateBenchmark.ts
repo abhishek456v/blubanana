@@ -158,7 +158,7 @@ export function describeNudge(nudge: RateBenchmarkNudge): string {
   if (nudge.engagementGrowthPercent != null && nudge.engagementGrowthPercent > 0) {
     return `Your reach is up ${reach} and engagement is up ${Math.round(
       nudge.engagementGrowthPercent * 100
-    )}% — but your rate hasn't moved. Try ₹${nudge.suggestedRate.toLocaleString('en-IN')}.`
+    )}%, but your rate hasn't moved. Try ₹${nudge.suggestedRate.toLocaleString('en-IN')}.`
   }
 
   return `Your reach is up ${reach} since an earlier deal but your rate hasn't kept pace. Try ₹${nudge.suggestedRate.toLocaleString(

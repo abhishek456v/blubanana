@@ -74,7 +74,7 @@ export default function OnboardingScreen() {
     } catch {
       // The details are savable any time from You → Billing details; failing
       // here must not trap the creator on an onboarding screen.
-      toast('Could not save — you can add this later under You', { tone: 'error' })
+      toast('Could not save. You can add this later under You', { tone: 'error' })
     } finally {
       setSaving(false)
       await leave()
@@ -129,7 +129,7 @@ export default function OnboardingScreen() {
                 Tell brands who you are
               </Text>
               <Text style={[styles.lede, { color: c.textSecondary }]}>
-                This fills your profile card — the page you send a brand mid-negotiation.
+                This fills your profile card, the page you send a brand mid-negotiation.
                 Everything is optional and editable later.
               </Text>
 
@@ -164,7 +164,7 @@ export default function OnboardingScreen() {
             <Animated.View entering={FadeInRight.duration(Duration.slow)} style={styles.body}>
               <Text style={[styles.title, { color: c.textPrimary }]}>How you get paid</Text>
               <Text style={[styles.lede, { color: c.textSecondary }]}>
-                These go on the invoices you raise. UPI is enough to start — bank details and
+                These go on the invoices you raise. UPI is enough to start; bank details and
                 GSTIN can wait until a brand asks.
               </Text>
 
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
   },
   dots: {
     flexDirection: 'row',
-    gap: 6,
+    gap: Spacing.sm,
   },
   dot: {
     width: 8,
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
+    gap: Spacing.xxs,
     paddingVertical: Spacing.sm,
   },
   backText: {

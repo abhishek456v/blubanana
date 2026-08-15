@@ -112,7 +112,7 @@ export default function AnnualReportScreen() {
             <EmptyState
               icon="calendar-outline"
               title="Nothing this year"
-              message="Once payments land inside this financial year, your full summary — income, TDS and GST — shows up here."
+              message="Once payments land inside this financial year, your income, TDS and GST all show up here."
             />
           ) : (
             <View style={styles.section}>
@@ -121,7 +121,7 @@ export default function AnnualReportScreen() {
                 <AnimatedNumber
                   value={report.totalRevenue}
                   format={formatCurrency}
-                  style={[styles.heroValue, { color: c.accent }]}
+                  style={[styles.heroValue, { color: c.accentText }]}
                   numberOfLines={1}
                 />
                 <Text style={[styles.heroCaption, { color: c.textSecondary }]}>
@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
   },
   hero: {
     padding: Spacing.lg,
-    gap: 2,
+    gap: Spacing.xxs,
   },
   heroLabel: {
     ...Typography.caption,
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
   cardValue: {
     ...Typography.title,
     fontFamily: FontFamily.display,
-    marginTop: 2,
+    marginTop: Spacing.xxs,
   },
   cardHint: {
     ...Typography.caption,

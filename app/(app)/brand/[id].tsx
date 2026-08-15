@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
   },
   headerText: {
     flex: 1,
-    gap: 2,
+    gap: Spacing.xxs,
   },
   headerName: {
     ...Typography.title,
@@ -329,6 +329,6 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.display,
   },
   dealsList: {
-    gap: 10,
+    gap: Spacing.base,
   },
 })

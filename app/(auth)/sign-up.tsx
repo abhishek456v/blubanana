@@ -99,7 +99,7 @@ export default function SignUpScreen() {
           <Animated.View entering={FadeInDown.duration(Duration.slow)}>
             <Text style={[styles.title, { color: c.textPrimary }]}>Run the business side</Text>
             <Text style={[styles.subtitle, { color: c.textSecondary }]}>
-              Every deal, deadline and payment in one place — so none of them slip.
+              Every deal, deadline and payment in one place, so none of them slip.
             </Text>
           </Animated.View>
 
@@ -171,7 +171,7 @@ export default function SignUpScreen() {
               <PressableScale style={styles.switchRow} haptic="light">
                 <Text style={[styles.switchText, { color: c.textSecondary }]}>
                   Already have an account?{' '}
-                  <Text style={{ color: c.accent, fontFamily: FontFamily.semiBold }}>Sign in</Text>
+                  <Text style={{ color: c.accentText, fontFamily: FontFamily.semiBold }}>Sign in</Text>
                 </Text>
               </PressableScale>
             </Link>

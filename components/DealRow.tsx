@@ -47,6 +47,19 @@ interface DealRowProps {
    */
   surface?: 'surface' | 'raised'
   /**
+   * `card` is a filled, rounded row. `plain` drops the fill and separates by a
+   * hairline instead.
+   *
+   * A long list of filled rows reads as a stack of chips: every item carries a
+   * container, so the containers become the pattern and the content inside
+   * them stops being the thing you see. A plain list lets alignment do that
+   * work, which is what the design references mean by letting the grid carry
+   * the order.
+   */
+  variant?: 'card' | 'plain'
+  /** Trims the row on desktop, where a phone-height row wastes the window. */
+  dense?: boolean
+  /**
    * Fill the height of a flex parent. For the desktop two-column archive
    * grid, where two rows in the same line otherwise sit at different heights
    * because one carries a deadline line and the other doesn't.
@@ -62,6 +75,8 @@ export function DealRow({
   index = 0,
   surface = 'surface',
   stretch = false,
+  variant = 'card',
+  dense = false,
 }: DealRowProps) {
   const { c } = useTheme()
   const { label: deadlineLabel, date: deadlineDate } = getNextDeadline(deal)
@@ -85,7 +100,12 @@ export function DealRow({
         style={[
           styles.row,
           stretch && styles.fill,
-          { backgroundColor: surface === 'raised' ? c.bgSurfaceRaised : c.bgSurface },
+          dense && styles.rowDense,
+          variant === 'plain'
+            ? [styles.rowPlain, { borderBottomColor: c.border }]
+            : {
+                backgroundColor: surface === 'raised' ? c.bgSurfaceRaised : c.bgSurface,
+              },
         ]}
         onPress={onPress}
         disabled={!onPress}
@@ -142,14 +162,26 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
+    paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.md,
     borderRadius: Radius.md,
     gap: Spacing.sm,
   },
+  rowPlain: {
+    backgroundColor: 'transparent',
+    borderRadius: 0,
+    borderBottomWidth: 1,
+    // The hairline runs the full width, so the row's own horizontal padding
+    // would inset it from the content above. Alignment is the whole point of
+    // dropping the fill, so it goes flush.
+    paddingHorizontal: 0,
+  },
+  rowDense: {
+    paddingVertical: Spacing.base,
+  },
   center: {
     flex: 1,
-    gap: 2,
+    gap: Spacing.xxs,
   },
   brandName: {
     ...Typography.heading,

@@ -86,7 +86,7 @@ export function ConnectedAccounts() {
       const updated = await syncAccount(account)
       await load()
       if (updated.status === 'error') {
-        toast('Could not refresh — reconnect the account', { tone: 'warning' })
+        toast('Could not refresh. Reconnect the account', { tone: 'warning' })
       } else {
         toast('Stats refreshed', { tone: 'success' })
       }
@@ -130,7 +130,7 @@ export function ConnectedAccounts() {
     <Card>
       <Text style={[styles.title, { color: c.textPrimary }]}>Your accounts</Text>
       <Text style={[styles.hint, { color: c.textSecondary }]}>
-        Connect to track how your reach moves against your rates. Read-only — CreatorDesk never
+        Connect to track how your reach moves against your rates. Read-only, so CreatorDesk never
         posts anything.
       </Text>
 
@@ -140,7 +140,7 @@ export function ConnectedAccounts() {
         <View style={[styles.notice, { backgroundColor: c.warningLight }]}>
           <Ionicons name="flask-outline" size={15} color={c.warning} />
           <Text style={[styles.noticeText, { color: c.warning }]}>
-            Sample data — real Instagram and YouTube sync switches on once app review is approved.
+            Sample data. Real Instagram and YouTube sync switches on once app review is approved.
           </Text>
         </View>
       ) : null}
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
   hint: {
     ...Typography.caption,
     fontFamily: FontFamily.regular,
-    marginTop: 2,
+    marginTop: Spacing.xxs,
     lineHeight: 18,
   },
   notice: {

@@ -7,6 +7,15 @@ import { PressableScale } from './PressableScale'
 export interface CardProps {
   children: ReactNode
   /**
+   * Trims the padding for a desktop layout.
+   *
+   * DESIGN.md §4 wants a desktop screenful to show roughly twice what a phone
+   * does. Phone-scale padding at every width spends the extra room on
+   * whitespace rather than content, which is why the desktop bento reads
+   * sparse with only a couple of deals in it.
+   */
+  dense?: boolean
+  /**
    * surface  → the default flat card sitting on the page (DESIGN.md §4)
    * raised   → lifted off the page with a soft shadow; for content that
    *            genuinely floats (sheets, popovers, the one hero card)
@@ -23,7 +32,14 @@ export interface CardProps {
  * the invoice screens — each of which previously hand-rolled its own
  * `styles.card` block with the same three properties.
  */
-export function Card({ children, variant = 'surface', padded = true, onPress, style }: CardProps) {
+export function Card({
+  children,
+  variant = 'surface',
+  padded = true,
+  dense = false,
+  onPress,
+  style,
+}: CardProps) {
   const { c, isDark } = useTheme()
   const elevation = isDark ? Elevation.dark : Elevation.light
 
@@ -33,7 +49,7 @@ export function Card({ children, variant = 'surface', padded = true, onPress, st
       ? { backgroundColor: 'transparent', borderWidth: 1, borderColor: c.border }
       : { backgroundColor: variant === 'raised' ? c.bgSurfaceRaised : c.bgSurface },
     variant === 'raised' && elevation.sm,
-    padded && styles.padded,
+    padded && (dense ? styles.paddedDense : styles.padded),
     style,
   ]
 
@@ -83,10 +99,16 @@ export function CardSection({ title, subtitle, action, children, style }: CardSe
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: Radius.md,
+    // Radius tracks surface size: rows 12, tiles and cards 16, the hero 20.
+    // This was 12, which made a full-width content card *rounder-cornered*
+    // than nothing and squarer than the small tiles beside it.
+    borderRadius: Radius.lg,
   },
   padded: {
     padding: Spacing.md,
+  },
+  paddedDense: {
+    padding: Spacing.base,
   },
   header: {
     flexDirection: 'row',
@@ -97,7 +119,7 @@ const styles = StyleSheet.create({
   },
   headerText: {
     flex: 1,
-    gap: 2,
+    gap: Spacing.xxs,
   },
   title: {
     ...Typography.heading,
