@@ -1,8 +1,8 @@
-import { StyleSheet, View } from 'react-native'
 import type { DealStatus } from '@/types'
-import { Spacing } from '@/constants/design'
 import { formatRelativeDay } from '@/lib/format'
 import { Card, DateField, StageTimeline, type StageState, type TimelineStage } from '@/components/ui'
+
+export type TimelineStageKey = 'script' | 'shoot' | 'edit' | 'publish'
 
 export interface TimelineCardProps {
   status: DealStatus
@@ -10,7 +10,7 @@ export interface TimelineCardProps {
   shootDate: string
   editDone: string
   publishDate: string
-  onChange: (field: 'script' | 'shoot' | 'edit' | 'publish', value: string) => void
+  onChange: (field: TimelineStageKey, value: string) => void
 }
 
 /** How far through the workflow each status sits. */
@@ -44,9 +44,16 @@ export function TimelineCard({
   const current = STAGE_INDEX[status]
 
   const stageState = (index: number, date: string): StageState => {
-    // A stage with no date was never part of this deal (a story repost has
-    // no script day), so it reads as skipped rather than pending forever.
-    if (!date && index > current) return 'skipped'
+    // A stage with no date was never part of this deal (a story repost has no
+    // script day), so it reads as skipped rather than pending forever.
+    //
+    // This has to hold on both sides of the current stage. Testing only
+    // `index > current` meant a dateless stage the deal had already moved past
+    // fell through to 'done' and drew a green tick: the timeline asserting
+    // work that never happened, on the screen whose whole job is to say what
+    // did. The current stage stays current either way, because that one is
+    // where the deal actually is regardless of whether a date was recorded.
+    if (!date && index !== current) return 'skipped'
     if (index < current) return 'done'
     if (index === current) return 'current'
     return 'upcoming'
@@ -60,47 +67,26 @@ export function TimelineCard({
   ].map((stage, index) => ({
     key: stage.key,
     label: stage.label,
-    detail: stage.date ? formatRelativeDay(stage.date) : 'No date set',
+    detail: stage.date ? formatRelativeDay(stage.date) : null,
     state: stageState(index, stage.date),
+    // The date control lives on the stage row it belongs to. It used to sit
+    // in a second list of four fields underneath, so the screen named Script,
+    // Shoot, Edit and Publish twice and spent about 700px doing it.
+    trailing: (
+      <DateField
+        variant="inline"
+        value={stage.date || null}
+        onChange={(value) => onChange(stage.key as TimelineStageKey, value ?? '')}
+        placeholder="Set date"
+      />
+    ),
   }))
 
   return (
     <Card>
       <StageTimeline stages={stages} />
-
-      <View style={styles.fields}>
-        <DateField
-          label="Script"
-          value={scriptDue || null}
-          onChange={(value) => onChange('script', value ?? '')}
-          placeholder="Not set"
-        />
-        <DateField
-          label="Shoot"
-          value={shootDate || null}
-          onChange={(value) => onChange('shoot', value ?? '')}
-          placeholder="Not set"
-        />
-        <DateField
-          label="Edit"
-          value={editDone || null}
-          onChange={(value) => onChange('edit', value ?? '')}
-          placeholder="Not set"
-        />
-        <DateField
-          label="Publish"
-          value={publishDate || null}
-          onChange={(value) => onChange('publish', value ?? '')}
-          placeholder="Not set"
-        />
-      </View>
     </Card>
   )
 }
 
-const styles = StyleSheet.create({
-  fields: {
-    gap: Spacing.md,
-    marginTop: Spacing.lg,
-  },
-})
+

@@ -252,6 +252,10 @@ export default function DealDetailScreen() {
   }, [refreshAttachments])
 
   useEffect(() => {
+    // Web has no notification scheduler at all, so `enabled` is always false
+    // there. Showing "turn them on in Settings" on a build that could never
+    // deliver one sends the creator hunting for a switch that does not exist.
+    if (Platform.OS === 'web') return
     let active = true
     notificationsEnabledAsync().then((enabled) => {
       if (active) setNotificationsOff(!enabled)

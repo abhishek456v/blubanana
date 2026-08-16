@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import type { ReactNode } from 'react'
 import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import Animated, {
@@ -23,6 +24,12 @@ export interface TimelineStage {
   /** Formatted for display; pass through `formatRelativeDay` for deadlines. */
   detail?: string | null
   state: StageState
+  /**
+   * Rendered at the right of the row. For a control that belongs to this
+   * stage, so the timeline can be the thing you edit rather than a picture of
+   * what a separate list of fields underneath already said.
+   */
+  trailing?: ReactNode
 }
 
 export interface StageTimelineProps {
@@ -85,7 +92,8 @@ export function StageTimeline({ stages, onStagePress, style }: StageTimelineProp
               ) : null}
             </View>
 
-            <View style={[styles.content, isLast && styles.contentLast]}>
+            <View style={[styles.content, isLast && styles.contentLast, styles.contentRow]}>
+              <View style={styles.contentText}>
               <Text
                 style={[
                   styles.label,
@@ -109,6 +117,8 @@ export function StageTimeline({ stages, onStagePress, style }: StageTimelineProp
                   {stage.detail}
                 </Text>
               ) : null}
+              </View>
+              {stage.trailing ? <View style={styles.trailing}>{stage.trailing}</View> : null}
             </View>
           </View>
         )
@@ -224,6 +234,17 @@ const styles = StyleSheet.create({
     width: 2,
     minHeight: 22,
     marginVertical: 3,
+  },
+  contentRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.md,
+  },
+  contentText: {
+    flex: 1,
+  },
+  trailing: {
+    alignItems: 'flex-end',
   },
   content: {
     flex: 1,

@@ -19,6 +19,12 @@ export interface DateFieldProps {
   error?: string | null
   hint?: string
   clearable?: boolean
+  /**
+   * `inline` drops the border and fill, for a date that belongs to a row it is
+   * sitting inside rather than to a form field of its own. Used by the deal
+   * timeline, where the stage row already frames it.
+   */
+  variant?: 'field' | 'inline'
   style?: StyleProp<ViewStyle>
 }
 
@@ -65,6 +71,7 @@ export function DateField({
   error,
   hint,
   clearable = true,
+  variant = 'field',
   style,
 }: DateFieldProps) {
   const { c } = useTheme()
@@ -112,8 +119,10 @@ export function DateField({
         accessibilityRole="button"
         accessibilityLabel={label ? `${label}: ${value ?? 'not set'}` : placeholder}
         style={[
-          styles.field,
-          { backgroundColor: c.bgSurface, borderColor: error ? c.danger : c.borderStrong },
+          variant === 'inline' ? styles.fieldInline : styles.field,
+          variant === 'inline'
+            ? null
+            : { backgroundColor: c.bgSurface, borderColor: error ? c.danger : c.borderStrong },
         ]}
       >
         <Ionicons name="calendar-outline" size={17} color={value ? c.accent : c.textMuted} />
@@ -262,6 +271,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     borderRadius: Radius.sm,
     borderWidth: 1,
+  },
+  fieldInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    paddingVertical: Spacing.xxs,
   },
   valueText: {
     flex: 1,
