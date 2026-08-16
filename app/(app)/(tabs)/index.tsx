@@ -283,8 +283,7 @@ export default function HomeScreen() {
           label: month.label,
           value: month.total,
         }))}
-        height={120}
-        fill={isDesktop}
+        height={isDesktop ? 200 : 120}
         formatValue={formatCurrencyCompact}
       />
     </Card>
@@ -530,7 +529,11 @@ const styles = StyleSheet.create({
   rowB: {
     flexDirection: 'row',
     gap: ColumnGap,
-    alignItems: 'stretch',
+    // Each column takes its own height. Stretching them to match let the
+    // chart grow to whatever the attention list happened to need, and with a
+    // real number of deals beside it that was a 700px plot of six bars: the
+    // card was sized by its neighbour rather than by its content.
+    alignItems: 'flex-start',
   },
   chartCell: {
     flex: 1.35,
