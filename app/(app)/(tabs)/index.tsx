@@ -37,7 +37,6 @@ import {
   BarChart,
   Card,
   Chip,
-  DonutChart,
   EmptyState,
   HeaderUtilities,
   HeroCard,
@@ -204,8 +203,6 @@ export default function HomeScreen() {
             : `Across ${unpaidCount} unpaid ${unpaidCount === 1 ? 'deal' : 'deals'}, all on track.`
       }
       action={{ label: 'Money', onPress: () => router.push('/(app)/(tabs)/money' as never) }}
-      // Doubles as the donut's legend (same two colours, same two figures),
-      // so the ring never needs a separate key beside it.
       stats={[
         { label: 'On track', value: formatCurrencyCompact(onTrack), dotColor: c.accent },
         { label: 'Overdue', value: formatCurrencyCompact(metrics.overdue), dotColor: c.danger },
@@ -214,22 +211,31 @@ export default function HomeScreen() {
           value: String(unpaidCount),
         },
       ]}
-      aside={
-        isWide && metrics.outstanding > 0 ? (
-          <DonutChart
-            segments={[
-              { label: 'On track', value: onTrack, color: c.accent },
-              { label: 'Overdue', value: metrics.overdue, color: c.danger },
-            ]}
-            size={108}
-            strokeWidth={11}
-            trackColor={c.onContrastFaint}
-            textColor={c.onContrast}
-            mutedTextColor={c.onContrastMuted}
-            centerLabel={formatCurrencyCompact(metrics.outstanding)}
-            centerCaption="owed"
-          />
-        ) : null
+      // The six months behind the figure, on the card that carries it.
+      //
+      // This was a donut of the same number: a single live segment (overdue is
+      // usually zero) drew a complete ring, so the chart had no shape to read,
+      // and it printed ₹3.75L a third time next to the 34px figure and the
+      // footer strip. A trend answers a question the figure cannot.
+      chart={
+        <BarChart
+          data={revenue.monthlyTotals.map((month) => ({
+            label: month.label,
+            value: month.total,
+          }))}
+          height={isDesktop ? 116 : 96}
+          formatValue={formatCurrencyCompact}
+          // Only the greys are overridden. The bars keep `accent` and
+          // `accentSoft`, which are a translucent amber tuned per theme and
+          // read against either ground the contrast card takes; swapping the
+          // inactive months to `onContrastFaint` made five of six invisible.
+          palette={{
+            grid: c.onContrastFaint,
+            baseline: c.onContrastFaint,
+            label: c.onContrastMuted,
+            labelActive: c.onContrast,
+          }}
+        />
       }
     />
   )
@@ -261,32 +267,6 @@ export default function HomeScreen() {
         index={3}
       />
     </View>
-  )
-
-  const cashFlow = (
-    <Card dense={isDesktop} style={styles.blockCard}>
-      <View style={styles.cardHead}>
-        <View style={styles.cardHeadText}>
-          <Text style={[styles.cardTitle, { color: c.textPrimary }]}>Cash flow</Text>
-          <Text style={[styles.cardSub, { color: c.textMuted }]}>
-            Payments received, last six months
-          </Text>
-        </View>
-        <Text style={[styles.cardFigure, { color: c.textPrimary }]}>
-          {formatCurrencyCompact(
-            revenue.monthlyTotals.reduce((sum, month) => sum + month.total, 0)
-          )}
-        </Text>
-      </View>
-      <BarChart
-        data={revenue.monthlyTotals.map((month) => ({
-          label: month.label,
-          value: month.total,
-        }))}
-        height={isDesktop ? 200 : 120}
-        formatValue={formatCurrencyCompact}
-      />
-    </Card>
   )
 
   const needsYou = (
@@ -324,9 +304,9 @@ export default function HomeScreen() {
     </Card>
   )
 
-  // Two columns even on desktop: these now live in the narrower right-hand
-  // column, where four across would give each tile 90px.
-  const actions = <ActionGrid actions={quickActions} columns={2} />
+  // Four across on desktop, under the hero in the wider column; two on a
+  // phone, where four would give each tile about 90px.
+  const actions = <ActionGrid actions={quickActions} columns={isDesktop ? 4 : 2} />
 
   const header = (
     <>
@@ -349,10 +329,18 @@ export default function HomeScreen() {
       >
         {/* Row A: the answer, then the two numbers that qualify it. */}
         <View style={isDesktop ? styles.rowA : styles.stack}>
-          <View style={isDesktop ? styles.heroCell : undefined}>{hero}</View>
+          <View style={isDesktop ? styles.heroCell : undefined}>
+            {hero}
+          </View>
           <View style={isDesktop ? styles.asideCell : undefined}>{sideTiles}</View>
         </View>
       </ScreenHeader>
+
+      {/* Full width, under both columns. In the left column alone each of the
+          four tiles got about 225px and truncated its own label ("Raise
+          invoi…"), while the rail beside it had already ended, leaving the
+          space to their right empty. Spanning the measure fixes both. */}
+      <View style={styles.section}>{actions}</View>
 
       {rateNudge && !nudgeDismissed ? (
         <Animated.View entering={FadeIn.duration(Duration.slow)} style={styles.section}>
@@ -365,16 +353,12 @@ export default function HomeScreen() {
         </Animated.View>
       ) : null}
 
-      {/* Row B: the trend beside the to-do list, with the quick actions
-          filling the rest of the right column. Without them the attention
-          card stretched to the chart's height and carried 150px of nothing. */}
-      <View style={[styles.section, isDesktop ? styles.rowB : styles.stack]}>
-        <View style={isDesktop ? styles.chartCell : undefined}>{cashFlow}</View>
-        <View style={isDesktop ? styles.attentionCell : styles.stack}>
-          {needsYou}
-          {actions}
-        </View>
-      </View>
+      {/* What needs answering today, at full width.
+          It used to share a row with the chart, which forced two columns of
+          different natural heights side by side and left the shorter one
+          trailing dead space. The chart now lives on the hero, so this gets
+          the whole measure and the rows stay legible instead of squeezed. */}
+      <View style={styles.section}>{needsYou}</View>
 
       <View style={styles.section}>
         <SectionTitle
@@ -416,13 +400,17 @@ export default function HomeScreen() {
     const tone =
       item.tone === 'danger' ? c.danger : item.tone === 'warning' ? c.warning : c.info
     return (
+      // Plain, not a raised card. These sit inside a card already, and a
+      // filled row on a filled card is the boxes-inside-boxes pattern: the
+      // containers become the thing you see and the four brand names stop
+      // being it. The hairline and the alignment carry the list instead.
       <DealRow
         deal={item.deal}
         reason={item.reason}
         reasonColor={tone}
         index={index}
         dense={isDesktop}
-        surface="raised"
+        variant="plain"
         onPress={() => router.push(`/(app)/deal/${item.deal.id}` as never)}
       />
     )
@@ -518,7 +506,10 @@ const styles = StyleSheet.create({
   rowA: {
     flexDirection: 'row',
     gap: ColumnGap,
-    alignItems: 'stretch',
+    // Natural heights, not a common one. Stretching made the hero as tall as
+    // the rail beside it and `figureRow: flex: 1` absorbed the slack, opening
+    // a void between the caption and the chart.
+    alignItems: 'flex-start',
   },
   heroCell: {
     flex: 1.55,
@@ -535,13 +526,7 @@ const styles = StyleSheet.create({
     // card was sized by its neighbour rather than by its content.
     alignItems: 'flex-start',
   },
-  chartCell: {
-    flex: 1.35,
-  },
-  attentionCell: {
-    flex: 1,
-    gap: ColumnGap,
-  },
+
   tileColumn: {
     flex: 1,
     gap: ColumnGap,

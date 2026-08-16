@@ -28,6 +28,14 @@ export interface HeroCardProps {
   action?: { label: string; onPress: () => void }
   /** Chart or ring rendered to the right of the figure on wide layouts. */
   aside?: ReactNode
+  /**
+   * Full-width chart between the figure and the footer strip.
+   *
+   * The card carries the number a creator opens the app for, so the shape
+   * behind that number belongs on it rather than in a separate card below.
+   * `aside` is beside the figure and stays narrow; this gets the whole width.
+   */
+  chart?: ReactNode
   onPress?: () => void
   style?: StyleProp<ViewStyle>
 }
@@ -53,6 +61,7 @@ export function HeroCard({
   stats,
   action,
   aside,
+  chart,
   onPress,
   style,
 }: HeroCardProps) {
@@ -99,6 +108,8 @@ export function HeroCard({
 
         {aside ? <View style={styles.aside}>{aside}</View> : null}
       </View>
+
+      {chart ? <View style={styles.chart}>{chart}</View> : null}
 
       {stats?.length ? (
         <View style={[styles.stats, { borderTopColor: c.onContrastFaint }]}>
@@ -203,6 +214,9 @@ const styles = StyleSheet.create({
     ...Typography.caption,
     fontFamily: FontFamily.regular,
     lineHeight: 18,
+  },
+  chart: {
+    marginTop: Spacing.lg,
   },
   aside: {
     alignItems: 'flex-end',

@@ -47,6 +47,20 @@ export interface BarChartProps {
    * represents, so every other bar can be read against it.
    */
   showScale?: boolean
+  /**
+   * Colour overrides, for the one place this chart is drawn on an inverted
+   * ground. The defaults read from the page theme, which is invisible against
+   * `bgContrast`; passing `onContrast` values here keeps a single chart
+   * component rather than forking a dark variant of it.
+   */
+  palette?: {
+    bar?: string
+    barMuted?: string
+    grid?: string
+    baseline?: string
+    label?: string
+    labelActive?: string
+  }
   style?: StyleProp<ViewStyle>
 }
 
@@ -73,9 +87,18 @@ export function BarChart({
   maxBarWidth = 52,
   fill = false,
   showScale = true,
+  palette,
   style,
 }: BarChartProps) {
   const { c } = useTheme()
+  const ink = {
+    bar: palette?.bar ?? c.accent,
+    barMuted: palette?.barMuted ?? c.accentSoft,
+    grid: palette?.grid ?? c.border,
+    baseline: palette?.baseline ?? c.borderStrong,
+    label: palette?.label ?? c.textMuted,
+    labelActive: palette?.labelActive ?? c.textPrimary,
+  }
   const [selected, setSelected] = useState<number | null>(null)
 
   const max = Math.max(...data.map((d) => d.value), 0)
@@ -96,7 +119,7 @@ export function BarChart({
             pointerEvents="none"
             style={[
               styles.gridline,
-              { bottom: `${fraction * 100}%`, backgroundColor: c.border },
+              { bottom: `${fraction * 100}%`, backgroundColor: ink.grid },
             ]}
           />
         ))}
@@ -104,7 +127,7 @@ export function BarChart({
         {/* The value the tallest bar stands for. Sits on the top gridline so
             it reads as an axis label rather than a floating number. */}
         {gridlines.length > 0 ? (
-          <Text pointerEvents="none" style={[styles.scaleLabel, { color: c.textMuted }]}>
+          <Text pointerEvents="none" style={[styles.scaleLabel, { color: ink.label }]}>
             {formatValue(max)}
           </Text>
         ) : null}
@@ -112,7 +135,7 @@ export function BarChart({
         {/* A zero month draws a 3px sliver, which alone is ambiguous: it could
             be a tiny value or missing data. The baseline makes it read as a
             month that sat on zero. */}
-        <View style={[styles.baseline, { backgroundColor: c.borderStrong }]} />
+        <View style={[styles.baseline, { backgroundColor: ink.baseline }]} />
 
         {data.map((datum, index) => {
           const isSelected = selected === index
@@ -136,7 +159,7 @@ export function BarChart({
               accessibilityLabel={`${datum.label}: ${formatValue(datum.value)}`}
             >
               {isSelected ? (
-                <Text style={[styles.tooltip, { color: c.textPrimary }]} numberOfLines={1}>
+                <Text style={[styles.tooltip, { color: ink.labelActive }]} numberOfLines={1}>
                   {formatValue(datum.value)}
                 </Text>
               ) : null}
@@ -144,7 +167,7 @@ export function BarChart({
               <Bar
                 fraction={fraction}
                 index={index}
-                color={isSelected || index === highlighted ? c.accent : c.accentSoft}
+                color={isSelected || index === highlighted ? ink.bar : ink.barMuted}
                 maxWidth={maxBarWidth}
                 minHeight={3}
               />
@@ -159,7 +182,7 @@ export function BarChart({
             key={`${datum.label}-axis-${index}`}
             style={[
               styles.axisLabel,
-              { color: selected === index ? c.textPrimary : c.textMuted },
+              { color: selected === index ? ink.labelActive : ink.label },
             ]}
             numberOfLines={1}
           >
