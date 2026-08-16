@@ -36,6 +36,14 @@ export interface ScreenHeaderProps {
   onBack?: () => void
   /** Text beside the back chevron: where the user came from. */
   backLabel?: string
+  /**
+   * Steps the title down from the display cut to the title cut.
+   *
+   * For a heading that is warmth rather than information: on Home the greeting
+   * held the largest type on the page while the figure it sat above was the
+   * reason the screen exists, so the two competed and the greeting won.
+   */
+  compactTitle?: boolean
   /** Rendered under the title block: a search field, filter row, metrics. */
   children?: ReactNode
   style?: StyleProp<ViewStyle>
@@ -58,6 +66,7 @@ export function ScreenHeader({
   leadingAction,
   onBack,
   backLabel = 'Back',
+  compactTitle = false,
   children,
   style,
 }: ScreenHeaderProps) {
@@ -85,7 +94,10 @@ export function ScreenHeader({
               {eyebrow}
             </Text>
           ) : null}
-          <Text style={[styles.title, { color: c.textPrimary }]} numberOfLines={2}>
+          <Text
+            style={[styles.title, compactTitle && styles.titleCompact, { color: c.textPrimary }]}
+            numberOfLines={2}
+          >
             {title}
           </Text>
           {subtitle ? (
@@ -163,6 +175,10 @@ const styles = StyleSheet.create({
   },
   title: {
     ...Typography.display,
+    fontFamily: FontFamily.display,
+  },
+  titleCompact: {
+    ...Typography.title,
     fontFamily: FontFamily.display,
   },
   subtitle: {

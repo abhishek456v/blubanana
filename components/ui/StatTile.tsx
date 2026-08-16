@@ -23,6 +23,13 @@ export interface StatTileProps {
    */
   contrast?: boolean
   tone?: 'default' | 'success' | 'warning' | 'danger'
+  /**
+   * Tighter padding and a smaller figure, for a rail of tiles beside a taller
+   * card. DESIGN.md §4 asks a desktop screenful to show roughly twice what a
+   * phone does; at full size three of these stack taller than the hero they
+   * sit next to and spend the difference on air.
+   */
+  dense?: boolean
   onPress?: () => void
   index?: number
   style?: StyleProp<ViewStyle>
@@ -45,6 +52,7 @@ export function StatTile({
   series,
   contrast = false,
   tone = 'default',
+  dense = false,
   onPress,
   index = 0,
   style,
@@ -151,6 +159,10 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     gap: 3,
   },
+  tileDense: {
+    paddingVertical: Spacing.base,
+    paddingHorizontal: Spacing.md,
+  },
   label: {
     ...Typography.label,
     fontFamily: FontFamily.medium,
@@ -165,6 +177,10 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.displayBold,
     fontSize: 26,
     lineHeight: 32,
+  },
+  valueDense: {
+    fontSize: 22,
+    lineHeight: 28,
   },
   trend: {
     flexDirection: 'row',

@@ -243,6 +243,7 @@ export default function HomeScreen() {
   const sideTiles = (
     <View style={isDesktop ? styles.tileColumn : styles.tileRow}>
       <StatTile
+        dense={isDesktop}
         label="Received this month"
         value={metrics.earnedThisMonth}
         format={formatCurrency}
@@ -252,6 +253,7 @@ export default function HomeScreen() {
         index={1}
       />
       <StatTile
+        dense={isDesktop}
         label="Locked this month"
         value={revenue.lockedThisMonth.value}
         format={formatCurrency}
@@ -260,6 +262,7 @@ export default function HomeScreen() {
         index={2}
       />
       <StatTile
+        dense={isDesktop}
         label="Live deals"
         value={metrics.activeDeals}
         caption={metrics.activeDeals === 0 ? 'nothing in flight' : 'in progress right now'}
@@ -317,6 +320,7 @@ export default function HomeScreen() {
         style={styles.headerFlush}
         eyebrow={todayLabel()}
         title={firstName ? `${greeting()}, ${firstName}` : greeting()}
+        compactTitle
         actions={[
           {
             icon: 'add',
