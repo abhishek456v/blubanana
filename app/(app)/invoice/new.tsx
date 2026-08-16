@@ -174,22 +174,17 @@ export default function NewInvoiceScreen() {
   const netPayable = total - tds
 
   async function handleSave() {
-    if (!brandName.trim()) {
-      toast('Enter the brand name', { tone: 'warning' })
-      return
-    }
+    // Nothing here is mandatory. A half-filled invoice is still a document the
+    // creator wanted, and an app that argues with her before it will write
+    // anything down is one she stops reaching for mid-negotiation. Everything
+    // stays editable afterwards.
     const items: LineItemInput[] = lines
-      .filter((line) => line.description.trim() && (parseInt(line.amount, 10) || 0) > 0)
+      .filter((line) => line.description.trim() || (parseInt(line.amount, 10) || 0) > 0)
       .map((line) => ({
         deal_id: line.dealId,
         description: line.description.trim(),
-        unit_amount: parseInt(line.amount, 10),
+        unit_amount: parseInt(line.amount, 10) || 0,
       }))
-
-    if (items.length === 0) {
-      toast('Add at least one line with a description and an amount', { tone: 'warning' })
-      return
-    }
 
     setSaving(true)
     try {
@@ -214,13 +209,8 @@ export default function NewInvoiceScreen() {
       })
       toast(`${invoice.invoice_number} created`, { tone: 'success' })
       router.replace(`/(app)/invoice/${invoice.id}` as never)
-    } catch (err) {
-      // A missing place of supply is a fixable mistake, not a failure, so it
-      // says which field to fill rather than hiding behind "could not create".
-      const message = err instanceof Error && err.message.includes('place of supply')
-        ? err.message
-        : 'Could not create the invoice'
-      toast(message, { tone: 'error' })
+    } catch {
+      toast('Could not create the invoice', { tone: 'error' })
     } finally {
       setSaving(false)
     }

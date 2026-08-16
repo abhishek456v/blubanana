@@ -100,6 +100,57 @@ export async function scheduleAsync(
   }
 }
 
+/**
+ * What the OS has actually accepted, as opposed to what the database believes
+ * it scheduled.
+ *
+ * These two can disagree for reasons entirely outside the app: iOS drops a
+ * pending notification when permission is revoked, caps how many any one app
+ * may queue, and clears the queue on reinstall. Reading the real queue is the
+ * only way to answer "is my reminder actually set?" without waiting for 9am.
+ */
+export async function scheduledCountAsync(): Promise<number> {
+  if (Platform.OS === 'web') return 0
+  try {
+    return (await Notifications.getAllScheduledNotificationsAsync()).length
+  } catch {
+    return 0
+  }
+}
+
+/**
+ * Fires a reminder a few seconds out, so the whole delivery path can be
+ * checked end to end without waiting a day for a real one.
+ *
+ * Returns what actually happened rather than a boolean, because the useful
+ * answers are different: permission refused is a thing the creator can fix in
+ * Settings, and a scheduling failure is not.
+ */
+export async function sendTestAsync(): Promise<'scheduled' | 'denied' | 'failed'> {
+  if (Platform.OS === 'web') return 'failed'
+  try {
+    const granted = await ensurePermissionsAsync()
+    if (!granted) return 'denied'
+
+    const id = await Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'Reminders are working',
+        body: 'This is what a deadline nudge will look like.',
+        data: { type: 'test' },
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds: 5,
+        repeats: false,
+      },
+    })
+    return id ? 'scheduled' : 'failed'
+  } catch (err) {
+    console.error('sendTestAsync: could not schedule the test notification', err)
+    return 'failed'
+  }
+}
+
 export async function cancelAsync(notificationId: string | null | undefined): Promise<void> {
   if (!notificationId) return
   try {

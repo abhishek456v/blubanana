@@ -34,12 +34,13 @@ export interface CreateInvoiceInput {
   items: LineItemInput[]
   gst_applicable: boolean
   /**
-   * Everything Rule 46 requires once GST is charged.
+   * What Rule 46 asks for once GST is charged. All optional, like everything
+   * else on the form.
    *
-   * `place_of_supply_code` is what decides IGST versus CGST+SGST, so it is
-   * required whenever `gst_applicable` is true; `createInvoice` refuses
-   * rather than guessing, because a wrong head cannot be claimed as input
-   * credit and silently costs the brand real money.
+   * `place_of_supply_code` is the one that changes the document rather than
+   * just decorating it: it decides IGST versus CGST+SGST. Supplied, the
+   * invoice splits the tax properly; omitted, it prints a single GST line
+   * rather than guessing a head nobody chose.
    */
   brand_gstin: string | null
   brand_address: string | null
@@ -97,19 +98,20 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
   const gstAmount = input.gst_applicable ? Math.round((amount * GST_RATE) / 100) : 0
   const totalAmount = amount + gstAmount
 
-  // A tax invoice without a place of supply is not a tax invoice: it is the
-  // field that decides which head the tax belongs to, and no default is
-  // honest. Better to stop here than to issue a document a finance team will
-  // reject after the creator has already sent it.
-  if (input.gst_applicable && !input.place_of_supply_code) {
-    throw new Error('A GST invoice needs a place of supply. Set the brand\'s state first.')
-  }
-
-  const split = splitGst(
-    gstAmount,
-    stateCodeFromGstin(input.supplier_gstin),
-    input.place_of_supply_code
-  )
+  // Nothing on this form is mandatory. A creator mid-negotiation should be
+  // able to raise a document with whatever she has to hand, and chasing her
+  // for a field is worse than letting her send something.
+  //
+  // What that must not become is a *confidently wrong* invoice. The place of
+  // supply is the field that decides whether tax is IGST or CGST+SGST, so
+  // without it the split is genuinely unknown, and printing a guess would put
+  // a tax position on the document that nobody took. When it is missing the
+  // heads stay zero and the invoice prints a single GST line, exactly as
+  // pre-018 invoices do: less useful to the brand, but never untrue.
+  const split =
+    input.gst_applicable && input.place_of_supply_code
+      ? splitGst(gstAmount, stateCodeFromGstin(input.supplier_gstin), input.place_of_supply_code)
+      : { cgst: 0, sgst: 0, igst: 0, interState: false }
 
   const description =
     input.description ??
@@ -153,13 +155,18 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
 
   const invoice = data as Invoice
 
-  const { error: lineError } = await supabase.from('invoice_line_items').insert(
-    lines.map((line) => ({
-      ...line,
-      workspace_id: workspaceId,
-      invoice_id: invoice.id,
-    }))
-  )
+  // An invoice with no lines is allowed: the creator may be raising a
+  // placeholder to fill in later. PostgREST rejects an empty insert, so there
+  // is simply nothing to write.
+  const { error: lineError } = lines.length
+    ? await supabase.from('invoice_line_items').insert(
+        lines.map((line) => ({
+          ...line,
+          workspace_id: workspaceId,
+          invoice_id: invoice.id,
+        }))
+      )
+    : { error: null }
   // An invoice whose lines failed to write would print as a blank table, so
   // this rolls the header back rather than leaving a broken document behind.
   if (lineError) {

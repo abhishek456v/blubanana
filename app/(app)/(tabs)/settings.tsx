@@ -6,6 +6,11 @@ import { useFocusEffect } from '@react-navigation/core'
 import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '@/lib/supabase'
 import { disablePublicProfile, enablePublicProfile, getProfile } from '@/lib/profile'
+import {
+  notificationsEnabledAsync,
+  scheduledCountAsync,
+  sendTestAsync,
+} from '@/lib/notifications'
 import { useAuth } from '@/hooks/useAuth'
 import { useBreakpoint } from '@/hooks/useBreakpoint'
 import { useTheme, useThemeMode, type ThemeMode } from '@/hooks/useTheme'
@@ -61,6 +66,26 @@ export default function YouScreen() {
 
   const [profile, setProfile] = useState<Creator | null>(null)
   const [togglingPublic, setTogglingPublic] = useState(false)
+  const [notifPermission, setNotifPermission] = useState<'unknown' | 'granted' | 'denied'>(
+    'unknown'
+  )
+  const [scheduledCount, setScheduledCount] = useState(0)
+  const [testState, setTestState] = useState<
+    'idle' | 'sending' | 'scheduled' | 'denied' | 'failed'
+  >('idle')
+
+  const refreshNotificationState = useCallback(async () => {
+    const enabled = await notificationsEnabledAsync()
+    setNotifPermission(enabled ? 'granted' : 'denied')
+    setScheduledCount(enabled ? await scheduledCountAsync() : 0)
+  }, [])
+
+  async function handleTestNotification() {
+    setTestState('sending')
+    const result = await sendTestAsync()
+    setTestState(result === 'scheduled' ? 'scheduled' : result)
+    refreshNotificationState()
+  }
 
   const email = session?.user?.email ?? ''
   // Falls back to the auth session's name while the profiles row loads, so the
@@ -78,7 +103,10 @@ export default function YouScreen() {
   useFocusEffect(
     useCallback(() => {
       loadProfile()
-    }, [loadProfile])
+      // Re-read on focus: the creator may have just flipped this in iOS
+      // Settings and come straight back.
+      refreshNotificationState()
+    }, [loadProfile, refreshNotificationState])
   )
 
   async function handleSignOut() {
@@ -152,6 +180,51 @@ export default function YouScreen() {
             style={styles.themeControl}
           />
         </Card>
+
+        {/*
+          Reminders are the product's first promise, and until now there was no
+          way to tell whether one was actually set: the app wrote a row, the OS
+          may or may not have accepted it, and the difference only showed up as
+          a nudge that never came. This reports the real OS queue rather than
+          what the database believes, and fires one in five seconds so the
+          whole delivery path can be checked without waiting for 9am.
+        */}
+        {Platform.OS !== 'web' ? (
+          <Card style={styles.appearanceCard}>
+            <Text style={[styles.cardTitle, { color: c.textPrimary }]}>Reminders</Text>
+            <Text style={[styles.cardHint, { color: c.textSecondary }]}>
+              {notifPermission === 'granted'
+                ? `${scheduledCount} scheduled with iOS right now.`
+                : notifPermission === 'denied'
+                  ? 'Turned off. Enable notifications for CreatorDesk in Settings.'
+                  : 'Checking…'}
+            </Text>
+            <Button
+              label={testState === 'sending' ? 'Sending…' : 'Send a test reminder'}
+              variant="secondary"
+              onPress={handleTestNotification}
+              disabled={testState === 'sending'}
+              style={styles.themeControl}
+            />
+            {testState === 'scheduled' ? (
+              <Text style={[styles.cardHint, { color: c.success }]}>
+                Sent. It should arrive in about five seconds, so put the app in the
+                background to see the banner.
+              </Text>
+            ) : null}
+            {testState === 'denied' ? (
+              <Text style={[styles.cardHint, { color: c.warning }]}>
+                iOS refused. Notifications are off for CreatorDesk in Settings.
+              </Text>
+            ) : null}
+            {testState === 'failed' ? (
+              <Text style={[styles.cardHint, { color: c.danger }]}>
+                iOS would not accept it. If you are in Expo Go, try a development
+                build: Expo Go limits what notifications it will schedule.
+              </Text>
+            ) : null}
+          </Card>
+        ) : null}
 
         <Card>
           <View style={styles.toggleRow}>
