@@ -46,6 +46,21 @@ export interface NotificationContent {
   data: Record<string, string>
 }
 
+// Whether the OS will actually deliver anything we schedule.
+//
+// Exposed so a screen can tell the creator her reminders are switched off.
+// Without this the whole feature fails silently: permission is only ever
+// requested from inside a save, and once iOS records a denial `canAskAgain`
+// goes false, so every later reminder no-ops with nothing on screen to say so.
+export async function notificationsEnabledAsync(): Promise<boolean> {
+  if (Platform.OS === 'web') return false
+  try {
+    return (await Notifications.getPermissionsAsync()).granted
+  } catch {
+    return false
+  }
+}
+
 // Schedules a local notification for a future date. Returns null (instead of
 // throwing) when permission is missing or scheduling otherwise fails:
 // callers treat this as best-effort and must never let it block a deal/
@@ -55,6 +70,17 @@ export async function scheduleAsync(
   fireAt: Date
 ): Promise<string | null> {
   try {
+    // A DATE trigger in the past is not a reminder the OS can keep. iOS
+    // rejects it, and the throw used to land in the catch below and be
+    // reported as a generic scheduling failure.
+    //
+    // This is reached on ordinary input, not just edge cases: reminders fire
+    // at 9am on the stage date, so setting a date of *today* any time after
+    // breakfast, or back-filling a date that has already passed, both land
+    // here. The deal screen surfaces those in-app instead, which is the right
+    // place for work that is already due.
+    if (fireAt.getTime() <= Date.now()) return null
+
     const granted = await ensurePermissionsAsync()
     if (!granted) {
       console.warn('scheduleAsync: notification permission not granted, skipping schedule')

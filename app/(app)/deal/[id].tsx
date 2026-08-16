@@ -18,6 +18,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import * as DocumentPicker from 'expo-document-picker'
 import { Ionicons } from '@expo/vector-icons'
+import { notificationsEnabledAsync } from '@/lib/notifications'
 import {
   getDeal,
   updateDeal,
@@ -159,6 +160,9 @@ export default function DealDetailScreen() {
 
   // Workflow reminder card (PRODUCT.md 2.3).
   const [respondingReminder, setRespondingReminder] = useState(false)
+  // Checked on mount rather than stored: the creator can flip this in iOS
+  // Settings at any time, entirely outside the app.
+  const [notificationsOff, setNotificationsOff] = useState(false)
 
   // Payment card (PRODUCT.md 2.4).
   const [sendingReminder, setSendingReminder] = useState(false)
@@ -246,6 +250,16 @@ export default function DealDetailScreen() {
   useEffect(() => {
     refreshAttachments()
   }, [refreshAttachments])
+
+  useEffect(() => {
+    let active = true
+    notificationsEnabledAsync().then((enabled) => {
+      if (active) setNotificationsOff(!enabled)
+    })
+    return () => {
+      active = false
+    }
+  }, [])
 
   /**
    * Saves the line items immediately rather than waiting for the screen's
@@ -970,6 +984,21 @@ export default function DealDetailScreen() {
                           </Text>
                         </TouchableOpacity>
                       </View>
+
+                      {/*
+                        The product's first promise is that she never misses a
+                        deadline, so a reminder the OS will never deliver has
+                        to say so here. Permission is only ever requested from
+                        inside a save, and iOS refuses to ask twice, so without
+                        this line a single dismissed prompt silently disables
+                        every nudge in the app for good.
+                      */}
+                      {notificationsOff ? (
+                        <Text style={[styles.reminderWarning, { color: c.warning }]}>
+                          Notifications are off, so this will only appear here. Turn them
+                          on for CreatorDesk in Settings.
+                        </Text>
+                      ) : null}
                     </View>
                   ) : null}
 
@@ -1518,6 +1547,12 @@ const styles = StyleSheet.create({
   reminderSubtitle: {
     ...Typography.caption,
     fontFamily: FontFamily.regular,
+  },
+  reminderWarning: {
+    ...Typography.caption,
+    fontFamily: FontFamily.regular,
+    lineHeight: 18,
+    marginTop: Spacing.base,
   },
   reminderActions: {
     flexDirection: 'row',
