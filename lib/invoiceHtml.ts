@@ -24,17 +24,20 @@ function esc(value: string | null | undefined): string {
     .replace(/"/g, '&quot;')
 }
 
-function formatINR(amount: number): string {
-  return `₹${Math.round(amount).toLocaleString('en-IN')}`
-}
-
-function formatDate(dateStr: string): string {
+// Spelled out in full for the two dates that carry legal weight. `month:
+// 'short'` renders September as "Sept" against August's "Aug", and a document
+// that may be read beside a purchase order should not abbreviate unevenly.
+function formatDateLong(dateStr: string): string {
   const [year, month, day] = dateStr.split('-').map(Number)
   return new Date(year, month - 1, day).toLocaleDateString('en-IN', {
     day: 'numeric',
-    month: 'short',
+    month: 'long',
     year: 'numeric',
   })
+}
+
+function formatINR(amount: number): string {
+  return `₹${Math.round(amount).toLocaleString('en-IN')}`
 }
 
 const ONES = [
@@ -136,101 +139,111 @@ export function buildInvoiceHtml(
   * { box-sizing: border-box; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-    color: #1C1815; margin: 0; padding: 44px 40px 36px;
-    -webkit-font-smoothing: antialiased; font-size: 13px; line-height: 1.5;
+    color: #17130F; margin: 0; padding: 58px 54px 40px;
+    -webkit-font-smoothing: antialiased; font-size: 12.5px; line-height: 1.5;
+    /* Every figure on this page sits in a column that has to line up. */
+    font-variant-numeric: tabular-nums;
   }
-  .rule { height: 3px; background: #F5A623; margin-bottom: 26px; }
-  .top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; }
-  .brandline { display: flex; align-items: center; gap: 9px; margin-bottom: 8px; }
-  .creator-name { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; }
-  .from { font-size: 11.5px; color: #6B6259; line-height: 1.65; }
+
+  .head { display: flex; justify-content: space-between; align-items: flex-start; }
+  .who { display: flex; align-items: center; gap: 8px; }
+  .who .name { font-size: 15px; font-weight: 600; letter-spacing: -0.005em; }
+  .from { font-size: 11px; color: #78706A; line-height: 1.65; margin-top: 7px; }
   .doc { text-align: right; }
-  .doc .kind { font-size: 10px; text-transform: uppercase; letter-spacing: .14em; color: #9A9186; }
-  .doc .number { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; margin-top: 2px; }
-  .doc .meta { font-size: 11.5px; color: #6B6259; margin-top: 5px; line-height: 1.6; }
-  .parties { display: flex; gap: 12px; margin-bottom: 24px; }
-  .party { flex: 1; background: #F6F2EC; border-radius: 9px; padding: 13px 15px; }
-  .party .label { font-size: 9.5px; text-transform: uppercase; letter-spacing: .12em; color: #9A9186; margin-bottom: 5px; }
-  .party .name { font-size: 14px; font-weight: 600; }
-  .party .detail { font-size: 11.5px; color: #6B6259; margin-top: 3px; line-height: 1.55; }
+  .doc .kind { font-size: 9.5px; text-transform: uppercase; letter-spacing: .16em; color: #A29A92; }
+  .doc .number { font-size: 13px; font-weight: 600; margin-top: 3px; }
+
+  .due { margin: 40px 0 36px; }
+  .due .amount { font-size: 34px; font-weight: 700; letter-spacing: -0.028em; line-height: 1.05; }
+  .due .when { font-size: 12px; color: #78706A; margin-top: 8px; }
+
+  .label { font-size: 9.5px; text-transform: uppercase; letter-spacing: .14em; color: #A29A92; }
+  .billed { margin-bottom: 32px; }
+  .billed .name { font-size: 13.5px; font-weight: 600; margin-top: 7px; }
+  .billed .detail { font-size: 11.5px; color: #78706A; margin-top: 3px; line-height: 1.55; }
+
   table { width: 100%; border-collapse: collapse; }
-  th { text-align: left; font-size: 9.5px; text-transform: uppercase; letter-spacing: .1em;
-       color: #9A9186; padding: 0 0 8px; border-bottom: 1.5px solid #1C1815; font-weight: 600; }
-  td { padding: 11px 0; font-size: 12.5px; border-bottom: 1px solid #EAE4DA; vertical-align: top; }
+  th { text-align: left; font-size: 9.5px; text-transform: uppercase; letter-spacing: .14em;
+       color: #A29A92; padding: 0 0 9px; border-bottom: 1px solid #17130F; font-weight: 600; }
+  td { padding: 12px 0; font-size: 12.5px; border-bottom: 1px solid #EDE8E1; vertical-align: top; }
   th.r, td.r { text-align: right; }
-  th.c, td.c { text-align: center; }
   .desc { font-weight: 500; }
-  .hsn { font-size: 10.5px; color: #9A9186; margin-top: 2px; }
-  .totals { margin-top: 14px; display: flex; justify-content: flex-end; }
-  .totals-inner { width: 62%; }
-  .trow { display: flex; justify-content: space-between; padding: 5px 0; font-size: 12.5px; color: #6B6259; }
-  .trow.net { border-top: 1.5px solid #1C1815; margin-top: 7px; padding-top: 11px;
-              font-size: 16px; font-weight: 700; color: #1C1815; }
-  .trow.tds { color: #C0392B; }
-  .words { margin-top: 18px; background: #FBF8F3; border-left: 3px solid #F5A623;
-           padding: 11px 14px; border-radius: 0 7px 7px 0; }
-  .words .label { font-size: 9.5px; text-transform: uppercase; letter-spacing: .12em; color: #9A9186; }
-  .words .value { font-size: 12.5px; font-weight: 600; margin-top: 2px; }
-  .lower { display: flex; gap: 12px; margin-top: 24px; }
-  .box { flex: 1; }
-  .box .label { font-size: 9.5px; text-transform: uppercase; letter-spacing: .12em;
-                color: #9A9186; margin-bottom: 6px; }
-  .kv { display: flex; font-size: 11.5px; color: #6B6259; padding: 2px 0; }
-  .kv .k { width: 62px; color: #9A9186; }
-  .kv .v { font-weight: 500; color: #1C1815; }
-  .note { font-size: 11.5px; color: #6B6259; line-height: 1.6; }
-  .foot { margin-top: 30px; padding-top: 14px; border-top: 1px solid #EAE4DA;
+  .sac { font-size: 10px; color: #A29A92; margin-top: 3px; }
+
+  .totals { margin-top: 18px; display: flex; justify-content: flex-end; }
+  .totals-inner { width: 296px; }
+  .trow { display: flex; justify-content: space-between; padding: 6px 0; font-size: 12px; color: #78706A; }
+  .trow .v { color: #17130F; }
+  .trow.sum { border-top: 1px solid #17130F; margin-top: 9px; padding-top: 13px;
+              font-size: 14px; font-weight: 600; color: #17130F; }
+
+  .words { margin-top: 28px; font-size: 11.5px; color: #78706A; }
+  .words b { color: #17130F; font-weight: 600; }
+
+  .lower { display: flex; gap: 44px; margin-top: 36px; }
+  .col { flex: 1; }
+  .col .label { margin-bottom: 8px; }
+  .kv { display: flex; font-size: 11.5px; padding: 3px 0; }
+  .kv .k { width: 58px; color: #A29A92; }
+  .kv .v { color: #17130F; }
+  .note { font-size: 11.5px; color: #78706A; line-height: 1.65; }
+
+  .foot { margin-top: 46px; padding-top: 13px; border-top: 1px solid #EDE8E1;
           display: flex; justify-content: space-between; align-items: center;
-          font-size: 10px; color: #9A9186; }
+          font-size: 9.5px; color: #A29A92; }
   .foot .mark { display: flex; align-items: center; gap: 5px; }
 </style>
 </head>
 <body>
-  <div class="rule"></div>
-
-  <div class="top">
+  <div class="head">
     <div>
-      <div class="brandline">
-        ${markSvg(20, '#F5A623')}
-        <span class="creator-name">${esc(creator.name)}</span>
+      <div class="who">
+        ${markSvg(17, '#E09612')}
+        <span class="name">${esc(creator.name)}</span>
       </div>
       <div class="from">
-        Content creator${creator.phone ? `<br/>${esc(creator.phone)}` : ''}
-        ${creator.gstin ? `<br/>GSTIN ${esc(creator.gstin)}` : ''}
+        Content creator${creator.phone ? `<br/>${esc(creator.phone)}` : ''}${creator.gstin ? `<br/>GSTIN ${esc(creator.gstin)}` : ''}
       </div>
     </div>
     <div class="doc">
       <div class="kind">${invoice.gst_applicable ? 'Tax invoice' : 'Invoice'}</div>
       <div class="number">${esc(invoice.invoice_number)}</div>
-      <div class="meta">
-        Issued ${formatDate(invoice.invoice_date)}
-        ${invoice.payment_due_date ? `<br/>Due ${formatDate(invoice.payment_due_date)}` : ''}
-      </div>
     </div>
   </div>
 
-  <div class="parties">
-    <div class="party">
-      <div class="label">Billed to</div>
-      <div class="name">${esc(invoice.brand_name)}</div>
+  ${/*
+    The figure the reader opened this document to find, stated once and set
+    large. A finance team scanning a stack of invoices is looking for what to
+    pay and by when; everything below is the evidence for it. Previously this
+    sat at the bottom of a totals column at 16px, a single step above body
+    text, so the page had no focal point at all.
+  */ ''}
+  <div class="due">
+    <div class="amount">${formatINR(netPayable)}</div>
+    <div class="when">
       ${
-        invoice.brand_contact_person || invoice.brand_contact_email
-          ? `<div class="detail">${[esc(invoice.brand_contact_person), esc(invoice.brand_contact_email)].filter(Boolean).join('<br/>')}</div>`
-          : ''
-      }
+        invoice.payment_due_date
+          ? `Due ${formatDateLong(invoice.payment_due_date)}`
+          : 'Due on receipt'
+      } &nbsp;·&nbsp; Issued ${formatDateLong(invoice.invoice_date)}
     </div>
-    <div class="party">
-      <div class="label">Payable to</div>
-      <div class="name">${esc(creator.name)}</div>
-      ${creator.gstin ? `<div class="detail">GSTIN ${esc(creator.gstin)}</div>` : ''}
-    </div>
+  </div>
+
+  <div class="billed">
+    <div class="label">Billed to</div>
+    <div class="name">${esc(invoice.brand_name)}</div>
+    ${
+      invoice.brand_contact_person || invoice.brand_contact_email
+        ? `<div class="detail">${[esc(invoice.brand_contact_person), esc(invoice.brand_contact_email)].filter(Boolean).join(' &nbsp;·&nbsp; ')}</div>`
+        : ''
+    }
   </div>
 
   <table>
     <thead>
       <tr>
         <th>Description</th>
-        <th class="c">Qty</th>
+        <th class="r">Qty</th>
         <th class="r">Rate</th>
         <th class="r">Amount</th>
       </tr>
@@ -241,9 +254,9 @@ export function buildInvoiceHtml(
           (item) => `<tr>
         <td>
           <div class="desc">${esc(item.description)}</div>
-          <div class="hsn">SAC ${esc(item.hsn_sac)}</div>
+          <div class="sac">SAC ${esc(item.hsn_sac)}</div>
         </td>
-        <td class="c">${item.quantity}</td>
+        <td class="r">${item.quantity}</td>
         <td class="r">${formatINR(item.unit_amount)}</td>
         <td class="r">${formatINR(item.amount)}</td>
       </tr>`
@@ -254,31 +267,42 @@ export function buildInvoiceHtml(
 
   <div class="totals">
     <div class="totals-inner">
-      <div class="trow"><span>Subtotal</span><span>${formatINR(invoice.amount)}</span></div>
+      ${
+        // With no tax and no deduction the subtotal is the total, and printing
+        // the same figure twice reads as a mistake rather than as arithmetic.
+        invoice.gst_applicable || tds > 0
+          ? `<div class="trow"><span>Subtotal</span><span class="v">${formatINR(invoice.amount)}</span></div>`
+          : ''
+      }
       ${
         invoice.gst_applicable
-          ? `<div class="trow"><span>GST @ ${invoice.gst_rate}%</span><span>${formatINR(invoice.gst_amount)}</span></div>
-             <div class="trow"><span>Invoice total</span><span>${formatINR(invoice.total_amount)}</span></div>`
+          ? `<div class="trow"><span>GST @ ${invoice.gst_rate}%</span><span class="v">${formatINR(invoice.gst_amount)}</span></div>
+             <div class="trow"><span>Invoice total</span><span class="v">${formatINR(invoice.total_amount)}</span></div>`
           : ''
       }
       ${
+        // Neutral, not red. TDS is a statutory deduction the brand is required
+        // to make, not a problem with the invoice, and colouring it like an
+        // error invites a finance team to query a line that is simply correct.
         tds > 0
-          ? `<div class="trow tds"><span>Less TDS withheld</span><span>− ${formatINR(tds)}</span></div>`
+          ? `<div class="trow"><span>Less TDS withheld</span><span class="v">− ${formatINR(tds)}</span></div>`
           : ''
       }
-      <div class="trow net"><span>Net payable</span><span>${formatINR(netPayable)}</span></div>
+      <div class="trow sum"><span>Amount due</span><span class="v">${formatINR(netPayable)}</span></div>
     </div>
   </div>
 
-  <div class="words">
-    <div class="label">Amount in words</div>
-    <div class="value">${amountInWords(netPayable)}</div>
-  </div>
+  ${/*
+    Required on an Indian invoice, and the line a finance team reconciles the
+    figures against, but it is a check rather than a headline: set as a plain
+    sentence instead of the tinted, accent-barred callout it used to be.
+  */ ''}
+  <div class="words">Amount in words: <b>${amountInWords(netPayable)}</b></div>
 
   <div class="lower">
     ${
       paymentRows.length > 0
-        ? `<div class="box">
+        ? `<div class="col">
             <div class="label">Payment details</div>
             ${paymentRows
               .map((row) => `<div class="kv"><span class="k">${row[0]}</span><span class="v">${esc(row[1])}</span></div>`)
@@ -288,7 +312,7 @@ export function buildInvoiceHtml(
     }
     ${
       invoice.notes
-        ? `<div class="box"><div class="label">Notes</div><div class="note">${esc(invoice.notes)}</div></div>`
+        ? `<div class="col"><div class="label">Notes</div><div class="note">${esc(invoice.notes)}</div></div>`
         : ''
     }
   </div>
