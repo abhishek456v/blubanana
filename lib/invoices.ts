@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { getWorkspaceId } from './workspace'
+import { splitGst, stateCodeFromGstin } from '@/constants/gst'
 import type { Invoice, InvoiceLineItem } from '@/types'
 
 // Tax & invoicing (Phase 3). RLS on invoices restricts reads/writes to the
@@ -32,6 +33,20 @@ export interface CreateInvoiceInput {
   /** The billed lines. The invoice subtotal is their sum. */
   items: LineItemInput[]
   gst_applicable: boolean
+  /**
+   * Everything Rule 46 requires once GST is charged.
+   *
+   * `place_of_supply_code` is what decides IGST versus CGST+SGST, so it is
+   * required whenever `gst_applicable` is true; `createInvoice` refuses
+   * rather than guessing, because a wrong head cannot be claimed as input
+   * credit and silently costs the brand real money.
+   */
+  brand_gstin: string | null
+  brand_address: string | null
+  place_of_supply_code: string | null
+  /** The creator's own GSTIN and address, snapshotted onto the document. */
+  supplier_gstin: string | null
+  supplier_address: string | null
   payment_due_date: string | null
   tds_deducted: boolean
   tds_amount: number | null
@@ -82,6 +97,20 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
   const gstAmount = input.gst_applicable ? Math.round((amount * GST_RATE) / 100) : 0
   const totalAmount = amount + gstAmount
 
+  // A tax invoice without a place of supply is not a tax invoice: it is the
+  // field that decides which head the tax belongs to, and no default is
+  // honest. Better to stop here than to issue a document a finance team will
+  // reject after the creator has already sent it.
+  if (input.gst_applicable && !input.place_of_supply_code) {
+    throw new Error('A GST invoice needs a place of supply. Set the brand\'s state first.')
+  }
+
+  const split = splitGst(
+    gstAmount,
+    stateCodeFromGstin(input.supplier_gstin),
+    input.place_of_supply_code
+  )
+
   const description =
     input.description ??
     (lines.length === 1
@@ -102,6 +131,16 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
       gst_applicable: input.gst_applicable,
       gst_rate: GST_RATE,
       gst_amount: gstAmount,
+      cgst_amount: split.cgst,
+      sgst_amount: split.sgst,
+      igst_amount: split.igst,
+      place_of_supply_code: input.place_of_supply_code,
+      brand_gstin: input.brand_gstin,
+      brand_address: input.brand_address,
+      supplier_address: input.supplier_address,
+      // A creator's own services are never under reverse charge, but Rule
+      // 46(o) requires the invoice to say so rather than stay silent.
+      reverse_charge: false,
       total_amount: totalAmount,
       payment_due_date: input.payment_due_date,
       tds_deducted: input.tds_deducted,

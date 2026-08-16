@@ -7,6 +7,7 @@ import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated'
 import { getDeal, getDealsForBrand, type DealWithPaymentSummary } from '@/lib/deals'
 import { createInvoice, type LineItemInput } from '@/lib/invoices'
 import { getProfile } from '@/lib/profile'
+import { GST_STATE_OPTIONS, stateCodeFromGstin } from '@/constants/gst'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { amountInWords } from '@/lib/invoiceHtml'
 import { ContentMaxWidth, FontFamily, Radius, Spacing, Typography } from '@/constants/design'
@@ -16,6 +17,7 @@ import { ModalSheet } from '@/components/ModalSheet'
 import {
   Button,
   Card,
+  Chip,
   DateField,
   PressableScale,
   Skeleton,
@@ -62,6 +64,13 @@ export default function NewInvoiceScreen() {
   const [tdsDeducted, setTdsDeducted] = useState(false)
   const [tdsAmount, setTdsAmount] = useState('')
   const [notes, setNotes] = useState('')
+  // Rule 46 fields. Prefilled from the brand and the creator's profile so the
+  // common case is a confirmation rather than data entry.
+  const [brandGstin, setBrandGstin] = useState('')
+  const [brandAddress, setBrandAddress] = useState('')
+  const [placeOfSupply, setPlaceOfSupply] = useState<string | null>(null)
+  const [supplierGstin, setSupplierGstin] = useState<string | null>(null)
+  const [supplierAddress, setSupplierAddress] = useState<string | null>(null)
 
   /** Other deals for the same brand that could join this invoice. */
   const [candidates, setCandidates] = useState<DealWithPaymentSummary[]>([])
@@ -80,6 +89,11 @@ export default function NewInvoiceScreen() {
       setBrandName(deal.brand?.name ?? '')
       setContactPerson(deal.brand?.contact_person ?? '')
       setContactEmail(deal.brand?.contact_email ?? '')
+      setBrandGstin(deal.brand?.gstin ?? '')
+      setBrandAddress(deal.brand?.address ?? '')
+      // The place of supply for a creator's services is the recipient's
+      // location, which the brand's own GSTIN already encodes.
+      setPlaceOfSupply(deal.brand?.state_code ?? stateCodeFromGstin(deal.brand?.gstin))
       setDueDate(deal.payment?.due_date ?? null)
       setLines([
         {
@@ -93,7 +107,11 @@ export default function NewInvoiceScreen() {
       // Only a GST-registered creator may charge GST, so default the switch
       // from the profile instead of asking a question they can get wrong.
       getProfile()
-        .then((profile) => setGstApplicable(Boolean(profile.gstin)))
+        .then((profile) => {
+          setGstApplicable(Boolean(profile.gstin))
+          setSupplierGstin(profile.gstin)
+          setSupplierAddress(profile.address)
+        })
         .catch(() => {})
 
       // Deals for the same brand that are delivered but not yet billed.
@@ -184,6 +202,11 @@ export default function NewInvoiceScreen() {
         brand_contact_email: contactEmail.trim() || null,
         items,
         gst_applicable: gstApplicable,
+        brand_gstin: brandGstin.trim() || null,
+        brand_address: brandAddress.trim() || null,
+        place_of_supply_code: placeOfSupply,
+        supplier_gstin: supplierGstin,
+        supplier_address: supplierAddress,
         payment_due_date: dueDate,
         tds_deducted: tdsDeducted,
         tds_amount: tds || null,
@@ -191,8 +214,13 @@ export default function NewInvoiceScreen() {
       })
       toast(`${invoice.invoice_number} created`, { tone: 'success' })
       router.replace(`/(app)/invoice/${invoice.id}` as never)
-    } catch {
-      toast('Could not create the invoice', { tone: 'error' })
+    } catch (err) {
+      // A missing place of supply is a fixable mistake, not a failure, so it
+      // says which field to fill rather than hiding behind "could not create".
+      const message = err instanceof Error && err.message.includes('place of supply')
+        ? err.message
+        : 'Could not create the invoice'
+      toast(message, { tone: 'error' })
     } finally {
       setSaving(false)
     }
@@ -331,6 +359,64 @@ export default function NewInvoiceScreen() {
                   thumbColor={gstApplicable ? c.accent : undefined}
                 />
               </View>
+
+              {/*
+                Only asked for once GST is actually being charged, because
+                these fields exist to satisfy Rule 46 rather than to describe
+                the work. The state is what decides IGST against CGST+SGST, so
+                the invoice cannot be issued without it.
+              */}
+              {gstApplicable ? (
+                <View style={styles.taxFields}>
+                  <Text style={[styles.fieldLabel, { color: c.textSecondary }]}>
+                    Their GSTIN
+                  </Text>
+                  <TextField
+                    placeholder="27AABCU9603R1ZM"
+                    value={brandGstin}
+                    onChangeText={(next) => {
+                      setBrandGstin(next)
+                      // The first two characters are the State code, so a
+                      // pasted GSTIN answers the place-of-supply question too.
+                      const derived = stateCodeFromGstin(next)
+                      if (derived) setPlaceOfSupply(derived)
+                    }}
+                    autoCapitalize="characters"
+                  />
+
+                  <Text style={[styles.fieldLabel, { color: c.textSecondary }]}>
+                    Their billing address
+                  </Text>
+                  <TextField
+                    placeholder="Street, city, PIN"
+                    value={brandAddress}
+                    onChangeText={setBrandAddress}
+                    multiline
+                  />
+
+                  <Text style={[styles.fieldLabel, { color: c.textSecondary }]}>
+                    Place of supply
+                  </Text>
+                  <Text style={[styles.cardHint, { color: c.textSecondary }]}>
+                    Where the brand is registered. Same state as you means CGST and
+                    SGST; a different state means IGST.
+                  </Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.stateScroll}
+                  >
+                    {GST_STATE_OPTIONS.map((option) => (
+                      <Chip
+                        key={option.code}
+                        label={option.name}
+                        selected={placeOfSupply === option.code}
+                        onPress={() => setPlaceOfSupply(option.code)}
+                      />
+                    ))}
+                  </ScrollView>
+                </View>
+              ) : null}
 
               <View style={[styles.switchRow, styles.switchRowSpaced]}>
                 <View style={styles.switchText}>
@@ -490,6 +576,20 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   switchRowSpaced: { marginTop: Spacing.lg },
+  taxFields: {
+    marginTop: Spacing.lg,
+    gap: Spacing.xs,
+  },
+  fieldLabel: {
+    ...Typography.caption,
+    fontFamily: FontFamily.medium,
+    marginTop: Spacing.sm,
+  },
+  stateScroll: {
+    gap: Spacing.sm,
+    paddingVertical: Spacing.sm,
+    paddingRight: Spacing.md,
+  },
   switchText: { flex: 1 },
   tdsField: { marginTop: Spacing.md },
   preview: { gap: Spacing.xxs },

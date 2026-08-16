@@ -95,6 +95,8 @@ export interface Creator {
   bank_account_number: string | null
   ifsc_code: string | null
   gstin: string | null
+  /** Rule 46(a): mandatory on a tax invoice (migration 018). */
+  address: string | null
   // Shown on the shareable public profile card (Phase 3).
   niche: string | null
   public_profile_enabled: boolean
@@ -110,6 +112,14 @@ export interface Brand {
   contact_phone: string | null
   contact_email: string | null
   notes: string | null
+  /**
+   * Tax details (migration 018). Held here so the creator types them once;
+   * each invoice snapshots its own copy. `state_code` is separate from the
+   * GSTIN because an unregistered brand still has a place of supply.
+   */
+  gstin: string | null
+  address: string | null
+  state_code: string | null
   created_at: string
 }
 
@@ -275,6 +285,27 @@ export interface Invoice {
   gst_applicable: boolean
   gst_rate: number
   gst_amount: number
+  /**
+   * The tax split by head (migration 018). Under the IGST Act a supply is
+   * inter-State when the supplier's State differs from the place of supply,
+   * carrying IGST at the full rate; intra-State supplies carry CGST and SGST
+   * at half each. A recipient cannot claim input credit against the wrong
+   * head, so these are stored rather than derived at render time.
+   *
+   * All three are 0 on invoices issued before 018, where the place of supply
+   * was never recorded and the head is genuinely unknown.
+   */
+  cgst_amount: number
+  sgst_amount: number
+  igst_amount: number
+  /** State code of the place of supply, e.g. '27'. See constants/gst.ts. */
+  place_of_supply_code: string | null
+  /** Snapshotted at generation time, like brand_name. */
+  brand_gstin: string | null
+  brand_address: string | null
+  supplier_address: string | null
+  /** Rule 46(o). Always false for a creator's own services, but stated. */
+  reverse_charge: boolean
   total_amount: number
   payment_due_date: string | null
   tds_deducted: boolean

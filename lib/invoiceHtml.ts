@@ -1,3 +1,4 @@
+import { placeOfSupplyLabel } from '@/constants/gst'
 import type { Creator, Invoice, InvoiceLineItem } from '@/types'
 
 // Printable HTML for an invoice, fed to expo-print (see lib/invoicePdf.ts).
@@ -124,6 +125,28 @@ export function buildInvoiceHtml(
   const tds = invoice.tds_deducted ? (invoice.tds_amount ?? 0) : 0
   const netPayable = invoice.total_amount - tds
 
+  const supplierAddress = creator.address
+  const placeOfSupply = placeOfSupplyLabel(invoice.place_of_supply_code)
+
+  // Half the headline rate on each of CGST and SGST; the full rate on IGST.
+  const halfRate = invoice.gst_rate / 2
+  const trow = (label: string, value: number) =>
+    `<div class="trow"><span>${label}</span><span class="v">${formatINR(value)}</span></div>`
+
+  // Invoices issued before migration 018 recorded a gst_amount but no place of
+  // supply, so which head it belonged to is genuinely unknown. Those print as
+  // the single line they were issued with rather than being retroactively
+  // split into a tax position nobody took.
+  const hasSplit =
+    invoice.cgst_amount > 0 || invoice.sgst_amount > 0 || invoice.igst_amount > 0
+
+  const gstRows = !hasSplit
+    ? trow(`GST @ ${invoice.gst_rate}%`, invoice.gst_amount)
+    : invoice.igst_amount > 0
+      ? trow(`IGST @ ${invoice.gst_rate}%`, invoice.igst_amount)
+      : trow(`CGST @ ${halfRate}%`, invoice.cgst_amount) +
+        trow(`SGST @ ${halfRate}%`, invoice.sgst_amount)
+
   const paymentRows = [
     creator.upi_id ? ['UPI', creator.upi_id] : null,
     creator.bank_account_number ? ['Account', creator.bank_account_number] : null,
@@ -161,6 +184,12 @@ export function buildInvoiceHtml(
   .billed { margin-bottom: 32px; }
   .billed .name { font-size: 13.5px; font-weight: 600; margin-top: 7px; }
   .billed .detail { font-size: 11.5px; color: #78706A; margin-top: 3px; line-height: 1.55; }
+  .billed .detail.strong { color: #17130F; font-weight: 500; }
+  .cols { display: flex; gap: 44px; }
+  .cols .col { flex: 1; }
+  /* The statutory fields sit in the gap the totals block leaves empty, so
+     compliance costs the page no extra vertical space. */
+  .cols .col.meta { flex: 0 0 190px; }
 
   table { width: 100%; border-collapse: collapse; }
   th { text-align: left; font-size: 9.5px; text-transform: uppercase; letter-spacing: .14em;
@@ -202,7 +231,7 @@ export function buildInvoiceHtml(
         <span class="name">${esc(creator.name)}</span>
       </div>
       <div class="from">
-        Content creator${creator.phone ? `<br/>${esc(creator.phone)}` : ''}${creator.gstin ? `<br/>GSTIN ${esc(creator.gstin)}` : ''}
+        Content creator${supplierAddress ? `<br/>${esc(supplierAddress).replace(/\n/g, '<br/>')}` : ''}${creator.phone ? `<br/>${esc(creator.phone)}` : ''}${creator.gstin ? `<br/>GSTIN ${esc(creator.gstin)}` : ''}
       </div>
     </div>
     <div class="doc">
@@ -229,14 +258,40 @@ export function buildInvoiceHtml(
     </div>
   </div>
 
+  ${/*
+    Rule 46(d) and (m): the recipient's GSTIN and address where registered,
+    and the place of supply. Set as one quiet block beside the recipient
+    rather than a separate compliance panel, so the page reads as a document
+    rather than a form.
+  */ ''}
   <div class="billed">
-    <div class="label">Billed to</div>
-    <div class="name">${esc(invoice.brand_name)}</div>
-    ${
-      invoice.brand_contact_person || invoice.brand_contact_email
-        ? `<div class="detail">${[esc(invoice.brand_contact_person), esc(invoice.brand_contact_email)].filter(Boolean).join(' &nbsp;·&nbsp; ')}</div>`
-        : ''
-    }
+    <div class="cols">
+      <div class="col">
+        <div class="label">Billed to</div>
+        <div class="name">${esc(invoice.brand_name)}</div>
+        ${
+          invoice.brand_address
+            ? `<div class="detail">${esc(invoice.brand_address).replace(/\n/g, '<br/>')}</div>`
+            : ''
+        }
+        ${
+          invoice.brand_contact_person || invoice.brand_contact_email
+            ? `<div class="detail">${[esc(invoice.brand_contact_person), esc(invoice.brand_contact_email)].filter(Boolean).join(' &nbsp;·&nbsp; ')}</div>`
+            : ''
+        }
+        ${invoice.brand_gstin ? `<div class="detail">GSTIN ${esc(invoice.brand_gstin)}</div>` : ''}
+      </div>
+      ${
+        placeOfSupply
+          ? `<div class="col meta">
+              <div class="label">Place of supply</div>
+              <div class="detail strong">${esc(placeOfSupply)}</div>
+              <div class="label" style="margin-top:12px;">Reverse charge</div>
+              <div class="detail strong">${invoice.reverse_charge ? 'Yes' : 'No'}</div>
+            </div>`
+          : ''
+      }
+    </div>
   </div>
 
   <table>
@@ -275,9 +330,14 @@ export function buildInvoiceHtml(
           : ''
       }
       ${
+        // Rule 46(k)/(l): each head shown separately with its own rate. A
+        // merged "GST @ 18%" line cannot be claimed as input credit, which is
+        // what the whole document is for.
+        invoice.gst_applicable ? gstRows : ''
+      }
+      ${
         invoice.gst_applicable
-          ? `<div class="trow"><span>GST @ ${invoice.gst_rate}%</span><span class="v">${formatINR(invoice.gst_amount)}</span></div>
-             <div class="trow"><span>Invoice total</span><span class="v">${formatINR(invoice.total_amount)}</span></div>`
+          ? `<div class="trow"><span>Invoice total</span><span class="v">${formatINR(invoice.total_amount)}</span></div>`
           : ''
       }
       ${
