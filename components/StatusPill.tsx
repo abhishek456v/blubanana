@@ -28,10 +28,35 @@ function getVariant(status: DealStatus): PillVariant {
   }
 }
 
-export function StatusPill({ status }: { status: DealStatus }) {
+export interface StatusPillProps {
+  status: DealStatus
+  /**
+   * Renders on glass for use on a gradient card.
+   *
+   * The status hues are picked to sit on the page ground and lose most of
+   * their contrast on a saturated one — `warning` on the blue card is close to
+   * unreadable. The label is the primary signal by design (see above), so on a
+   * gradient the pill keeps the words at full white and drops the hue rather
+   * than keeping a colour that no longer reads.
+   */
+  onGradient?: boolean
+}
+
+export function StatusPill({ status, onGradient = false }: StatusPillProps) {
   const { c } = useTheme()
   const variant = getVariant(status)
   const label = STATUS_LABELS[status]
+
+  if (onGradient) {
+    return (
+      <View style={[styles.pill, styles.glass]}>
+        {variant === 'success' ? null : <View style={[styles.dot, styles.dotOnGlass]} />}
+        <Text style={[styles.text, styles.textOnGlass]}>
+          {variant === 'success' ? `✓ ${label}` : label}
+        </Text>
+      </View>
+    )
+  }
 
   if (variant === 'neutral') {
     return (
@@ -80,6 +105,20 @@ const styles = StyleSheet.create({
   },
   outline: {
     borderWidth: 1,
+  },
+  glass: {
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.24)',
+    paddingVertical: 5,
+    paddingHorizontal: Spacing.base,
+  },
+  dotOnGlass: {
+    backgroundColor: '#FFFFFF',
+  },
+  textOnGlass: {
+    color: '#FFFFFF',
+    fontFamily: FontFamily.medium,
   },
   dot: {
     width: 5,

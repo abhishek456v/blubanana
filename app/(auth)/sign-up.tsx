@@ -68,7 +68,7 @@ export default function SignUpScreen() {
   if (awaitingConfirmation) {
     return (
       <AuthShell>
-        <View style={[styles.container, styles.center, { backgroundColor: c.bgPage }]}>
+        <View style={[styles.container, styles.center]}>
           <Animated.View
             entering={FadeInDown.duration(Duration.slow)}
             style={[styles.inner, isWide && styles.innerWide, styles.confirmBlock]}
@@ -92,7 +92,7 @@ export default function SignUpScreen() {
   return (
     <AuthShell>
       <KeyboardAvoidingView
-        style={[styles.container, { backgroundColor: c.bgPage }]}
+        style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={[styles.inner, isWide && styles.innerWide]}>

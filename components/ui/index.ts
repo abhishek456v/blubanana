@@ -61,3 +61,4 @@ export {
 export { PeriodPill, type PeriodPillProps } from './PeriodPill'
 export { OrbitRing, type OrbitItem, type OrbitRingProps } from './OrbitRing'
 export { DotGrid, type DotGridProps } from './DotGrid'
+export { AuraBackground } from './AuraBackground'

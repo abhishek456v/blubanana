@@ -57,7 +57,7 @@ export default function ResetPasswordScreen() {
   return (
     <AuthShell>
       <KeyboardAvoidingView
-        style={[styles.container, { backgroundColor: c.bgPage }]}
+        style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={[styles.inner, isWide && styles.innerWide]}>

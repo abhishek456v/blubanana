@@ -59,9 +59,23 @@ import { DeliverablesCard } from '@/components/deal/DeliverablesCard'
 import { TimelineCard } from '@/components/deal/TimelineCard'
 import { MessageHistoryCard } from '@/components/deal/MessageHistoryCard'
 import type { DeliverableDraft } from '@/components/deal/DeliverableEditor'
-import { Chip, StarRating, TextField, useConfirm, useToast } from '@/components/ui'
-import { formatDateLong } from '@/lib/format'
-import { PLATFORMS, STATUS_LABELS, REMINDER_STAGE_LABELS } from '@/constants/labels'
+import {
+  Chip,
+  Figure,
+  FigureBlock,
+  GradientCard,
+  StarRating,
+  TextField,
+  useConfirm,
+  useToast,
+} from '@/components/ui'
+import { formatCurrency, formatDate, formatDateLong } from '@/lib/format'
+import {
+  PLATFORMS,
+  PLATFORM_LABELS,
+  STATUS_LABELS,
+  REMINDER_STAGE_LABELS,
+} from '@/constants/labels'
 import {
   ColumnGap,
   DesktopContentMaxWidth,
@@ -791,17 +805,73 @@ export default function DealDetailScreen() {
           >
             <Pressable onPress={() => Keyboard.dismiss()}>
 
-              {/* Two columns on desktop. The cut is between the deal itself (
-                  status, brand, deliverables, money, dates) and everything
-                  attached to it: rights, messages, files, performance, invoice.
-                  Below `desktop` they stack in exactly this order, so the mobile
-                  reading order is unchanged. */}
+              {/* Who, how much, and by when — the three things you open a deal
+                  to check, on the one surface that carries them all. Below it
+                  the screen is a form, and a form is a poor way to answer a
+                  question you only wanted to glance at. */}
+              <GradientCard
+                gradient="blue"
+                style={styles.hero}
+                action={<StatusPill status={deal.status} onGradient />}
+              >
+                <View style={styles.heroBrand}>
+                  <BrandAvatar name={brandName} size={34} />
+                  <Text style={styles.heroBrandName} numberOfLines={1}>
+                    {brandName}
+                  </Text>
+                </View>
+
+                <View style={styles.heroFigures}>
+                  <FigureBlock
+                    label={summarizeDeliverables(deliverables) || PLATFORM_LABELS[platform]}
+                    figure={
+                      <Figure
+                        value={formatCurrency(parseInt(rate, 10) || 0)}
+                        size="hero"
+                        color="#FFFFFF"
+                        bold
+                      />
+                    }
+                  />
+                  {deal.payment?.due_date ? (
+                    <FigureBlock
+                      align="right"
+                      label={deal.payment.status === 'paid' ? 'Paid' : 'Payment due'}
+                      figure={
+                        <Figure
+                          value={formatDate(deal.payment.due_date)}
+                          size="lg"
+                          color="#FFFFFF"
+                        />
+                      }
+                    />
+                  ) : null}
+                </View>
+              </GradientCard>
+
+              {/* Two columns on desktop, split by subject rather than by
+                  importance: the left is the work (what is being made, and
+                  when), the right is the money and then the paperwork. The
+                  previous cut ran between "the deal" and "things attached to
+                  it", which put the rate, the terms and the payment in one
+                  column and the invoice for them in the other.
+
+                  Below `desktop` they stack in this order, so the mobile
+                  reading order is the same three groups. */}
               <View style={isDesktop ? styles.columns : undefined}>
                 <View style={isDesktop ? styles.mainColumn : undefined}>
-                  {/* ── Status ──────────────────────────────────────────── */}
+                  <Text style={[styles.groupHeading, { color: c.textPrimary }]}>The work</Text>
+                  {/* ── Status ──────────────────────────────────────────
+                      The pill itself is on the hero. What is left here is the
+                      thing you can do about it: advance the deal to its next
+                      stage. Stating "Live" twice, once above the other, made
+                      the card look like it was showing something the hero was
+                      not. */}
                   <View style={[styles.statusCard, { backgroundColor: c.bgSurface }]}>
                     <View style={styles.statusRow}>
-                      <StatusPill status={deal.status} />
+                      <Text style={[styles.statusStage, { color: c.textSecondary }]}>
+                        {STATUS_LABELS[deal.status]}
+                      </Text>
                       {nextStatus ? (
                         <TouchableOpacity
                           style={[
@@ -1006,14 +1076,9 @@ export default function DealDetailScreen() {
                     </View>
                   ) : null}
 
-                  {/* ── Brand (non-editable) ─────────────────────────── */}
-                  <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Brand</Text>
-                  <View style={[styles.brandDisplay, { backgroundColor: c.bgSurface }]}>
-                    <BrandAvatar name={brandName} size={32} />
-                    <Text style={[styles.brandDisplayName, { color: c.textPrimary }]}>
-                      {brandName}
-                    </Text>
-                  </View>
+                  {/* The brand used to be restated here as a read-only row.
+                      It is on the hero above, next to the rate, which is where
+                      it was always being read from. */}
 
                   {/* ── Platform ─────────────────────────────────────── */}
                   <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Platform</Text>
@@ -1046,6 +1111,79 @@ export default function DealDetailScreen() {
                       disabled={savingDeliverables}
                     />
                   </View>
+
+                  {/* ── Ad rights ────────────────────────────────────────
+                      The fee, duration and start date are edited as an `ad_rights`
+                      line item in the Deliverables card above. This block used to
+                      duplicate all three, which meant the same term could be
+                      entered twice and disagree with itself. What is left is the
+                      part the line item can't express: whether the licence has
+                      run out, and the one-tap Ad Library check. */}
+                  {adRightsItem ? (
+                    <View
+                      style={[styles.adRightsBox, { backgroundColor: c.accentLight, borderColor: c.accent }]}
+                    >
+                      <Text style={[styles.sectionLabel, styles.adRightsLabel, { color: c.accentText }]}>
+                        Ad rights
+                      </Text>
+
+                      {adRightsItem.expires_on ? (
+                        <Text
+                          style={[
+                            styles.adRightsExpiryNote,
+                            {
+                              color:
+                                getAdRightsStatus(deal) === 'expired' ? c.danger : c.textSecondary,
+                            },
+                          ]}
+                        >
+                          {getAdRightsStatus(deal) === 'expired'
+                            ? `Expired ${formatDateLong(adRightsItem.expires_on)}. The brand should have stopped running ads.`
+                            : `Runs until ${formatDateLong(adRightsItem.expires_on)}. You'll get a reminder 30 days before.`}
+                        </Text>
+                      ) : (
+                        <Text style={[styles.adRightsExpiryNote, { color: c.textSecondary }]}>
+                          Add a start date and duration to the ad rights item above to track expiry.
+                        </Text>
+                      )}
+
+                      <TouchableOpacity
+                        style={[styles.metaAdLibraryButton, { borderColor: c.accent }]}
+                        onPress={() => Linking.openURL(buildMetaAdLibraryUrl(brandName))}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="search-outline" size={15} color={c.accent} />
+                        <Text style={[styles.metaAdLibraryButtonText, { color: c.accentText }]}>
+                          Check Meta Ad Library
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : null}
+
+
+                  {/* ── Timeline ─────────────────────────────────────────
+                      A stage tracker plus real date pickers, replacing the grid
+                      of hand-typed YYYY-MM-DD inputs this screen used to carry. */}
+                  <View style={styles.deliverablesBlock}>
+                    <TimelineCard
+                      status={deal.status}
+                      scriptDue={scriptDue}
+                      shootDate={shootDate}
+                      editDone={editDone}
+                      publishDate={publishDate}
+                      onChange={(field, value) => {
+                        if (field === 'script') setScriptDue(value)
+                        else if (field === 'shoot') setShootDate(value)
+                        else if (field === 'edit') setEditDone(value)
+                        else setPublishDate(value)
+                      }}
+                    />
+                  </View>
+
+                </View>
+
+                <View style={isDesktop ? styles.sideColumn : undefined}>
+                  <Text style={[styles.groupHeading, { color: c.textPrimary }]}>The money</Text>
 
                   {/* ── Payment terms ────────────────────────────────── */}
                   <View style={styles.fieldStack}>
@@ -1131,28 +1269,26 @@ export default function DealDetailScreen() {
                     )
                   })()}
 
-                  {/* ── Timeline ─────────────────────────────────────────
-                      A stage tracker plus real date pickers, replacing the grid
-                      of hand-typed YYYY-MM-DD inputs this screen used to carry. */}
-                  <View style={styles.deliverablesBlock}>
-                    <TimelineCard
-                      status={deal.status}
-                      scriptDue={scriptDue}
-                      shootDate={shootDate}
-                      editDone={editDone}
-                      publishDate={publishDate}
-                      onChange={(field, value) => {
-                        if (field === 'script') setScriptDue(value)
-                        else if (field === 'shoot') setShootDate(value)
-                        else if (field === 'edit') setEditDone(value)
-                        else setPublishDate(value)
-                      }}
-                    />
-                  </View>
+                  {/* ── Invoice (Phase 3) ──────────────────────────────────── */}
+                  <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Invoice</Text>
+                  <TouchableOpacity
+                    style={[styles.addAttachmentButton, { borderColor: c.accent }]}
+                    onPress={() =>
+                      invoice
+                        ? router.push(`/(app)/invoice/${invoice.id}` as never)
+                        : router.push(`/(app)/invoice/new?dealId=${deal.id}` as never)
+                    }
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.addAttachmentText, { color: c.accentText }]}>
+                      {invoice ? `View invoice (${invoice.invoice_number})` : 'Create invoice'}
+                    </Text>
+                  </TouchableOpacity>
 
-                </View>
+                  <Text style={[styles.groupHeading, styles.groupHeadingGap, { color: c.textPrimary }]}>
+                    The paperwork
+                  </Text>
 
-                <View style={isDesktop ? styles.sideColumn : undefined}>
                   {/* ── Live link + notes ────────────────────────────── */}
                   <View style={styles.fieldStack}>
                     <TextField
@@ -1175,53 +1311,6 @@ export default function DealDetailScreen() {
                     />
                   </View>
 
-                  {/* ── Ad rights ────────────────────────────────────────
-                      The fee, duration and start date are edited as an `ad_rights`
-                      line item in the Deliverables card above. This block used to
-                      duplicate all three, which meant the same term could be
-                      entered twice and disagree with itself. What is left is the
-                      part the line item can't express: whether the licence has
-                      run out, and the one-tap Ad Library check. */}
-                  {adRightsItem ? (
-                    <View
-                      style={[styles.adRightsBox, { backgroundColor: c.accentLight, borderColor: c.accent }]}
-                    >
-                      <Text style={[styles.sectionLabel, styles.adRightsLabel, { color: c.accentText }]}>
-                        Ad rights
-                      </Text>
-
-                      {adRightsItem.expires_on ? (
-                        <Text
-                          style={[
-                            styles.adRightsExpiryNote,
-                            {
-                              color:
-                                getAdRightsStatus(deal) === 'expired' ? c.danger : c.textSecondary,
-                            },
-                          ]}
-                        >
-                          {getAdRightsStatus(deal) === 'expired'
-                            ? `Expired ${formatDateLong(adRightsItem.expires_on)}. The brand should have stopped running ads.`
-                            : `Runs until ${formatDateLong(adRightsItem.expires_on)}. You'll get a reminder 30 days before.`}
-                        </Text>
-                      ) : (
-                        <Text style={[styles.adRightsExpiryNote, { color: c.textSecondary }]}>
-                          Add a start date and duration to the ad rights item above to track expiry.
-                        </Text>
-                      )}
-
-                      <TouchableOpacity
-                        style={[styles.metaAdLibraryButton, { borderColor: c.accent }]}
-                        onPress={() => Linking.openURL(buildMetaAdLibraryUrl(brandName))}
-                        activeOpacity={0.8}
-                      >
-                        <Ionicons name="search-outline" size={15} color={c.accent} />
-                        <Text style={[styles.metaAdLibraryButtonText, { color: c.accentText }]}>
-                          Check Meta Ad Library
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  ) : null}
 
                   <View style={styles.deliverablesBlock}>
                     <MessageHistoryCard dealId={deal.id} />
@@ -1364,21 +1453,6 @@ export default function DealDetailScreen() {
                     </>
                   )}
 
-                  {/* ── Invoice (Phase 3) ──────────────────────────────────── */}
-                  <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Invoice</Text>
-                  <TouchableOpacity
-                    style={[styles.addAttachmentButton, { borderColor: c.accent }]}
-                    onPress={() =>
-                      invoice
-                        ? router.push(`/(app)/invoice/${invoice.id}` as never)
-                        : router.push(`/(app)/invoice/new?dealId=${deal.id}` as never)
-                    }
-                    activeOpacity={0.8}
-                  >
-                    <Text style={[styles.addAttachmentText, { color: c.accentText }]}>
-                      {invoice ? `View invoice (${invoice.invoice_number})` : 'Create invoice'}
-                    </Text>
-                  </TouchableOpacity>
 
                 </View>
               </View>
@@ -1437,6 +1511,42 @@ const styles = StyleSheet.create({
   },
   // The deal itself earns the wider column: it holds the deliverables editor
   // and the timeline, both of which are rows of controls rather than prose.
+  hero: {
+    marginBottom: Spacing.lg,
+  },
+  statusStage: {
+    ...Typography.bodyStrong,
+    fontFamily: FontFamily.medium,
+  },
+  heroBrand: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.base,
+    marginBottom: Spacing.xl,
+  },
+  heroBrandName: {
+    flex: 1,
+    ...Typography.heading,
+    fontFamily: FontFamily.semiBold,
+    color: '#FFFFFF',
+  },
+  heroFigures: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: Spacing.md,
+  },
+  // Names the three groups the screen is cut into. Without them the columns
+  // read as one long form and the reader has to infer the grouping from the
+  // order, which is exactly what the old layout asked of them.
+  groupHeading: {
+    ...Typography.title,
+    fontFamily: FontFamily.display,
+    marginBottom: Spacing.base,
+  },
+  groupHeadingGap: {
+    marginTop: Spacing.xl,
+  },
   mainColumn: {
     flex: 1.35,
   },

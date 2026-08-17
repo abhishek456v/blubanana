@@ -194,6 +194,12 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     alignItems: 'center',
     paddingVertical: Spacing.lg,
+    // The hover label overhangs the rail into the scene beside it. The scene
+    // is a later sibling in the navigator's row, so it paints over anything in
+    // here no matter what z-index the label itself carries — stacking is
+    // resolved between these two, not between their descendants. Without this
+    // the label showed as a clipped sliver at the rail's edge.
+    zIndex: 10,
   },
   brand: {
     marginBottom: Spacing.xl,

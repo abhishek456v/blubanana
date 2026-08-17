@@ -47,7 +47,7 @@ export default function ForgotPasswordScreen() {
   if (sent) {
     return (
       <AuthShell>
-        <View style={[styles.container, { backgroundColor: c.bgPage }]}>
+        <View style={styles.container}>
           <Animated.View
             entering={FadeInDown.duration(Duration.slow)}
             style={[styles.inner, isWide && styles.innerWide, styles.sentBlock]}
@@ -71,7 +71,7 @@ export default function ForgotPasswordScreen() {
   return (
     <AuthShell>
       <KeyboardAvoidingView
-        style={[styles.container, { backgroundColor: c.bgPage }]}
+        style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={[styles.inner, isWide && styles.innerWide]}>
