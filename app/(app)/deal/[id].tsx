@@ -1332,9 +1332,10 @@ export default function DealDetailScreen() {
                     const tone = getPaymentAlertTone(payment)
                     const missingPhone = !deal.brand?.contact_phone
 
-                    // Nothing to chase yet: no reminder is due and the brand
-                    // has a number. An empty card is worse than no card.
-                    if (!tone && !missingPhone) return null
+                    // Everything inside this card is gated on `tone`, so
+                    // without one it renders an empty rounded box. The missing
+                    // phone matters only when there is something to send.
+                    if (!tone) return null
 
                     return (
                       <View style={[styles.paymentCard, { backgroundColor: c.bgSurface }]}>

@@ -29,6 +29,13 @@ export interface RevenueSummary {
   /** The subset of pending that is already past its due date. */
   overdue: MoneyBucket
   averageDealValue: number
+  /**
+   * Of everything invoiced, what share actually arrived, and how long it took.
+   *
+   * No creator tracks this, and it is the number that says which brands to
+   * stop working with. Null until there is something settled to measure.
+   */
+  collection: { rate: number; averageDays: number } | null
   dealsClosed: number
   bestPayingBrand: { name: string; total: number } | null
   /** Oldest → newest, six months. */
@@ -92,6 +99,32 @@ export function computeRevenueSummary(deals: DealWithPaymentSummary[]): RevenueS
   const averageDealValue =
     deals.length > 0 ? Math.round(deals.reduce((sum, d) => sum + d.rate, 0) / deals.length) : 0
 
+  // Measured against everything billed, settled or not, so a brand sitting on
+  // an invoice drags the rate down rather than being quietly excluded.
+  const billed = rows.reduce((sum, { payment }) => sum + payment.amount, 0)
+  const collectedTotal = settled.reduce((sum, row) => sum + landed(row), 0)
+
+  const daysToPay = settled
+    .filter(({ payment }) => payment.due_date && payment.paid_date)
+    .map(({ payment }) => {
+      const due = new Date(payment.due_date!).getTime()
+      const paid = new Date(payment.paid_date!).getTime()
+      return Math.round((paid - due) / 86_400_000)
+    })
+
+  const collection =
+    billed > 0 && settled.length > 0
+      ? {
+          rate: Math.round((collectedTotal / billed) * 100),
+          // Relative to the due date, so 0 means "on time" and a negative
+          // number means early. Days-since-invoice would flatter long terms.
+          averageDays:
+            daysToPay.length > 0
+              ? Math.round(daysToPay.reduce((a, b) => a + b, 0) / daysToPay.length)
+              : 0,
+        }
+      : null
+
   const byBrand = new Map<string, number>()
   for (const row of settled) {
     const name = row.deal.brand?.name ?? 'Unknown brand'
@@ -117,6 +150,7 @@ export function computeRevenueSummary(deals: DealWithPaymentSummary[]): RevenueS
     pending,
     overdue,
     averageDealValue,
+    collection,
     // Deals, not payments: a deal is closed when everything on it is settled.
     dealsClosed: deals.filter((deal) => isFullyPaid(deal)).length,
     bestPayingBrand,

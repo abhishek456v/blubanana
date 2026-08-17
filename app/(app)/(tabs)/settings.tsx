@@ -4,7 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useFocusEffect } from '@react-navigation/core'
 import { Ionicons } from '@expo/vector-icons'
+import { File, Paths } from 'expo-file-system'
+import * as Sharing from 'expo-sharing'
 import { supabase } from '@/lib/supabase'
+import { buildExport } from '@/lib/exportData'
 import { disablePublicProfile, enablePublicProfile, getProfile } from '@/lib/profile'
 import {
   notificationsEnabledAsync,
@@ -66,6 +69,7 @@ export default function YouScreen() {
 
   const [profile, setProfile] = useState<Creator | null>(null)
   const [togglingPublic, setTogglingPublic] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const [notifPermission, setNotifPermission] = useState<'unknown' | 'granted' | 'denied'>(
     'unknown'
   )
@@ -108,6 +112,43 @@ export default function YouScreen() {
       refreshNotificationState()
     }, [loadProfile, refreshNotificationState])
   )
+
+  /**
+   * Hands the creator her whole workspace as a file.
+   *
+   * Shared rather than written to disk: Expo's sharing sheet is the one path
+   * that works the same on iOS, Android and web, and a download the app writes
+   * somewhere she cannot find is not portability.
+   */
+  async function handleExport() {
+    if (exporting) return
+    setExporting(true)
+    try {
+      const bundle = await buildExport()
+      const json = JSON.stringify(bundle, null, 2)
+      const name = `creatordesk-export-${new Date().toISOString().slice(0, 10)}.json`
+
+      if (Platform.OS === 'web') {
+        // No filesystem to share from; hand it to the browser directly.
+        const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }))
+        const link = document.createElement('a')
+        link.href = url
+        link.download = name
+        link.click()
+        URL.revokeObjectURL(url)
+      } else {
+        const file = new File(Paths.cache, name)
+        file.create({ overwrite: true })
+        file.write(json)
+        await Sharing.shareAsync(file.uri, { mimeType: 'application/json' })
+      }
+      toast('Export ready')
+    } catch {
+      toast('Could not build the export', { tone: 'error' })
+    } finally {
+      setExporting(false)
+    }
+  }
 
   async function handleSignOut() {
     if (!(await confirm({ title: 'Sign out?', confirmLabel: 'Sign out', destructive: true })))
@@ -268,6 +309,18 @@ export default function YouScreen() {
             showChevron
             onPress={() => router.push('/(app)/profile/edit' as never)}
             index={0}
+          />
+          <ListRow
+            title="Export my data"
+            subtitle="Every deal, brand, payment, invoice and expense as a file"
+            leading={
+              <View style={[styles.linkIcon, { backgroundColor: c.accentLight }]}>
+                <Ionicons name="download" size={18} color={c.accent} />
+              </View>
+            }
+            showChevron
+            onPress={handleExport}
+            index={1}
           />
         </View>
 

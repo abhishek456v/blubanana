@@ -236,6 +236,16 @@ export default function MoneyScreen() {
         <StatLine label="Average deal" value={formatCurrency(summary.averageDealValue)} />
         <StatLine label="Deals on record" value={String(deals.length)} />
         <StatLine label="Paid in full, all time" value={String(summary.dealsClosed)} />
+        {summary.collection ? (
+          <StatLine
+            label={
+              summary.collection.averageDays <= 0
+                ? 'Collected, paid on time'
+                : `Collected, ${summary.collection.averageDays}d late on average`
+            }
+            value={`${summary.collection.rate}%`}
+          />
+        ) : null}
         {summary.bestPayingBrand ? (
           <StatLine
             label={`Best payer · ${summary.bestPayingBrand.name}`}

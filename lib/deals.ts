@@ -42,7 +42,16 @@ export interface CreateDealInput {
 /** Enough of a payment row for the dashboard, Money and the revenue figures. */
 export type PaymentSummary = Pick<
   Payment,
-  'id' | 'due_date' | 'status' | 'amount' | 'paid_date' | 'amount_received' | 'tds_amount' | 'label' | 'sort_order'
+  | 'id'
+  | 'due_date'
+  | 'status'
+  | 'amount'
+  | 'paid_date'
+  | 'amount_received'
+  | 'tds_amount'
+  | 'label'
+  | 'sort_order'
+  | 'payment_terms'
 >
 
 export type DealWithPaymentSummary = Deal & {
@@ -82,7 +91,7 @@ export async function getDeals(): Promise<DealWithPaymentSummary[]> {
   const { data, error } = await supabase
     .from('deals')
     .select(
-      '*, brand:brands(*), payments(id, due_date, status, amount, paid_date, amount_received, tds_amount, label, sort_order), stages:deal_stages(*)'
+      '*, brand:brands(*), payments(id, due_date, status, amount, paid_date, amount_received, tds_amount, label, sort_order, payment_terms), stages:deal_stages(*)'
     )
     .order('created_at', { ascending: false })
 
@@ -95,7 +104,7 @@ export async function getDealsForBrand(brandId: string): Promise<DealWithPayment
   const { data, error } = await supabase
     .from('deals')
     .select(
-      '*, brand:brands(*), payments(id, due_date, status, amount, paid_date, amount_received, tds_amount, label, sort_order), stages:deal_stages(*)'
+      '*, brand:brands(*), payments(id, due_date, status, amount, paid_date, amount_received, tds_amount, label, sort_order, payment_terms), stages:deal_stages(*)'
     )
     .eq('brand_id', brandId)
     .order('created_at', { ascending: false })
@@ -535,6 +544,48 @@ export async function addPayment(
 export async function deletePayment(paymentId: string): Promise<void> {
   const { error } = await supabase.from('payments').delete().eq('id', paymentId)
   if (error) throw error
+}
+
+/**
+ * The terms of a previous deal, ready to prefill a new one.
+ *
+ * One row per brand, that brand's most recent deal, most recent brands first.
+ * Ten deals across four brands is four rows, which is the point: a duplicate
+ * button on every row is useless because it cannot answer "which one".
+ */
+export interface RepeatCandidate {
+  dealId: string
+  brandId: string
+  brandName: string
+  platform: Platform
+  deliverable: string
+  rate: number
+  paymentTerms: string | null
+  lastUsed: string
+}
+
+export function repeatCandidates(deals: DealWithPaymentSummary[]): RepeatCandidate[] {
+  const seen = new Set<string>()
+  const out: RepeatCandidate[] = []
+
+  // getDeals() already returns newest first, so the first time a brand appears
+  // is its most recent deal.
+  for (const deal of deals) {
+    if (seen.has(deal.brand_id)) continue
+    seen.add(deal.brand_id)
+    out.push({
+      dealId: deal.id,
+      brandId: deal.brand_id,
+      brandName: deal.brand?.name ?? 'Unknown brand',
+      platform: deal.platform,
+      deliverable: deal.deliverable_description,
+      rate: deal.rate,
+      paymentTerms: primaryPayment(deal)?.payment_terms ?? null,
+      lastUsed: deal.created_at,
+    })
+  }
+
+  return out
 }
 
 export const STATUS_ORDER: DealStatus[] = ['active', 'live', 'unpaid', 'paid']
