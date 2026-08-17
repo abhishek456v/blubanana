@@ -66,26 +66,47 @@ async function shoot(page, name) {
  * visible while the tab button sits there unclicked.
  */
 async function tap(page, text, { timeout = 4000 } = {}) {
+  // Exact accessible name first, then substring.
+  //
+  // Playwright's `name` option is a case-insensitive *substring* match by
+  // default, which is too loose for short nav labels: "You" also matches the
+  // rail's avatar ("Abhishek Verma, open your profile") and Home's "Needs you"
+  // filter chip. Combined with the last-match-first rule below, the icon rail
+  // was reliably losing to the avatar sitting underneath it.
   const candidates = [
+    page.getByRole('tab', { name: text, exact: true }),
+    page.getByRole('button', { name: text, exact: true }),
     page.getByRole('tab', { name: text }),
     page.getByRole('button', { name: text }),
     page.getByText(text, { exact: false }),
   ]
 
   for (const candidate of candidates) {
-    // Last match first: a modal is portaled to the end of the DOM, so when a
-    // label exists both on the page and in the sheet above it ("Create
-    // invoice" on deal detail and on the invoice form), the sheet's copy is
-    // the one a user could actually press.
     let matches = []
     try {
       matches = await candidate.all()
     } catch {
       matches = []
     }
-    for (const target of matches.reverse()) {
+
+    // Visible ones only, and decided up front rather than by waiting on each.
+    //
+    // react-navigation keeps every tab's scene mounted, so a nav label matches
+    // several times over: once on the control and again on hidden copies
+    // inside the scenes. Waiting on each in turn burned the whole budget on
+    // elements that were never going to appear, which is why the icon rail
+    // read as "could not find" even though its aria-label was right there.
+    const visible = []
+    for (const target of matches) {
+      if (await target.isVisible().catch(() => false)) visible.push(target)
+    }
+
+    // Last visible match first: a modal is portaled to the end of the DOM, so
+    // when a label exists both on the page and in the sheet above it ("Create
+    // invoice" on deal detail and on the invoice form), the sheet's copy is
+    // the one a user could actually press.
+    for (const target of visible.reverse()) {
       try {
-        await target.waitFor({ state: 'visible', timeout: timeout / candidates.length })
         await target.click({ timeout: 2000 })
         await page.waitForTimeout(700)
         return true
@@ -183,6 +204,13 @@ if (EMAIL && PASSWORD) {
   // changes per workspace, so it is reached by clicking rather than by URL.
   if (args.includes('--deal')) {
     console.log('opening the first deal')
+    // Back to Home first. The deal rows live there, and with --all the run
+    // ends on You, where nothing matches a brand name and the step reported
+    // "could not find" for a deal that was never missing.
+    if (DRIVE_ALL) {
+      await tap(page, 'Home')
+      await page.waitForTimeout(900)
+    }
     if (await tap(page, 'Sony Music')) await shoot(page, '08-deal')
   }
 

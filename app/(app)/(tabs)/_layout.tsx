@@ -1,128 +1,17 @@
 import { useEffect, useState } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
-import { Tabs, useRouter } from 'expo-router'
-import { BottomTabBar, type BottomTabBarProps } from '@react-navigation/bottom-tabs'
-import { Ionicons } from '@expo/vector-icons'
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated'
-import { FontFamily, SidebarWidth, Spacing, Typography } from '@/constants/design'
-import { Spring } from '@/constants/motion'
+import { Tabs } from 'expo-router'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
-import { useTheme } from '@/hooks/useTheme'
 import { getAlertFeed } from '@/lib/alerts'
-import { getProfile } from '@/lib/profile'
-import { BrandAvatar } from '@/components/BrandAvatar'
-import { Mark, PressableScale } from '@/components/ui'
+import { SidebarRail } from '@/components/nav/SidebarRail'
 import { TabDock } from '@/components/nav/TabDock'
 import { TABS } from '@/components/nav/tabs'
 
 /**
- * Tab icon that springs up slightly when its tab becomes active.
- *
- * A tab bar is the surface a user touches more than any other, and a static
- * icon swap is the clearest tell that an app was assembled from defaults.
- */
-function TabIcon({
-  focused,
-  color,
-  icon,
-  iconOutline,
-}: {
-  focused: boolean
-  color: string
-  icon: keyof typeof Ionicons.glyphMap
-  iconOutline: keyof typeof Ionicons.glyphMap
-}) {
-  const lift = useSharedValue(focused ? 1 : 0)
-
-  useEffect(() => {
-    lift.value = withSpring(focused ? 1 : 0, Spring.snappy)
-  }, [focused, lift])
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 + lift.value * 0.1 }, { translateY: -lift.value * 1.5 }],
-  }))
-
-  return (
-    <Animated.View style={animatedStyle}>
-      <Ionicons name={focused ? icon : iconOutline} size={22} color={color} />
-    </Animated.View>
-  )
-}
-
-/**
- * The sidebar, with a brand lockup above the nav.
- *
- * react-navigation has no slot above the tab list, so the default bar is
- * wrapped rather than reimplemented. The navigator keeps owning focus,
- * accessibility and the active indicator, and this only adds a header.
- *
- * Without it the sidebar was an unlabelled strip of icons starting at the top
- * edge of the window, which is most of why the desktop layout read as
- * unfinished.
- */
-function SidebarWithBrand(props: BottomTabBarProps) {
-  const { c } = useTheme()
-  const router = useRouter()
-  const [creator, setCreator] = useState<{ name: string; niche: string | null } | null>(null)
-
-  // Fetched once for the lifetime of the sidebar rather than on focus: a name
-  // in a footer does not need to be live, and re-fetching on every tab change
-  // would put a request behind every navigation.
-  useEffect(() => {
-    let active = true
-    getProfile()
-      .then((profile) => {
-        if (active) setCreator({ name: profile.name, niche: profile.niche })
-      })
-      .catch(() => {})
-    return () => {
-      active = false
-    }
-  }, [])
-
-  const displayName = creator?.name?.trim() || 'Your desk'
-
-  return (
-    <View style={[styles.sidebar, { backgroundColor: c.bgPage, borderRightColor: c.border }]}>
-      <View style={styles.brand}>
-        <Mark size={26} color={c.accent} />
-        <Text style={[styles.brandWord, { color: c.textPrimary }]}>CreatorDesk</Text>
-      </View>
-
-      {/* `BottomTabBar` is wrapped in a flexed View so the footer is pinned to
-          the bottom of the sidebar instead of sitting directly under the last
-          nav item with the rest of the column left empty. */}
-      <View style={styles.navArea}>
-        <BottomTabBar {...props} />
-      </View>
-
-      <PressableScale
-        onPress={() => router.push('/(app)/(tabs)/settings' as never)}
-        style={[styles.footer, { borderTopColor: c.border }]}
-        accessibilityRole="button"
-        accessibilityLabel={`${displayName}, open your profile`}
-      >
-        <BrandAvatar name={displayName} size={32} />
-        <View style={styles.footerText}>
-          <Text style={[styles.footerName, { color: c.textPrimary }]} numberOfLines={1}>
-            {displayName}
-          </Text>
-          <Text style={[styles.footerMeta, { color: c.textMuted }]} numberOfLines={1}>
-            {creator?.niche?.trim() || 'Creator'}
-          </Text>
-        </View>
-        <Ionicons name="chevron-forward" size={15} color={c.textMuted} />
-      </PressableScale>
-    </View>
-  )
-}
-
-/**
  * How many things are waiting, for the nav badge.
  *
- * Polled on an interval rather than on focus: the tab bar never loses focus,
- * so a `useFocusEffect` here would fire once at mount and then never again,
- * leaving a stale count on screen for the whole session.
+ * Polled on an interval rather than on focus: the nav never loses focus, so a
+ * `useFocusEffect` here would fire once at mount and then never again, leaving
+ * a stale count on screen for the whole session.
  */
 function useDueCount(): number {
   const [count, setCount] = useState(0)
@@ -148,23 +37,23 @@ function useDueCount(): number {
 }
 
 export default function TabsLayout() {
-  const { c } = useTheme()
   // Badged on Home because that is where "Needs you" lives: the badge and the
   // list it points at are on the same screen, so tapping it lands somewhere
   // that explains the number.
   const dueCount = useDueCount()
-  // DESIGN.md §4: bottom tab bar on mobile, sidebar at desktop widths.
-  // tabBarPosition: 'left' is a react-navigation bottom-tabs v7 feature that
-  // lays the bar and the scene out as a real flex row rather than an overlay,
-  // so this stays one navigator instead of a bespoke sidebar.
   const isWide = useIsWideScreen()
 
   return (
     <Tabs
-      // Sidebar above `wide`, floating dock below it. Neither is the library's
-      // default bar, so `tabBarStyle` no longer has anything to style on
-      // mobile; the dock owns its own surface.
-      tabBar={(props) => (isWide ? <SidebarWithBrand {...props} /> : <TabDock {...props} />)}
+      // Icon rail above `wide`, floating dock below it. Both are ours, so none
+      // of the library's bar styling options apply any more: `tabBarStyle`,
+      // `tabBarIcon`, `tabBarLabelStyle` and the tint colours all fed
+      // `BottomTabBar`, which no longer renders at either width.
+      //
+      // `tabBarBadge` is the exception. It stays a screen option because both
+      // of our bars read it back off the descriptor, which keeps the badge
+      // declared next to the route it belongs to.
+      tabBar={(props) => (isWide ? <SidebarRail {...props} /> : <TabDock {...props} />)}
       screenOptions={{
         // Every tab screen draws its own large-title header via ScreenHeader,
         // so the native one is off everywhere. See components/ui/ScreenHeader.
@@ -173,30 +62,9 @@ export default function TabsLayout() {
         // out and the incoming one in along the direction of travel, so moving
         // right through the bar feels like moving right through the app.
         animation: 'shift',
+        // Lays the rail and the scene out as a real flex row rather than an
+        // overlay, so this stays one navigator instead of a bespoke sidebar.
         ...(isWide ? { tabBarPosition: 'left' as const } : null),
-        tabBarActiveTintColor: c.accent,
-        tabBarInactiveTintColor: c.textMuted,
-        ...(isWide
-          ? {
-              tabBarActiveBackgroundColor: c.accentLight,
-              tabBarInactiveBackgroundColor: 'transparent',
-            }
-          : null),
-        // Only the sidebar still routes through the library's own bar, so this
-        // is scoped to it. The dock draws its own surface and takes nothing
-        // from here.
-        tabBarStyle: isWide
-          ? {
-              backgroundColor: 'transparent',
-              borderRightWidth: 0,
-              width: SidebarWidth,
-              paddingTop: Spacing.sm,
-            }
-          : undefined,
-        tabBarLabelStyle: {
-          fontFamily: FontFamily.medium,
-          fontSize: Typography.label.fontSize,
-        },
       }}
     >
       {TABS.map((tab) => (
@@ -206,65 +74,9 @@ export default function TabsLayout() {
           options={{
             title: tab.title,
             tabBarBadge: tab.name === 'index' && dueCount > 0 ? dueCount : undefined,
-            tabBarBadgeStyle: {
-              backgroundColor: c.danger,
-              color: '#FFFFFF',
-              fontFamily: FontFamily.semiBold,
-              fontSize: 10,
-            },
-            tabBarIcon: ({ color, focused }) => (
-              <TabIcon
-                focused={focused}
-                color={color}
-                icon={tab.icon}
-                iconOutline={tab.iconOutline}
-              />
-            ),
           }}
         />
       ))}
     </Tabs>
   )
 }
-
-const styles = StyleSheet.create({
-  sidebar: {
-    width: SidebarWidth,
-    borderRightWidth: 1,
-    paddingTop: Spacing.lg,
-  },
-  brand: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    paddingBottom: Spacing.lg,
-  },
-  brandWord: {
-    ...Typography.heading,
-    fontFamily: FontFamily.display,
-  },
-  navArea: {
-    flex: 1,
-  },
-  footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.base,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-    borderTopWidth: 1,
-  },
-  footerText: {
-    flex: 1,
-    gap: 1,
-  },
-  footerName: {
-    ...Typography.caption,
-    fontFamily: FontFamily.semiBold,
-  },
-  footerMeta: {
-    ...Typography.label,
-    fontFamily: FontFamily.regular,
-  },
-})
