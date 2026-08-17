@@ -41,3 +41,23 @@ export { StageTimeline, type StageState, type StageTimelineProps, type TimelineS
 export { BarChart, type BarChartDatum, type BarChartProps } from './BarChart'
 export { Sparkline, type SparklineProps } from './Sparkline'
 export { ProgressRing, type ProgressRingProps } from './ProgressRing'
+
+// The gradient-glass system: the signature card, the dot-matrix figure, and
+// the controls and visualisations that only ever appear on top of them.
+export { Figure, splitFigureRuns, type FigureProps, type FigureRun } from './Figure'
+export {
+  GradientCard,
+  FigureBlock,
+  type GradientCardProps,
+  type FigureBlockProps,
+} from './GradientCard'
+export {
+  CircleButton,
+  CountBadge,
+  type CircleButtonProps,
+  type CircleButtonTone,
+  type CountBadgeProps,
+} from './CircleButton'
+export { PeriodPill, type PeriodPillProps } from './PeriodPill'
+export { OrbitRing, type OrbitItem, type OrbitRingProps } from './OrbitRing'
+export { DotGrid, type DotGridProps } from './DotGrid'

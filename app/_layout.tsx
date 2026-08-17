@@ -12,15 +12,21 @@ import { StatusBar } from 'expo-status-bar'
 import * as SplashScreen from 'expo-splash-screen'
 import * as Notifications from 'expo-notifications'
 import * as Linking from 'expo-linking'
+import { useFonts } from 'expo-font'
 import {
-  useFonts,
-  InstrumentSans_400Regular,
-  InstrumentSans_500Medium,
-  InstrumentSans_600SemiBold,
-  InstrumentSans_700Bold,
-} from '@expo-google-fonts/instrument-sans'
+  Outfit_400Regular,
+  Outfit_500Medium,
+  Outfit_600SemiBold,
+  Outfit_700Bold,
+} from '@expo-google-fonts/outfit'
+import { Doto_500Medium, Doto_700Bold } from '@expo-google-fonts/doto'
+import {
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider as NavigationThemeProvider,
+} from '@react-navigation/native'
 import { FeedbackProvider } from '@/components/ui'
-import { ThemeProvider } from '@/hooks/useTheme'
+import { ThemeProvider, useTheme } from '@/hooks/useTheme'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import { setForegroundHandler, ensureAndroidChannelAsync, scheduleAsync } from '@/lib/notifications'
@@ -68,11 +74,17 @@ export default function RootLayout() {
     return () => subscription.unsubscribe()
   }, [])
 
+  // Two families, two jobs. Outfit sets every word; Doto sets every figure.
+  // Both have to be resolved before the first frame, because a dot-matrix
+  // figure falling back to the system face is not a subtle degradation: the
+  // amount on the hero card changes shape entirely.
   const [fontsLoaded] = useFonts({
-    InstrumentSans_400Regular,
-    InstrumentSans_500Medium,
-    InstrumentSans_600SemiBold,
-    InstrumentSans_700Bold,
+    Outfit_400Regular,
+    Outfit_500Medium,
+    Outfit_600SemiBold,
+    Outfit_700Bold,
+    Doto_500Medium,
+    Doto_700Bold,
   })
 
   // Hide splash once both fonts and auth state are ready.
@@ -196,13 +208,53 @@ export default function RootLayout() {
             above the router so a toast raised on any screen survives the
             navigation that usually follows it (save → toast → go back). */}
         <ThemeProvider>
-          <FeedbackProvider>
-            <StatusBar style="auto" />
-            <Slot />
-          </FeedbackProvider>
+          <NavigationTheme>
+            <FeedbackProvider>
+              <StatusBar style="auto" />
+              <Slot />
+            </FeedbackProvider>
+          </NavigationTheme>
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
+  )
+}
+
+/**
+ * Hands the app's palette to React Navigation.
+ *
+ * Without this the library falls back to its own `DefaultTheme`, whose
+ * background is `rgb(242,242,242)`. Screens hide it because each one paints
+ * its own ground, so it only shows through where the navigator draws a
+ * container of its own: most visibly as a light grey slab behind the tab dock
+ * on the dark theme, and briefly behind screen transitions.
+ *
+ * Nested inside our `ThemeProvider` because it has to read the resolved
+ * palette, which means it cannot live at the same level as the provider that
+ * supplies it.
+ */
+function NavigationTheme({ children }: { children: React.ReactNode }) {
+  const { c, isDark } = useTheme()
+  const base = isDark ? DarkTheme : DefaultTheme
+
+  return (
+    <NavigationThemeProvider
+      value={{
+        ...base,
+        dark: isDark,
+        colors: {
+          ...base.colors,
+          primary: c.accent,
+          background: c.bgPage,
+          card: c.bgPage,
+          text: c.textPrimary,
+          border: c.border,
+          notification: c.danger,
+        },
+      }}
+    >
+      {children}
+    </NavigationThemeProvider>
   )
 }
 

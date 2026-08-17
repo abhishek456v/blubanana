@@ -12,29 +12,8 @@ import { getAlertFeed } from '@/lib/alerts'
 import { getProfile } from '@/lib/profile'
 import { BrandAvatar } from '@/components/BrandAvatar'
 import { Mark, PressableScale } from '@/components/ui'
-
-/**
- * Five destinations, matching DESIGN.md §4's cap.
- *
- * "Work" is the creator's own record of everything she has shipped: the
- * archive plus how each piece performed. It is separate from Home because
- * Home answers "what needs me today" and Work answers "what have I built",
- * which are different questions asked at different moments.
- */
-type TabName = 'index' | 'work' | 'money' | 'brands' | 'settings'
-
-const TABS: {
-  name: TabName
-  title: string
-  icon: keyof typeof Ionicons.glyphMap
-  iconOutline: keyof typeof Ionicons.glyphMap
-}[] = [
-  { name: 'index', title: 'Home', icon: 'home', iconOutline: 'home-outline' },
-  { name: 'work', title: 'Work', icon: 'albums', iconOutline: 'albums-outline' },
-  { name: 'money', title: 'Money', icon: 'wallet', iconOutline: 'wallet-outline' },
-  { name: 'brands', title: 'Brands', icon: 'people', iconOutline: 'people-outline' },
-  { name: 'settings', title: 'You', icon: 'person-circle', iconOutline: 'person-circle-outline' },
-]
+import { TabDock } from '@/components/nav/TabDock'
+import { TABS } from '@/components/nav/tabs'
 
 /**
  * Tab icon that springs up slightly when its tab becomes active.
@@ -182,7 +161,10 @@ export default function TabsLayout() {
 
   return (
     <Tabs
-      tabBar={isWide ? (props) => <SidebarWithBrand {...props} /> : undefined}
+      // Sidebar above `wide`, floating dock below it. Neither is the library's
+      // default bar, so `tabBarStyle` no longer has anything to style on
+      // mobile; the dock owns its own surface.
+      tabBar={(props) => (isWide ? <SidebarWithBrand {...props} /> : <TabDock {...props} />)}
       screenOptions={{
         // Every tab screen draws its own large-title header via ScreenHeader,
         // so the native one is off everywhere. See components/ui/ScreenHeader.
@@ -200,6 +182,9 @@ export default function TabsLayout() {
               tabBarInactiveBackgroundColor: 'transparent',
             }
           : null),
+        // Only the sidebar still routes through the library's own bar, so this
+        // is scoped to it. The dock draws its own surface and takes nothing
+        // from here.
         tabBarStyle: isWide
           ? {
               backgroundColor: 'transparent',
@@ -207,20 +192,7 @@ export default function TabsLayout() {
               width: SidebarWidth,
               paddingTop: Spacing.sm,
             }
-          : {
-              backgroundColor: c.bgPage,
-              borderTopColor: c.border,
-              borderTopWidth: 1,
-              // The bar is a boundary, not a floating surface. A drop shadow
-              // here would be the only one in the app pointing upward.
-              elevation: 0,
-              shadowOpacity: 0,
-              // No explicit height. react-navigation sizes the bar and adds
-              // the bottom inset itself; overriding `height` opted out of that
-              // and left the buttons inside the home-indicator strip, where
-              // the system swallows the touch.
-              paddingTop: Spacing.sm,
-            },
+          : undefined,
         tabBarLabelStyle: {
           fontFamily: FontFamily.medium,
           fontSize: Typography.label.fontSize,

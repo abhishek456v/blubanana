@@ -17,7 +17,7 @@ import {
 } from '@/lib/insights'
 import { getProfile } from '@/lib/profile'
 import { shouldOfferOnboarding } from '@/lib/onboarding'
-import { formatCurrency, formatCurrencyCompact } from '@/lib/format'
+import { parseLocalDate } from '@/lib/format'
 import type { DealStatus } from '@/types'
 import { STATUS_LABELS } from '@/constants/labels'
 import {
@@ -33,16 +33,21 @@ import { useBreakpoint } from '@/hooks/useBreakpoint'
 import { useTheme } from '@/hooks/useTheme'
 import { DealRow } from '@/components/DealRow'
 import {
+  EarningsCard,
+  TopBrandsCard,
+  UpcomingPaymentsCard,
+  type BrandStanding,
+  type UpcomingPayment,
+} from '@/components/home'
+import {
   ActionGrid,
-  BarChart,
   Card,
   Chip,
+  CountBadge,
   EmptyState,
   HeaderUtilities,
-  HeroCard,
   ScreenHeader,
   SkeletonList,
-  StatTile,
   useToast,
 } from '@/components/ui'
 
@@ -58,20 +63,28 @@ const FILTERS: { key: StatusFilter; label: string }[] = [
 ]
 
 /**
+ * The windows the brand ranking can be read over.
+ *
+ * Ordered shortest to longest, because `PeriodPill` advances through the list
+ * on tap and a person guesses "wider" as the next step. Anything unordered
+ * here makes the control feel random.
+ */
+const BRAND_PERIODS = ['This month', 'This year', 'All time'] as const
+
+/**
  * Home.
  *
- * Laid out as a bento rather than a single stack: on desktop the hero, the
- * supporting tiles, the cash-flow chart and the attention list sit side by
- * side, so the first screenful answers "what am I owed, how is the year
- * going, what needs me today" without a scroll. Below `desktop` the same
- * blocks stack in that order of importance.
+ * Three gradient cards answer the three questions a creator opens the app
+ * with — what am I owed, what actually arrived, who is paying me — and
+ * everything under them is the detail behind those answers.
  *
- * The previous version was a metric strip plus two lists, which used about
- * half the height of a laptop window and left the rest empty.
+ * The cards are deliberately unlike each other: two saturated and one neutral,
+ * one built on due dates, one on a six-month matrix, one on a ranking. Three
+ * variations of the same card would look like a system and read like a wall.
  */
 export default function HomeScreen() {
   const { c } = useTheme()
-  const { isWide, isDesktop } = useBreakpoint()
+  const { isDesktop } = useBreakpoint()
   const router = useRouter()
   const toast = useToast()
 
@@ -82,6 +95,7 @@ export default function HomeScreen() {
   const [filter, setFilter] = useState<StatusFilter>('all')
   const [nudgeDismissed, setNudgeDismissed] = useState(false)
   const [reach, setReach] = useState<StatSnapshot[]>([])
+  const [brandPeriod, setBrandPeriod] = useState<string>(BRAND_PERIODS[1])
 
   const load = useCallback(
     async (mode: 'initial' | 'refresh') => {
@@ -137,6 +151,64 @@ export default function HomeScreen() {
   const attention = useMemo(() => getAttentionItems(deals), [deals])
   const rateNudge = useMemo(() => getRateBenchmarkNudge(deals, reach), [deals, reach])
 
+  /** Unpaid, dated, soonest first. What the blue card is built from. */
+  const upcoming = useMemo<UpcomingPayment[]>(
+    () =>
+      deals
+        .filter((deal) => deal.payment && deal.payment.status !== 'paid' && deal.payment.due_date)
+        .sort((a, b) => a.payment!.due_date!.localeCompare(b.payment!.due_date!))
+        .map((deal) => ({
+          id: deal.id,
+          brand: deal.brand?.name ?? 'Unknown brand',
+          amount: deal.payment!.amount ?? deal.rate,
+          dueDate: deal.payment!.due_date!,
+        })),
+    [deals]
+  )
+
+  /**
+   * Brands ranked by what they have actually paid inside the chosen window.
+   *
+   * Keyed off `paid_date`, not the deal date: a brand that signed a large deal
+   * in March and has not paid it has not earned a ranking, and a card titled
+   * "Top brands" that ranks on promises is the same mistake as a revenue
+   * figure built on invoices.
+   */
+  const brandStandings = useMemo<BrandStanding[]>(() => {
+    const now = new Date()
+    const totals = new Map<string, number>()
+
+    for (const deal of deals) {
+      const paidDate = deal.payment?.paid_date
+      if (deal.payment?.status !== 'paid' || !paidDate) continue
+      if (!withinPeriod(paidDate, brandPeriod, now)) continue
+
+      const brandName = deal.brand?.name ?? 'Unknown brand'
+      totals.set(brandName, (totals.get(brandName) ?? 0) + (deal.payment.amount ?? deal.rate))
+    }
+
+    return [...totals.entries()]
+      .map(([brandName, total]) => ({ id: brandName, name: brandName, total }))
+      .sort((a, b) => b.total - a.total)
+  }, [deals, brandPeriod])
+
+  /** Everything the six-month matrix covers, as one figure and one count. */
+  const sixMonths = useMemo(() => {
+    const now = new Date()
+    const cutoff = new Date(now.getFullYear(), now.getMonth() - 5, 1)
+    const count = deals.filter((deal) => {
+      const paidDate = deal.payment?.paid_date
+      return (
+        deal.payment?.status === 'paid' && paidDate && parseLocalDate(paidDate) >= cutoff
+      )
+    }).length
+
+    return {
+      total: revenue.monthlyTotals.reduce((sum, month) => sum + month.total, 0),
+      count,
+    }
+  }, [deals, revenue.monthlyTotals])
+
   const attentionIds = useMemo(
     () => new Set(attention.map((item) => item.deal.id)),
     [attention]
@@ -149,9 +221,6 @@ export default function HomeScreen() {
   }, [deals, filter, attentionIds])
 
   const firstName = name?.trim().split(/\s+/)[0]
-
-  const onTrack = Math.max(metrics.outstanding - metrics.overdue, 0)
-  const unpaidCount = revenue.pending.count
 
   const quickActions = useMemo(
     () => [
@@ -186,89 +255,35 @@ export default function HomeScreen() {
   )
 
   // ── Blocks ────────────────────────────────────────────────────────────
-  // Each is a `const` rather than a component so the bento can place the same
-  // block in a column on desktop and in the stack on mobile without
-  // remounting it (and restarting its entrance animation) at the breakpoint.
+  // Each is a `const` rather than a component so the layout can place the same
+  // block in a row on desktop and in the stack on mobile without remounting it
+  // (and restarting its entrance animation) at the breakpoint.
 
-  const hero = (
-    <HeroCard
-      label="Owed to you"
-      value={metrics.outstanding}
-      format={formatCurrency}
-      caption={
-        unpaidCount === 0
-          ? 'Nothing outstanding. Every deal is settled.'
-          : metrics.overdue > 0
-            ? `${formatCurrencyCompact(metrics.overdue)} of it is already past due.`
-            : `Across ${unpaidCount} unpaid ${unpaidCount === 1 ? 'deal' : 'deals'}, all on track.`
-      }
-      action={{ label: 'Money', onPress: () => router.push('/(app)/(tabs)/money' as never) }}
-      stats={[
-        { label: 'On track', value: formatCurrencyCompact(onTrack), dotColor: c.accent },
-        { label: 'Overdue', value: formatCurrencyCompact(metrics.overdue), dotColor: c.danger },
-        {
-          label: unpaidCount === 1 ? 'Unpaid deal' : 'Unpaid deals',
-          value: String(unpaidCount),
-        },
-      ]}
-      // The six months behind the figure, on the card that carries it.
-      //
-      // This was a donut of the same number: a single live segment (overdue is
-      // usually zero) drew a complete ring, so the chart had no shape to read,
-      // and it printed ₹3.75L a third time next to the 34px figure and the
-      // footer strip. A trend answers a question the figure cannot.
-      chart={
-        <BarChart
-          data={revenue.monthlyTotals.map((month) => ({
-            label: month.label,
-            value: month.total,
-          }))}
-          height={isDesktop ? 116 : 96}
-          formatValue={formatCurrencyCompact}
-          // Only the greys are overridden. The bars keep `accent` and
-          // `accentSoft`, which are a translucent amber tuned per theme and
-          // read against either ground the contrast card takes; swapping the
-          // inactive months to `onContrastFaint` made five of six invisible.
-          palette={{
-            grid: c.onContrastFaint,
-            baseline: c.onContrastFaint,
-            label: c.onContrastMuted,
-            labelActive: c.onContrast,
-          }}
+  const cards = (
+    <View style={isDesktop ? styles.cardRow : styles.cardStack}>
+      <View style={isDesktop ? styles.cardCell : undefined}>
+        <UpcomingPaymentsCard
+          payments={upcoming}
+          onPress={() => router.push('/(app)/(tabs)/money' as never)}
         />
-      }
-    />
-  )
-
-  const sideTiles = (
-    <View style={isDesktop ? styles.tileColumn : styles.tileRow}>
-      <StatTile
-        dense={isDesktop}
-        label="Received this month"
-        value={metrics.earnedThisMonth}
-        format={formatCurrency}
-        tone="success"
-        caption={`${revenue.earnedThisMonth.count} ${revenue.earnedThisMonth.count === 1 ? 'payment' : 'payments'} in`}
-        onPress={() => router.push('/(app)/(tabs)/money' as never)}
-        index={1}
-      />
-      <StatTile
-        dense={isDesktop}
-        label="Locked this month"
-        value={revenue.lockedThisMonth.value}
-        format={formatCurrency}
-        caption={`${revenue.lockedThisMonth.count} new ${revenue.lockedThisMonth.count === 1 ? 'deal' : 'deals'} signed`}
-        onPress={() => router.push('/(app)/(tabs)/money' as never)}
-        index={2}
-      />
-      <StatTile
-        dense={isDesktop}
-        label="Live deals"
-        value={metrics.activeDeals}
-        caption={metrics.activeDeals === 0 ? 'nothing in flight' : 'in progress right now'}
-        onPress={() => router.push('/(app)/(tabs)/work' as never)}
-        index={3}
-      />
+      </View>
+      <View style={isDesktop ? styles.cardCell : undefined}>
+        <EarningsCard
+          received={sixMonths.total}
+          count={sixMonths.count}
+          monthly={revenue.monthlyTotals}
+          onPress={() => router.push('/(app)/(tabs)/money' as never)}
+        />
+      </View>
+      <View style={isDesktop ? styles.cardCell : undefined}>
+        <TopBrandsCard
+          brands={brandStandings}
+          periods={BRAND_PERIODS}
+          period={brandPeriod}
+          onPeriodChange={setBrandPeriod}
+          onPress={() => router.push('/(app)/(tabs)/brands' as never)}
+        />
+      </View>
     </View>
   )
 
@@ -283,11 +298,7 @@ export default function HomeScreen() {
               : `${attention.length} ${attention.length === 1 ? 'thing' : 'things'} to handle today`}
           </Text>
         </View>
-        {attention.length > 0 ? (
-          <View style={[styles.countBadge, { backgroundColor: c.dangerLight }]}>
-            <Text style={[styles.countText, { color: c.danger }]}>{attention.length}</Text>
-          </View>
-        ) : null}
+        {attention.length > 0 ? <CountBadge count={attention.length} size={30} /> : null}
       </View>
 
       {attention.length === 0 ? (
@@ -307,8 +318,8 @@ export default function HomeScreen() {
     </Card>
   )
 
-  // Four across on desktop, under the hero in the wider column; two on a
-  // phone, where four would give each tile about 90px.
+  // Four across on desktop; two on a phone, where four would give each tile
+  // about 90px.
   const actions = <ActionGrid actions={quickActions} columns={isDesktop ? 4 : 2} />
 
   const header = (
@@ -331,19 +342,9 @@ export default function HomeScreen() {
         ]}
         leadingAction={<HeaderUtilities />}
       >
-        {/* Row A: the answer, then the two numbers that qualify it. */}
-        <View style={isDesktop ? styles.rowA : styles.stack}>
-          <View style={isDesktop ? styles.heroCell : undefined}>
-            {hero}
-          </View>
-          <View style={isDesktop ? styles.asideCell : undefined}>{sideTiles}</View>
-        </View>
+        {cards}
       </ScreenHeader>
 
-      {/* Full width, under both columns. In the left column alone each of the
-          four tiles got about 225px and truncated its own label ("Raise
-          invoi…"), while the rail beside it had already ended, leaving the
-          space to their right empty. Spanning the measure fixes both. */}
       <View style={styles.section}>{actions}</View>
 
       {rateNudge && !nudgeDismissed ? (
@@ -357,11 +358,6 @@ export default function HomeScreen() {
         </Animated.View>
       ) : null}
 
-      {/* What needs answering today, at full width.
-          It used to share a row with the chart, which forced two columns of
-          different natural heights side by side and left the shorter one
-          trailing dead space. The chart now lives on the hero, so this gets
-          the whole measure and the rows stay legible instead of squeezed. */}
       <View style={styles.section}>{needsYou}</View>
 
       <View style={styles.section}>
@@ -478,6 +474,14 @@ export default function HomeScreen() {
   )
 }
 
+/** Whether a `YYYY-MM-DD` falls inside one of `BRAND_PERIODS`. */
+function withinPeriod(dateStr: string, period: string, now: Date): boolean {
+  if (period === 'All time') return true
+  const date = parseLocalDate(dateStr)
+  if (period === 'This year') return date.getFullYear() === now.getFullYear()
+  return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth()
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -500,56 +504,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
 
-  // ── Bento ───────────────────────────────────────────────────────────
-  // Weights, not fixed widths: the hero gets roughly three-fifths of row A
-  // because a 40px figure needs the room, and the chart gets more of row B
-  // than the list because six bars compress badly.
-  stack: {
-    gap: Spacing.base,
-  },
-  rowA: {
-    flexDirection: 'row',
-    gap: ColumnGap,
-    // Natural heights, not a common one. Stretching made the hero as tall as
-    // the rail beside it and `figureRow: flex: 1` absorbed the slack, opening
-    // a void between the caption and the chart.
-    alignItems: 'flex-start',
-  },
-  heroCell: {
-    flex: 1.55,
-  },
-  asideCell: {
-    flex: 1,
-  },
-  rowB: {
-    flexDirection: 'row',
-    gap: ColumnGap,
-    // Each column takes its own height. Stretching them to match let the
-    // chart grow to whatever the attention list happened to need, and with a
-    // real number of deals beside it that was a 700px plot of six bars: the
-    // card was sized by its neighbour rather than by its content.
-    alignItems: 'flex-start',
-  },
-
-  tileColumn: {
-    flex: 1,
-    gap: ColumnGap,
-  },
-  // Wraps, because three tiles at their 148px minimum plus gaps is 464px and a
-  // phone gives 358. Without this the third tile ran off the right edge.
-  tileRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.base,
-  },
-  blockCard: {
-    flex: 1,
-    padding: Spacing.md,
+  // ── The card row ────────────────────────────────────────────────────
+  cardStack: {
     gap: Spacing.md,
   },
-  // Unlike the chart card this one must *not* flex to fill its column: the
-  // quick actions sit under it, and a stretched attention card would push
-  // them off the fold.
+  cardRow: {
+    flexDirection: 'row',
+    gap: ColumnGap,
+    // Equal heights here, unlike the rest of the app's rows. Nothing inside
+    // these cards flexes (the ring and the dot matrix are both fixed), so
+    // stretching squares off the row without letting one card's content be
+    // sized by its neighbour's.
+    alignItems: 'stretch',
+  },
+  cardCell: {
+    flex: 1,
+  },
+
+  // Must *not* flex to fill its column: the deal list sits under it, and a
+  // stretched attention card would push the list off the fold.
   needsCard: {
     padding: Spacing.md,
     gap: Spacing.md,
@@ -571,10 +544,6 @@ const styles = StyleSheet.create({
   cardSub: {
     ...Typography.label,
     fontFamily: FontFamily.regular,
-  },
-  cardFigure: {
-    fontFamily: FontFamily.displayBold,
-    fontSize: 19,
   },
   clearState: {
     flex: 1,
@@ -623,8 +592,5 @@ const styles = StyleSheet.create({
   },
   list: {
     gap: Spacing.sm,
-  },
-  separator: {
-    height: 10,
   },
 })
