@@ -9,14 +9,14 @@ export interface CardProps {
   /**
    * Trims the padding for a desktop layout.
    *
-   * DESIGN.md §4 wants a desktop screenful to show roughly twice what a phone
-   * does. Phone-scale padding at every width spends the extra room on
-   * whitespace rather than content, which is why the desktop bento reads
-   * sparse with only a couple of deals in it.
+   * A desktop screenful should show roughly twice what a phone does.
+   * Phone-scale padding at every width spends the extra room on whitespace
+   * rather than content, which is why the desktop bento reads sparse with
+   * only a couple of deals in it.
    */
   dense?: boolean
   /**
-   * surface  → the default flat card sitting on the page (DESIGN.md §4)
+   * surface  → the default flat card sitting on the page
    * raised   → lifted off the page with a soft shadow; for content that
    *            genuinely floats (sheets, popovers, the one hero card)
    * outlined → hairline border, no fill; for grouping without adding weight

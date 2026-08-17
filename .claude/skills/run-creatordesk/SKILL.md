@@ -79,7 +79,7 @@ Several screens branch on `isDesktop`:
 - **Sheets** (search, date picker) — centred card on desktop, bottom sheet on phone
 
 So a change to any of those needs **four** shots: `--width 1440` and
-`--width 390`, each with and without `--dark`. DESIGN.md's rule is "screenshot
+`--width 390`, each with and without `--dark`. The rule is "screenshot
 both before calling a screen done."
 
 Common real defects this catches that typecheck never will:

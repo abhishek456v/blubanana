@@ -4,7 +4,7 @@ import { Typography, FontFamily, Spacing, Radius } from '@/constants/design'
 import { useTheme } from '@/hooks/useTheme'
 import { STATUS_LABELS } from '@/constants/labels'
 
-// Per DESIGN.md: color is a second signal on top of the label, never the
+// Colour is a second signal on top of the label, never the
 // only one, and every pill still carries its text.
 // neutral → nothing to react to yet (intake)
 // warning → active production, something is due (script/shoot/edit)

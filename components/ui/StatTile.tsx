@@ -19,15 +19,15 @@ export interface StatTileProps {
   series?: number[]
   /**
    * Inverts against the page: near-black on light, cream on dark.
-   * DESIGN.md §2: exactly one per screen.
+   * Exactly one per screen.
    */
   contrast?: boolean
   tone?: 'default' | 'success' | 'warning' | 'danger'
   /**
    * Tighter padding and a smaller figure, for a rail of tiles beside a taller
-   * card. DESIGN.md §4 asks a desktop screenful to show roughly twice what a
-   * phone does; at full size three of these stack taller than the hero they
-   * sit next to and spend the difference on air.
+   * card. A desktop screenful should show roughly twice what a phone does;
+   * at full size three of these stack taller than the hero they sit next to
+   * and spend the difference on air.
    */
   dense?: boolean
   onPress?: () => void

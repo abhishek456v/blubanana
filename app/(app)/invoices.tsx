@@ -85,7 +85,7 @@ export default function InvoicesScreen() {
             <SkeletonList count={4} />
           </View>
         ) : isDesktop && invoices.length > 0 ? (
-          // Desktop gets a real table (DESIGN.md §8: tables are a desktop
+          // Desktop gets a real table (tables are a desktop
           // affordance). Aligned rupee and date columns scan; phones keep the
           // ListRow layout below.
           <FlatList

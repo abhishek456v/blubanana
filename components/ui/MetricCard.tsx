@@ -27,10 +27,9 @@ export interface MetricCardProps {
 /**
  * The stat tile used across Home, Money and the annual report.
  *
- * DESIGN.md §4 specifies "label in Caption style above a Display-weight
- * number"; this is that, plus the count-up. The figures here are the reason
- * the creator opens the app (money earned, money owed), so they get the
- * display face and enough room to breathe.
+ * A label in caption style above a display-weight number, plus the count-up.
+ * The figures here are the reason the creator opens the app (money earned,
+ * money owed), so they get the display face and enough room to breathe.
  */
 export function MetricCard({
   label,

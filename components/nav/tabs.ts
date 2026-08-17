@@ -1,7 +1,7 @@
 import type { Ionicons } from '@expo/vector-icons'
 
 /**
- * Five destinations, matching DESIGN.md §4's cap.
+ * Five destinations, which is the cap.
  *
  * "Work" is the creator's own record of everything she has shipped: the
  * archive plus how each piece performed. It is separate from Home because

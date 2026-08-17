@@ -1,6 +1,6 @@
-// Motion tokens: the code behind DESIGN.md §5.
+// Motion tokens. The single source for every duration, easing and spring.
 //
-// DESIGN.md prescribes "200ms ease-out for sheets/modals, 150ms for
+// The system prescribes "200ms ease-out for sheets/modals, 150ms for
 // taps (scale to 0.97)". Until now that was prose with no implementation;
 // these are the values every animated component pulls from so the whole app
 // moves at one tempo instead of each screen inventing its own timing.
@@ -16,7 +16,7 @@ import { Easing, type WithSpringConfig, type WithTimingConfig } from 'react-nati
 export const Duration = {
   /** Colour/opacity swaps that should feel instantaneous. */
   instant: 100,
-  /** Tap feedback. DESIGN.md §5. */
+  /** Tap feedback. */
   fast: 150,
   /** The default. Sheets, modals, most entrances. */
   base: 200,
@@ -59,7 +59,7 @@ export const Spring = {
   bouncy: { dampingRatio: 0.6, duration: 550 } satisfies WithSpringConfig,
 } as const
 
-/** Scale a pressable settles to while held. DESIGN.md §5. */
+/** Scale a pressable settles to while held. */
 export const PRESS_SCALE = 0.97
 
 /**

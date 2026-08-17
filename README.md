@@ -123,26 +123,16 @@ config needed) — only signed-in creators can trigger OpenAI calls.
 
 ### Feature scope
 
-**Phase 1** (PRODUCT.md): deal intake (screenshot/voice/manual), dashboard
-with status/platform/payment-due filters, workflow reminders, payment
-follow-up, live link submission, ad rights tracking + Meta Ad Library link.
+See **[PRODUCT.md](PRODUCT.md)** — the single source of truth for what this
+product does, every flow, the data model, roles and permissions, and what is
+deliberately out of scope. Each item there is tagged **Built**, **Change** or
+**New**, so you can tell what exists from what is still to come.
 
-**Phase 2/3** (built beyond PRODUCT.md's original scope, on request):
-client reputation scoring, simplified rate benchmarking (follower-count
-snapshot, not live engagement), a Revenue tab, manual content performance
-entry, GST/TDS invoicing with PDF export, an annual report, and an opt-in
-shareable public profile card at `/creator/<slug>`.
-
-**Deliberately not built:**
-- **Niche-based rate intelligence** — needs aggregated data across many
-  creators to be meaningful; with one user there's no population to
-  benchmark against.
-- **Live Instagram/YouTube performance sync** — needs OAuth app credentials
-  (Meta app, Google Cloud project) that haven't been set up. Content
-  performance is manual-entry only until that exists.
-- **Automated Meta Ad Library monitoring** — the deal screen has a one-tap
-  link to a pre-filled Ad Library search; polling the real Ad Library API
-  for expired-rights violations is a separate, later decision.
+`DESIGN.md` and `SCREENS.md` used to live here and are gone: they described a
+product two rewrites out of date, which is worse than having no document at
+all. The design system itself is documented where it is enforced —
+`constants/design.ts` and `components/ui/` — because that is the version that
+cannot drift from the code.
 
 ### 5. Start the app
 
@@ -203,8 +193,8 @@ app/                   expo-router screens
 components/
   ui/                  the design system — every primitive, exported via one barrel
 constants/
-  design.ts            design tokens from DESIGN.md — colors, spacing, type, radius
-  motion.ts            durations, easings and springs (DESIGN.md §7)
+  design.ts            design tokens — colors, gradients, spacing, type, radius
+  motion.ts            durations, easings and springs
 hooks/
   useAuth.ts           reads Supabase session; used by root layout for auth guard
   useTheme.tsx         ThemeProvider — persisted light/dark/system; never useColorScheme() in a screen

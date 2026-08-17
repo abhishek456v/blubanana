@@ -8,7 +8,7 @@ export interface SparklineProps {
   width?: number
   height?: number
   color?: string
-  /** Flat translucent fill under the line. Not a gradient; DESIGN.md §6. */
+  /** Flat translucent fill under the line. Not a gradient. */
   filled?: boolean
   /** Marks the final point with a dot: "where you are now". */
   showEndPoint?: boolean

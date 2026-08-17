@@ -30,7 +30,7 @@ export default function AppLayout() {
 
   // On wide screens, deal/new, deal/[id], brand/new, and profile/edit present
   // as a floating ModalSheet over the still-visible sidebar instead of a
-  // full-page push, which would otherwise hide the sidebar (DESIGN.md 4).
+  // full-page push, which would otherwise hide the sidebar.
   // ModalSheet supplies its own header in that case, so the native one is
   // turned off here; on mobile widths this object is empty and behavior is
   // unchanged from a plain push.

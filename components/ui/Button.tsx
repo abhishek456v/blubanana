@@ -24,7 +24,7 @@ export interface ButtonProps {
   style?: StyleProp<ViewStyle>
 }
 
-// DESIGN.md §4 fixes the primary button at 44px (the iOS minimum touch
+// The primary button is fixed at 44px (the iOS minimum touch
 // target). sm/lg scale around that for dense rows and hero actions.
 const SIZES = {
   sm: { height: 36, paddingHorizontal: Spacing.md, fontSize: 13, icon: 15, gap: Spacing.sm },
@@ -86,7 +86,7 @@ export function Button({
           opacity: isDisabled ? 0.45 : 1,
         },
         fullWidth && styles.fullWidth,
-        // The soft accent halo DESIGN.md §5 permits on primary actions,
+        // The soft accent halo on primary actions,
         // dropped while disabled so a dead button doesn't glow.
         variant === 'primary' && !isDisabled && accentGlow(isDark ? 0.3 : 0.28),
         style,

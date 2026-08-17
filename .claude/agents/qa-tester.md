@@ -102,7 +102,7 @@ What counts as a defect:
   gesture on desktop)
 - overlapping or misaligned controls; a control that does not look interactive
 
-Check both themes for every screen. `DESIGN.md` is the spec — read it, and
+Check both themes for every screen. `PRODUCT.md` is the spec — read it, and
 report violations against it, especially §2 (exactly one contrast card per
 screen), §4 (density), and §8 (no dense tables on mobile).
 

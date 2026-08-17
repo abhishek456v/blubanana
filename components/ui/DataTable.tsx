@@ -32,7 +32,7 @@ export interface DataTableProps<Row> {
  * aligned amounts under a right-aligned header let the eye run down a column
  * of rupees, which a ListRow's trailing block never quite lines up.
  *
- * Desktop-only by convention (DESIGN.md §8: "phones get rows"), so callers
+ * Desktop-only by convention (phones get rows), so callers
  * branch on `isDesktop` and render their ListRow layout below it. The table
  * does not try to collapse itself responsively; a squeezed table is worse
  * than the rows it replaced.
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.md,
-    // Denser than a ListRow (DESIGN.md §4): a table's rows are scanned, not
+    // Denser than a ListRow: a table's rows are scanned, not
     // read one by one.
     paddingVertical: 11,
     gap: Spacing.sm,

@@ -15,7 +15,7 @@ interface ModalSheetProps {
 
 // Wraps deal/new, brand/new, profile/edit, and deal/[id]. On wide screens
 // these present as a floating card over a dimmed backdrop instead of a
-// full-page native-stack push, so the sidebar (DESIGN.md 4) stays visible
+// full-page native-stack push, so the sidebar stays visible
 // behind them. The caller's Stack.Screen sets headerShown: false and
 // presentation: 'transparentModal' for the same breakpoint (see
 // app/(app)/_layout.tsx), so this is the only chrome the screen gets.

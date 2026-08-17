@@ -54,7 +54,7 @@ export interface ScreenHeaderProps {
  *
  * The tab screens turn off the native navigation header and use this instead.
  * Two reasons: the native header caps out at a single small centred title,
- * where DESIGN.md §2 wants the display face at 28px doing the talking; and a
+ * where this system wants the display face doing the talking; and a
  * header that scrolls with the content lets the first screenful be the
  * creator's numbers rather than a chrome bar.
  */

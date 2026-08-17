@@ -14,7 +14,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable)
 export interface PressableScaleProps extends Omit<PressableProps, 'style' | 'children'> {
   children: ReactNode
   style?: StyleProp<ViewStyle>
-  /** Scale held during a press. DESIGN.md §5 sets the default at 0.97. */
+  /** Scale held during a press. The default is 0.97. */
   scaleTo?: number
   /**
    * Haptic fired on press-in, or `false` for none. Press-in rather than

@@ -26,8 +26,8 @@ export interface SkeletonProps {
  * it holds the layout, so content lands where the eye is already looking
  * instead of the page reflowing on arrival.
  *
- * The pulse is an opacity breath rather than a swept gradient. DESIGN.md
- * rules out gradients, and a pulse costs one shared value instead of a
+ * The pulse is an opacity breath rather than a swept gradient: a swept
+ * gradient costs one shared value instead of a
  * masked, translating overlay per row.
  */
 export function Skeleton({ width = '100%', height = 14, radius = Radius.sm, style }: SkeletonProps) {

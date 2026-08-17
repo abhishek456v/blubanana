@@ -1,7 +1,7 @@
 import { useWindowDimensions } from 'react-native'
 import { Breakpoints } from '@/constants/design'
 
-// Drives the mobile bottom-tabs vs. desktop sidebar switch (DESIGN.md 4)
+// Drives the mobile dock vs. desktop rail switch
 // and the content max-width applied on wide screens.
 export function useIsWideScreen(): boolean {
   const { width } = useWindowDimensions()

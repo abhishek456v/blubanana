@@ -25,7 +25,7 @@ export interface ListRowProps {
 }
 
 /**
- * The flat row from DESIGN.md §4: surface background, `radius-md`, no
+ * The flat row: surface background, `radius-md`, no
  * border, sitting directly on the page with a gap rather than stacked inside
  * a bordered card.
  *

@@ -1010,7 +1010,7 @@ export default function DealDetailScreen() {
                     deep-links here (app/_layout.tsx), where these three
                     responses live (PRODUCT.md 2.3). "Done" is the only filled
                     pill anywhere on this screen; the other two stay outline so
-                    DESIGN.md's one-filled-button rule holds even though the
+                    the one-filled-button rule holds even though the
                     payment card below can show its own (outline) send button
                     at the same time.
                   */}

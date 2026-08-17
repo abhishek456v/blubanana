@@ -417,8 +417,8 @@ const styles = StyleSheet.create({
     gap: Spacing.base,
   },
   // Two per row on desktop: a single column of 1160px-wide rows carrying a
-  // brand name and a figure is the stretched-phone layout DESIGN.md §4 rules
-  // out.
+  // brand name and a figure is the stretched-phone layout the desktop
+  // breakpoint exists to rule out.
   listGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
