@@ -24,12 +24,23 @@ export interface AnnualReport {
   gstCollected: number
   tdsDeducted: number
   paymentsResolved: number
+  /** What the work cost. Zero when nothing has been logged. */
+  totalExpenses: number
+  /**
+   * Revenue minus expenses: the figure the creator is actually taxed on.
+   *
+   * Reporting turnover as though it were income is the single most misleading
+   * thing a "tax-ready" summary can do — a creator who billed ₹14L and paid an
+   * editor ₹3L of it does not owe tax on ₹14L.
+   */
+  netIncome: number
 }
 
 export function computeAnnualReport(
   deals: DealWithPaymentSummary[],
   invoices: Invoice[],
   ratings: BrandRating[],
+  expenses: readonly { spent_on: string; amount: number }[],
   fyStartYear: number
 ): AnnualReport {
   const paidInFY = deals.filter(
@@ -92,9 +103,19 @@ export function computeAnnualReport(
   const gstCollected = invoicesInFY.reduce((sum, inv) => sum + (inv.gst_applicable ? inv.gst_amount : 0), 0)
   const tdsDeducted = invoicesInFY.reduce((sum, inv) => sum + (inv.tds_deducted ? inv.tds_amount ?? 0 : 0), 0)
 
+  // The same April-to-March window the revenue figures use, so the two sides
+  // of the subtraction cover the same period.
+  const fyFrom = `${fyStartYear}-04-01`
+  const fyTo = `${fyStartYear + 1}-03-31`
+  const totalExpenses = expenses
+    .filter((e) => e.spent_on >= fyFrom && e.spent_on <= fyTo)
+    .reduce((sum, e) => sum + e.amount, 0)
+
   return {
     fyLabel: `FY ${fyStartYear}-${String(fyStartYear + 1).slice(2)}`,
     totalRevenue,
+    totalExpenses,
+    netIncome: totalRevenue - totalExpenses,
     dealsClosed: paidInFY.length,
     bestClient,
     worstClient,

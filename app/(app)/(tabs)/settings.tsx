@@ -311,6 +311,30 @@ export default function YouScreen() {
             index={0}
           />
           <ListRow
+            title="Expenses"
+            subtitle="What the work cost, so Year in review reports what you are taxed on"
+            leading={
+              <View style={[styles.linkIcon, { backgroundColor: c.accentLight }]}>
+                <Ionicons name="receipt" size={18} color={c.accent} />
+              </View>
+            }
+            showChevron
+            onPress={() => router.push('/(app)/expenses' as never)}
+            index={1}
+          />
+          <ListRow
+            title="Advance tax"
+            subtitle="What to set aside, and by which of the four dates"
+            leading={
+              <View style={[styles.linkIcon, { backgroundColor: c.accentLight }]}>
+                <Ionicons name="calculator" size={18} color={c.accent} />
+              </View>
+            }
+            showChevron
+            onPress={() => router.push('/(app)/tax' as never)}
+            index={2}
+          />
+          <ListRow
             title="Export my data"
             subtitle="Every deal, brand, payment, invoice and expense as a file"
             leading={
@@ -320,7 +344,7 @@ export default function YouScreen() {
             }
             showChevron
             onPress={handleExport}
-            index={1}
+            index={3}
           />
         </View>
 

@@ -28,7 +28,13 @@ import { File } from 'expo-file-system'
 import { Ionicons } from '@expo/vector-icons'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { getBrands } from '@/lib/brands'
-import { createDeal, rescheduleWorkflow } from '@/lib/deals'
+import {
+  createDeal,
+  getDeals,
+  repeatCandidates,
+  rescheduleWorkflow,
+  type RepeatCandidate,
+} from '@/lib/deals'
 import { defaultStageDrafts, replaceStages, type StageDraft } from '@/lib/dealStages'
 import { StageEditor } from '@/components/deal/StageEditor'
 import { getAllRatings, summarizeRatings } from '@/lib/reputation'
@@ -58,7 +64,7 @@ import { Colors, Spacing, Radius, Typography, FontFamily, ContentMaxWidth } from
 import { useTheme } from '@/hooks/useTheme'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 import { ModalSheet } from '@/components/ModalSheet'
-import { Chip, DateField, TextField, useToast } from '@/components/ui'
+import { Chip, DateField, PressableScale, Sheet, TextField, useToast } from '@/components/ui'
 import { replaceDeliverables, type DeliverableInput } from '@/lib/deliverables'
 import { adRightsExpiry, adRightsPerMonth } from '@/lib/deliverables'
 import { DEFAULT_PLATFORM_FOR_KIND } from '@/constants/labels'
@@ -104,6 +110,8 @@ export default function NewDealScreen() {
   // shared by both the screenshot and voice paths (PRODUCT.md 2.1: one
   // review step, three entry points).
   const [extracting, setExtracting] = useState<'screenshot' | 'voice' | null>(null)
+  const [repeatOpen, setRepeatOpen] = useState(false)
+  const [repeatOptions, setRepeatOptions] = useState<RepeatCandidate[]>([])
   // Set when extraction returns a brand name that doesn't match any existing
   // brand, so we can prompt to create it and auto-select it once it exists.
   const [pendingBrandName, setPendingBrandName] = useState<string | null>(null)
@@ -264,6 +272,25 @@ export default function NewDealScreen() {
     } finally {
       setExtracting(null)
     }
+  }
+
+  /**
+   * Fills the form from a previous deal with the same brand.
+   *
+   * Copies the TERMS only: brand, platform, deliverable, rate, payment terms.
+   * Deliberately not the dates, live link, notes or attachments — those belong
+   * to the job rather than the arrangement, and copying them produces a deal
+   * that claims it published last month.
+   */
+  function applyRepeat(candidate: RepeatCandidate) {
+    setSelectedBrandId(candidate.brandId)
+    setPlatform(candidate.platform)
+    setDeliverable(candidate.deliverable)
+    setRate(String(candidate.rate))
+    if (candidate.paymentTerms) setPaymentTerms(candidate.paymentTerms)
+    setStageDrafts(defaultStageDrafts())
+    setRepeatOpen(false)
+    toast(`Filled from your last ${candidate.brandName} deal`)
   }
 
   async function handleSave() {
@@ -444,6 +471,19 @@ export default function NewDealScreen() {
               >
                 {recorderState.isRecording ? 'Stop recording' : 'Record voice'}
               </Text>
+            </TouchableOpacity>
+
+            {/* The fourth way in. Not a duplicate button on every deal row:
+                with ten deals on screen that cannot answer "which one". This
+                is the moment she is actually thinking "same as last time". */}
+            <TouchableOpacity
+              style={[styles.intakeButton, { borderColor: c.borderStrong }]}
+              onPress={() => setRepeatOpen(true)}
+              disabled={extracting !== null || recorderState.isRecording}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="repeat-outline" size={17} color={c.textPrimary} />
+              <Text style={[styles.intakeButtonText, { color: c.textPrimary }]}>Repeat</Text>
             </TouchableOpacity>
           </View>
 
@@ -707,6 +747,40 @@ export default function NewDealScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+
+      {/* One row per brand, that brand's most recent deal. Ten deals across
+          four brands is four rows, which is what makes this usable where a
+          per-row duplicate button would not be. */}
+      <Sheet visible={repeatOpen} onClose={() => setRepeatOpen(false)} title="Repeat a deal">
+        {repeatOptions.length === 0 ? (
+          <Text style={[styles.repeatEmpty, { color: c.textMuted }]}>
+            Nothing to repeat yet. Once you have logged a deal, it shows up here.
+          </Text>
+        ) : (
+          <View style={styles.repeatList}>
+            {repeatOptions.map((candidate) => (
+              <PressableScale
+                key={candidate.dealId}
+                onPress={() => applyRepeat(candidate)}
+                accessibilityRole="button"
+                accessibilityLabel={`Repeat the ${candidate.brandName} deal`}
+                style={[styles.repeatRow, { borderColor: c.border }]}
+              >
+                <View style={styles.repeatText}>
+                  <Text style={[styles.repeatBrand, { color: c.textPrimary }]} numberOfLines={1}>
+                    {candidate.brandName}
+                  </Text>
+                  <Text style={[styles.repeatMeta, { color: c.textMuted }]} numberOfLines={1}>
+                    {candidate.deliverable} · {formatCurrency(candidate.rate)}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={c.textMuted} />
+              </PressableScale>
+            ))}
+          </View>
+        )}
+      </Sheet>
+
     </ModalSheet>
   )
 }
@@ -732,6 +806,35 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.medium,
     marginTop: Spacing.lg,
     marginBottom: Spacing.xs,
+  },
+  repeatList: {
+    gap: Spacing.sm,
+  },
+  repeatRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.md,
+    borderWidth: 1,
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.base,
+  },
+  repeatText: {
+    flex: 1,
+    gap: 2,
+  },
+  repeatBrand: {
+    ...Typography.bodyStrong,
+    fontFamily: FontFamily.semiBold,
+  },
+  repeatMeta: {
+    ...Typography.caption,
+    fontFamily: FontFamily.regular,
+  },
+  repeatEmpty: {
+    ...Typography.body,
+    fontFamily: FontFamily.regular,
   },
   // AI intake
   intakeRow: {

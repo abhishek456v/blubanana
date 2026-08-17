@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { getDeals, type DealWithPaymentSummary } from '@/lib/deals'
 import { getInvoices } from '@/lib/invoices'
 import { getAllRatings } from '@/lib/reputation'
+import { getExpenses, type Expense } from '@/lib/expenses'
 import { computeAnnualReport, currentFinancialYearStart } from '@/lib/annualReport'
 import { formatCurrency } from '@/lib/format'
 import type { BrandRating, Invoice } from '@/types'
@@ -30,6 +31,7 @@ export default function AnnualReportScreen() {
   const [deals, setDeals] = useState<DealWithPaymentSummary[]>([])
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [ratings, setRatings] = useState<BrandRating[]>([])
+  const [expenses, setExpenses] = useState<Expense[]>([])
   const [loading, setLoading] = useState(true)
   const [fyStartYear, setFyStartYear] = useState(currentFinancialYearStart())
 
@@ -48,6 +50,12 @@ export default function AnnualReportScreen() {
       // Non-fatal: the tax block shows zero until this succeeds.
     }
     try {
+      setExpenses(await getExpenses())
+    } catch {
+      // Non-fatal: the report falls back to reporting gross, which is what it
+      // did before expenses existed.
+    }
+    try {
       setRatings(await getAllRatings())
     } catch {
       // Non-fatal: the toughest-client line just doesn't show.
@@ -61,8 +69,8 @@ export default function AnnualReportScreen() {
   }, [load])
 
   const report = useMemo(
-    () => computeAnnualReport(deals, invoices, ratings, fyStartYear),
-    [deals, invoices, ratings, fyStartYear]
+    () => computeAnnualReport(deals, invoices, ratings, expenses, fyStartYear),
+    [deals, invoices, ratings, expenses, fyStartYear]
   )
 
   const atCurrentYear = fyStartYear >= currentFinancialYearStart()
@@ -131,6 +139,26 @@ export default function AnnualReportScreen() {
                   {report.dealsClosed === 1 ? 'deal' : 'deals'} in {report.fyLabel}
                 </Text>
               </Card>
+
+              {report.totalExpenses > 0 ? (
+                <View style={styles.metrics}>
+                  <MetricCard
+                    label="Expenses"
+                    value={report.totalExpenses}
+                    format={formatCurrency}
+                    caption="what the work cost"
+                    index={0}
+                  />
+                  <MetricCard
+                    label="Taxable income"
+                    value={report.netIncome}
+                    format={formatCurrency}
+                    tone="accent"
+                    caption="earned minus expenses"
+                    index={1}
+                  />
+                </View>
+              ) : null}
 
               <View style={styles.metrics}>
                 <MetricCard
