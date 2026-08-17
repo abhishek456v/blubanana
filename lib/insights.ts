@@ -1,4 +1,9 @@
-import { stagesInOrder, type DealWithPaymentSummary } from './deals'
+import {
+  nextDuePayment,
+  paymentsInOrder,
+  stagesInOrder,
+  type DealWithPaymentSummary,
+} from './deals'
 import { getPaymentAlertTone } from './paymentReminders'
 import { getAdRightsStatus } from './adRights'
 import { daysFromToday, formatRelativeDay } from './format'
@@ -69,21 +74,24 @@ export function getAttentionItems(deals: DealWithPaymentSummary[]): AttentionIte
 
     const candidates: AttentionItem[] = []
 
-    const paymentTone = deal.payment ? getPaymentAlertTone(deal.payment) : null
-    if (paymentTone === 'overdue' && deal.payment?.due_date) {
-      const late = Math.abs(daysFromToday(deal.payment.due_date))
+    // The soonest unsettled payment is the one worth chasing. A deal with an
+    // advance already paid and a balance overdue should surface the balance.
+    const chasing = nextDuePayment(deal)
+    const paymentTone = chasing ? getPaymentAlertTone(chasing) : null
+    if (paymentTone === 'overdue' && chasing?.due_date) {
+      const late = Math.abs(daysFromToday(chasing.due_date))
       candidates.push({
         deal,
         kind: 'payment_overdue',
         tone: 'danger',
         reason: late === 0 ? 'Payment due today' : `Payment ${late} ${late === 1 ? 'day' : 'days'} late`,
       })
-    } else if (paymentTone === 'due_soon' && deal.payment?.due_date) {
+    } else if (paymentTone === 'due_soon' && chasing?.due_date) {
       candidates.push({
         deal,
         kind: 'payment_due_soon',
         tone: 'warning',
-        reason: `Payment due ${formatRelativeDay(deal.payment.due_date).toLowerCase()}`,
+        reason: `Payment due ${formatRelativeDay(chasing.due_date).toLowerCase()}`,
       })
     }
 
@@ -159,16 +167,18 @@ export function getHomeMetrics(deals: DealWithPaymentSummary[]): HomeMetrics {
   let activeDeals = 0
 
   for (const deal of deals) {
-    const payment = deal.payment
-
-    if (payment?.status === 'paid' && payment.paid_date) {
-      if (isSameMonth(payment.paid_date, now)) {
-        earnedThisMonth += payment.amount ?? deal.rate
+    for (const payment of paymentsInOrder(deal)) {
+      if (payment.status === 'paid') {
+        if (payment.paid_date && isSameMonth(payment.paid_date, now)) {
+          earnedThisMonth += payment.amount_received ?? payment.amount
+        }
+        continue
       }
-    } else if (payment) {
-      const amount = payment.amount ?? deal.rate
-      outstanding += amount
-      if (getPaymentAlertTone(payment) === 'overdue') overdue += amount
+      // Held deals are not expected income (§8.6).
+      if (deal.on_hold) continue
+
+      outstanding += payment.amount
+      if (getPaymentAlertTone(payment) === 'overdue') overdue += payment.amount
     }
 
     if (deal.status !== 'paid') activeDeals += 1

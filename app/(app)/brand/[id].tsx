@@ -3,7 +3,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } fr
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { getBrand, updateBrand } from '@/lib/brands'
-import { getDealsForBrand, type DealWithPaymentSummary } from '@/lib/deals'
+import { getDealsForBrand, paymentsInOrder, type DealWithPaymentSummary } from '@/lib/deals'
 import { getRatingsForBrand, summarizeRatings } from '@/lib/reputation'
 import { formatCurrency } from '@/lib/format'
 import type { Brand, BrandRating } from '@/types'
@@ -79,8 +79,9 @@ export default function BrandDetailScreen() {
   const earned = useMemo(
     () =>
       deals
-        .filter((deal) => deal.payment?.status === 'paid')
-        .reduce((total, deal) => total + (deal.payment?.amount ?? deal.rate), 0),
+        .flatMap((deal) => paymentsInOrder(deal))
+        .filter((payment) => payment.status === 'paid')
+        .reduce((total, payment) => total + (payment.amount_received ?? payment.amount), 0),
     [deals]
   )
 

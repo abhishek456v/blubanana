@@ -1,4 +1,4 @@
-import type { DealWithPaymentSummary } from './deals'
+import { isFullyPaid, paymentsInOrder, type DealWithPaymentSummary } from './deals'
 import { getPaymentAlertTone } from './paymentReminders'
 
 // Revenue dashboard. Every number here is derived client-side from deals +
@@ -43,7 +43,21 @@ function isSameMonth(dateStr: string, ref: Date): boolean {
 export function computeRevenueSummary(deals: DealWithPaymentSummary[]): RevenueSummary {
   const now = new Date()
 
-  const paidDeals = deals.filter((d) => d.payment?.status === 'paid' && d.payment.paid_date)
+  // Money is counted per PAYMENT, not per deal (migration 021). A deal on
+  // "50% advance, 50% on delivery" has revenue the moment the advance lands,
+  // and counting it per deal would either ignore that or count the whole deal
+  // as earned. Both are wrong, and the second is wrong in the direction that
+  // makes a creator think she has been paid.
+  const rows = deals.flatMap((deal) =>
+    paymentsInOrder(deal).map((payment) => ({ deal, payment }))
+  )
+
+  const settled = rows.filter(({ payment }) => payment.status === 'paid' && payment.paid_date)
+
+  // What actually landed, where it was recorded. A brand that withholds TDS
+  // pays less than it was invoiced, and the received figure is the one that
+  // reconciles against a bank statement.
+  const landed = ({ payment }: (typeof rows)[number]) => payment.amount_received ?? payment.amount
 
   const lockedDeals = deals.filter((d) => isSameMonth(d.created_at.slice(0, 10), now))
   const lockedThisMonth: MoneyBucket = {
@@ -51,25 +65,27 @@ export function computeRevenueSummary(deals: DealWithPaymentSummary[]): RevenueS
     value: lockedDeals.reduce((sum, d) => sum + d.rate, 0),
   }
 
-  const earnedDeals = paidDeals.filter((d) => isSameMonth(d.payment!.paid_date!, now))
+  const earnedRows = settled.filter(({ payment }) => isSameMonth(payment.paid_date!, now))
   const earnedThisMonth: MoneyBucket = {
-    count: earnedDeals.length,
-    value: earnedDeals.reduce((sum, d) => sum + (d.payment?.amount ?? d.rate), 0),
+    count: earnedRows.length,
+    value: earnedRows.reduce((sum, row) => sum + landed(row), 0),
   }
 
   const pending: MoneyBucket = { count: 0, value: 0 }
   const overdue: MoneyBucket = { count: 0, value: 0 }
 
-  for (const deal of deals) {
-    if (!deal.payment || deal.payment.status === 'paid') continue
-    const amount = deal.payment.amount ?? deal.rate
+  for (const { deal, payment } of rows) {
+    if (payment.status === 'paid') continue
+    // A held deal is not expected income. Counting it keeps "still out"
+    // climbing with deals that are never going to pay (§8.6).
+    if (deal.on_hold) continue
 
     pending.count += 1
-    pending.value += amount
+    pending.value += payment.amount
 
-    if (getPaymentAlertTone(deal.payment) === 'overdue') {
+    if (getPaymentAlertTone(payment) === 'overdue') {
       overdue.count += 1
-      overdue.value += amount
+      overdue.value += payment.amount
     }
   }
 
@@ -77,9 +93,9 @@ export function computeRevenueSummary(deals: DealWithPaymentSummary[]): RevenueS
     deals.length > 0 ? Math.round(deals.reduce((sum, d) => sum + d.rate, 0) / deals.length) : 0
 
   const byBrand = new Map<string, number>()
-  for (const d of paidDeals) {
-    const name = d.brand?.name ?? 'Unknown brand'
-    byBrand.set(name, (byBrand.get(name) ?? 0) + (d.payment?.amount ?? d.rate))
+  for (const row of settled) {
+    const name = row.deal.brand?.name ?? 'Unknown brand'
+    byBrand.set(name, (byBrand.get(name) ?? 0) + landed(row))
   }
   let bestPayingBrand: RevenueSummary['bestPayingBrand'] = null
   for (const [name, total] of byBrand) {
@@ -89,9 +105,9 @@ export function computeRevenueSummary(deals: DealWithPaymentSummary[]): RevenueS
   const monthlyTotals: RevenueSummary['monthlyTotals'] = []
   for (let i = 5; i >= 0; i--) {
     const ref = new Date(now.getFullYear(), now.getMonth() - i, 1)
-    const total = paidDeals
-      .filter((d) => isSameMonth(d.payment!.paid_date!, ref))
-      .reduce((sum, d) => sum + (d.payment?.amount ?? d.rate), 0)
+    const total = settled
+      .filter(({ payment }) => isSameMonth(payment.paid_date!, ref))
+      .reduce((sum, row) => sum + landed(row), 0)
     monthlyTotals.push({ label: ref.toLocaleDateString('en-IN', { month: 'short' }), total })
   }
 
@@ -101,7 +117,8 @@ export function computeRevenueSummary(deals: DealWithPaymentSummary[]): RevenueS
     pending,
     overdue,
     averageDealValue,
-    dealsClosed: paidDeals.length,
+    // Deals, not payments: a deal is closed when everything on it is settled.
+    dealsClosed: deals.filter((deal) => isFullyPaid(deal)).length,
     bestPayingBrand,
     monthlyTotals,
   }

@@ -4,7 +4,12 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useFocusEffect } from '@react-navigation/core'
 import { Ionicons } from '@expo/vector-icons'
-import { getDeals, type DealWithPaymentSummary } from '@/lib/deals'
+import {
+  getDeals,
+  nextDuePayment,
+  paymentsInOrder,
+  type DealWithPaymentSummary,
+} from '@/lib/deals'
 import { computeRevenueSummary } from '@/lib/revenue'
 import { getInvoices } from '@/lib/invoices'
 import { getPaymentAlertTone } from '@/lib/paymentReminders'
@@ -101,9 +106,12 @@ export default function MoneyScreen() {
   const unpaid = useMemo(
     () =>
       deals
-        .filter((deal) => deal.payment && deal.payment.status !== 'paid')
+        // Held deals are not waiting on payment, they are paused (§8.6).
+        .filter((deal) => !deal.on_hold && nextDuePayment(deal) !== null)
         .sort((a, b) =>
-          (a.payment!.due_date ?? '9999').localeCompare(b.payment!.due_date ?? '9999')
+          (nextDuePayment(a)?.due_date ?? '9999').localeCompare(
+            nextDuePayment(b)?.due_date ?? '9999'
+          )
         ),
     [deals]
   )
@@ -118,8 +126,10 @@ export default function MoneyScreen() {
    */
   const debtors = useMemo<OrbitItem[]>(() => {
     const overdueFirst = [...unpaid].sort((a, b) => {
-      const aLate = getPaymentAlertTone(a.payment!) === 'overdue' ? 0 : 1
-      const bLate = getPaymentAlertTone(b.payment!) === 'overdue' ? 0 : 1
+      const aNext = nextDuePayment(a)
+      const bNext = nextDuePayment(b)
+      const aLate = aNext && getPaymentAlertTone(aNext) === 'overdue' ? 0 : 1
+      const bLate = bNext && getPaymentAlertTone(bNext) === 'overdue' ? 0 : 1
       return aLate - bLate
     })
 
@@ -139,8 +149,12 @@ export default function MoneyScreen() {
     const now = new Date()
     const cutoff = new Date(now.getFullYear(), now.getMonth() - 5, 1)
     return deals.filter((deal) => {
-      const paidDate = deal.payment?.paid_date
-      return deal.payment?.status === 'paid' && paidDate && parseLocalDate(paidDate) >= cutoff
+      return paymentsInOrder(deal).some(
+        (payment) =>
+          payment.status === 'paid' &&
+          payment.paid_date &&
+          parseLocalDate(payment.paid_date) >= cutoff
+      )
     }).length
   }, [deals])
 

@@ -37,8 +37,22 @@ export interface CreateDealInput {
 // filter (lib/paymentReminders.ts getPaymentAlertTone); amount/paid_date are
 // included too so the same fetch also powers the Revenue tab
 // (lib/revenue.ts) without a second round trip.
+/** Enough of a payment row for the dashboard, Money and the revenue figures. */
+export type PaymentSummary = Pick<
+  Payment,
+  'id' | 'due_date' | 'status' | 'amount' | 'paid_date' | 'amount_received' | 'tds_amount' | 'label' | 'sort_order'
+>
+
 export type DealWithPaymentSummary = Deal & {
-  payment: Pick<Payment, 'due_date' | 'status' | 'amount' | 'paid_date'> | null
+  /**
+   * Every payment on the deal, in schedule order (migration 021).
+   *
+   * An array, not a single row: "50% advance, 50% on delivery" is the most
+   * common arrangement in Indian creator work, and a deal could previously
+   * hold only one payment. Most deals still have exactly one — go through the
+   * helpers below rather than indexing into this.
+   */
+  payments: PaymentSummary[]
   /**
    * The deal's workflow, oldest stage first (migration 019).
    *
@@ -66,7 +80,7 @@ export async function getDeals(): Promise<DealWithPaymentSummary[]> {
   const { data, error } = await supabase
     .from('deals')
     .select(
-      '*, brand:brands(*), payment:payments(due_date, status, amount, paid_date), stages:deal_stages(*)'
+      '*, brand:brands(*), payments(id, due_date, status, amount, paid_date, amount_received, tds_amount, label, sort_order), stages:deal_stages(*)'
     )
     .order('created_at', { ascending: false })
 
@@ -79,7 +93,7 @@ export async function getDealsForBrand(brandId: string): Promise<DealWithPayment
   const { data, error } = await supabase
     .from('deals')
     .select(
-      '*, brand:brands(*), payment:payments(due_date, status, amount, paid_date), stages:deal_stages(*)'
+      '*, brand:brands(*), payments(id, due_date, status, amount, paid_date, amount_received, tds_amount, label, sort_order), stages:deal_stages(*)'
     )
     .eq('brand_id', brandId)
     .order('created_at', { ascending: false })
@@ -194,12 +208,12 @@ export async function createDeal(input: CreateDealInput): Promise<Deal> {
 // payments.deal_id is unique, so PostgREST infers a to-one relationship and
 // embeds it as a single object, not an array, regardless of the '*'
 // select shorthand. The `payment:` alias here makes that explicit.
-export type DealWithPayments = Deal & { payment: Payment | null; stages: DealStage[] }
+export type DealWithPayments = Deal & { payments: Payment[]; stages: DealStage[] }
 
 export async function getDeal(id: string): Promise<DealWithPayments> {
   const { data, error } = await supabase
     .from('deals')
-    .select('*, brand:brands(*), payment:payments(*), stages:deal_stages(*)')
+    .select('*, brand:brands(*), payments(*), stages:deal_stages(*)')
     .eq('id', id)
     .single()
 
@@ -276,22 +290,35 @@ export async function updatePerformance(
 // Updates the payment record that belongs to a deal. Recalculates due_date
 // from publish_date + payment_terms whenever either value changes, and
 // reschedules the due-soon/due-today local reminders to match.
+/**
+ * Updates one payment row.
+ *
+ * Targets the payment by id, not the deal. It used to update by `deal_id`,
+ * which was correct while a deal could only have one payment and would now
+ * overwrite the amount and due date of every instalment on the deal with the
+ * figures from whichever one the caller was editing (migration 021).
+ *
+ * Null payment is a no-op: a deal with no payment row has nothing to update,
+ * and inventing one here would hide the fact that createDeal did not make it.
+ */
 export async function updatePaymentRecord(
   deal: Pick<Deal, 'id' | 'brand'>,
-  payment: Pick<Payment, 'due_soon_notification_id' | 'due_today_notification_id'>,
+  payment: Pick<Payment, 'id' | 'due_soon_notification_id' | 'due_today_notification_id'> | null,
   {
     amount,
     paymentTerms,
     publishDate,
   }: { amount: number; paymentTerms: string | null; publishDate: string | null }
 ): Promise<void> {
+  if (!payment) return
+
   const dueDate = calculateDueDate(publishDate, paymentTerms)
   const reminderFields = await reschedulePaymentReminders({ ...payment, due_date: dueDate }, deal)
 
   const { error } = await supabase
     .from('payments')
     .update({ amount, payment_terms: paymentTerms, due_date: dueDate, ...reminderFields })
-    .eq('deal_id', deal.id)
+    .eq('id', payment.id)
   if (error) throw error
 }
 
@@ -384,6 +411,66 @@ export async function markPaymentReminderSent(
 
 // ─── Status advancement ──────────────────────────────────────────────────────
 
+
+// ── Payments ─────────────────────────────────────────────────────────────────
+// A deal can carry several (migration 021). These helpers exist so no screen
+// has to decide for itself what "the" payment is, which is how two screens end
+// up disagreeing about whether a deal is paid.
+
+type WithPayments = { payments?: { sort_order: number; due_date: string | null }[] | null }
+
+/** Schedule order: advance first, then by due date. PostgREST does not sort embeds. */
+export function paymentsInOrder<T extends { sort_order: number; due_date: string | null }>(
+  deal: { payments?: T[] | null }
+): T[] {
+  return [...(deal.payments ?? [])].sort(
+    (a, b) => a.sort_order - b.sort_order || (a.due_date ?? '9999').localeCompare(b.due_date ?? '9999')
+  )
+}
+
+/**
+ * The one payment a single-payment deal has.
+ *
+ * Most deals have exactly one, and a lot of the app is still written around
+ * that. Returns the first in schedule order, or null for a deal with none.
+ */
+export function primaryPayment<T extends { sort_order: number; due_date: string | null }>(
+  deal: { payments?: T[] | null }
+): T | null {
+  return paymentsInOrder(deal)[0] ?? null
+}
+
+/** The next one that still needs chasing, soonest first. Null when all settled. */
+export function nextDuePayment<T extends PaymentSummary>(deal: { payments?: T[] | null }): T | null {
+  return paymentsInOrder(deal).find((payment) => payment.status !== 'paid') ?? null
+}
+
+/**
+ * What this deal is still owed.
+ *
+ * Sums the unpaid rows only. A part-paid deal owes the remainder, not the
+ * whole, which is the difference between "still out" being a real number and
+ * being roughly twice the truth on any deal with an advance.
+ */
+export function outstandingOn(deal: { payments?: PaymentSummary[] | null }): number {
+  return paymentsInOrder(deal)
+    .filter((payment) => payment.status !== 'paid')
+    .reduce((sum, payment) => sum + payment.amount, 0)
+}
+
+/** What actually landed: the received figure where recorded, else the amount. */
+export function receivedOn(deal: { payments?: PaymentSummary[] | null }): number {
+  return paymentsInOrder(deal)
+    .filter((payment) => payment.status === 'paid')
+    .reduce((sum, payment) => sum + (payment.amount_received ?? payment.amount), 0)
+}
+
+/** True only when every payment on the deal is settled. */
+export function isFullyPaid(deal: { payments?: PaymentSummary[] | null }): boolean {
+  const all = paymentsInOrder(deal)
+  return all.length > 0 && all.every((payment) => payment.status === 'paid')
+}
+
 export const STATUS_ORDER: DealStatus[] = ['active', 'live', 'unpaid', 'paid']
 
 export function getNextStatus(current: DealStatus): DealStatus | null {
@@ -401,16 +488,24 @@ export async function advanceDealStatus(deal: DealWithPayments): Promise<DealSta
 
   if (next === 'paid') {
     const today = new Date().toISOString().split('T')[0]
-    const payment = deal.payment
-    const paymentReminderFields = payment
-      ? await cancelPaymentReminders(payment)
-      : { due_soon_notification_id: null, due_today_notification_id: null }
 
-    const { error } = await supabase
-      .from('payments')
-      .update({ status: 'paid', paid_date: today, ...paymentReminderFields })
-      .eq('deal_id', deal.id)
-    if (error) throw error
+    // Settles every outstanding payment on the deal, not just one. A deal on
+    // an advance has two, and marking the deal paid while a row still reads
+    // unpaid is how "still out" ends up disagreeing with the deal list.
+    //
+    // amount_received is deliberately not written here. This path knows the
+    // deal is settled but not what actually landed, and guessing the invoiced
+    // figure would silently erase any TDS the brand withheld. The payment
+    // dialog on deal detail is where the real number is captured.
+    for (const payment of paymentsInOrder(deal)) {
+      if (payment.status === 'paid') continue
+      const reminderFields = await cancelPaymentReminders(payment)
+      const { error } = await supabase
+        .from('payments')
+        .update({ status: 'paid', paid_date: today, ...reminderFields })
+        .eq('id', payment.id)
+      if (error) throw error
+    }
 
     const workflowReminderFields = await clearWorkflowReminder(deal)
     const { error: dealReminderError } = await supabase

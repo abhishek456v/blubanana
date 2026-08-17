@@ -1,5 +1,5 @@
 import type { Deliverable, DeliverableKind } from '@/types'
-import type { DealWithPaymentSummary } from './deals'
+import { paymentsInOrder, type DealWithPaymentSummary } from './deals'
 import { COMMERCIAL_KINDS } from '@/constants/labels'
 
 // Content performance.
@@ -193,8 +193,9 @@ export function buildArchive(deals: DealWithPaymentSummary[]): ArchiveYear[] {
         (b.publish_date ?? b.created_at).localeCompare(a.publish_date ?? a.created_at)
       ),
       totalEarned: yearDeals
-        .filter((deal) => deal.payment?.status === 'paid')
-        .reduce((total, deal) => total + (deal.payment?.amount ?? deal.rate), 0),
+        .flatMap((deal) => paymentsInOrder(deal))
+        .filter((payment) => payment.status === 'paid')
+        .reduce((total, payment) => total + (payment.amount_received ?? payment.amount), 0),
       dealCount: yearDeals.length,
     }))
     .sort((a, b) => b.year - a.year)

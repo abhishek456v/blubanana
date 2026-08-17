@@ -30,6 +30,10 @@ import {
   respondToReminder,
   syncPaymentStatus,
   markPaymentReminderSent,
+  isFullyPaid,
+  nextDuePayment,
+  paymentsInOrder,
+  primaryPayment,
   stagesInOrder,
   type DealWithPayments,
 } from '@/lib/deals'
@@ -200,12 +204,15 @@ export default function DealDetailScreen() {
         // Lazily enforce pending/reminder_sent → overdue before rendering:
         // there's no reliable background execution to do this the moment
         // the due date actually passes (lib/paymentReminders.ts).
-        if (data.payment) {
-          const syncedStatus = await syncPaymentStatus(data.id, data.payment)
-          if (syncedStatus !== data.payment.status) {
-            data.payment = { ...data.payment, status: syncedStatus }
-          }
-        }
+        // Every payment gets the lazy overdue sync, not just the first: a
+        // deal on an advance can have the balance overdue while the advance
+        // is settled.
+        data.payments = await Promise.all(
+          paymentsInOrder(data).map(async (payment) => {
+            const syncedStatus = await syncPaymentStatus(data.id, payment)
+            return syncedStatus === payment.status ? payment : { ...payment, status: syncedStatus }
+          })
+        )
         if (!active) return
 
         setDeal(data)
@@ -228,7 +235,7 @@ export default function DealDetailScreen() {
         setPublishDate(data.publish_date ?? '')
         setLiveLink(data.live_link ?? '')
         setNotes(data.notes ?? '')
-        setPaymentTerms(data.payment?.payment_terms ?? '')
+        setPaymentTerms(primaryPayment(data)?.payment_terms ?? '')
         setPerfViews(data.performance_views != null ? String(data.performance_views) : '')
         setPerfLikes(data.performance_likes != null ? String(data.performance_likes) : '')
         setPerfComments(data.performance_comments != null ? String(data.performance_comments) : '')
@@ -396,7 +403,7 @@ export default function DealDetailScreen() {
   }
 
   const handleSave = useCallback(async () => {
-    if (!deal || !deal.payment) return
+    if (!deal || paymentsInOrder(deal).length === 0) return
 
     const rateNum = parseInt(rate, 10)
     if (!rate || isNaN(rateNum) || rateNum <= 0) {
@@ -449,7 +456,7 @@ export default function DealDetailScreen() {
         notes: notes.trim() || null,
       })
 
-      await updatePaymentRecord(deal, deal.payment, {
+      await updatePaymentRecord(deal, primaryPayment(deal), {
         amount: rateNum,
         paymentTerms: paymentTerms.trim() || null,
         publishDate: parsedPublishFromStages,
@@ -565,15 +572,20 @@ export default function DealDetailScreen() {
           reminder_fire_at: null,
           reminder_notification_id: null,
           reminder_completed_through: null,
-          payment: prev.payment
-            ? {
-                ...prev.payment,
-                status: 'paid',
-                paid_date: new Date().toISOString().split('T')[0],
-                due_soon_notification_id: null,
-                due_today_notification_id: null,
-              }
-            : null,
+          // Every outstanding payment, matching what advanceDealStatus just
+          // wrote. Settling only the first would leave the balance on an
+          // advance-and-final deal reading unpaid against a paid deal.
+          payments: prev.payments.map((payment) =>
+            payment.status === 'paid'
+              ? payment
+              : {
+                  ...payment,
+                  status: 'paid' as const,
+                  paid_date: new Date().toISOString().split('T')[0],
+                  due_soon_notification_id: null,
+                  due_today_notification_id: null,
+                }
+          ),
         }
       })
     } catch {
@@ -599,7 +611,7 @@ export default function DealDetailScreen() {
 
   async function handleSendPaymentReminder() {
     if (!deal || sendingReminder) return
-    const payment = deal.payment
+    const payment = nextDuePayment(deal)
     const brand = deal.brand
     if (!payment || !brand) return
 
@@ -662,7 +674,16 @@ export default function DealDetailScreen() {
       }
 
       const newStatus = await markPaymentReminderSent(deal.id, payment.status)
-      setDeal((prev) => (prev ? { ...prev, payment: { ...payment, status: newStatus } } : prev))
+      setDeal((prev) =>
+        prev
+          ? {
+              ...prev,
+              payments: prev.payments.map((row) =>
+                row.id === payment.id ? { ...row, status: newStatus } : row
+              ),
+            }
+          : prev
+      )
     } catch {
       toast('Could not open WhatsApp', { tone: 'error' })
     } finally {
@@ -859,13 +880,13 @@ export default function DealDetailScreen() {
                       />
                     }
                   />
-                  {deal.payment?.due_date ? (
+                  {nextDuePayment(deal)?.due_date ? (
                     <FigureBlock
                       align="right"
-                      label={deal.payment.status === 'paid' ? 'Paid' : 'Payment due'}
+                      label={isFullyPaid(deal) ? 'Paid' : 'Payment due'}
                       figure={
                         <Figure
-                          value={formatDate(deal.payment.due_date)}
+                          value={formatDate(nextDuePayment(deal)!.due_date)}
                           size="lg"
                           color="#FFFFFF"
                         />
@@ -1215,7 +1236,7 @@ export default function DealDetailScreen() {
 
                   {/* ── Payment ──────────────────────────────────────── */}
                   {(() => {
-                    const payment = deal.payment
+                    const payment = nextDuePayment(deal)
                     if (!payment) return null
                     const tone = getPaymentAlertTone(payment)
                     const missingPhone = !deal.brand?.contact_phone

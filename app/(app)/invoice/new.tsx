@@ -4,7 +4,12 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated'
-import { getDeal, getDealsForBrand, type DealWithPaymentSummary } from '@/lib/deals'
+import {
+  getDeal,
+  getDealsForBrand,
+  nextDuePayment,
+  type DealWithPaymentSummary,
+} from '@/lib/deals'
 import { createInvoice, type LineItemInput } from '@/lib/invoices'
 import { getProfile } from '@/lib/profile'
 import { GST_STATE_OPTIONS, stateCodeFromGstin } from '@/constants/gst'
@@ -99,7 +104,7 @@ export default function NewInvoiceScreen() {
       // The place of supply for a creator's services is the recipient's
       // location, which the brand's own GSTIN already encodes.
       setPlaceOfSupply(deal.brand?.state_code ?? stateCodeFromGstin(deal.brand?.gstin))
-      setDueDate(deal.payment?.due_date ?? null)
+      setDueDate(nextDuePayment(deal)?.due_date ?? null)
       setLines([
         {
           dealId: deal.id,

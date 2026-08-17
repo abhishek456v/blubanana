@@ -1,4 +1,4 @@
-import type { DealWithPaymentSummary } from './deals'
+import { paymentsInOrder, type DealWithPaymentSummary } from './deals'
 import type { Invoice, BrandRating } from '@/types'
 
 // Indian financial year: April 1 → March 31. fyStartYear=2025 means
@@ -33,15 +33,40 @@ export function computeAnnualReport(
   fyStartYear: number
 ): AnnualReport {
   const paidInFY = deals.filter(
-    (d) => d.payment?.status === 'paid' && d.payment.paid_date && inFinancialYear(d.payment.paid_date, fyStartYear)
+    (d) =>
+      paymentsInOrder(d).some(
+        (payment) =>
+          payment.status === 'paid' &&
+          payment.paid_date &&
+          inFinancialYear(payment.paid_date, fyStartYear)
+      )
   )
 
-  const totalRevenue = paidInFY.reduce((sum, d) => sum + (d.payment?.amount ?? d.rate), 0)
+  // Per payment, and the received figure where recorded: a brand that
+  // withheld TDS paid less than it was invoiced, and the tax return needs the
+  // gross while the bank reconciliation needs the net.
+  const settledInFY = (deal: (typeof paidInFY)[number]) =>
+    paymentsInOrder(deal).filter(
+      (payment) =>
+        payment.status === 'paid' &&
+        payment.paid_date &&
+        inFinancialYear(payment.paid_date, fyStartYear)
+    )
+
+  const totalRevenue = paidInFY.reduce(
+    (sum, d) =>
+      sum + settledInFY(d).reduce((n, p) => n + (p.amount_received ?? p.amount), 0),
+    0
+  )
 
   const byBrand = new Map<string, number>()
   for (const d of paidInFY) {
     const name = d.brand?.name ?? 'Unknown brand'
-    byBrand.set(name, (byBrand.get(name) ?? 0) + (d.payment?.amount ?? d.rate))
+    byBrand.set(
+      name,
+      (byBrand.get(name) ?? 0) +
+        settledInFY(d).reduce((n, p) => n + (p.amount_received ?? p.amount), 0)
+    )
   }
   let bestClient: AnnualReport['bestClient'] = null
   for (const [name, total] of byBrand) {

@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useFocusEffect } from '@react-navigation/core'
 import Animated, { FadeIn } from 'react-native-reanimated'
-import { getDeals, type DealWithPaymentSummary } from '@/lib/deals'
+import { getDeals, paymentsInOrder, type DealWithPaymentSummary } from '@/lib/deals'
 import { describeNudge, getRateBenchmarkNudge } from '@/lib/rateBenchmark'
 import { getStatHistory, type StatSnapshot } from '@/lib/social'
 import { computeRevenueSummary } from '@/lib/revenue'
@@ -155,13 +155,23 @@ export default function HomeScreen() {
   const upcoming = useMemo<UpcomingPayment[]>(
     () =>
       deals
-        .filter((deal) => deal.payment && deal.payment.status !== 'paid' && deal.payment.due_date)
-        .sort((a, b) => a.payment!.due_date!.localeCompare(b.payment!.due_date!))
-        .map((deal) => ({
-          id: deal.id,
+        // One row per outstanding payment, not per deal: a deal on an advance
+        // has two dates the creator needs to see, not one. Held deals are not
+        // expected income (§8.6).
+        .filter((deal) => !deal.on_hold)
+        .flatMap((deal) =>
+          paymentsInOrder(deal)
+            .filter((payment) => payment.status !== 'paid' && payment.due_date)
+            .map((payment) => ({ deal, payment }))
+        )
+        .sort((a, b) => a.payment.due_date!.localeCompare(b.payment.due_date!))
+        .map(({ deal, payment }) => ({
+          // Keyed by payment, not deal: a deal on an advance contributes two
+          // rows and they must not collide.
+          id: payment.id,
           brand: deal.brand?.name ?? 'Unknown brand',
-          amount: deal.payment!.amount ?? deal.rate,
-          dueDate: deal.payment!.due_date!,
+          amount: payment.amount,
+          dueDate: payment.due_date!,
         })),
     [deals]
   )
@@ -179,12 +189,17 @@ export default function HomeScreen() {
     const totals = new Map<string, number>()
 
     for (const deal of deals) {
-      const paidDate = deal.payment?.paid_date
-      if (deal.payment?.status !== 'paid' || !paidDate) continue
-      if (!withinPeriod(paidDate, brandPeriod, now)) continue
+      for (const payment of paymentsInOrder(deal)) {
+        const paidDate = payment.paid_date
+        if (payment.status !== 'paid' || !paidDate) continue
+        if (!withinPeriod(paidDate, brandPeriod, now)) continue
 
-      const brandName = deal.brand?.name ?? 'Unknown brand'
-      totals.set(brandName, (totals.get(brandName) ?? 0) + (deal.payment.amount ?? deal.rate))
+        const brandName = deal.brand?.name ?? 'Unknown brand'
+        totals.set(
+          brandName,
+          (totals.get(brandName) ?? 0) + (payment.amount_received ?? payment.amount)
+        )
+      }
     }
 
     return [...totals.entries()]
@@ -197,9 +212,11 @@ export default function HomeScreen() {
     const now = new Date()
     const cutoff = new Date(now.getFullYear(), now.getMonth() - 5, 1)
     const count = deals.filter((deal) => {
-      const paidDate = deal.payment?.paid_date
-      return (
-        deal.payment?.status === 'paid' && paidDate && parseLocalDate(paidDate) >= cutoff
+      return paymentsInOrder(deal).some(
+        (payment) =>
+          payment.status === 'paid' &&
+          payment.paid_date &&
+          parseLocalDate(payment.paid_date) >= cutoff
       )
     }).length
 
