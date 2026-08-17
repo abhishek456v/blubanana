@@ -241,12 +241,20 @@ export const FigureSize = {
 // Two families, and the split between them is the identity.
 //
 //   Outfit  every word: labels, headings, body, buttons.
-//   Doto    every figure: currency, counts, dates-as-numbers, percentages.
+//   Doto    every *display* figure: currency, counts, dates-as-numbers.
 //
 // Doto is a dot-matrix face, so it is never used for prose at any size. It has
 // no italic, its punctuation is coarse, and a sentence set in it is unreadable.
 // Use `figure` for the number and `regular` for the word beside it, even when
 // they sit in the same line.
+//
+// The split is by *size*, not by "is it a number". Below roughly 20px the dots
+// merge and the face stops reading as dotted at all, so it buys nothing and
+// costs legibility — see `FigureSize.sm`, which is the floor. An amount set at
+// body size inside a list row or a table cell therefore stays in Outfit, and
+// that is correct rather than an omission: those are figures being read in a
+// sentence, not figures being displayed. Anything at `FigureSize` goes through
+// the `Figure` component, which also handles the rupee sign (see that file).
 export const FontFamily = {
   regular: 'Outfit_400Regular',
   medium: 'Outfit_500Medium',

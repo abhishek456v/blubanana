@@ -14,6 +14,7 @@ import { ModalSheet } from '@/components/ModalSheet'
 import {
   DataTable,
   EmptyState,
+  Figure,
   ListRow,
   SkeletonList,
   useToast,
@@ -104,9 +105,12 @@ export default function InvoicesScreen() {
                   <Text style={[styles.summaryLabel, { color: c.textSecondary }]}>
                     Billed in FY {summary.fy}
                   </Text>
-                  <Text style={[styles.summaryValue, { color: c.textPrimary }]}>
-                    {formatCurrency(summary.billed)}
-                  </Text>
+                  <Figure
+                    value={formatCurrency(summary.billed)}
+                    size={Typography.display.fontSize}
+                    color={c.textPrimary}
+                    bold
+                  />
                   <Text style={[styles.summaryLabel, { color: c.textMuted }]}>
                     across {summary.count} {summary.count === 1 ? 'invoice' : 'invoices'}
                   </Text>
@@ -151,9 +155,12 @@ export default function InvoicesScreen() {
                   <Text style={[styles.summaryLabel, { color: c.textSecondary }]}>
                     Billed in FY {summary.fy}
                   </Text>
-                  <Text style={[styles.summaryValue, { color: c.textPrimary }]}>
-                    {formatCurrency(summary.billed)}
-                  </Text>
+                  <Figure
+                    value={formatCurrency(summary.billed)}
+                    size={Typography.display.fontSize}
+                    color={c.textPrimary}
+                    bold
+                  />
                   <Text style={[styles.summaryLabel, { color: c.textMuted }]}>
                     across {summary.count} {summary.count === 1 ? 'invoice' : 'invoices'}
                   </Text>

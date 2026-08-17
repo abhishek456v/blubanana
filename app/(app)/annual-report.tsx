@@ -13,8 +13,8 @@ import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 import { useTheme } from '@/hooks/useTheme'
 import { ModalSheet } from '@/components/ModalSheet'
 import {
-  AnimatedNumber,
   Card,
+  Figure,
   EmptyState,
   MetricCard,
   PressableScale,
@@ -118,11 +118,13 @@ export default function AnnualReportScreen() {
             <View style={styles.section}>
               <Card style={[styles.hero, { backgroundColor: c.accentLight }]}>
                 <Text style={[styles.heroLabel, { color: c.textSecondary }]}>You earned</Text>
-                <AnimatedNumber
-                  value={report.totalRevenue}
+                <Figure
+                  value={formatCurrency(report.totalRevenue)}
+                  count
                   format={formatCurrency}
-                  style={[styles.heroValue, { color: c.accentText }]}
-                  numberOfLines={1}
+                  size={38}
+                  color={c.accentText}
+                  bold
                 />
                 <Text style={[styles.heroCaption, { color: c.textSecondary }]}>
                   across {report.dealsClosed} closed{' '}
@@ -231,11 +233,6 @@ const styles = StyleSheet.create({
   heroLabel: {
     ...Typography.caption,
     fontFamily: FontFamily.medium,
-  },
-  heroValue: {
-    fontFamily: FontFamily.displayBold,
-    fontSize: 38,
-    lineHeight: 46,
   },
   heroCaption: {
     ...Typography.caption,
