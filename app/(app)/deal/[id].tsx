@@ -30,6 +30,7 @@ import {
   respondToReminder,
   syncPaymentStatus,
   markPaymentReminderSent,
+  settlePayment,
   isFullyPaid,
   nextDuePayment,
   paymentsInOrder,
@@ -62,6 +63,7 @@ import {
 } from '@/lib/deliverables'
 import { DeliverablesCard } from '@/components/deal/DeliverablesCard'
 import { StageEditor } from '@/components/deal/StageEditor'
+import { PaymentReceivedSheet } from '@/components/deal/PaymentReceivedSheet'
 import { replaceStages, type StageDraft } from '@/lib/dealStages'
 import { MessageHistoryCard } from '@/components/deal/MessageHistoryCard'
 import type { DeliverableDraft } from '@/components/deal/DeliverableEditor'
@@ -133,6 +135,7 @@ export default function DealDetailScreen() {
   const [deliverable, setDeliverable] = useState('')
   const [rate, setRate] = useState('')
   const [paymentTerms, setPaymentTerms] = useState('')
+  const [receivedSheetOpen, setReceivedSheetOpen] = useState(false)
   const [stageDrafts, setStageDrafts] = useState<StageDraft[]>([])
   const [scriptDue, setScriptDue] = useState('')
   const [shootDate, setShootDate] = useState('')
@@ -545,6 +548,31 @@ export default function DealDetailScreen() {
     }
   }
 
+  async function handleConfirmReceived({ received, tds }: { received: number; tds: number }) {
+    if (!deal) return
+    setAdvancing(true)
+    try {
+      // Every outstanding payment is settled, but only the one the creator was
+      // asked about carries the received/TDS split. Spreading her answer across
+      // instalments she was not shown would be inventing figures.
+      const outstanding = paymentsInOrder(deal).filter((payment) => payment.status !== 'paid')
+      const [asked, ...rest] = outstanding
+
+      if (asked) await settlePayment(asked, { received, tds })
+      for (const payment of rest) {
+        await settlePayment(payment, { received: payment.amount, tds: 0 })
+      }
+
+      await updateDeal(deal.id, { status: 'paid' })
+      setReceivedSheetOpen(false)
+      router.back()
+    } catch {
+      toast('Could not record the payment', { tone: 'error' })
+    } finally {
+      setAdvancing(false)
+    }
+  }
+
   async function handleAdvanceStatus() {
     if (!deal || advancing) return
     const next = getNextStatus(deal.status)
@@ -555,39 +583,24 @@ export default function DealDetailScreen() {
       return
     }
 
+    // Moving to Paid means money changed hands, and what arrived is routinely
+    // not what was invoiced. Ask before writing rather than assuming the
+    // invoiced figure, which would silently erase any TDS withheld.
+    if (next === 'paid') {
+      setReceivedSheetOpen(true)
+      return
+    }
+
     setAdvancing(true)
     try {
       await advanceDealStatus(deal)
-      // Update local state immediately. Dashboard refreshes via useFocusEffect when
-      // the user navigates back, so no extra work is needed there.
-      setDeal((prev) => {
-        if (!prev) return prev
-        if (next !== 'paid') return { ...prev, status: next }
-        // advanceDealStatus also closes out the payment and cancels any
-        // still-scheduled reminders when it reaches 'paid'.
-        return {
-          ...prev,
-          status: next,
-          reminder_stage: null,
-          reminder_fire_at: null,
-          reminder_notification_id: null,
-          reminder_completed_through: null,
-          // Every outstanding payment, matching what advanceDealStatus just
-          // wrote. Settling only the first would leave the balance on an
-          // advance-and-final deal reading unpaid against a paid deal.
-          payments: prev.payments.map((payment) =>
-            payment.status === 'paid'
-              ? payment
-              : {
-                  ...payment,
-                  status: 'paid' as const,
-                  paid_date: new Date().toISOString().split('T')[0],
-                  due_soon_notification_id: null,
-                  due_today_notification_id: null,
-                }
-          ),
-        }
-      })
+      // Update local state immediately. The dashboard refreshes via
+      // useFocusEffect when the user navigates back, so nothing else is needed.
+      //
+      // 'paid' never arrives here: it is intercepted above and goes through
+      // the received sheet, which is the only path that knows what actually
+      // landed.
+      setDeal((prev) => (prev ? { ...prev, status: next } : prev))
     } catch {
       toast('Could not advance status', { tone: 'error' })
     } finally {
@@ -1498,6 +1511,15 @@ export default function DealDetailScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
+
+      <PaymentReceivedSheet
+        visible={receivedSheetOpen}
+        invoiced={nextDuePayment(deal)?.amount ?? deal.rate}
+        brandName={brandName}
+        saving={advancing}
+        onCancel={() => setReceivedSheetOpen(false)}
+        onConfirm={handleConfirmReceived}
+      />
     </>
   )
 }

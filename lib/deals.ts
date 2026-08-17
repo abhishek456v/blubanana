@@ -471,6 +471,64 @@ export function isFullyPaid(deal: { payments?: PaymentSummary[] | null }): boole
   return all.length > 0 && all.every((payment) => payment.status === 'paid')
 }
 
+/**
+ * Records a payment as received, with what actually landed.
+ *
+ * `received` is what hit the bank and `tds` is what the brand withheld. They
+ * are stored separately rather than derived, because a short payment is not
+ * always TDS: a brand can also underpay, deduct a penalty, or round. Asking
+ * for both and storing both means the annual report can claim the TDS against
+ * Form 26AS while the collection figures reconcile against the statement.
+ */
+export async function settlePayment(
+  payment: Pick<Payment, 'id' | 'due_soon_notification_id' | 'due_today_notification_id'>,
+  { received, tds }: { received: number; tds: number }
+): Promise<void> {
+  const reminderFields = await cancelPaymentReminders(payment)
+
+  const { error } = await supabase
+    .from('payments')
+    .update({
+      status: 'paid',
+      paid_date: new Date().toISOString().split('T')[0],
+      amount_received: received,
+      tds_amount: tds,
+      ...reminderFields,
+    })
+    .eq('id', payment.id)
+  if (error) throw error
+}
+
+/** Adds an instalment to a deal: an advance, a milestone, a balance. */
+export async function addPayment(
+  dealId: string,
+  input: { amount: number; due_date: string | null; label: string | null; sort_order: number }
+): Promise<Payment> {
+  const workspaceId = await getWorkspaceId()
+
+  const { data, error } = await supabase
+    .from('payments')
+    .insert({
+      workspace_id: workspaceId,
+      deal_id: dealId,
+      amount: input.amount,
+      due_date: input.due_date,
+      label: input.label,
+      sort_order: input.sort_order,
+      status: 'pending' satisfies PaymentStatus,
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data as Payment
+}
+
+export async function deletePayment(paymentId: string): Promise<void> {
+  const { error } = await supabase.from('payments').delete().eq('id', paymentId)
+  if (error) throw error
+}
+
 export const STATUS_ORDER: DealStatus[] = ['active', 'live', 'unpaid', 'paid']
 
 export function getNextStatus(current: DealStatus): DealStatus | null {
