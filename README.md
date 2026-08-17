@@ -74,6 +74,18 @@ Open your [Supabase dashboard](https://supabase.com) → your project →
     sending is enforced by a check constraint, not by application code.
 15. `015_reminder_chains.sql` — durable reminder chains. A partial unique index
     enforces one live reminder per chain.
+16. `016_fix_storage_policy_schema.sql` — schema-qualifies the attachments
+    storage policy. Hardening only.
+17. `017_fix_memberships_recursion.sql` — breaks an infinite recursion in the
+    `memberships` policy (42P17), which was 500ing every membership read and
+    400ing every Storage call. Not optional.
+18. `018_gst_tax_invoice_fields.sql` — the fields Rule 46 of the CGST Rules
+    requires on a tax invoice: supplier address, recipient GSTIN and address,
+    place of supply, and the tax split by head.
+19. `019_stages_contacts_payments_expand.sql` — `deal_stages` and
+    `brand_contacts` (both backfilled), part-payment and TDS columns on
+    `payments`, and on-hold plus currency columns on `deals`. Purely additive:
+    safe to run against a live app, and safe to re-run.
 
 Paste each file's contents and click **Run** before moving to the next one.
 Every migration from 005 onward is guarded and safe to re-run.

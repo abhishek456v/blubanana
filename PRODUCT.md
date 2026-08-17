@@ -151,21 +151,28 @@ Money is always in Indian rupees with Indian digit grouping — ₹1,00,000, nev
 
 ### Changes required
 
-| Table | Change | Why |
-|---|---|---|
-| `deals` | **Remove** the four fixed date columns (`script_due_date`, `shoot_date`, `edit_done_date`, `publish_date`) | Stages are now user-defined — §8.5 |
-| `deals` | **Add** `on_hold`, `currency`, `amount_inr`, `fx_rate`, retainer fields | §8.6, §8.7, §8.15 |
-| `payments` | **Drop the `unique` constraint on `deal_id`** | A deal can have several payments — §8.7 |
-| `payments` | **Add** `amount_received`, `tds_amount` | Invoiced ≠ received — §8.7 |
-| `brands` | **Multiple contacts** — move POC to its own table | Agency contacts change constantly |
-| `memberships` | **Add** per-area permission flags | §7 |
+Split across an expand migration (`019`, additive, already written) and a
+contract migration (`020`, ships with the code that needs it). See §11.
+
+| Table | Change | When | Why |
+|---|---|---|---|
+| `deals` | **Add** `on_hold`, `on_hold_at`, `currency`, `rate_original`, `fx_rate` | 019 | §8.6, §8.7 |
+| `deals` | **Add** retainer fields | Step 6 | §8.15 |
+| `deals` | **Remove** the four fixed date columns (`script_due_date`, `shoot_date`, `edit_done_date`, `publish_date`) | 020 | Stages are user-defined — §8.5 |
+| `payments` | **Add** `amount_received`, `tds_amount`, `label`, `sort_order` | 019 | Invoiced ≠ received — §8.7 |
+| `payments` | **Drop the `unique` on `deal_id`** | 020 | A deal can have several payments. Held to 020 because it flips PostgREST's embed from object to array — §11 |
+| `brands` | **Remove** `contact_person`, `contact_phone`, `contact_email` | 020 | Superseded by `brand_contacts` |
+| `memberships` | **Add** per-area permission flags | Step 5 | §7 |
+
+`deals.rate` keeps its meaning throughout: always the INR figure, so every
+existing query, report and total is unaffected by the currency work.
 
 ### New tables
 
 | Table | Holds |
 |---|---|
-| `deal_stages` | name, order, due date, done — one row per stage per deal |
-| `brand_contacts` | many POCs per brand: name, phone, email, role |
+| `deal_stages` | name, order, due date, done, done_at — one row per stage per deal (**019**) |
+| `brand_contacts` | many POCs per brand: name, phone, email, role, is_primary (**019**) |
 | `push_tokens` | Expo push tokens per user per device |
 | `subscriptions` | plan, period, Razorpay ids, status, trial dates |
 | `expenses` | date, category, amount, note, receipt attachment |
@@ -607,12 +614,27 @@ Stated so nobody re-proposes them:
 Sequence matters: several of these touch the same tables, and doing them out of
 order means migrating twice.
 
-**1 — Schema foundations.** One migration, because they overlap:
-`deal_stages`; drop the `unique` on `payments.deal_id`; add `amount_received`
-and `tds_amount`; `on_hold`; currency fields; `brand_contacts`.
+Schema work follows the **expand → contract** pattern already used by
+migrations 009 to 011: add and backfill first, in a migration that leaves the
+running app untouched; drop the old shape only once the code has moved off it.
 
-**2 — The screens those break.** Deal detail's timeline, new deal, payment
-marking, Money's totals (respecting on-hold), Brands' contacts.
+**1 — Schema foundations (expand).** `019_stages_contacts_payments_expand.sql`.
+Creates `deal_stages` and `brand_contacts` and backfills both; adds
+`amount_received`, `tds_amount`, `label` and `sort_order` to `payments`; adds
+`on_hold`, `on_hold_at`, `currency`, `rate_original` and `fx_rate` to `deals`.
+Purely additive, so it can be run at any time against the live app.
+
+One thing deliberately **not** in it: dropping the `unique` on
+`payments.deal_id`. That constraint is the only reason PostgREST returns
+`payment:payments(...)` as an object rather than an array, and every screen
+reads `deal.payment?.…`. Removing it without the code change turns every
+payment read into `undefined` — silently, with no error. It comes off in step 2.
+
+**2 — The screens those break, and the contract migration.** Deal detail's
+timeline, new deal, payment marking, Money's totals (respecting on-hold),
+Brands' contacts. Ships with `020`, which drops the `unique` on
+`payments.deal_id`, the four date columns on `deals`, and the three contact
+columns on `brands` — all of which have live readers until this step lands.
 
 **3 — Push notifications.** `push_tokens`, the `pg_cron` job, the send
 function, moving reminder scheduling server-side. Independent of 1 and 2, so it
