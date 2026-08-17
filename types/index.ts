@@ -74,6 +74,59 @@ export type DealStatus =
 
 export type PaymentStatus = 'pending' | 'reminder_sent' | 'overdue' | 'paid'
 
+/**
+ * One stage of one deal's workflow (migration 019).
+ *
+ * Replaces the four fixed date columns on `deals`. Creators do not all work the
+ * same way: some script and shoot on the same day, some run a client-review
+ * round, some do three edit passes. A new deal starts with the four defaults
+ * because they fit most people, and every one of them can be renamed, removed
+ * or added to.
+ *
+ * `done` and `done_at` are separate deliberately. Historical stages migrated
+ * from the old columns know from the deal's status *which* stages were
+ * finished, but nothing records *when* — so `done` is set and `done_at` stays
+ * null rather than being stamped with a fabricated time.
+ */
+export interface DealStage {
+  id: string
+  workspace_id: string
+  deal_id: string
+  name: string
+  sort_order: number
+  /** `YYYY-MM-DD`, or null when this stage has no date yet. */
+  due_date: string | null
+  done: boolean
+  done_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+/** The four a new deal starts with. Order matters; it is the default sequence. */
+export const DEFAULT_STAGE_NAMES = ['Script', 'Shoot', 'Edit', 'Publish'] as const
+
+/**
+ * A person at a brand (migration 019).
+ *
+ * Agency contacts change constantly, and a payment chased at someone who left
+ * six months ago is a payment that does not arrive. Exactly one contact per
+ * brand can be primary — enforced by a partial unique index, not by the UI —
+ * and that is the one the WhatsApp nudges address.
+ */
+export interface BrandContact {
+  id: string
+  workspace_id: string
+  brand_id: string
+  name: string
+  phone: string | null
+  email: string | null
+  /** Free text: "Marketing manager", "Agency lead". */
+  role: string | null
+  is_primary: boolean
+  created_at: string
+  updated_at: string
+}
+
 // Workflow reminder sequence (PRODUCT.md 2.3). Only one stage is ever active
 // per deal at a time: 'live_link_submission' has no dedicated date column,
 // it's scheduled for the day after publish_date.
@@ -169,6 +222,29 @@ export interface Deal {
   performance_comments: number | null
   performance_saves: number | null
   performance_updated_at: string | null
+  /**
+   * Paused, not cancelled (migration 019).
+   *
+   * A held deal keeps whatever stage it reached and stays fully visible; it
+   * just stops counting as expected income until it is un-held. That is the
+   * whole point: without it, "Still out" slowly fills with deals that are
+   * never going to pay, and the one number this app exists to get right
+   * becomes fiction.
+   */
+  on_hold: boolean
+  on_hold_at: string | null
+  /**
+   * Foreign-currency deals (migration 019).
+   *
+   * `rate` is ALWAYS the INR figure, in every deal, so every existing query,
+   * report and total is unaffected. A non-INR deal additionally records what
+   * was actually agreed (`rate_original`) and the rate it was converted at
+   * (`fx_rate`), snapshotted at entry — last year's dollar deal must not
+   * silently revalue at today's rate.
+   */
+  currency: string
+  rate_original: number | null
+  fx_rate: number | null
   created_at: string
   updated_at: string
   brand?: Brand // joined on fetch
@@ -224,6 +300,23 @@ export interface Payment {
   // Deal's reminder_* fields (PRODUCT.md 2.4).
   due_soon_notification_id: string | null
   due_today_notification_id: string | null
+  /**
+   * What actually landed, which is routinely not what was invoiced
+   * (migration 019).
+   *
+   * A brand invoiced ₹1,00,000 that withholds ₹10,000 TDS pays ₹90,000. Both
+   * numbers are needed: the gross for the tax return, the net to reconcile
+   * against the bank. Null means "not recorded yet", which is not the same as
+   * zero.
+   */
+  amount_received: number | null
+  tds_amount: number
+  /**
+   * Which instalment this is: "Advance", "On delivery". Null for a deal paid
+   * in one go, which is most of them.
+   */
+  label: string | null
+  sort_order: number
   created_at: string
   updated_at: string
 }
