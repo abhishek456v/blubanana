@@ -29,6 +29,8 @@ import { Ionicons } from '@expo/vector-icons'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { getBrands } from '@/lib/brands'
 import { createDeal } from '@/lib/deals'
+import { defaultStageDrafts, replaceStages, type StageDraft } from '@/lib/dealStages'
+import { StageEditor } from '@/components/deal/StageEditor'
 import { getAllRatings, summarizeRatings } from '@/lib/reputation'
 import { extractFromImage, extractFromTranscript, transcribeAudio } from '@/lib/aiIntake'
 import type {
@@ -88,10 +90,7 @@ export default function NewDealScreen() {
   const [deliverable, setDeliverable] = useState('')
   const [rate, setRate] = useState('')
   const [paymentTerms, setPaymentTerms] = useState('')
-  const [scriptDue, setScriptDue] = useState('')
-  const [shootDate, setShootDate] = useState('')
-  const [editDone, setEditDone] = useState('')
-  const [publishDate, setPublishDate] = useState('')
+  const [stageDrafts, setStageDrafts] = useState<StageDraft[]>(defaultStageDrafts)
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -178,10 +177,21 @@ export default function NewDealScreen() {
     if (fields.deliverable_description) setDeliverable(fields.deliverable_description)
     if (fields.rate) setRate(String(fields.rate))
     if (fields.payment_terms) setPaymentTerms(fields.payment_terms)
-    if (fields.script_due_date) setScriptDue(fields.script_due_date)
-    if (fields.shoot_date) setShootDate(fields.shoot_date)
-    if (fields.edit_done_date) setEditDone(fields.edit_done_date)
-    if (fields.publish_date) setPublishDate(fields.publish_date)
+    // The extractor's schema is exactly the four default stages, so its dates
+    // map onto them by position. A date it did not find leaves that stage's
+    // existing value alone rather than clearing it, so re-running extraction
+    // over a partly filled form never deletes what the creator already typed.
+    const extractedDates = [
+      fields.script_due_date,
+      fields.shoot_date,
+      fields.edit_done_date,
+      fields.publish_date,
+    ]
+    if (extractedDates.some(Boolean)) {
+      setStageDrafts((prev) =>
+        prev.map((stage, index) => ({ ...stage, due_date: extractedDates[index] ?? stage.due_date }))
+      )
+    }
     if (fields.notes) setNotes(fields.notes)
     if (fields.platform) setPlatform(fields.platform)
 
@@ -275,38 +285,6 @@ export default function NewDealScreen() {
       return
     }
 
-    // Validate any dates that were entered.
-    const datesToValidate = [
-      { label: 'Script due date', value: scriptDue },
-      { label: 'Shoot date', value: shootDate },
-      { label: 'Edit done date', value: editDone },
-      { label: 'Publish date', value: publishDate },
-    ]
-    for (const { label, value } of datesToValidate) {
-      if (value.trim() && parseDate(value) === null) {
-        // Defensive only: every date on this screen now comes from the
-        // calendar picker, so an unparseable one would mean a bug, not typing.
-        toast(`${label} isn't a valid date`, { tone: 'warning' })
-        return
-      }
-    }
-
-    if (adRightsEnabled) {
-      const feeNum = parseInt(adRightsFee, 10)
-      if (!adRightsFee || isNaN(feeNum) || feeNum <= 0) {
-        toast('Enter the ad rights fee, or turn off ad rights', { tone: 'warning' })
-        return
-      }
-      if (!adRightsDuration) {
-        toast('Select how long the ad rights last', { tone: 'warning' })
-        return
-      }
-      if (!adRightsStartDate.trim() || parseDate(adRightsStartDate) === null) {
-        toast('Enter a valid start date (YYYY-MM-DD)', { tone: 'warning' })
-        return
-      }
-    }
-
     setSaving(true)
     try {
       const created = await createDeal({
@@ -315,10 +293,13 @@ export default function NewDealScreen() {
         deliverable_description: deliverable.trim(),
         rate: rateNum,
         payment_terms: paymentTerms.trim() || null,
-        script_due_date: parseDate(scriptDue),
-        shoot_date: parseDate(shootDate),
-        edit_done_date: parseDate(editDone),
-        publish_date: parseDate(publishDate),
+        // Written from the first four stages by position, to keep the
+        // reminder system alive until step 3 rekeys it to deal_stages.id.
+        // Lossy by design: a deal with more stages gets reminders for four.
+        script_due_date: stageDrafts[0]?.due_date ?? null,
+        shoot_date: stageDrafts[1]?.due_date ?? null,
+        edit_done_date: stageDrafts[2]?.due_date ?? null,
+        publish_date: stageDrafts[3]?.due_date ?? null,
         notes: notes.trim() || null,
         ad_rights: adRightsEnabled
           ? {
@@ -329,6 +310,11 @@ export default function NewDealScreen() {
             }
           : null,
       })
+
+      // The stages themselves. createDeal only writes the legacy date columns,
+      // so without this a brand-new deal would carry no stages at all and
+      // every screen asking "what is next" would have nothing to read.
+      await replaceStages(created.id, stageDrafts)
 
       // Line items. When the AI itemised the brief ("reel + 2 stories"), each
       // becomes its own row; otherwise the single deliverable field becomes
@@ -357,7 +343,7 @@ export default function NewDealScreen() {
           quantity: 1,
           description: deliverable.trim(),
           rate: rateNum,
-          due_date: parseDate(publishDate),
+          due_date: stageDrafts[stageDrafts.length - 1]?.due_date ?? null,
         })
       }
 
@@ -624,36 +610,14 @@ export default function NewDealScreen() {
             />
           </View>
 
-          {/* ── Timeline ──────────────────────────────────────────
-              Real date pickers. These were four bare TextInputs asking the
-              creator to hand-type "2025-09-01", the worst input pattern in
-              an app whose first promise is that she never misses a deadline. */}
-          <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Timeline</Text>
+          {/* ── Stages ────────────────────────────────────────────
+              Starts with the four defaults because they fit most creators,
+              and every one of them can be renamed, removed or added to. No
+              field here says "optional": everything on this form can be left
+              blank, so saying so on four of them implied the rest were not. */}
+          <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Stages</Text>
           <View style={styles.dateFields}>
-            <DateField
-              label="Script"
-              value={scriptDue || null}
-              onChange={(value) => setScriptDue(value ?? '')}
-              placeholder="Optional"
-            />
-            <DateField
-              label="Shoot"
-              value={shootDate || null}
-              onChange={(value) => setShootDate(value ?? '')}
-              placeholder="Optional"
-            />
-            <DateField
-              label="Edit"
-              value={editDone || null}
-              onChange={(value) => setEditDone(value ?? '')}
-              placeholder="Optional"
-            />
-            <DateField
-              label="Publish"
-              value={publishDate || null}
-              onChange={(value) => setPublishDate(value ?? '')}
-              placeholder="Optional"
-            />
+            <StageEditor stages={stageDrafts} onChange={setStageDrafts} allowDone={false} />
           </View>
 
           {/* ── Ad rights (optional) ──────────────────────────── */}

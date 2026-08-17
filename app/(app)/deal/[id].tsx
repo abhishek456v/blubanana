@@ -488,7 +488,7 @@ export default function DealDetailScreen() {
     if (!deal || !deal.brand || advancing) return
     const trimmedLink = liveLink.trim()
     if (!trimmedLink) {
-      toast('Enter the live link before marking this as live', { tone: 'warning' })
+      toast('Add the live link first: it starts the payment clock', { tone: 'warning' })
       return
     }
 
@@ -929,7 +929,7 @@ export default function DealDetailScreen() {
                     </View>
                     {needsLiveLinkFirst ? (
                       <Text style={[styles.statusCaption, { color: c.textMuted }]}>
-                        Add the live link below before marking this as live.
+                        Add the live link below to start the payment clock.
                       </Text>
                     ) : null}
                   </View>

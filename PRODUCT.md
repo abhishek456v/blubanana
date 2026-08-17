@@ -124,7 +124,9 @@ artefact, not a hosted URL.
 
 The words below are the product's words. Use them exactly, in UI and in code.
 
-**Deal statuses** — New · Script · Shoot · Edit · Live · Unpaid · Paid
+**Deal statuses** — Active · Live · Unpaid · Paid. The lifecycle only; the
+work is described by a deal's stages, under whatever names its creator gave
+them (§8.5).
 
 **On hold** — a flag, not a status. Any deal can be put on hold (§8.6).
 
@@ -157,11 +159,12 @@ contract migration (`020`, ships with the code that needs it). See §11.
 | Table | Change | When | Why |
 |---|---|---|---|
 | `deals` | **Add** `on_hold`, `on_hold_at`, `currency`, `rate_original`, `fx_rate` | 019 | §8.6, §8.7 |
+| `deals` | **Collapse** `status` to four lifecycle values | 020 | Stages describe the work now — §5 |
 | `deals` | **Add** retainer fields | Step 6 | §8.15 |
-| `deals` | **Remove** the four fixed date columns (`script_due_date`, `shoot_date`, `edit_done_date`, `publish_date`) | 020 | Stages are user-defined — §8.5 |
+| `deals` | **Remove** the four fixed date columns (`script_due_date`, `shoot_date`, `edit_done_date`, `publish_date`) | 021 | Stages are user-defined — §8.5. Held until reminders stop reading them (step 3) |
 | `payments` | **Add** `amount_received`, `tds_amount`, `label`, `sort_order` | 019 | Invoiced ≠ received — §8.7 |
-| `payments` | **Drop the `unique` on `deal_id`** | 020 | A deal can have several payments. Held to 020 because it flips PostgREST's embed from object to array — §11 |
-| `brands` | **Remove** `contact_person`, `contact_phone`, `contact_email` | 020 | Superseded by `brand_contacts` |
+| `payments` | **Drop the `unique` on `deal_id`** | 021 | A deal can have several payments. Held back because it flips PostgREST's embed from object to array — §11 |
+| `brands` | **Remove** `contact_person`, `contact_phone`, `contact_email` | 021 | Superseded by `brand_contacts` |
 | `memberships` | **Add** per-area permission flags | Step 5 | §7 |
 
 `deals.rate` keeps its meaning throughout: always the INR figure, so every
@@ -630,15 +633,31 @@ One thing deliberately **not** in it: dropping the `unique` on
 reads `deal.payment?.…`. Removing it without the code change turns every
 payment read into `undefined` — silently, with no error. It comes off in step 2.
 
-**2 — The screens those break, and the contract migration.** Deal detail's
-timeline, new deal, payment marking, Money's totals (respecting on-hold),
-Brands' contacts. Ships with `020`, which drops the `unique` on
-`payments.deal_id`, the four date columns on `deals`, and the three contact
-columns on `brands` — all of which have live readers until this step lands.
+**2 — The screens those break.** Deal detail's timeline, new deal, payment
+marking, Money's totals (respecting on-hold), Brands' contacts.
 
-**3 — Push notifications.** `push_tokens`, the `pg_cron` job, the send
-function, moving reminder scheduling server-side. Independent of 1 and 2, so it
-can run in parallel.
+`020_deal_status_lifecycle.sql` shipped as part of this and is **not**
+additive: it collapses deal status from seven values to four. Building the
+stage editor made the old status enum incoherent — four of its seven values
+were the four fixed stages, so a renamed stage left the pill lying and an added
+stage had no status to occupy. Status now describes only the lifecycle
+(§5); the stages describe the work. Code and migration deploy together.
+
+The remaining drops move to `021`, which ships with step 3: the `unique` on
+`payments.deal_id`, the four date columns on `deals`, and the three contact
+columns on `brands`. The date columns in particular cannot go until reminders
+are rekeyed, which is step 3's job — see below.
+
+**3 — Push notifications, and rekeying reminders.** `push_tokens`, the
+`pg_cron` job, the send function, moving reminder scheduling server-side.
+
+It also has to rekey reminders to `deal_stages.id`. Today they are keyed to a
+fixed `ReminderStage` enum (`script_due | shoot | editing | publish`) that
+user-defined stage names cannot satisfy. Until that lands, deal detail and new
+deal keep writing the four legacy date columns from the first four stages by
+position, purely to keep reminders firing. That bridge is lossy and known to
+be: a deal with six stages gets reminders for four of them. `021` drops the
+columns once this step removes the last reader.
 
 **4 — Subscriptions.** `subscriptions`, Razorpay integration, the trial gate,
 read-only state, our own GST invoicing.
