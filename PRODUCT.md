@@ -178,7 +178,7 @@ existing query, report and total is unaffected by the currency work.
 | `brand_contacts` | many POCs per brand: name, phone, email, role, is_primary (**019**) |
 | `push_tokens` | Expo push tokens per user per device (**022**) |
 | `subscriptions` | plan, period, Razorpay ids, status, trial dates |
-| `expenses` | date, category, amount, note, receipt attachment |
+| `expenses` | date, category, amount, note, receipt attachment (**023**) |
 | `brand_aggregates` | anonymous cross-tenant reputation — **no creator identifiers** |
 
 `brand_aggregates` carrying no creator identifier is not an implementation
@@ -248,7 +248,7 @@ Four ways to start, all landing on the same form:
 | **Screenshot** | Photograph or upload a brand DM/email. GPT-4o vision extracts the fields | **Built** |
 | **Voice** | Talk it through. Whisper transcribes, then the same extractor reads it | **Built** |
 | **Type** | Fill the form directly | **Built** |
-| **Repeat** | Copy the terms of a previous deal | **New** — §8.4 |
+| **Repeat** | Copy the terms of a previous deal | **Built** — §8.4 |
 
 Screenshot and voice **never save silently**. They fill the form and show it
 for review, so she can correct anything the model got wrong before saving. The
@@ -264,7 +264,7 @@ Nothing on this form is mandatory except the brand. And no field is ever
 labelled "optional" or "required" — if it can be left blank, leaving it blank
 is simply allowed.
 
-### 8.4 Repeating a deal — **New**
+### 8.4 Repeating a deal — **Built**
 
 A duplicate button on every row would be useless: with ten deals on screen,
 which one?
@@ -350,7 +350,7 @@ level the app drafts a message appropriate to that level and hands it to
 WhatsApp as a pre-filled `wa.me` link addressed to the brand's contact. She
 reads it and sends it herself. Nothing is ever sent automatically.
 
-**Collection rate** — **New.** Not built. Of everything invoiced this year, what
+**Collection rate** — **Built.** Of everything invoiced this year, what
 percentage actually arrived, and how long it took on average. No creator tracks
 this, and it is the number that tells her which brands to stop working with.
 
@@ -480,7 +480,7 @@ goes stale within weeks, and a stale card sent to a brand is worse than none.
 
 She can share it straight to WhatsApp or download it.
 
-### 8.12 Expenses — **New**
+### 8.12 Expenses — **Built**
 
 Optional, and simple: date, category, amount, note, and a receipt image.
 Editor salaries, cameraman fees, script writers, equipment, travel.
@@ -490,9 +490,10 @@ Free-text entry can be parsed by the same AI extraction used elsewhere.
 Expenses feed the annual report, which is what turns "turnover" into "taxable
 income".
 
-### 8.13 Tax — **New**
+### 8.13 Tax — **Change**
 
-**Deadline reminders.** Indian freelancers pay **advance tax quarterly** —
+**Deadline reminders.** **New** — the calculator shows the four dates, but no
+notification fires for them yet. Indian freelancers pay **advance tax quarterly** —
 15 June, 15 September, 15 December, 15 March — and missing it means interest
 under sections 234B and 234C. Most creators find out from their CA in March.
 Registered creators also file **GSTR-1** (11th) and **GSTR-3B** (20th) monthly.
@@ -502,12 +503,13 @@ see the privacy rule in §8.9. It also cannot state a figure honestly, because
 the app only knows the income that passed through it; she may have income it
 never saw.
 
-**Tax calculator.** In-app, and she drives it. It offers her own data — income
+**Tax calculator.** **Built.** In-app, and she drives it. It offers her own data — income
 and expenses over a period she chooses — as a starting point, she adjusts and
 adds anything the app does not know about, and it computes what she should set
 aside. A calculator she feeds is honest. A notification that guesses is not.
 
-**Annual report** — **Built**, made **editable**. The Indian financial year,
+**Annual report** — **Built**. Reports gross and net now that expenses exist.
+Still to do: making it **editable**. The Indian financial year,
 April to March, with income, TDS and GST. It reports **gross and net**, so
 "tax-ready" means taxable income rather than turnover. Creators need to adjust
 figures their app never saw, so the report is editable before export.
@@ -550,11 +552,11 @@ Until then, be honest in the UI that these figures are manual.
 
 ### 8.18 Export and deletion — **New**
 
-**Export.** Everything she has — deals, brands, payments, invoices, expenses,
+**Export.** **Built.** Everything she has — deals, brands, payments, invoices, expenses,
 ratings — as CSV and JSON. Available at any time, including during the
 read-only state after a lapsed trial or subscription.
 
-**Delete my account.** A real deletion path, not a cancellation. This is a
+**Delete my account.** **New.** A real deletion path, not a cancellation. This is a
 legal obligation, not a courtesy: CreatorDesk stores brand contacts' names and
 phone numbers, which is **third-party personal data**, making the business a
 Data Fiduciary under India's **Digital Personal Data Protection Act 2023**.
@@ -596,8 +598,8 @@ Roughly 20% of the work of true offline, covering the moment that matters.
 | Invoices / New invoice / Invoice detail | List, edit form, preview | **Change** |
 | Printed invoice | A4 template — its own design job | **Built** |
 | Year in review | Editable annual report | **Change** |
-| Tax calculator | Advance tax and GST | **New** |
-| Expenses | Log and categorise | **New** |
+| Tax calculator | Advance tax instalments | **Built** |
+| Expenses | Log and categorise | **Built** |
 | Profile card | The shareable card | **Change** |
 | Manager invite | Invite, set per-area access | **New** |
 
@@ -671,8 +673,12 @@ read-only state, our own GST invoicing.
 **5 — Roles.** Membership permission flags, the invite UI, RLS enforcement of
 the delete rule.
 
-**6 — The additions.** Repeat a deal, retainers, expenses, tax calculator,
-collection rate, invoice-over-WhatsApp, UPI QR, export, delete account.
+**6 — The additions.** Done: repeat a deal, expenses, the advance-tax
+calculator, collection rate, export. `023` also carries the schema for
+retainers and per-area manager access.
+
+Still open: retainer UI, invoice-over-WhatsApp, the UPI QR on the invoice,
+delete-my-account, and tax deadline notifications.
 
 **7 — Profile card rebuild**, then real Meta/YouTube APIs when credentials land.
 
