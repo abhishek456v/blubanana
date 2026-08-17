@@ -161,10 +161,10 @@ contract migration (`020`, ships with the code that needs it). See §11.
 | `deals` | **Add** `on_hold`, `on_hold_at`, `currency`, `rate_original`, `fx_rate` | 019 | §8.6, §8.7 |
 | `deals` | **Collapse** `status` to four lifecycle values | 020 | Stages describe the work now — §5 |
 | `deals` | **Add** retainer fields | Step 6 | §8.15 |
-| `deals` | **Remove** the four fixed date columns (`script_due_date`, `shoot_date`, `edit_done_date`, `publish_date`) | 021 | Stages are user-defined — §8.5. Held until reminders stop reading them (step 3) |
+| `deals` | **Remove** the four fixed date columns (`script_due_date`, `shoot_date`, `edit_done_date`, `publish_date`) | 022 | Stages are user-defined — §8.5. Held until reminders stop reading them (step 3) |
 | `payments` | **Add** `amount_received`, `tds_amount`, `label`, `sort_order` | 019 | Invoiced ≠ received — §8.7 |
-| `payments` | **Drop the `unique` on `deal_id`** | 021 | A deal can have several payments. Held back because it flips PostgREST's embed from object to array — §11 |
-| `brands` | **Remove** `contact_person`, `contact_phone`, `contact_email` | 021 | Superseded by `brand_contacts` |
+| `payments` | **Drop the `unique` on `deal_id`** | 021 | A deal can have several payments. Flips PostgREST's embed from object to array, so it shipped with the code that reads the array |
+| `brands` | **Remove** `contact_person`, `contact_phone`, `contact_email` | 022 | Superseded by `brand_contacts`. Still written from the primary contact, because invoices, search and the WhatsApp nudges read them |
 | `memberships` | **Add** per-area permission flags | Step 5 | §7 |
 
 `deals.rate` keeps its meaning throughout: always the INR figure, so every
@@ -285,7 +285,7 @@ produces a deal that claims it published last month.
 There is a second entry point: **"New deal with [brand]"** on a brand's page,
 which skips the picker.
 
-### 8.5 Stages and deadlines — **Change**
+### 8.5 Stages and deadlines — **Built**
 
 Today a deal has four fixed stages in four fixed database columns: Script,
 Shoot, Edit, Publish. That is wrong. Creators work differently — some script
@@ -303,7 +303,7 @@ This is why the four date columns come out of `deals` and become the
 `deal_stages` table. It is the single largest structural change in this spec,
 and everything about reminders depends on it.
 
-### 8.6 When a deal stalls — **New**
+### 8.6 When a deal stalls — **Built**
 
 Deals die. Brands ghost, budgets get pulled, campaigns get shelved.
 
@@ -322,12 +322,12 @@ Un-holding puts it back.
 
 **Payment terms** are captured on the deal: the amount, and when it is due.
 
-**Advances and part-payments** — **New.** Today the schema allows exactly one
-payment per deal. But *50% advance, 50% on delivery* is the most common
+**Advances and part-payments** — **Built.** Until migration 021 the schema
+allowed exactly one payment per deal. But *50% advance, 50% on delivery* is the most common
 arrangement in Indian creator work. A deal can now carry several payments, each
 with its own amount, due date and status.
 
-**Marking a payment received** — **New.** This is where the numbers get lied
+**Marking a payment received** — **Built.** This is where the numbers get lied
 to, so it gets a deliberate, attention-taking dialog rather than a quiet
 toggle. It asks what **actually landed**, which is often not what was invoiced:
 
@@ -339,7 +339,8 @@ Without this, either the deal looks underpaid forever, or she records ₹90,000
 and her income reports understate gross by exactly the TDS figure she needs at
 tax time.
 
-**Foreign currency** — **New.** A deal can be denominated in another currency.
+**Foreign currency** — **Change.** The columns exist (019); the UI to pick a
+currency does not. A deal can be denominated in another currency.
 The original amount is stored **and** an INR value snapshotted at the time of
 entry. Tax reporting must be in INR, and last year's dollar deal cannot be
 revalued at today's rate.
@@ -349,7 +350,7 @@ level the app drafts a message appropriate to that level and hands it to
 WhatsApp as a pre-filled `wa.me` link addressed to the brand's contact. She
 reads it and sends it herself. Nothing is ever sent automatically.
 
-**Collection rate** — **New.** Of everything invoiced this year, what
+**Collection rate** — **New.** Not built. Of everything invoiced this year, what
 percentage actually arrived, and how long it took on average. No creator tracks
 this, and it is the number that tells her which brands to stop working with.
 
@@ -633,8 +634,10 @@ One thing deliberately **not** in it: dropping the `unique` on
 reads `deal.payment?.…`. Removing it without the code change turns every
 payment read into `undefined` — silently, with no error. It comes off in step 2.
 
-**2 — The screens those break.** Deal detail's timeline, new deal, payment
-marking, Money's totals (respecting on-hold), Brands' contacts.
+**2 — The screens those break. Done.** Deal detail's stage editor, new deal,
+the payment schedule with per-instalment settlement, the received/TDS dialog,
+Money's totals respecting on-hold, the on-hold control, and multiple brand
+contacts.
 
 `020_deal_status_lifecycle.sql` shipped as part of this and is **not**
 additive: it collapses deal status from seven values to four. Building the

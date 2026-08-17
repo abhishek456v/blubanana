@@ -3,6 +3,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-na
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { createBrand } from '@/lib/brands'
+import { replaceContacts } from '@/lib/brandContacts'
 import { ContentMaxWidth, Spacing } from '@/constants/design'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 import { useTheme } from '@/hooks/useTheme'
@@ -36,13 +37,27 @@ export default function NewBrandScreen() {
 
     setSaving(true)
     try {
-      await createBrand({
+      const created = await createBrand({
         name: name.trim(),
         contact_person: contactPerson.trim() || null,
         contact_phone: contactPhone.trim() || null,
         contact_email: contactEmail.trim() || null,
         notes: notes.trim() || null,
       })
+
+      // Mirror the details into brand_contacts as the primary contact, so a
+      // brand created here behaves like every other one. Brand detail is where
+      // further contacts get added; this screen deliberately asks for one,
+      // because at creation there is only ever one person you have met.
+      await replaceContacts(created.id, [
+        {
+          name: contactPerson.trim(),
+          phone: contactPhone.trim() || null,
+          email: contactEmail.trim() || null,
+          role: null,
+          is_primary: true,
+        },
+      ])
       toast(`${name.trim()} added`, { tone: 'success' })
       router.back()
     } catch {

@@ -30,6 +30,8 @@ import {
   respondToReminder,
   syncPaymentStatus,
   markPaymentReminderSent,
+  addPayment,
+  deletePayment,
   settlePayment,
   isFullyPaid,
   nextDuePayment,
@@ -64,6 +66,7 @@ import {
 import { DeliverablesCard } from '@/components/deal/DeliverablesCard'
 import { StageEditor } from '@/components/deal/StageEditor'
 import { PaymentReceivedSheet } from '@/components/deal/PaymentReceivedSheet'
+import { InstalmentsCard } from '@/components/deal/InstalmentsCard'
 import { replaceStages, type StageDraft } from '@/lib/dealStages'
 import { MessageHistoryCard } from '@/components/deal/MessageHistoryCard'
 import type { DeliverableDraft } from '@/components/deal/DeliverableEditor'
@@ -71,6 +74,7 @@ import {
   Card,
   Chip,
   Figure,
+  PressableScale,
   FigureBlock,
   GradientCard,
   StarRating,
@@ -100,6 +104,7 @@ import { StatusPill } from '@/components/StatusPill'
 import { PaymentStatusBadge } from '@/components/PaymentStatusBadge'
 import type {
   Platform as PlatformType,
+  Payment,
   PaymentStatus,
   BrandRating,
   Deliverable,
@@ -136,6 +141,9 @@ export default function DealDetailScreen() {
   const [rate, setRate] = useState('')
   const [paymentTerms, setPaymentTerms] = useState('')
   const [receivedSheetOpen, setReceivedSheetOpen] = useState(false)
+  // Which payment the sheet is settling. Null means the deal-level advance,
+  // which settles the next one due.
+  const [settlingPayment, setSettlingPayment] = useState<Payment | null>(null)
   const [stageDrafts, setStageDrafts] = useState<StageDraft[]>([])
   const [scriptDue, setScriptDue] = useState('')
   const [shootDate, setShootDate] = useState('')
@@ -548,6 +556,54 @@ export default function DealDetailScreen() {
     }
   }
 
+  async function handleToggleHold() {
+    if (!deal) return
+    const next = !deal.on_hold
+    try {
+      await updateDeal(deal.id, {
+        on_hold: next,
+        on_hold_at: next ? new Date().toISOString() : null,
+      })
+      setDeal((prev) =>
+        prev ? { ...prev, on_hold: next, on_hold_at: next ? new Date().toISOString() : null } : prev
+      )
+      toast(next ? 'Deal put on hold' : 'Deal is active again')
+    } catch {
+      toast('Could not change the hold', { tone: 'error' })
+    }
+  }
+
+  async function handleAddInstalment(input: {
+    amount: number
+    due_date: string | null
+    label: string
+  }) {
+    if (!deal) return
+    try {
+      const created = await addPayment(deal.id, {
+        amount: input.amount,
+        due_date: input.due_date,
+        label: input.label || null,
+        sort_order: paymentsInOrder(deal).length,
+      })
+      setDeal((prev) => (prev ? { ...prev, payments: [...prev.payments, created] } : prev))
+    } catch {
+      toast('Could not add the instalment', { tone: 'error' })
+    }
+  }
+
+  async function handleRemoveInstalment(paymentId: string) {
+    if (!deal) return
+    try {
+      await deletePayment(paymentId)
+      setDeal((prev) =>
+        prev ? { ...prev, payments: prev.payments.filter((p) => p.id !== paymentId) } : prev
+      )
+    } catch {
+      toast('Could not remove the instalment', { tone: 'error' })
+    }
+  }
+
   async function handleConfirmReceived({ received, tds }: { received: number; tds: number }) {
     if (!deal) return
     setAdvancing(true)
@@ -556,15 +612,28 @@ export default function DealDetailScreen() {
       // asked about carries the received/TDS split. Spreading her answer across
       // instalments she was not shown would be inventing figures.
       const outstanding = paymentsInOrder(deal).filter((payment) => payment.status !== 'paid')
-      const [asked, ...rest] = outstanding
 
-      if (asked) await settlePayment(asked, { received, tds })
-      for (const payment of rest) {
-        await settlePayment(payment, { received: payment.amount, tds: 0 })
+      if (settlingPayment) {
+        // One instalment, settled on its own. The deal only becomes Paid once
+        // nothing is left outstanding, so an advance landing does not mark a
+        // deal settled while the balance is still owed.
+        await settlePayment(settlingPayment, { received, tds })
+        const remaining = outstanding.filter((p) => p.id !== settlingPayment.id)
+        if (remaining.length === 0) await updateDeal(deal.id, { status: 'paid' })
+      } else {
+        // The deal-level advance. Only the payment she was actually shown
+        // carries the split; spreading her answer across instalments she never
+        // saw would be inventing figures.
+        const [asked, ...rest] = outstanding
+        if (asked) await settlePayment(asked, { received, tds })
+        for (const payment of rest) {
+          await settlePayment(payment, { received: payment.amount, tds: 0 })
+        }
+        await updateDeal(deal.id, { status: 'paid' })
       }
 
-      await updateDeal(deal.id, { status: 'paid' })
       setReceivedSheetOpen(false)
+      setSettlingPayment(null)
       router.back()
     } catch {
       toast('Could not record the payment', { tone: 'error' })
@@ -872,7 +941,19 @@ export default function DealDetailScreen() {
               <GradientCard
                 gradient="blue"
                 style={styles.hero}
-                action={<StatusPill status={deal.status} onGradient />}
+                action={
+                  <View style={styles.heroActions}>
+                    {/* A flag, not a status: the deal keeps whatever stage it
+                        reached. Marked on the hero so it is impossible to read
+                        the rate without seeing that nothing is moving. */}
+                    {deal.on_hold ? (
+                      <View style={styles.holdPill}>
+                        <Text style={styles.holdPillText}>On hold</Text>
+                      </View>
+                    ) : null}
+                    <StatusPill status={deal.status} onGradient />
+                  </View>
+                }
               >
                 <View style={styles.heroBrand}>
                   <BrandAvatar name={brandName} size={34} />
@@ -887,7 +968,10 @@ export default function DealDetailScreen() {
                     figure={
                       <Figure
                         value={formatCurrency(parseInt(rate, 10) || 0)}
-                        size="hero"
+                        // Steps down on a phone. At `hero` the rate and the
+                        // due date are set side by side and nearly touch at
+                        // 390px, which reads as one run of digits.
+                        size={isDesktop ? 'hero' : 'lg'}
                         color="#FFFFFF"
                         bold
                       />
@@ -900,7 +984,7 @@ export default function DealDetailScreen() {
                       figure={
                         <Figure
                           value={formatDate(nextDuePayment(deal)!.due_date)}
-                          size="lg"
+                          size={isDesktop ? 'lg' : 'md'}
                           color="#FFFFFF"
                         />
                       }
@@ -929,9 +1013,20 @@ export default function DealDetailScreen() {
                       not. */}
                   <View style={[styles.statusCard, { backgroundColor: c.bgSurface }]}>
                     <View style={styles.statusRow}>
-                      <Text style={[styles.statusStage, { color: c.textSecondary }]}>
-                        {STATUS_LABELS[deal.status]}
-                      </Text>
+                      <View style={styles.statusStageRow}>
+                        <Text style={[styles.statusStage, { color: c.textSecondary }]}>
+                          {STATUS_LABELS[deal.status]}
+                        </Text>
+                        <PressableScale
+                          onPress={handleToggleHold}
+                          accessibilityRole="button"
+                          accessibilityLabel={deal.on_hold ? 'Resume this deal' : 'Put this deal on hold'}
+                        >
+                          <Text style={[styles.holdAction, { color: c.textMuted }]}>
+                            {deal.on_hold ? 'Resume' : 'Put on hold'}
+                          </Text>
+                        </PressableScale>
+                      </View>
                       {nextStatus ? (
                         <TouchableOpacity
                           style={[
@@ -1247,24 +1342,38 @@ export default function DealDetailScreen() {
                     />
                   </View>
 
-                  {/* ── Payment ──────────────────────────────────────── */}
+                  {/* ── Payment schedule ─────────────────────────────── */}
+                  <View style={styles.deliverablesBlock}>
+                    <InstalmentsCard
+                      payments={paymentsInOrder(deal)}
+                      dealRate={deal.rate}
+                      busy={advancing}
+                      onAdd={handleAddInstalment}
+                      onRemove={handleRemoveInstalment}
+                      onMarkReceived={(payment) => {
+                        setSettlingPayment(payment)
+                        setReceivedSheetOpen(true)
+                      }}
+                    />
+                  </View>
+
+                  {/* ── Chasing ──────────────────────────────────────────
+                      Only the affordances for getting paid live here. The
+                      amount, status and due date are on the schedule card
+                      above; restating them made the two cards look like two
+                      different payments. */}
                   {(() => {
                     const payment = nextDuePayment(deal)
                     if (!payment) return null
                     const tone = getPaymentAlertTone(payment)
                     const missingPhone = !deal.brand?.contact_phone
 
+                    // Nothing to chase yet: no reminder is due and the brand
+                    // has a number. An empty card is worse than no card.
+                    if (!tone && !missingPhone) return null
+
                     return (
                       <View style={[styles.paymentCard, { backgroundColor: c.bgSurface }]}>
-                        <View style={styles.paymentHeaderRow}>
-                          <PaymentStatusBadge status={payment.status} />
-                          {payment.due_date ? (
-                            <Text style={[styles.paymentDueDate, { color: c.textSecondary }]}>
-                              Due {formatDueDate(payment.due_date)}
-                            </Text>
-                          ) : null}
-                        </View>
-
                         {tone ? (
                           addingPhone ? (
                             <View style={styles.phoneAddRow}>
@@ -1514,10 +1623,13 @@ export default function DealDetailScreen() {
 
       <PaymentReceivedSheet
         visible={receivedSheetOpen}
-        invoiced={nextDuePayment(deal)?.amount ?? deal.rate}
+        invoiced={settlingPayment?.amount ?? nextDuePayment(deal)?.amount ?? deal.rate}
         brandName={brandName}
         saving={advancing}
-        onCancel={() => setReceivedSheetOpen(false)}
+        onCancel={() => {
+          setReceivedSheetOpen(false)
+          setSettlingPayment(null)
+        }}
         onConfirm={handleConfirmReceived}
       />
     </>
@@ -1577,6 +1689,34 @@ const styles = StyleSheet.create({
   statusStage: {
     ...Typography.bodyStrong,
     fontFamily: FontFamily.medium,
+  },
+  statusStageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.base,
+  },
+  holdAction: {
+    ...Typography.caption,
+    fontFamily: FontFamily.medium,
+    textDecorationLine: 'underline',
+  },
+  heroActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  holdPill: {
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    paddingHorizontal: Spacing.base,
+    paddingVertical: 5,
+  },
+  holdPillText: {
+    ...Typography.label,
+    fontFamily: FontFamily.semiBold,
+    color: '#FFFFFF',
   },
   heroBrand: {
     flexDirection: 'row',

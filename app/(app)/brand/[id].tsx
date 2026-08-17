@@ -3,6 +3,8 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } fr
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { getBrand, updateBrand } from '@/lib/brands'
+import { getContacts, replaceContacts, type ContactDraft } from '@/lib/brandContacts'
+import { ContactsEditor } from '@/components/brand/ContactsEditor'
 import { getDealsForBrand, paymentsInOrder, type DealWithPaymentSummary } from '@/lib/deals'
 import { getRatingsForBrand, summarizeRatings } from '@/lib/reputation'
 import { formatCurrency } from '@/lib/format'
@@ -36,9 +38,7 @@ export default function BrandDetailScreen() {
   const [saving, setSaving] = useState(false)
 
   const [name, setName] = useState('')
-  const [contactPerson, setContactPerson] = useState('')
-  const [contactPhone, setContactPhone] = useState('')
-  const [contactEmail, setContactEmail] = useState('')
+  const [contactDrafts, setContactDrafts] = useState<ContactDraft[]>([])
   const [notes, setNotes] = useState('')
   const [nameError, setNameError] = useState<string | undefined>()
 
@@ -52,9 +52,17 @@ export default function BrandDetailScreen() {
       setBrand(brandData)
       setDeals(dealsData)
       setName(brandData.name)
-      setContactPerson(brandData.contact_person ?? '')
-      setContactPhone(brandData.contact_phone ?? '')
-      setContactEmail(brandData.contact_email ?? '')
+      const existing = await getContacts(brandData.id)
+      setContactDrafts(
+        existing.map((contact) => ({
+          id: contact.id,
+          name: contact.name,
+          phone: contact.phone,
+          email: contact.email,
+          role: contact.role,
+          is_primary: contact.is_primary,
+        }))
+      )
       setNotes(brandData.notes ?? '')
     } catch {
       toast('Could not load this brand', { tone: 'error' })
@@ -97,11 +105,16 @@ export default function BrandDetailScreen() {
     try {
       await updateBrand(brand.id, {
         name: name.trim(),
-        contact_person: contactPerson.trim() || null,
-        contact_phone: contactPhone.trim() || null,
-        contact_email: contactEmail.trim() || null,
+        // The three legacy columns are still written from the primary contact
+        // so the invoice, search and WhatsApp paths keep working until they
+        // read brand_contacts directly. They are dropped in a later migration.
+        contact_person: contactDrafts.find((x) => x.is_primary)?.name?.trim() || null,
+        contact_phone: contactDrafts.find((x) => x.is_primary)?.phone?.trim() || null,
+        contact_email: contactDrafts.find((x) => x.is_primary)?.email?.trim() || null,
         notes: notes.trim() || null,
       })
+
+      await replaceContacts(brand.id, contactDrafts)
       toast('Saved', { tone: 'success' })
       router.back()
     } catch {
@@ -190,33 +203,12 @@ export default function BrandDetailScreen() {
               autoCapitalize="words"
             />
 
-            <TextField
-              label="POC"
-              placeholder="Who you talk to"
-              value={contactPerson}
-              onChangeText={setContactPerson}
-              autoCapitalize="words"
-            />
-
-            <TextField
-              label="Phone"
-              placeholder="+91 98765 43210"
-              value={contactPhone}
-              onChangeText={setContactPhone}
-              keyboardType="phone-pad"
-              autoComplete="tel"
-              hint="Used for the one-tap WhatsApp payment nudge"
-            />
-
-            <TextField
-              label="Email"
-              placeholder="poc@brand.com"
-              value={contactEmail}
-              onChangeText={setContactEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
+            {/* Several contacts, one of them primary (migration 019). A brand
+                used to hold exactly one name, phone and email, and agency
+                contacts change often enough that chasing the old one is how a
+                payment quietly stops arriving. */}
+            <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Contacts</Text>
+            <ContactsEditor contacts={contactDrafts} onChange={setContactDrafts} />
 
             <TextField
               label="Notes"
@@ -328,6 +320,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     ...Typography.title,
     fontFamily: FontFamily.display,
+  },
+  sectionLabel: {
+    ...Typography.label,
+    fontFamily: FontFamily.medium,
+    marginTop: Spacing.sm,
   },
   dealsList: {
     gap: Spacing.base,

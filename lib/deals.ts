@@ -229,6 +229,8 @@ export async function updateDeal(
     Pick<
       Deal,
       | 'platform'
+      | 'on_hold'
+      | 'on_hold_at'
       | 'deliverable_description'
       | 'rate'
       | 'script_due_date'
