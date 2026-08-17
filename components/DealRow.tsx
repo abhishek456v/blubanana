@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
-import type { Deal } from '@/types'
+import { stagesInOrder, type DealWithPaymentSummary } from '@/lib/deals'
 import { FontFamily, Radius, Spacing, Typography } from '@/constants/design'
 import { Duration, staggerDelay } from '@/constants/motion'
 import { PLATFORM_LABELS } from '@/constants/labels'
@@ -11,26 +11,25 @@ import { PressableScale } from '@/components/ui'
 import { BrandAvatar } from './BrandAvatar'
 import { StatusPill } from './StatusPill'
 
-// The next thing this deal needs, derived from where it is in the workflow.
-function getNextDeadline(deal: Deal): { label: string; date: string | null } {
-  switch (deal.status) {
-    case 'intake':
-    case 'script_due':
-      return { label: 'Script', date: deal.script_due_date }
-    case 'shooting':
-      return { label: 'Shoot', date: deal.shoot_date }
-    case 'editing':
-      return { label: 'Edit', date: deal.edit_done_date }
-    case 'published':
-    case 'payment_awaited':
-      return { label: 'Live', date: deal.publish_date }
-    case 'paid':
-      return { label: '', date: null }
-  }
+/**
+ * The next thing this deal needs: its first stage that is not done.
+ *
+ * Read from the deal's own stages rather than switched on status, because
+ * stages are user-defined now (migration 019) and a creator who renamed
+ * "Shoot" to "Studio day" or added a client-review round would otherwise see a
+ * label their deal does not contain.
+ *
+ * A paid deal needs nothing, whatever its stages say.
+ */
+function getNextDeadline(deal: DealWithPaymentSummary): { label: string; date: string | null } {
+  if (deal.status === 'paid') return { label: '', date: null }
+
+  const next = stagesInOrder(deal).find((stage) => !stage.done)
+  return next ? { label: next.name, date: next.due_date } : { label: '', date: null }
 }
 
 interface DealRowProps {
-  deal: Deal
+  deal: DealWithPaymentSummary
   onPress?: () => void
   /**
    * Overrides the derived deadline line, used by Home's "Needs you" section

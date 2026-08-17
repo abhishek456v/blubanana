@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 import { getWorkspaceId } from './workspace'
-import type { Deal, DealStatus, Payment, PaymentStatus, Platform } from '@/types'
+import type { Deal, DealStage, DealStatus, Payment, PaymentStatus, Platform } from '@/types'
 import {
   rescheduleWorkflowReminder,
   clearWorkflowReminder,
@@ -39,12 +39,35 @@ export interface CreateDealInput {
 // (lib/revenue.ts) without a second round trip.
 export type DealWithPaymentSummary = Deal & {
   payment: Pick<Payment, 'due_date' | 'status' | 'amount' | 'paid_date'> | null
+  /**
+   * The deal's workflow, oldest stage first (migration 019).
+   *
+   * Embedded rather than fetched per deal: the dashboard shows a next-deadline
+   * for every row, and a list of fifty deals would otherwise be fifty-one
+   * round trips. PostgREST cannot order an embedded resource, so callers sort
+   * by `sort_order` themselves — see `stagesInOrder`.
+   */
+  stages: DealStage[]
+}
+
+/**
+ * A deal's stages in workflow order.
+ *
+ * Always go through this rather than reading `deal.stages` directly. PostgREST
+ * returns embedded rows in no guaranteed order, so an unsorted read shows
+ * Publish above Script often enough to look like a bug and rarely enough to
+ * survive a quick test.
+ */
+export function stagesInOrder(deal: { stages?: DealStage[] | null }): DealStage[] {
+  return [...(deal.stages ?? [])].sort((a, b) => a.sort_order - b.sort_order)
 }
 
 export async function getDeals(): Promise<DealWithPaymentSummary[]> {
   const { data, error } = await supabase
     .from('deals')
-    .select('*, brand:brands(*), payment:payments(due_date, status, amount, paid_date)')
+    .select(
+      '*, brand:brands(*), payment:payments(due_date, status, amount, paid_date), stages:deal_stages(*)'
+    )
     .order('created_at', { ascending: false })
 
   if (error) throw error
@@ -55,7 +78,9 @@ export async function getDeals(): Promise<DealWithPaymentSummary[]> {
 export async function getDealsForBrand(brandId: string): Promise<DealWithPaymentSummary[]> {
   const { data, error } = await supabase
     .from('deals')
-    .select('*, brand:brands(*), payment:payments(due_date, status, amount, paid_date)')
+    .select(
+      '*, brand:brands(*), payment:payments(due_date, status, amount, paid_date), stages:deal_stages(*)'
+    )
     .eq('brand_id', brandId)
     .order('created_at', { ascending: false })
 
@@ -165,12 +190,12 @@ export async function createDeal(input: CreateDealInput): Promise<Deal> {
 // payments.deal_id is unique, so PostgREST infers a to-one relationship and
 // embeds it as a single object, not an array, regardless of the '*'
 // select shorthand. The `payment:` alias here makes that explicit.
-export type DealWithPayments = Deal & { payment: Payment | null }
+export type DealWithPayments = Deal & { payment: Payment | null; stages: DealStage[] }
 
 export async function getDeal(id: string): Promise<DealWithPayments> {
   const { data, error } = await supabase
     .from('deals')
-    .select('*, brand:brands(*), payment:payments(*)')
+    .select('*, brand:brands(*), payment:payments(*), stages:deal_stages(*)')
     .eq('id', id)
     .single()
 

@@ -1,4 +1,4 @@
-import type { DealWithPaymentSummary } from './deals'
+import { stagesInOrder, type DealWithPaymentSummary } from './deals'
 import { getPaymentAlertTone } from './paymentReminders'
 import { getAdRightsStatus } from './adRights'
 import { daysFromToday, formatRelativeDay } from './format'
@@ -39,21 +39,19 @@ const PRIORITY: Record<AttentionKind, number> = {
   ad_rights_expiring: 5,
 }
 
-/** The date the deal's current stage is working toward, if any. */
+/**
+ * The date the deal's current stage is working toward, if any.
+ *
+ * The first stage that is not done, read from the deal's own stages. Switching
+ * on status stopped working once stages became user-defined (migration 019):
+ * a deal whose creator renamed or reordered them has no fixed "Shoot" to look
+ * up. A paid deal is not waiting on any stage.
+ */
 function currentStageDeadline(deal: DealWithPaymentSummary): { label: string; date: string } | null {
-  switch (deal.status) {
-    case 'intake':
-    case 'script_due':
-      return deal.script_due_date ? { label: 'Script', date: deal.script_due_date } : null
-    case 'shooting':
-      return deal.shoot_date ? { label: 'Shoot', date: deal.shoot_date } : null
-    case 'editing':
-      return deal.edit_done_date ? { label: 'Edit', date: deal.edit_done_date } : null
-    case 'published':
-      return deal.publish_date ? { label: 'Publish', date: deal.publish_date } : null
-    default:
-      return null
-  }
+  if (deal.status === 'paid') return null
+
+  const next = stagesInOrder(deal).find((stage) => !stage.done)
+  return next?.due_date ? { label: next.name, date: next.due_date } : null
 }
 
 /**
