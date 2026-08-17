@@ -31,6 +31,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import { setForegroundHandler, ensureAndroidChannelAsync, scheduleAsync } from '@/lib/notifications'
 import { rebuildLocalNotifications } from '@/lib/reminderChains'
+import { registerPushToken } from '@/lib/push'
 
 SplashScreen.preventAutoHideAsync()
 setForegroundHandler()
@@ -137,35 +138,52 @@ export default function RootLayout() {
     return () => subscription.remove()
   }, [])
 
-  // Re-create OS notifications from the durable reminder chain.
+  // Notifications: server push if this device can receive it, local scheduling
+  // if it cannot.
   //
-  // This is the payoff for storing the schedule in the database: after a
-  // reinstall, a device switch, or the OS clearing its notification queue,
-  // everything scheduled is recoverable. Without it the creator finds out the
-  // schedule was lost by missing a deadline.
+  // The server (supabase/functions/send-due-reminders) is the real mechanism:
+  // it wakes on a cron and pushes, so a deadline arrives whether or not the app
+  // has been opened this week. On-device scheduling could never do that, which
+  // is why a creator who ignored the app for a few days silently got nothing.
   //
-  // Runs once per signed-in launch, after auth resolves so RLS can scope it.
+  // But push needs a development build and a granted permission. Expo Go, a
+  // simulator, the web build and a declined prompt all legitimately have no
+  // token, and on those the local schedule is still better than no reminders
+  // at all. So exactly one of the two runs: registering a token means the
+  // server owns this device, and scheduling locally as well would deliver
+  // every reminder twice.
   useEffect(() => {
-    if (Platform.OS === 'web') return
     if (!session || loading) return
+    let active = true
 
-    rebuildLocalNotifications(async (reminder) =>
-      scheduleAsync(
-        {
-          title: reminder.title,
-          body: reminder.body ?? '',
-          data: {
-            type: reminder.type,
-            dealId: reminder.deal_id ?? '',
-            stage: reminder.stage ?? '',
-          },
-        },
-        new Date(reminder.scheduled_for)
-      )
-    ).catch(() => {
-      // Best-effort. A failure here leaves the previously scheduled
-      // notifications in place; it never blocks the app from opening.
-    })
+    registerPushToken()
+      .then((token) => {
+        if (!active || token) return
+        if (Platform.OS === 'web') return
+
+        return rebuildLocalNotifications(async (reminder) =>
+          scheduleAsync(
+            {
+              title: reminder.title,
+              body: reminder.body ?? '',
+              data: {
+                type: reminder.type,
+                dealId: reminder.deal_id ?? '',
+                stage: reminder.stage ?? '',
+              },
+            },
+            new Date(reminder.scheduled_for)
+          )
+        )
+      })
+      .catch(() => {
+        // Best effort. A failure here leaves whatever was previously scheduled
+        // in place; it never blocks the app from opening.
+      })
+
+    return () => {
+      active = false
+    }
   }, [session, loading])
 
   // Workflow/payment reminder notifications are never actionable in-place:

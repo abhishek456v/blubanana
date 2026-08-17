@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { getWorkspaceId } from './workspace'
+import { getStages } from './dealStages'
 import type { Deal, ReminderStage } from '@/types'
 
 // Durable reminder chains (migration 015).
@@ -63,14 +64,6 @@ const STAGE_SEQUENCE: ReminderStage[] = [
   'live_link_submission',
 ]
 
-/** Workflow stages that key off a date column, for chain building. */
-const WORKFLOW_STAGES: { stage: ReminderStage; dateField: keyof Deal; title: string }[] = [
-  { stage: 'script_due', dateField: 'script_due_date', title: 'Script due' },
-  { stage: 'shoot', dateField: 'shoot_date', title: 'Shoot day' },
-  { stage: 'editing', dateField: 'edit_done_date', title: 'Edit due' },
-  { stage: 'publish', dateField: 'publish_date', title: 'Publish day' },
-]
-
 /** 9am local on the stage date: early enough to act, late enough to be awake. */
 function morningOf(dateStr: string): Date {
   const [year, month, day] = dateStr.split('-').map(Number)
@@ -103,24 +96,22 @@ export async function buildWorkflowChain(deal: Deal): Promise<Reminder | null> {
     .in('status', LIVE_STATUSES)
   if (cancelError) throw cancelError
 
-  const completedThrough = deal.reminder_completed_through
-  const completedIndex = completedThrough
-    ? WORKFLOW_STAGES.findIndex((s) => s.stage === completedThrough)
-    : -1
+  // The deal's own stages, in order. Read from the table rather than from a
+  // fixed list of four: since migration 019 a creator can rename, remove and
+  // add stages, so there is no static set to look up (022 rekeyed reminders
+  // onto deal_stages.id for exactly this reason).
+  const stages = await getStages(deal.id)
 
   const now = Date.now()
 
-  // The next stage that has a date and hasn't been completed. Past-dated
-  // stages still schedule; an overdue nudge is the entire point.
-  const next = WORKFLOW_STAGES.find((s, index) => {
-    if (index <= completedIndex) return false
-    return Boolean(deal[s.dateField])
-  })
-
+  // The next stage that is not done and has a date. Undated stages are skipped
+  // rather than scheduled with a guessed date: a story repost has no script
+  // day, and inventing a deadline is worse than having none. Past-dated stages
+  // still schedule, because an overdue nudge is the entire point.
+  const next = stages.find((stage) => !stage.done && stage.due_date)
   if (!next) return null
 
-  const dateStr = deal[next.dateField] as string
-  const fireAt = morningOf(dateStr)
+  const fireAt = morningOf(next.due_date!)
   // Never schedule into the past; a reminder that fires the instant it is
   // created reads as a glitch.
   const scheduledFor = fireAt.getTime() < now ? new Date(now + 60_000) : fireAt
@@ -130,11 +121,15 @@ export async function buildWorkflowChain(deal: Deal): Promise<Reminder | null> {
     .insert({
       workspace_id: workspaceId,
       chain_id: chainId,
-      sequence_index: WORKFLOW_STAGES.indexOf(next),
+      sequence_index: next.sort_order,
       type: 'workflow',
-      stage: next.stage,
+      deal_stage_id: next.id,
+      // The stage's name as it stands now, kept for display. A reminder sent
+      // last month should still read correctly after the stage it referred to
+      // has been renamed or deleted.
+      stage: next.name,
       deal_id: deal.id,
-      title: next.title,
+      title: next.name,
       body: deal.brand?.name ? `${deal.brand.name} · ${deal.deliverable_description}` : null,
       scheduled_for: scheduledFor.toISOString(),
       status: 'scheduled',

@@ -2,11 +2,12 @@ import { supabase } from './supabase'
 import { getWorkspaceId } from './workspace'
 import type { Deal, DealStage, DealStatus, Payment, PaymentStatus, Platform } from '@/types'
 import {
-  rescheduleWorkflowReminder,
-  clearWorkflowReminder,
-  respondToWorkflowReminder,
+  buildWorkflowChain,
+  cancelChain,
+  getLiveReminder,
+  respondToChainReminder,
   type ReminderResponse,
-} from './reminders'
+} from './reminderChains'
 import { reschedulePaymentReminders, cancelPaymentReminders, isPaymentOverdue } from './paymentReminders'
 import { calculateAdRightsExpiry, rescheduleAdRightsReminder } from './adRights'
 
@@ -22,9 +23,10 @@ export interface CreateDealInput {
   platform: Platform
   deliverable_description: string
   rate: number // whole INR rupees
-  script_due_date?: string | null
-  shoot_date?: string | null
-  edit_done_date?: string | null
+  /**
+   * The publish date, used only to derive the payment due date at creation.
+   * Not stored on the deal: the schedule lives in deal_stages (migration 019).
+   */
   publish_date?: string | null
   notes?: string | null
   payment_terms?: string | null
@@ -133,10 +135,6 @@ export async function createDeal(input: CreateDealInput): Promise<Deal> {
       platform: input.platform,
       deliverable_description: input.deliverable_description,
       rate: input.rate,
-      script_due_date: input.script_due_date ?? null,
-      shoot_date: input.shoot_date ?? null,
-      edit_done_date: input.edit_done_date ?? null,
-      publish_date: input.publish_date ?? null,
       notes: input.notes ?? null,
       // Typed explicitly. Supabase's .insert() takes a loose object, so a stale
       // literal here type-checks cleanly and fails at the database's check
@@ -179,7 +177,8 @@ export async function createDeal(input: CreateDealInput): Promise<Deal> {
   // Scheduling local reminders is best-effort: a failure here must never
   // fail the deal save, since both rows already exist at this point.
   try {
-    const reminderFields = await rescheduleWorkflowReminder(deal as Deal)
+    // The workflow chain is built after the stages are written, by the caller
+    // (see rescheduleWorkflow); at this point the deal has none yet.
     const paymentReminderFields = await reschedulePaymentReminders(payment as Payment, deal as Deal)
     const adRightsReminderFields = await rescheduleAdRightsReminder(deal as Deal)
 
@@ -191,7 +190,7 @@ export async function createDeal(input: CreateDealInput): Promise<Deal> {
 
     const { data: finalDeal, error: dealReminderError } = await supabase
       .from('deals')
-      .update({ ...reminderFields, ...adRightsReminderFields })
+      .update(adRightsReminderFields)
       .eq('id', deal.id)
       .select('*, brand:brands(*)')
       .single()
@@ -221,8 +220,6 @@ export async function getDeal(id: string): Promise<DealWithPayments> {
   return data as DealWithPayments
 }
 
-const TIMELINE_FIELDS = ['script_due_date', 'shoot_date', 'edit_done_date', 'publish_date'] as const
-
 export async function updateDeal(
   id: string,
   fields: Partial<
@@ -233,10 +230,6 @@ export async function updateDeal(
       | 'on_hold_at'
       | 'deliverable_description'
       | 'rate'
-      | 'script_due_date'
-      | 'shoot_date'
-      | 'edit_done_date'
-      | 'publish_date'
       | 'status'
       | 'live_link'
       | 'notes'
@@ -251,23 +244,25 @@ export async function updateDeal(
     .single()
   if (error) throw error
 
-  const touchesTimeline = TIMELINE_FIELDS.some((key) => key in fields)
-  if (!touchesTimeline) return updated as Deal
+  return updated as Deal
+}
 
-  // Rescheduling is best-effort: a failure here must never fail the edit
-  // the creator was actually trying to make.
+/**
+ * Rebuilds a deal's workflow reminder from its stages.
+ *
+ * Called after the stages themselves are saved, not from updateDeal: the
+ * reminder depends on the stage rows, and updateDeal runs before
+ * replaceStages, so scheduling there would key off the previous schedule.
+ *
+ * Best-effort by design. A reminder problem must never cost the creator the
+ * edit she was actually making, and the chain is fully rebuildable from the
+ * deal's own stages, so a miss here is recoverable on the next save.
+ */
+export async function rescheduleWorkflow(deal: Deal): Promise<void> {
   try {
-    const reminderFields = await rescheduleWorkflowReminder(updated as Deal)
-    const { data: final, error: reminderError } = await supabase
-      .from('deals')
-      .update(reminderFields)
-      .eq('id', id)
-      .select('*, brand:brands(*)')
-      .single()
-    if (reminderError) throw reminderError
-    return final as Deal
-  } catch {
-    return updated as Deal
+    await buildWorkflowChain(deal)
+  } catch (error) {
+    console.error('rescheduleWorkflow: could not rebuild the chain', error)
   }
 }
 
@@ -369,7 +364,18 @@ export async function respondToReminder(
 ): Promise<
   Pick<Deal, 'reminder_stage' | 'reminder_fire_at' | 'reminder_notification_id' | 'reminder_completed_through'>
 > {
-  const fields = await respondToWorkflowReminder(deal, response)
+  const live = await getLiveReminder(deal.id)
+  if (live) await respondToChainReminder(live, response)
+
+  // The reminder_* columns on deals are vestigial: the schedule lives in the
+  // reminders table now (migration 022). They are cleared rather than written
+  // so nothing downstream reads a stale stage name.
+  const fields = {
+    reminder_stage: null,
+    reminder_fire_at: null,
+    reminder_notification_id: null,
+    reminder_completed_through: null,
+  }
   const { error } = await supabase.from('deals').update(fields).eq('id', deal.id)
   if (error) throw error
   return fields
@@ -567,12 +573,8 @@ export async function advanceDealStatus(deal: DealWithPayments): Promise<DealSta
       if (error) throw error
     }
 
-    const workflowReminderFields = await clearWorkflowReminder(deal)
-    const { error: dealReminderError } = await supabase
-      .from('deals')
-      .update(workflowReminderFields)
-      .eq('id', deal.id)
-    if (dealReminderError) throw dealReminderError
+    // Nothing left to remind about: the work is done and the money is in.
+    await cancelChain(deal.id)
   }
 
   return next

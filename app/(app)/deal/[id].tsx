@@ -30,6 +30,7 @@ import {
   respondToReminder,
   syncPaymentStatus,
   markPaymentReminderSent,
+  rescheduleWorkflow,
   addPayment,
   deletePayment,
   settlePayment,
@@ -41,7 +42,7 @@ import {
   type DealWithPayments,
 } from '@/lib/deals'
 import { updateBrand } from '@/lib/brands'
-import type { ReminderResponse } from '@/lib/reminders'
+import type { ReminderResponse } from '@/lib/reminderChains'
 import { buildPaymentReminderMessage, buildLiveLinkMessage } from '@/lib/whatsapp'
 import { chasedToday, nextEscalationLevel, sendNow } from '@/lib/messaging'
 import { getPaymentAlertTone } from '@/lib/paymentReminders'
@@ -145,10 +146,6 @@ export default function DealDetailScreen() {
   // which settles the next one due.
   const [settlingPayment, setSettlingPayment] = useState<Payment | null>(null)
   const [stageDrafts, setStageDrafts] = useState<StageDraft[]>([])
-  const [scriptDue, setScriptDue] = useState('')
-  const [shootDate, setShootDate] = useState('')
-  const [editDone, setEditDone] = useState('')
-  const [publishDate, setPublishDate] = useState('')
   const [liveLink, setLiveLink] = useState('')
   const [notes, setNotes] = useState('')
 
@@ -240,10 +237,6 @@ export default function DealDetailScreen() {
             done: stage.done,
           }))
         )
-        setScriptDue(data.script_due_date ?? '')
-        setShootDate(data.shoot_date ?? '')
-        setEditDone(data.edit_done_date ?? '')
-        setPublishDate(data.publish_date ?? '')
         setLiveLink(data.live_link ?? '')
         setNotes(data.notes ?? '')
         setPaymentTerms(primaryPayment(data)?.payment_terms ?? '')
@@ -422,47 +415,21 @@ export default function DealDetailScreen() {
       return
     }
 
-    const datesToValidate = [
-      { label: 'Script due date', value: scriptDue },
-      { label: 'Shoot date', value: shootDate },
-      { label: 'Edit done date', value: editDone },
-      { label: 'Publish date', value: publishDate },
-    ]
-    for (const { label, value } of datesToValidate) {
-      if (value.trim() && parseDate(value) === null) {
-        // Defensive only: every date on this screen now comes from the
-        // calendar picker, so an unparseable one would mean a bug, not typing.
-        toast(`${label} isn't a valid date`, { tone: 'warning' })
-        return
-      }
-    }
-
     setSaving(true)
     try {
-      const parsedPublish = parseDate(publishDate)
-
       await replaceStages(deal.id, stageDrafts)
+      // Rebuilt from the stages that were just written, not the ones the
+      // screen loaded with.
+      await rescheduleWorkflow(deal)
 
-      // The four date columns are written from the first four stages, by
-      // position, purely to keep the reminder system alive: lib/reminders.ts
-      // and lib/reminderChains.ts are still keyed to a fixed ReminderStage
-      // enum that user-defined stages cannot satisfy.
-      //
-      // This bridge is lossy on purpose and known to be so. A deal with six
-      // stages gets reminders for the first four only. Step 3 rewrites
-      // reminders against deal_stages.id and server-side push, and the columns
-      // are dropped in the migration that ships with it.
-      const [s0, s1, s2, s3] = stageDrafts
-      const parsedPublishFromStages = s3?.due_date ?? parsedPublish
+      // The payment clock still keys off the last stage's date, which is the
+      // publish day on a default schedule and whatever she named it otherwise.
+      const parsedPublishFromStages = stageDrafts[stageDrafts.length - 1]?.due_date ?? null
 
       await updateDeal(deal.id, {
         platform,
         deliverable_description: deliverable.trim(),
         rate: rateNum,
-        script_due_date: s0?.due_date ?? null,
-        shoot_date: s1?.due_date ?? null,
-        edit_done_date: s2?.due_date ?? null,
-        publish_date: parsedPublishFromStages,
         live_link: liveLink.trim() || null,
         notes: notes.trim() || null,
       })
@@ -490,10 +457,7 @@ export default function DealDetailScreen() {
     deliverable,
     rate,
     paymentTerms,
-    scriptDue,
-    shootDate,
-    editDone,
-    publishDate,
+    stageDrafts,
     liveLink,
     notes,
   ])
@@ -1193,7 +1157,7 @@ export default function DealDetailScreen() {
                           )}
                         </TouchableOpacity>
                         <TouchableOpacity
-                          onPress={() => handleReminderResponse('remind_12h')}
+                          onPress={() => handleReminderResponse('snooze_12h')}
                           disabled={respondingReminder}
                           style={styles.reminderSnoozeButton}
                           activeOpacity={0.7}
@@ -1203,7 +1167,7 @@ export default function DealDetailScreen() {
                           </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
-                          onPress={() => handleReminderResponse('remind_tomorrow')}
+                          onPress={() => handleReminderResponse('snooze_tomorrow')}
                           disabled={respondingReminder}
                           style={styles.reminderSnoozeButton}
                           activeOpacity={0.7}

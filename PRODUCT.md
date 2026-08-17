@@ -161,10 +161,10 @@ contract migration (`020`, ships with the code that needs it). See §11.
 | `deals` | **Add** `on_hold`, `on_hold_at`, `currency`, `rate_original`, `fx_rate` | 019 | §8.6, §8.7 |
 | `deals` | **Collapse** `status` to four lifecycle values | 020 | Stages describe the work now — §5 |
 | `deals` | **Add** retainer fields | Step 6 | §8.15 |
-| `deals` | **Remove** the four fixed date columns (`script_due_date`, `shoot_date`, `edit_done_date`, `publish_date`) | 022 | Stages are user-defined — §8.5. Held until reminders stop reading them (step 3) |
+| `deals` | **Removed** the four fixed date columns | 022 | Stages are user-defined — §8.5. Held until reminders stop reading them (step 3) |
 | `payments` | **Add** `amount_received`, `tds_amount`, `label`, `sort_order` | 019 | Invoiced ≠ received — §8.7 |
 | `payments` | **Drop the `unique` on `deal_id`** | 021 | A deal can have several payments. Flips PostgREST's embed from object to array, so it shipped with the code that reads the array |
-| `brands` | **Remove** `contact_person`, `contact_phone`, `contact_email` | 022 | Superseded by `brand_contacts`. Still written from the primary contact, because invoices, search and the WhatsApp nudges read them |
+| `brands` | **Removed** `contact_person`, `contact_phone`, `contact_email` | 022 | Superseded by `brand_contacts`. Still written from the primary contact, because invoices, search and the WhatsApp nudges read them |
 | `memberships` | **Add** per-area permission flags | Step 5 | §7 |
 
 `deals.rate` keeps its meaning throughout: always the INR figure, so every
@@ -176,7 +176,7 @@ existing query, report and total is unaffected by the currency work.
 |---|---|
 | `deal_stages` | name, order, due date, done, done_at — one row per stage per deal (**019**) |
 | `brand_contacts` | many POCs per brand: name, phone, email, role, is_primary (**019**) |
-| `push_tokens` | Expo push tokens per user per device |
+| `push_tokens` | Expo push tokens per user per device (**022**) |
 | `subscriptions` | plan, period, Razorpay ids, status, trial dates |
 | `expenses` | date, category, amount, note, receipt attachment |
 | `brand_aggregates` | anonymous cross-tenant reputation — **no creator identifiers** |
@@ -384,20 +384,24 @@ export-to-PDF, then find the chat, then attach.
 the only thing a brand's finance team ever sees from this product. It must look
 considered — not a generic template, and emphatically not a default.
 
-### 8.9 Reminders and notifications — **Change**
+### 8.9 Reminders and notifications — **Built**
 
-Today reminders are scheduled **on the device**. That is why they die when the
-app is not opened, and why they never work on the web.
+Reminders were scheduled **on the device**, which is why they died when the app
+was not opened and never worked on the web. They are now sent by a scheduled
+server job:
 
-**They become real push notifications**, which requires:
+- `push_tokens`, upserted on every signed-in launch. The token is reissued by
+  the OS on reinstall, so it is never trusted from a previous run.
+- `send-due-reminders`, an edge function woken every five minutes by `pg_cron`.
+- Reminders keyed to `deal_stages.id`, so a renamed or added stage is
+  remindable. The old fixed enum could not express one.
 
-- A `push_tokens` table, populated on sign-in per device.
-- A scheduled server job (Supabase `pg_cron` + an edge function) that wakes
-  periodically, finds due reminders, and sends via the Expo Push API.
-- The scheduling logic moves off the phone and onto the server.
+Two practical constraints: iOS push needs an **Apple Developer account**, and
+push **cannot be tested in Expo Go** — it needs a development build. Until both
+exist the app falls back to on-device scheduling automatically, and exactly one
+of the two mechanisms runs, so nothing is ever delivered twice.
 
-Note two practical constraints: iOS push needs an **Apple Developer account**,
-and push **cannot be tested in Expo Go** — it needs a development build.
+Setup steps are in `README.md`.
 
 **Categories**, each independently toggleable:
 
@@ -651,16 +655,15 @@ The remaining drops move to `021`, which ships with step 3: the `unique` on
 columns on `brands`. The date columns in particular cannot go until reminders
 are rekeyed, which is step 3's job — see below.
 
-**3 — Push notifications, and rekeying reminders.** `push_tokens`, the
-`pg_cron` job, the send function, moving reminder scheduling server-side.
+**3 — Push notifications, and rekeying reminders. Done.** `push_tokens`, the
+`pg_cron` job, the send function, reminder scheduling moved server-side, and
+reminders rekeyed to `deal_stages.id`.
 
-It also has to rekey reminders to `deal_stages.id`. Today they are keyed to a
-fixed `ReminderStage` enum (`script_due | shoot | editing | publish`) that
-user-defined stage names cannot satisfy. Until that lands, deal detail and new
-deal keep writing the four legacy date columns from the first four stages by
-position, purely to keep reminders firing. That bridge is lossy and known to
-be: a deal with six stages gets reminders for four of them. `021` drops the
-columns once this step removes the last reader.
+`022` also dropped the legacy columns, since this step removed their last
+readers: the four date columns on `deals` and the three contact columns on
+`brands`. `lib/reminders.ts` is gone with them — it was a second, parallel
+scheduler keyed to those columns, and the durable chain in
+`lib/reminderChains.ts` now owns the schedule outright.
 
 **4 — Subscriptions.** `subscriptions`, Razorpay integration, the trial gate,
 read-only state, our own GST invoicing.

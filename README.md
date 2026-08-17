@@ -87,8 +87,76 @@ Open your [Supabase dashboard](https://supabase.com) → your project →
     `payments`, and on-hold plus currency columns on `deals`. Purely additive:
     safe to run against a live app, and safe to re-run.
 
+20. `020_deal_status_lifecycle.sql` — collapses deal status from seven values
+    to four. Not additive: deploy the matching app build at the same time.
+21. `021_payments_per_deal.sql` — drops the `unique` on `payments.deal_id` so a
+    deal can carry an advance and a balance. Also not additive: that constraint
+    is what makes PostgREST return the payment as an object rather than an
+    array, so the build that reads the array ships with it.
+22. `022_push_and_stage_reminders.sql` — `push_tokens`, reminders keyed to
+    `deal_stages.id`, and the contract half of 019: drops the four date columns
+    on `deals` and the three contact columns on `brands`.
+
 Paste each file's contents and click **Run** before moving to the next one.
 Every migration from 005 onward is guarded and safe to re-run.
+
+## Push notifications
+
+Reminders are sent by a scheduled server job, not by the device. On-device
+scheduling only fires while the app has been opened recently, which meant a
+creator who ignored the app for a week silently got nothing.
+
+Three pieces, and all three are needed:
+
+### 1. Deploy the sender
+
+```bash
+npx supabase functions deploy send-due-reminders
+npx supabase secrets set CRON_SECRET="$(openssl rand -hex 32)"
+```
+
+Keep that secret. The function authenticates on it rather than on a user's
+JWT, because it reads across every workspace with the service-role key.
+
+### 2. Wake it on a schedule
+
+In the SQL editor, once:
+
+```sql
+create extension if not exists pg_cron;
+create extension if not exists pg_net;
+
+select cron.schedule(
+  'send-due-reminders',
+  '*/5 * * * *',
+  $$
+  select net.http_post(
+    url     := 'https://<project-ref>.supabase.co/functions/v1/send-due-reminders',
+    headers := jsonb_build_object('x-cron-secret', '<the CRON_SECRET you set>')
+  );
+  $$
+);
+```
+
+Five minutes is deliberate. Reminders fire at 9am local and nobody notices a
+sub-five-minute delay on a deadline, while a tighter schedule multiplies
+function invocations for no benefit.
+
+### 3. A development build
+
+**Push does not work in Expo Go.** It needs a development build, and iOS
+additionally needs an Apple Developer account. Until both exist, the app falls
+back to on-device scheduling automatically: `registerPushToken()` returns null,
+and `app/_layout.tsx` schedules locally instead. Exactly one of the two runs, so
+reminders are never delivered twice.
+
+To check the job is alive:
+
+```sql
+select * from cron.job_run_details
+where jobid = (select jobid from cron.job where jobname = 'send-due-reminders')
+order by start_time desc limit 10;
+```
 
 ## Conventions
 

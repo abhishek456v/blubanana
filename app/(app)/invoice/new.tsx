@@ -333,7 +333,7 @@ export default function NewInvoiceScreen() {
                             {deal.deliverable_description}
                           </Text>
                           <Text style={[styles.candidateMeta, { color: c.textMuted }]}>
-                            {deal.publish_date ? formatDate(deal.publish_date) : 'Not published'}
+                            {deal.status === 'active' ? 'Not published' : 'Published'}
                           </Text>
                         </View>
                         <Text style={[styles.candidateAmount, { color: c.textPrimary }]}>

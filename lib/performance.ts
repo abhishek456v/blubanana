@@ -1,5 +1,17 @@
 import type { Deliverable, DeliverableKind } from '@/types'
-import { paymentsInOrder, type DealWithPaymentSummary } from './deals'
+import { paymentsInOrder, stagesInOrder, type DealWithPaymentSummary } from './deals'
+
+/**
+ * When the work went out: the last stage that carries a date.
+ *
+ * Replaces `deal.publish_date`, which stopped existing when stages became
+ * user-defined (migration 019). The last dated stage is the publish day on a
+ * default schedule and whatever she called it otherwise.
+ */
+function lastStageDate(deal: DealWithPaymentSummary): string | null {
+  const dated = stagesInOrder(deal).filter((stage) => stage.due_date)
+  return dated.length > 0 ? dated[dated.length - 1].due_date : null
+}
 import { COMMERCIAL_KINDS } from '@/constants/labels'
 
 // Content performance.
@@ -177,7 +189,7 @@ export function buildArchive(deals: DealWithPaymentSummary[]): ArchiveYear[] {
   for (const deal of deals) {
     // Publish date is when the work actually existed; created_at is only a
     // fallback for deals logged but never shipped.
-    const reference = deal.publish_date ?? deal.created_at
+    const reference = lastStageDate(deal) ?? deal.created_at
     const year = Number(reference.slice(0, 4))
     if (!Number.isFinite(year)) continue
 
@@ -190,7 +202,7 @@ export function buildArchive(deals: DealWithPaymentSummary[]): ArchiveYear[] {
     .map(([year, yearDeals]) => ({
       year,
       deals: yearDeals.sort((a, b) =>
-        (b.publish_date ?? b.created_at).localeCompare(a.publish_date ?? a.created_at)
+        (lastStageDate(b) ?? b.created_at).localeCompare(lastStageDate(a) ?? a.created_at)
       ),
       totalEarned: yearDeals
         .flatMap((deal) => paymentsInOrder(deal))

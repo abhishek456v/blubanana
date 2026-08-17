@@ -28,7 +28,7 @@ import { File } from 'expo-file-system'
 import { Ionicons } from '@expo/vector-icons'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { getBrands } from '@/lib/brands'
-import { createDeal } from '@/lib/deals'
+import { createDeal, rescheduleWorkflow } from '@/lib/deals'
 import { defaultStageDrafts, replaceStages, type StageDraft } from '@/lib/dealStages'
 import { StageEditor } from '@/components/deal/StageEditor'
 import { getAllRatings, summarizeRatings } from '@/lib/reputation'
@@ -293,13 +293,9 @@ export default function NewDealScreen() {
         deliverable_description: deliverable.trim(),
         rate: rateNum,
         payment_terms: paymentTerms.trim() || null,
-        // Written from the first four stages by position, to keep the
-        // reminder system alive until step 3 rekeys it to deal_stages.id.
-        // Lossy by design: a deal with more stages gets reminders for four.
-        script_due_date: stageDrafts[0]?.due_date ?? null,
-        shoot_date: stageDrafts[1]?.due_date ?? null,
-        edit_done_date: stageDrafts[2]?.due_date ?? null,
-        publish_date: stageDrafts[3]?.due_date ?? null,
+        // Only to derive the payment due date; the schedule itself is written
+        // to deal_stages below.
+        publish_date: stageDrafts[stageDrafts.length - 1]?.due_date ?? null,
         notes: notes.trim() || null,
         ad_rights: adRightsEnabled
           ? {
@@ -315,6 +311,7 @@ export default function NewDealScreen() {
       // so without this a brand-new deal would carry no stages at all and
       // every screen asking "what is next" would have nothing to read.
       await replaceStages(created.id, stageDrafts)
+      await rescheduleWorkflow(created)
 
       // Line items. When the AI itemised the brief ("reel + 2 stories"), each
       // becomes its own row; otherwise the single deliverable field becomes
