@@ -63,13 +63,22 @@ export type DeliverableKind =
   | 'auto_dm'
   | 'other'
 
+/**
+ * Where a deal sits in its commercial lifecycle (migration 020).
+ *
+ * Deliberately says nothing about the work. Status used to carry the workflow
+ * too — intake, script_due, shooting, editing — which stopped being coherent
+ * once stages became user-defined in 019: a renamed stage left the pill
+ * lying, an added stage had no status to occupy, and nothing kept the two in
+ * sync. The stages describe the work; this describes the money.
+ *
+ * "Which stage is this deal on" is answered by the first stage that is not
+ * done, under whatever name the creator gave it.
+ */
 export type DealStatus =
-  | 'intake'
-  | 'script_due'
-  | 'shooting'
-  | 'editing'
-  | 'published'
-  | 'payment_awaited'
+  | 'active'
+  | 'live'
+  | 'unpaid'
   | 'paid'
 
 export type PaymentStatus = 'pending' | 'reminder_sent' | 'overdue' | 'paid'

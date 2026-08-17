@@ -30,6 +30,7 @@ import {
   respondToReminder,
   syncPaymentStatus,
   markPaymentReminderSent,
+  stagesInOrder,
   type DealWithPayments,
 } from '@/lib/deals'
 import { updateBrand } from '@/lib/brands'
@@ -56,10 +57,12 @@ import {
   type DeliverableInput,
 } from '@/lib/deliverables'
 import { DeliverablesCard } from '@/components/deal/DeliverablesCard'
-import { TimelineCard } from '@/components/deal/TimelineCard'
+import { StageEditor } from '@/components/deal/StageEditor'
+import { replaceStages, type StageDraft } from '@/lib/dealStages'
 import { MessageHistoryCard } from '@/components/deal/MessageHistoryCard'
 import type { DeliverableDraft } from '@/components/deal/DeliverableEditor'
 import {
+  Card,
   Chip,
   Figure,
   FigureBlock,
@@ -126,6 +129,7 @@ export default function DealDetailScreen() {
   const [deliverable, setDeliverable] = useState('')
   const [rate, setRate] = useState('')
   const [paymentTerms, setPaymentTerms] = useState('')
+  const [stageDrafts, setStageDrafts] = useState<StageDraft[]>([])
   const [scriptDue, setScriptDue] = useState('')
   const [shootDate, setShootDate] = useState('')
   const [editDone, setEditDone] = useState('')
@@ -210,6 +214,14 @@ export default function DealDetailScreen() {
         setPlatform(data.platform)
         setDeliverable(data.deliverable_description)
         setRate(data.rate.toString())
+        setStageDrafts(
+          stagesInOrder(data).map((stage) => ({
+            id: stage.id,
+            name: stage.name,
+            due_date: stage.due_date,
+            done: stage.done,
+          }))
+        )
         setScriptDue(data.script_due_date ?? '')
         setShootDate(data.shoot_date ?? '')
         setEditDone(data.edit_done_date ?? '')
@@ -411,14 +423,28 @@ export default function DealDetailScreen() {
     try {
       const parsedPublish = parseDate(publishDate)
 
+      await replaceStages(deal.id, stageDrafts)
+
+      // The four date columns are written from the first four stages, by
+      // position, purely to keep the reminder system alive: lib/reminders.ts
+      // and lib/reminderChains.ts are still keyed to a fixed ReminderStage
+      // enum that user-defined stages cannot satisfy.
+      //
+      // This bridge is lossy on purpose and known to be so. A deal with six
+      // stages gets reminders for the first four only. Step 3 rewrites
+      // reminders against deal_stages.id and server-side push, and the columns
+      // are dropped in the migration that ships with it.
+      const [s0, s1, s2, s3] = stageDrafts
+      const parsedPublishFromStages = s3?.due_date ?? parsedPublish
+
       await updateDeal(deal.id, {
         platform,
         deliverable_description: deliverable.trim(),
         rate: rateNum,
-        script_due_date: parseDate(scriptDue),
-        shoot_date: parseDate(shootDate),
-        edit_done_date: parseDate(editDone),
-        publish_date: parsedPublish,
+        script_due_date: s0?.due_date ?? null,
+        shoot_date: s1?.due_date ?? null,
+        edit_done_date: s2?.due_date ?? null,
+        publish_date: parsedPublishFromStages,
         live_link: liveLink.trim() || null,
         notes: notes.trim() || null,
       })
@@ -426,7 +452,7 @@ export default function DealDetailScreen() {
       await updatePaymentRecord(deal, deal.payment, {
         amount: rateNum,
         paymentTerms: paymentTerms.trim() || null,
-        publishDate: parsedPublish,
+        publishDate: parsedPublishFromStages,
       })
 
       // Ad rights are not written here. They are saved by the Deliverables
@@ -478,7 +504,7 @@ export default function DealDetailScreen() {
 
       setDeal((prev) =>
         prev
-          ? { ...prev, status: 'payment_awaited', live_link: trimmedLink, ...reminderFields }
+          ? { ...prev, status: 'unpaid', live_link: trimmedLink, ...reminderFields }
           : prev
       )
 
@@ -517,7 +543,7 @@ export default function DealDetailScreen() {
     const next = getNextStatus(deal.status)
     if (!next) return
 
-    if (deal.status === 'published') {
+    if (deal.status === 'live') {
       await handlePublishedToPaymentAwaited()
       return
     }
@@ -722,7 +748,7 @@ export default function DealDetailScreen() {
   // the expiry reminder and the Ad Library check read those, not the item.
   const adRightsItem = deliverables.find((item) => item.kind === 'ad_rights') ?? null
   const nextStatus = deal ? getNextStatus(deal.status) : null
-  const needsLiveLinkFirst = deal?.status === 'published' && !liveLink.trim()
+  const needsLiveLinkFirst = deal?.status === 'live' && !liveLink.trim()
 
   const inputStyle = [
     styles.input,
@@ -1161,23 +1187,14 @@ export default function DealDetailScreen() {
                   ) : null}
 
 
-                  {/* ── Timeline ─────────────────────────────────────────
-                      A stage tracker plus real date pickers, replacing the grid
-                      of hand-typed YYYY-MM-DD inputs this screen used to carry. */}
+                  {/* ── Stages ───────────────────────────────────────────
+                      Editable, because creators do not all work the same way
+                      (migration 019). Renaming, removing and adding stages all
+                      happen in place; there is no edit mode to enter. */}
                   <View style={styles.deliverablesBlock}>
-                    <TimelineCard
-                      status={deal.status}
-                      scriptDue={scriptDue}
-                      shootDate={shootDate}
-                      editDone={editDone}
-                      publishDate={publishDate}
-                      onChange={(field, value) => {
-                        if (field === 'script') setScriptDue(value)
-                        else if (field === 'shoot') setShootDate(value)
-                        else if (field === 'edit') setEditDone(value)
-                        else setPublishDate(value)
-                      }}
-                    />
+                    <Card>
+                      <StageEditor stages={stageDrafts} onChange={setStageDrafts} />
+                    </Card>
                   </View>
 
                 </View>
@@ -1382,7 +1399,7 @@ export default function DealDetailScreen() {
                   </TouchableOpacity>
 
                   {/* ── Content performance (Phase 2, manual entry) ───────── */}
-                  {(deal.status === 'published' || deal.status === 'payment_awaited' || deal.status === 'paid') && (
+                  {(deal.status === 'live' || deal.status === 'unpaid' || deal.status === 'paid') && (
                     <>
                       <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>
                         Performance

@@ -124,7 +124,11 @@ export async function createDeal(input: CreateDealInput): Promise<Deal> {
       edit_done_date: input.edit_done_date ?? null,
       publish_date: input.publish_date ?? null,
       notes: input.notes ?? null,
-      status: 'intake',
+      // Typed explicitly. Supabase's .insert() takes a loose object, so a stale
+      // literal here type-checks cleanly and fails at the database's check
+      // constraint instead — which is how 'intake' survived migration 020's
+      // rename everywhere else in this file.
+      status: 'active' satisfies DealStatus,
       ad_rights_granted: adRights?.ad_rights_granted ?? false,
       ad_rights_fee: adRights?.ad_rights_granted ? adRights.ad_rights_fee : null,
       ad_rights_duration_months: adRights?.ad_rights_granted ? adRights.ad_rights_duration_months : null,
@@ -380,15 +384,7 @@ export async function markPaymentReminderSent(
 
 // ─── Status advancement ──────────────────────────────────────────────────────
 
-export const STATUS_ORDER: DealStatus[] = [
-  'intake',
-  'script_due',
-  'shooting',
-  'editing',
-  'published',
-  'payment_awaited',
-  'paid',
-]
+export const STATUS_ORDER: DealStatus[] = ['active', 'live', 'unpaid', 'paid']
 
 export function getNextStatus(current: DealStatus): DealStatus | null {
   const idx = STATUS_ORDER.indexOf(current)

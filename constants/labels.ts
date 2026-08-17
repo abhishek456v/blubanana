@@ -17,13 +17,17 @@ export const PLATFORM_LABELS: Record<Platform, string> = {
   other: 'Other',
 }
 
+/**
+ * The lifecycle, in the creator's words (migration 020).
+ *
+ * Four values, not seven. The workflow words that used to live here — Script,
+ * Shoot, Edit — moved to the stages, where they are editable and where a
+ * creator's own name for a stage is shown instead of ours.
+ */
 export const STATUS_LABELS: Record<DealStatus, string> = {
-  intake: 'New',
-  script_due: 'Script',
-  shooting: 'Shoot',
-  editing: 'Edit',
-  published: 'Live',
-  payment_awaited: 'Unpaid',
+  active: 'Active',
+  live: 'Live',
+  unpaid: 'Unpaid',
   paid: 'Paid',
 }
 

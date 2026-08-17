@@ -6,25 +6,22 @@ import { STATUS_LABELS } from '@/constants/labels'
 
 // Colour is a second signal on top of the label, never the
 // only one, and every pill still carries its text.
-// neutral → nothing to react to yet (intake)
-// warning → active production, something is due (script/shoot/edit)
-// info    → waiting on an external party (published, payment awaited)
-// success → done (paid)
+// warning → the work is in progress, something is due
+// info    → waiting on someone else (published, or invoiced and unpaid)
+// success → settled
+// neutral is unused by deal status now, and kept for other callers.
 type PillVariant = 'neutral' | 'warning' | 'info' | 'success'
 
 function getVariant(status: DealStatus): PillVariant {
   switch (status) {
     case 'paid':
       return 'success'
-    case 'published':
-    case 'payment_awaited':
+    case 'unpaid':
       return 'info'
-    case 'script_due':
-    case 'shooting':
-    case 'editing':
+    case 'live':
+      return 'info'
+    case 'active':
       return 'warning'
-    case 'intake':
-      return 'neutral'
   }
 }
 

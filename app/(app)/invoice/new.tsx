@@ -45,6 +45,11 @@ interface DraftLine {
  * three invoices. And the totals are shown as they will print (including the
  * amount in words), so the document is checked before it exists, not after.
  */
+import type { DealStatus } from '@/types'
+
+/** A deal can only be invoiced once the work is out the door. */
+const BILLABLE_STATUSES: DealStatus[] = ['live', 'unpaid', 'paid']
+
 export default function NewInvoiceScreen() {
   const toast = useToast()
   const { dealId } = useLocalSearchParams<{ dealId: string }>()
@@ -122,7 +127,10 @@ export default function NewInvoiceScreen() {
               all.filter(
                 (other) =>
                   other.id !== deal.id &&
-                  ['published', 'payment_awaited', 'paid'].includes(other.status)
+                  // Typed, not a bare string array: an untyped one silently
+                  // matched nothing after migration 020 renamed these, with no
+                  // compiler error and no runtime error either.
+                  BILLABLE_STATUSES.includes(other.status)
               )
             )
           )

@@ -109,7 +109,7 @@ export function getAttentionItems(deals: DealWithPaymentSummary[]): AttentionIte
 
     // Published with no link is a dead end: the payment clock never starts,
     // so this silently costs her money if it goes unnoticed.
-    if (deal.status === 'published' && !deal.live_link) {
+    if (deal.status === 'live' && !deal.live_link) {
       candidates.push({
         deal,
         kind: 'link_missing',
