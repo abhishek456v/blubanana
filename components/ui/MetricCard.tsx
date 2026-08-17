@@ -4,7 +4,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated'
 import { FontFamily, Radius, Spacing, Typography } from '@/constants/design'
 import { Duration, staggerDelay } from '@/constants/motion'
 import { useTheme } from '@/hooks/useTheme'
-import { AnimatedNumber } from './AnimatedNumber'
+import { Figure } from './Figure'
 import { PressableScale } from './PressableScale'
 
 export type MetricTone = 'default' | 'success' | 'warning' | 'danger' | 'accent'
@@ -63,11 +63,14 @@ export function MetricCard({
         {label}
       </Text>
 
-      <AnimatedNumber
-        value={value}
-        format={format}
-        style={[styles.value, { color: valueColor[tone] }]}
-        numberOfLines={1}
+      <Figure
+        value={(format ?? String)(value)}
+        count
+        format={format ?? String}
+        size={Typography.display.fontSize}
+        color={valueColor[tone]}
+        bold
+        style={styles.value}
       />
 
       {hasTrend || caption ? (
@@ -130,8 +133,6 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.medium,
   },
   value: {
-    ...Typography.display,
-    fontFamily: FontFamily.display,
     marginTop: Spacing.xxs,
   },
   footer: {

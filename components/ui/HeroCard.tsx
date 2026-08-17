@@ -2,11 +2,16 @@ import type { ReactNode } from 'react'
 import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import Animated, { FadeInDown } from 'react-native-reanimated'
-import { Elevation, FontFamily, Radius, Spacing, Typography } from '@/constants/design'
+import { FontFamily, Radius, Spacing, Typography, type GradientName } from '@/constants/design'
 import { Duration } from '@/constants/motion'
-import { useTheme } from '@/hooks/useTheme'
-import { AnimatedNumber } from './AnimatedNumber'
+import { Figure } from './Figure'
+import { GradientCard } from './GradientCard'
 import { PressableScale } from './PressableScale'
+
+/** Text colours on a gradient card. Fixed, because the ground is fixed. */
+const ON_GRADIENT = '#FFFFFF'
+const ON_GRADIENT_MUTED = 'rgba(255,255,255,0.62)'
+const ON_GRADIENT_FAINT = 'rgba(255,255,255,0.18)'
 
 export interface HeroStat {
   label: string
@@ -36,22 +41,24 @@ export interface HeroCardProps {
    * `aside` is beside the figure and stays narrow; this gets the whole width.
    */
   chart?: ReactNode
+  /** Which gradient to sit on. `blue` unless the screen already has one. */
+  gradient?: GradientName
   onPress?: () => void
   style?: StyleProp<ViewStyle>
 }
 
 /**
- * The one inverted card on a screen (DESIGN.md §2).
+ * The one gradient card on a screen that leads with a single figure.
  *
- * `StatTile contrast` gave the right colour but the wrong weight: it is the
- * same size as the tiles beside it, so the most important number on the screen
- * read as one of four equals. This is deliberately bigger: a 40px figure, a
- * footer strip of supporting numbers, and room for a chart, so the eye lands
- * here first and everything else is read in relation to it.
+ * Where `GradientCard` is the bare surface, this is the standard arrangement
+ * on top of it: an eyebrow, one large figure with a sentence under it, an
+ * optional chart, and a footer strip of supporting numbers. Screens that need
+ * a different arrangement compose `GradientCard` directly, which is what Home
+ * and Money do.
  *
- * Near-black on the light theme, cream on the dark one. All text inside uses
- * `onContrast`, never `textPrimary`: the ground is inverted, so the page's
- * text colours would vanish into it.
+ * All text inside is fixed white rather than themed. The card carries its own
+ * ground in both themes, so the page's text colours would be wrong on it half
+ * the time.
  */
 export function HeroCard({
   label,
@@ -62,98 +69,79 @@ export function HeroCard({
   action,
   aside,
   chart,
+  gradient = 'blue',
   onPress,
   style,
 }: HeroCardProps) {
-  const { c, isDark } = useTheme()
-  const elevation = isDark ? Elevation.dark : Elevation.light
-
-  const body = (
-    <>
-      <View style={styles.topRow}>
-        <Text style={[styles.label, { color: c.onContrastMuted }]} numberOfLines={1}>
+  return (
+    <Animated.View entering={FadeInDown.duration(Duration.slow)} style={styles.wrapper}>
+      <GradientCard
+        gradient={gradient}
+        onPress={onPress}
+        style={[styles.card, style]}
+        accessibilityLabel={label}
+        action={
+          action ? (
+            // A ghost pill rather than a circular button: this one carries a
+            // word, and the disc is reserved for the icon-only affordance.
+            <PressableScale
+              onPress={action.onPress}
+              style={[styles.ghost, { backgroundColor: ON_GRADIENT_FAINT }]}
+              accessibilityRole="button"
+              accessibilityLabel={action.label}
+            >
+              <Text style={styles.ghostText}>{action.label}</Text>
+              <Ionicons name="arrow-forward" size={13} color={ON_GRADIENT} />
+            </PressableScale>
+          ) : null
+        }
+        title={undefined}
+      >
+        <Text style={styles.label} numberOfLines={1}>
           {label}
         </Text>
 
-        {action ? (
-          <PressableScale
-            onPress={action.onPress}
-            style={[styles.ghost, { backgroundColor: c.onContrastFaint }]}
-            accessibilityRole="button"
-            accessibilityLabel={action.label}
-          >
-            <Text style={[styles.ghostText, { color: c.onContrast }]}>{action.label}</Text>
-            <Ionicons name="arrow-forward" size={13} color={c.onContrast} />
-          </PressableScale>
-        ) : null}
-      </View>
-
-      <View style={styles.figureRow}>
-        <View style={styles.figureBlock}>
-          <AnimatedNumber
-            value={value}
-            format={format}
-            // The one figure on the screen that earns a count-up.
-            countOnMount
-            duration={900}
-            style={[styles.value, { color: c.onContrast }]}
-            numberOfLines={1}
-          />
-          {caption ? (
-            <Text style={[styles.caption, { color: c.onContrastMuted }]} numberOfLines={2}>
-              {caption}
-            </Text>
-          ) : null}
-        </View>
-
-        {aside ? <View style={styles.aside}>{aside}</View> : null}
-      </View>
-
-      {chart ? <View style={styles.chart}>{chart}</View> : null}
-
-      {stats?.length ? (
-        <View style={[styles.stats, { borderTopColor: c.onContrastFaint }]}>
-          {stats.map((stat) => (
-            <View key={stat.label} style={styles.stat}>
-              <View style={styles.statLabelRow}>
-                {stat.dotColor ? (
-                  <View style={[styles.dot, { backgroundColor: stat.dotColor }]} />
-                ) : null}
-                <Text style={[styles.statLabel, { color: c.onContrastMuted }]} numberOfLines={1}>
-                  {stat.label}
-                </Text>
-              </View>
-              <Text style={[styles.statValue, { color: c.onContrast }]} numberOfLines={1}>
-                {stat.value}
+        <View style={styles.figureRow}>
+          <View style={styles.figureBlock}>
+            <Figure
+              value={(format ?? String)(value)}
+              // The one figure on the screen that earns a count-up.
+              count
+              format={format ?? String}
+              size={40}
+              color={ON_GRADIENT}
+              bold
+            />
+            {caption ? (
+              <Text style={styles.caption} numberOfLines={2}>
+                {caption}
               </Text>
-            </View>
-          ))}
+            ) : null}
+          </View>
+
+          {aside ? <View style={styles.aside}>{aside}</View> : null}
         </View>
-      ) : null}
-    </>
-  )
 
-  const boxStyle = [
-    styles.card,
-    { backgroundColor: c.bgContrast },
-    elevation.sm,
-    style,
-  ]
+        {chart ? <View style={styles.chart}>{chart}</View> : null}
 
-  return (
-    <Animated.View entering={FadeInDown.duration(Duration.slow)} style={styles.wrapper}>
-      {onPress ? (
-        <PressableScale
-          onPress={onPress}
-          scaleTo={0.99}
-          style={boxStyle}
-          accessibilityRole="button"
-        >
-          {body}
-        </PressableScale>
-      ) : (
-        <View style={boxStyle}>{body}</View>
-      )}
+        {stats?.length ? (
+          <View style={[styles.stats, { borderTopColor: ON_GRADIENT_FAINT }]}>
+            {stats.map((stat) => (
+              <View key={stat.label} style={styles.stat}>
+                <View style={styles.statLabelRow}>
+                  {stat.dotColor ? (
+                    <View style={[styles.dot, { backgroundColor: stat.dotColor }]} />
+                  ) : null}
+                  <Text style={styles.statLabel} numberOfLines={1}>
+                    {stat.label}
+                  </Text>
+                </View>
+                <Figure value={stat.value} size={16} color={ON_GRADIENT} bold />
+              </View>
+            ))}
+          </View>
+        ) : null}
+      </GradientCard>
     </Animated.View>
   )
 }
@@ -164,21 +152,13 @@ const styles = StyleSheet.create({
   },
   card: {
     flex: 1,
-    // The largest surface on any screen, so the largest radius.
-    borderRadius: Radius.xl,
-    padding: Spacing.lg,
     gap: Spacing.md,
-  },
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Spacing.sm,
   },
   label: {
     ...Typography.label,
     fontFamily: FontFamily.medium,
     letterSpacing: 0.4,
+    color: ON_GRADIENT_MUTED,
   },
   ghost: {
     flexDirection: 'row',
@@ -191,10 +171,11 @@ const styles = StyleSheet.create({
   ghostText: {
     ...Typography.label,
     fontFamily: FontFamily.semiBold,
+    color: ON_GRADIENT,
   },
   // Takes the slack when the card is stretched to a taller neighbour, so the
   // figure centres in the space and the stats strip stays pinned to the
-  // bottom edge. Without this the card grew downward into dead black.
+  // bottom edge. Without this the card grew downward into dead space.
   figureRow: {
     flex: 1,
     flexDirection: 'row',
@@ -205,15 +186,11 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 4,
   },
-  value: {
-    fontFamily: FontFamily.displayBold,
-    fontSize: 40,
-    lineHeight: 47,
-  },
   caption: {
     ...Typography.caption,
     fontFamily: FontFamily.regular,
     lineHeight: 18,
+    color: ON_GRADIENT_MUTED,
   },
   chart: {
     marginTop: Spacing.lg,
@@ -244,10 +221,6 @@ const styles = StyleSheet.create({
   statLabel: {
     ...Typography.label,
     fontFamily: FontFamily.regular,
-  },
-  statValue: {
-    ...Typography.bodyStrong,
-    fontFamily: FontFamily.display,
-    fontSize: 16,
+    color: ON_GRADIENT_MUTED,
   },
 })

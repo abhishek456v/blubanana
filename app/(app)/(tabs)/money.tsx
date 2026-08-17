@@ -7,7 +7,8 @@ import { Ionicons } from '@expo/vector-icons'
 import { getDeals, type DealWithPaymentSummary } from '@/lib/deals'
 import { computeRevenueSummary } from '@/lib/revenue'
 import { getInvoices } from '@/lib/invoices'
-import { formatCurrency, formatCurrencyCompact } from '@/lib/format'
+import { getPaymentAlertTone } from '@/lib/paymentReminders'
+import { formatCurrency, formatCurrencyCompact, parseLocalDate } from '@/lib/format'
 import type { Invoice } from '@/types'
 import {
   ColumnGap,
@@ -19,36 +20,41 @@ import {
 } from '@/constants/design'
 import { useBreakpoint } from '@/hooks/useBreakpoint'
 import { useTheme } from '@/hooks/useTheme'
+import { EarningsCard } from '@/components/home'
+import { DealRow } from '@/components/DealRow'
 import {
-  BarChart,
-  Card,
-  DonutChart,
+  CircleButton,
+  CountBadge,
+  Figure,
+  FigureBlock,
+  GradientCard,
   HeaderUtilities,
-  HeroCard,
   ListRow,
+  OrbitRing,
   Reveal,
   RevealScrollView,
   ScreenHeader,
   Skeleton,
-  StatTile,
   useToast,
+  type OrbitItem,
 } from '@/components/ui'
 
 /**
  * Money.
  *
- * Leads with what was *locked* this month rather than what was received.
- * Creator payments land 45–90 days after the work, so a dashboard built only
- * on money received reports on a quarter that is already over. It cannot tell
- * her whether this month is going well while there is still time to act on it.
- * Received, pending and overdue all sit directly underneath.
+ * Three cards, in the order the questions get asked: what is still out, what
+ * actually arrived, and what this month has locked in.
  *
- * Same bento as Home (DESIGN.md §2, §4): one contrast card carrying the
- * headline, supporting tiles beside it, charts in cards below.
+ * "Locked" leads the third card rather than the screen because creator
+ * payments land 45 to 90 days after the work; a screen built only on money
+ * received reports on a quarter that is already over and cannot tell her
+ * whether *this* month is going well while there is still time to act on it.
+ * But what she is owed is the thing she opens this tab to check, so it goes
+ * first.
  */
 export default function MoneyScreen() {
   const { c } = useTheme()
-  const { isWide, isDesktop } = useBreakpoint()
+  const { isDesktop } = useBreakpoint()
   const router = useRouter()
   const toast = useToast()
 
@@ -88,149 +94,177 @@ export default function MoneyScreen() {
 
   const summary = useMemo(() => computeRevenueSummary(deals), [deals])
 
-  const chartData = useMemo(
-    () => summary.monthlyTotals.map((month) => ({ label: month.label, value: month.total })),
-    [summary]
-  )
-
   const onTrack = Math.max(summary.pending.value - summary.overdue.value, 0)
   const collected = summary.monthlyTotals.reduce((sum, month) => sum + month.total, 0)
 
-  const hero = (
-    <HeroCard
-      label="Locked this month"
-      value={summary.lockedThisMonth.value}
-      format={formatCurrency}
-      caption={
-        summary.lockedThisMonth.count === 0
-          ? 'No new deals logged this month yet. This is the number that moves first.'
-          : `Across ${summary.lockedThisMonth.count} new ${summary.lockedThisMonth.count === 1 ? 'deal' : 'deals'} signed this month.`
-      }
-      action={{ label: 'Invoices', onPress: () => router.push('/(app)/invoices' as never) }}
-      stats={[
-        { label: 'Landed', value: formatCurrencyCompact(summary.earnedThisMonth.value) },
-        { label: 'Still out', value: formatCurrencyCompact(onTrack), dotColor: c.accent },
-        {
-          label: 'Overdue',
-          value: formatCurrencyCompact(summary.overdue.value),
-          dotColor: c.danger,
-        },
-      ]}
-      aside={
-        isWide && summary.pending.value > 0 ? (
-          <DonutChart
-            segments={[
-              { label: 'On track', value: onTrack, color: c.accent },
-              { label: 'Overdue', value: summary.overdue.value, color: c.danger },
-            ]}
-            size={108}
-            strokeWidth={11}
-            trackColor={c.onContrastFaint}
-            textColor={c.onContrast}
-            mutedTextColor={c.onContrastMuted}
-            centerLabel={formatCurrencyCompact(summary.pending.value)}
-            centerCaption="unpaid"
-          />
-        ) : null
-      }
-    />
+  /** Every unpaid deal, soonest due first. The list under the cards. */
+  const unpaid = useMemo(
+    () =>
+      deals
+        .filter((deal) => deal.payment && deal.payment.status !== 'paid')
+        .sort((a, b) =>
+          (a.payment!.due_date ?? '9999').localeCompare(b.payment!.due_date ?? '9999')
+        ),
+    [deals]
   )
 
-  const tiles = (
-    <View style={isDesktop ? styles.tileColumn : styles.tileRow}>
-      <StatTile
-        label="Landed this month"
-        value={summary.earnedThisMonth.value}
-        format={formatCurrency}
-        tone="success"
-        caption={`${summary.earnedThisMonth.count} ${summary.earnedThisMonth.count === 1 ? 'payment' : 'payments'} received`}
-        index={1}
-      />
-      <StatTile
-        label="Average deal"
-        value={summary.averageDealValue}
-        format={formatCurrency}
-        caption={`${deals.length} ${deals.length === 1 ? 'deal' : 'deals'} on record`}
-        index={2}
-      />
-      <StatTile
-        label="Deals closed"
-        value={summary.dealsClosed}
-        caption="paid in full, all time"
-        index={3}
-      />
-    </View>
-  )
+  /**
+   * Who is holding money, overdue first. Drives the blue card's ring.
+   *
+   * Deduplicated by brand, not by deal: the ring answers "who owes me", and a
+   * brand running two deals at once would otherwise occupy two chips with the
+   * same two initials, which reads as a rendering fault rather than as two
+   * invoices.
+   */
+  const debtors = useMemo<OrbitItem[]>(() => {
+    const overdueFirst = [...unpaid].sort((a, b) => {
+      const aLate = getPaymentAlertTone(a.payment!) === 'overdue' ? 0 : 1
+      const bLate = getPaymentAlertTone(b.payment!) === 'overdue' ? 0 : 1
+      return aLate - bLate
+    })
 
-  const chart = (
-    <Card dense={isDesktop} style={styles.blockCard}>
-      <View style={styles.cardHead}>
-        <View style={styles.cardHeadText}>
-          <Text style={[styles.cardTitle, { color: c.textPrimary }]}>Last six months</Text>
-          <Text style={[styles.cardSub, { color: c.textMuted }]}>
-            Payments received. Tap a bar for the exact figure.
-          </Text>
-        </View>
-        <Text style={[styles.cardFigure, { color: c.textPrimary }]}>
-          {formatCurrencyCompact(collected)}
-        </Text>
+    const seen = new Set<string>()
+    const chips: OrbitItem[] = []
+    for (const deal of overdueFirst) {
+      const brandName = deal.brand?.name ?? 'Unknown brand'
+      if (seen.has(brandName)) continue
+      seen.add(brandName)
+      chips.push({ id: brandName, label: brandName })
+      if (chips.length === 6) break
+    }
+    return chips
+  }, [unpaid])
+
+  const sixMonthCount = useMemo(() => {
+    const now = new Date()
+    const cutoff = new Date(now.getFullYear(), now.getMonth() - 5, 1)
+    return deals.filter((deal) => {
+      const paidDate = deal.payment?.paid_date
+      return deal.payment?.status === 'paid' && paidDate && parseLocalDate(paidDate) >= cutoff
+    }).length
+  }, [deals])
+
+  const stillOut = (
+    <GradientCard
+      gradient="blue"
+      title="Still out"
+      style={styles.fill}
+      onPress={() => router.push('/(app)/invoices' as never)}
+      accessibilityLabel={`Still out: ${formatCurrency(summary.pending.value)} across ${summary.pending.count} unpaid deals.`}
+      action={
+        <CircleButton icon="arrow-forward" iconRotate={-45} accessibilityLabel="Open invoices" />
+      }
+    >
+      <FigureBlock
+        label={
+          summary.pending.count === 1
+            ? 'across 1 unpaid deal'
+            : `across ${summary.pending.count} unpaid deals`
+        }
+        figure={
+          <Figure value={formatCurrency(summary.pending.value)} size="hero" color="#FFFFFF" bold />
+        }
+      />
+
+      <View style={styles.ringSlot}>
+        <OrbitRing
+          center={debtors[0] ?? null}
+          items={debtors.slice(1)}
+          size={170}
+        />
       </View>
-      <BarChart
-        data={chartData}
-        height={140}
-        fill={isDesktop}
-        formatValue={formatCurrencyCompact}
-      />
-    </Card>
+
+      <View style={styles.row}>
+        <FigureBlock
+          reverse
+          label="On track"
+          figure={<Figure value={formatCurrencyCompact(onTrack)} size="lg" color="#FFFFFF" />}
+        />
+        <FigureBlock
+          reverse
+          align="right"
+          label="Overdue"
+          figure={
+            <Figure
+              value={formatCurrencyCompact(summary.overdue.value)}
+              size="lg"
+              // Overdue keeps the card's own white rather than turning red.
+              // On a saturated blue ground a red figure reads as a rendering
+              // fault, and the label already names it; the amount being
+              // non-zero is the alarm.
+              color="#FFFFFF"
+            />
+          }
+        />
+      </View>
+    </GradientCard>
   )
 
-  const side = (
-    <View style={isDesktop ? styles.sideColumn : styles.stack}>
-      {summary.bestPayingBrand ? (
-        <Card dense={isDesktop} style={styles.sideCard}>
-          <Text style={[styles.cardSub, { color: c.textMuted }]}>Best payer</Text>
-          <Text style={[styles.bestBrand, { color: c.textPrimary }]} numberOfLines={1}>
-            {summary.bestPayingBrand.name}
-          </Text>
-          <Text style={[styles.cardSub, { color: c.textSecondary }]}>
-            {formatCurrency(summary.bestPayingBrand.total)} paid to you so far
-          </Text>
-        </Card>
-      ) : null}
+  const thisMonth = (
+    <GradientCard gradient="ink" title="This month" style={styles.fill}>
+      <FigureBlock
+        label={
+          summary.lockedThisMonth.count === 1
+            ? 'locked in 1 new deal'
+            : `locked in ${summary.lockedThisMonth.count} new deals`
+        }
+        figure={
+          <Figure
+            value={formatCurrency(summary.lockedThisMonth.value)}
+            size="hero"
+            color="#FFFFFF"
+            bold
+          />
+        }
+      />
 
+      <View style={styles.lines}>
+        <StatLine label="Average deal" value={formatCurrency(summary.averageDealValue)} />
+        <StatLine label="Deals on record" value={String(deals.length)} />
+        <StatLine label="Paid in full, all time" value={String(summary.dealsClosed)} />
+        {summary.bestPayingBrand ? (
+          <StatLine
+            label={`Best payer · ${summary.bestPayingBrand.name}`}
+            value={formatCurrencyCompact(summary.bestPayingBrand.total)}
+          />
+        ) : null}
+      </View>
+    </GradientCard>
+  )
+
+  const links = (
+    <View style={styles.links}>
       {/* Invoices live here and nowhere else. They used to be reachable from
           both Money and Settings, which meant neither felt like where they
           belonged. */}
-      <View style={styles.links}>
-        <ListRow
-          title="Invoices"
-          subtitle={
-            invoices.length === 0
-              ? 'Bill a brand with GST'
-              : `${invoices.length} ${invoices.length === 1 ? 'invoice' : 'invoices'} raised`
-          }
-          leading={
-            <View style={[styles.linkIcon, { backgroundColor: c.accentLight }]}>
-              <Ionicons name="document-text" size={18} color={c.accent} />
-            </View>
-          }
-          showChevron
-          onPress={() => router.push('/(app)/invoices' as never)}
-          index={0}
-        />
-        <ListRow
-          title="Year in review"
-          subtitle="Income, TDS and GST for the financial year"
-          leading={
-            <View style={[styles.linkIcon, { backgroundColor: c.accentLight }]}>
-              <Ionicons name="bar-chart" size={18} color={c.accent} />
-            </View>
-          }
-          showChevron
-          onPress={() => router.push('/(app)/annual-report' as never)}
-          index={1}
-        />
-      </View>
+      <ListRow
+        title="Invoices"
+        subtitle={
+          invoices.length === 0
+            ? 'Bill a brand with GST'
+            : `${invoices.length} ${invoices.length === 1 ? 'invoice' : 'invoices'} raised`
+        }
+        leading={
+          <View style={[styles.linkIcon, { backgroundColor: c.accentLight }]}>
+            <Ionicons name="document-text" size={18} color={c.accent} />
+          </View>
+        }
+        showChevron
+        onPress={() => router.push('/(app)/invoices' as never)}
+        index={0}
+      />
+      <ListRow
+        title="Year in review"
+        subtitle="Income, TDS and GST for the financial year"
+        leading={
+          <View style={[styles.linkIcon, { backgroundColor: c.accentLight }]}>
+            <Ionicons name="bar-chart" size={18} color={c.accent} />
+          </View>
+        }
+        showChevron
+        onPress={() => router.push('/(app)/annual-report' as never)}
+        index={1}
+      />
     </View>
   )
 
@@ -263,31 +297,72 @@ export default function MoneyScreen() {
           ]}
         >
           {loading ? (
-            <View style={styles.stack}>
-              <Skeleton height={200} radius={Radius.lg} />
-            </View>
+            <Skeleton height={420} radius={Radius.card} />
           ) : (
-            <View style={isDesktop ? styles.rowA : styles.stack}>
-              <View style={isDesktop ? styles.heroCell : undefined}>{hero}</View>
-              <View style={isDesktop ? styles.asideCell : undefined}>{tiles}</View>
+            <View style={isDesktop ? styles.cardRow : styles.cardStack}>
+              <View style={isDesktop ? styles.cardCell : undefined}>{stillOut}</View>
+              <View style={isDesktop ? styles.cardCell : undefined}>
+                {/* The same card Home carries. The six-month series has one
+                    correct shape in this app, and drawing it twice in two
+                    idioms is how two screens end up disagreeing about it. */}
+                <EarningsCard
+                  received={collected}
+                  count={sixMonthCount}
+                  monthly={summary.monthlyTotals}
+                  onPress={() => router.push('/(app)/annual-report' as never)}
+                />
+              </View>
+              <View style={isDesktop ? styles.cardCell : undefined}>{thisMonth}</View>
             </View>
           )}
         </ScreenHeader>
 
         {loading ? (
-          <View style={styles.stack}>
-            <Skeleton height={190} radius={Radius.md} />
-          </View>
+          <Skeleton height={140} radius={Radius.lg} />
         ) : (
-          <View style={isDesktop ? styles.rowB : styles.stack}>
-            <Reveal style={isDesktop ? styles.chartCell : undefined}>{chart}</Reveal>
-            <Reveal delay={70} style={isDesktop ? styles.sideCell : undefined}>
-              {side}
-            </Reveal>
-          </View>
+          <>
+            <Reveal>{links}</Reveal>
+
+            {/* The deals behind the blue card's figure. Money used to state
+                what was outstanding and then give no way to see *which*
+                deals made it up without going to Invoices, which lists
+                something else entirely. */}
+            {unpaid.length > 0 ? (
+              <Reveal delay={70}>
+                <View style={styles.sectionHead}>
+                  <Text style={[styles.sectionTitle, { color: c.textPrimary }]}>
+                    Waiting on payment
+                  </Text>
+                  <CountBadge count={unpaid.length} size={26} />
+                </View>
+                {unpaid.map((deal, index) => (
+                  <DealRow
+                    key={deal.id}
+                    deal={deal}
+                    index={index}
+                    variant="plain"
+                    dense={isDesktop}
+                    onPress={() => router.push(`/(app)/deal/${deal.id}` as never)}
+                  />
+                ))}
+              </Reveal>
+            ) : null}
+          </>
         )}
       </RevealScrollView>
     </SafeAreaView>
+  )
+}
+
+/** A label and a figure on one line, for the ink card's supporting numbers. */
+function StatLine({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.line}>
+      <Text style={styles.lineLabel} numberOfLines={1}>
+        {label}
+      </Text>
+      <Figure value={value} size="sm" color="#FFFFFF" />
+    </View>
   )
 }
 
@@ -305,86 +380,72 @@ const styles = StyleSheet.create({
   headerFlush: {
     paddingHorizontal: 0,
   },
-  stack: {
-    gap: Spacing.base,
-  },
-  rowA: {
-    flexDirection: 'row',
-    gap: ColumnGap,
-    alignItems: 'stretch',
-  },
-  heroCell: {
-    flex: 1.55,
-  },
-  asideCell: {
-    flex: 1,
-  },
-  rowB: {
-    flexDirection: 'row',
-    gap: ColumnGap,
-    alignItems: 'stretch',
-  },
-  chartCell: {
-    flex: 1.35,
-  },
-  sideCell: {
-    flex: 1,
-  },
-  tileColumn: {
-    flex: 1,
-    gap: ColumnGap,
-  },
-  tileRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.base,
-  },
-  sideColumn: {
-    flex: 1,
-    gap: ColumnGap,
-  },
-  blockCard: {
-    flex: 1,
-    padding: Spacing.md,
+
+  cardStack: {
     gap: Spacing.md,
   },
-  sideCard: {
-    padding: Spacing.md,
-    gap: Spacing.xxs,
-  },
-  cardHead: {
+  cardRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    gap: ColumnGap,
+    alignItems: 'stretch',
+  },
+  cardCell: {
+    flex: 1,
+  },
+  fill: {
+    flex: 1,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
     justifyContent: 'space-between',
     gap: Spacing.sm,
   },
-  cardHeadText: {
+  // Absorbs the extra height when a taller card in the row sets it. The flex
+  // is on the slot, not the ring: the ring is a fixed-size SVG and stretching
+  // it ovals the circles.
+  ringSlot: {
+    marginVertical: Spacing.lg,
     flex: 1,
-    gap: Spacing.xxs,
+    justifyContent: 'center',
   },
-  cardTitle: {
-    ...Typography.heading,
-    fontFamily: FontFamily.display,
+  lines: {
+    marginTop: 'auto',
+    paddingTop: Spacing.xl,
+    gap: Spacing.base,
   },
-  cardSub: {
-    ...Typography.label,
+  line: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.md,
+  },
+  lineLabel: {
+    flex: 1,
+    ...Typography.caption,
     fontFamily: FontFamily.regular,
+    color: 'rgba(255,255,255,0.62)',
   },
-  cardFigure: {
-    fontFamily: FontFamily.displayBold,
-    fontSize: 19,
-  },
-  bestBrand: {
-    ...Typography.title,
-    fontFamily: FontFamily.display,
-  },
+
   links: {
     gap: Spacing.base,
+    marginTop: Spacing.md,
+  },
+  sectionHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.sm,
+  },
+  sectionTitle: {
+    ...Typography.title,
+    fontFamily: FontFamily.display,
   },
   linkIcon: {
     width: 38,
     height: 38,
-    borderRadius: Radius.sm,
+    borderRadius: Radius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },

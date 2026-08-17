@@ -54,7 +54,10 @@ export function BrandAvatar({ name, size = 36 }: BrandAvatarProps) {
 
 const styles = StyleSheet.create({
   avatar: {
-    borderRadius: Radius.sm,
+    // Circular, matching the brand chips on the orbit rings. A rounded square
+    // here and a circle there reads as two different products; the chip is the
+    // same object in both places.
+    borderRadius: Radius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },

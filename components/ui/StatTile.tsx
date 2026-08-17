@@ -4,7 +4,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated'
 import { Elevation, FontFamily, Radius, Spacing, Typography } from '@/constants/design'
 import { Duration, staggerDelay } from '@/constants/motion'
 import { useTheme } from '@/hooks/useTheme'
-import { AnimatedNumber } from './AnimatedNumber'
+import { Figure } from './Figure'
 import { PressableScale } from './PressableScale'
 import { Sparkline } from './Sparkline'
 
@@ -85,11 +85,13 @@ export function StatTile({
       </Text>
 
       <View style={styles.valueRow}>
-        <AnimatedNumber
-          value={value}
-          format={format}
-          style={[styles.value, { color: valueColor }]}
-          numberOfLines={1}
+        <Figure
+          value={(format ?? String)(value)}
+          count
+          format={format ?? String}
+          size={dense ? 22 : 26}
+          color={valueColor}
+          bold
         />
         {hasTrend ? (
           <View style={styles.trend}>
@@ -172,15 +174,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'baseline',
     gap: Spacing.sm,
-  },
-  value: {
-    fontFamily: FontFamily.displayBold,
-    fontSize: 26,
-    lineHeight: 32,
-  },
-  valueDense: {
-    fontSize: 22,
-    lineHeight: 28,
   },
   trend: {
     flexDirection: 'row',
