@@ -1,3 +1,4 @@
+import { addMonths } from './format'
 import type { Deal } from '@/types'
 import { scheduleAsync, cancelAsync } from './notifications'
 
@@ -25,9 +26,7 @@ export function calculateAdRightsExpiry(
   durationMonths: number | null
 ): string | null {
   if (!startDate || !durationMonths) return null
-  const [year, month, day] = startDate.split('-').map(Number)
-  const date = new Date(year, month - 1 + durationMonths, day)
-  return date.toISOString().split('T')[0]
+  return addMonths(startDate, durationMonths)
 }
 
 export interface AdRightsReminderFields {

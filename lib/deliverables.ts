@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { addMonths } from './format'
 import { getWorkspaceId } from './workspace'
 import type { Deliverable, DeliverableKind, Platform } from '@/types'
 import {
@@ -266,14 +267,7 @@ export function adRightsPerMonth(fee: number | null, months: number | null): num
  */
 export function adRightsExpiry(startsOn: string | null, months: number | null): string | null {
   if (!startsOn || !months || months <= 0) return null
-
-  const [year, month, day] = startsOn.split('-').map(Number)
-  const start = new Date(year, month - 1, day)
-  start.setMonth(start.getMonth() + months)
-
-  const mm = String(start.getMonth() + 1).padStart(2, '0')
-  const dd = String(start.getDate()).padStart(2, '0')
-  return `${start.getFullYear()}-${mm}-${dd}`
+  return addMonths(startsOn, months)
 }
 
 /** Human summary for a row: "Story ×3", "Reel", "Ad rights · 6 months". */

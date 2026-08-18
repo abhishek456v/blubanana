@@ -100,6 +100,35 @@ export function financialYearOf(date: Date = new Date()): string {
 }
 
 /** `2026-08-14`: the storage format, from a Date. */
+/**
+ * `YYYY-MM-DD` shifted by whole months, staying in local time.
+ *
+ * Deliberately built from local date components rather than via `toISOString`.
+ * `new Date(y, m, d)` is local midnight, and in any timezone ahead of UTC —
+ * IST is +5:30, so this is every user of this app — that instant is still the
+ * previous day in UTC. Serialising it with `toISOString()` therefore returns a
+ * date one day early. `lib/adRights.ts` did exactly that until 026, storing
+ * every ad-rights expiry a day short and firing its reminder a day early.
+ *
+ * Month-end is clamped, not overflowed: 31 January plus one month is 28
+ * February, not 3 March. Two reasons. It is how a six-month contract dated the
+ * 31st is read by the people signing it, and it is what Postgres's
+ * `date + interval` does — so the backfill in 026 and every future computation
+ * here agree instead of drifting a few days apart on month-end contracts.
+ * `Date.setMonth` alone overflows, which is why the day is set separately.
+ */
+export function addMonths(dateStr: string, months: number): string {
+  const [year, month, day] = dateStr.split('-').map(Number)
+  const target = new Date(year, month - 1 + months, 1)
+  const lastDayOfTargetMonth = new Date(
+    target.getFullYear(),
+    target.getMonth() + 1,
+    0
+  ).getDate()
+  target.setDate(Math.min(day, lastDayOfTargetMonth))
+  return toDateString(target)
+}
+
 export function toDateString(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
