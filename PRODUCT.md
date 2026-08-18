@@ -589,11 +589,21 @@ and expenses over a period she chooses — as a starting point, she adjusts and
 adds anything the app does not know about, and it computes what she should set
 aside. A calculator she feeds is honest. A notification that guesses is not.
 
-**Annual report** — **Built**. Reports gross and net now that expenses exist.
-Still to do: making it **editable**. The Indian financial year,
-April to March, with income, TDS and GST. It reports **gross and net**, so
-"tax-ready" means taxable income rather than turnover. Creators need to adjust
-figures their app never saw, so the report is editable before export.
+**Annual report** — **Built**, and correctable (034). The Indian financial
+year, April to March, with income, TDS and GST. It reports **gross and net**,
+so "tax-ready" means taxable income rather than turnover.
+
+A creator can add what the app never saw — AdSense, affiliate income, a deal
+paid outside CreatorDesk, an expense paid in cash, TDS showing in her 26AS from
+a brand that never invoiced here. Every field accepts a negative, because a
+refund is a correction downward and a form that only takes positives forces her
+to fudge it somewhere else.
+
+**Additions, never overwrites.** The report keeps showing both sides — what
+came from her deals, and what she added, with her note explaining it. Letting
+her edit the totals directly would let a typo silently replace a figure the app
+can prove, and neither she nor her accountant would ever know it had. That is
+the same failure as reporting turnover as income, one level down.
 
 ### 8.14 Ad rights — **Built**
 
