@@ -222,7 +222,7 @@ without going through an email link. Re-enable it before shipping.
 ### 4. Deploy the AI intake edge functions
 
 Screenshot and voice-note intake call OpenAI from two Supabase Edge Functions
-(`extract-deal`, `transcribe-audio`) so the `OPENAI_API_KEY` never ships in the
+(`extract-deal`, `transcribe-audio`, `suggest-rates`) so the `OPENAI_API_KEY` never ships in the
 client bundle.
 
 ```bash
@@ -232,6 +232,7 @@ supabase link --project-ref <your-project-ref>   # find this in the dashboard UR
 supabase secrets set OPENAI_API_KEY=sk-proj-...
 supabase functions deploy extract-deal
 supabase functions deploy transcribe-audio
+supabase functions deploy suggest-rates
 ```
 
 Both functions require a valid Supabase auth session by default (no extra
@@ -326,6 +327,7 @@ supabase/
   functions/
     extract-deal/       GPT-4o extraction — screenshot (vision) or voice transcript in, deal fields out
     transcribe-audio/   Whisper transcription for recorded voice notes
+    suggest-rates/      a starting price for deliverables with no history — gap-fill only (§8.11)
     _shared/             CORS headers + the extraction prompt shared by both intake paths
 types/
   index.ts             TypeScript interfaces for all four data-model objects, plus ExtractedDealFields

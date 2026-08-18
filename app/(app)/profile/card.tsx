@@ -5,7 +5,14 @@ import { useFocusEffect } from '@react-navigation/core'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import * as ImagePicker from 'expo-image-picker'
-import { cardIsThin, getProfileCardData, toCardContent } from '@/lib/profileCard'
+import {
+  cardIsThin,
+  getProfileCardData,
+  missingRateKinds,
+  suggestMissingRates,
+  toCardContent,
+  type ProfileCardData,
+} from '@/lib/profileCard'
 import { buildProfileCardHtml, type CardContent } from '@/lib/profileCardHtml'
 import {
   MAX_PROFILE_PHOTOS,
@@ -68,6 +75,9 @@ export default function ProfileCardScreen() {
   const [cardPhotoId, setCardPhotoId] = useState<string | null>(null)
   const [photoUri, setPhotoUri] = useState<string | null>(null)
   const [thin, setThin] = useState(false)
+  // Kept so the editor can ask for suggestions against the real figures rather
+  // than against whatever she has already edited on the card.
+  const [derived, setDerived] = useState<ProfileCardData | null>(null)
 
   const [editing, setEditing] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -81,6 +91,7 @@ export default function ProfileCardScreen() {
       ])
 
       setContent(toCardContent(data))
+      setDerived(data)
       setThin(cardIsThin(data))
       setTheme(resolveTheme(profile?.card_theme, profile?.niche))
       setPhotos(saved)
@@ -359,6 +370,13 @@ export default function ProfileCardScreen() {
           content={content}
           onClose={() => setEditing(false)}
           onApply={setContent}
+          // Absent rather than disabled when she already prices everything:
+          // an offer that can only return nothing is worse than no offer.
+          onRequestSuggestions={
+            derived && missingRateKinds(derived).length > 0
+              ? () => suggestMissingRates(derived)
+              : undefined
+          }
         />
       </SafeAreaView>
     </ModalSheet>

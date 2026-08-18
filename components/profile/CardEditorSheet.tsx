@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import type { CardContent } from '@/lib/profileCardHtml'
+import type { RateSuggestion } from '@/lib/profileCard'
 import { FontFamily, HitSlop, Radius, Spacing, Typography } from '@/constants/design'
 import { useTheme } from '@/hooks/useTheme'
 import { Button, PressableScale, Sheet, TextField } from '@/components/ui'
@@ -11,6 +12,12 @@ export interface CardEditorSheetProps {
   content: CardContent
   onClose: () => void
   onApply: (next: CardContent) => void
+  /**
+   * Fetches proposed rates for formats with no history. Omitted when there are
+   * no gaps to fill, which is also why the button below is absent rather than
+   * disabled — an offer that does nothing is worse than no offer.
+   */
+  onRequestSuggestions?: () => Promise<RateSuggestion[]>
 }
 
 /**
@@ -26,16 +33,53 @@ export interface CardEditorSheetProps {
  * time it opens, so a rate she adjusted for one negotiation cannot quietly
  * follow her into a send six months later when it is no longer true.
  */
-export function CardEditorSheet({ visible, content, onClose, onApply }: CardEditorSheetProps) {
+export function CardEditorSheet({
+  visible,
+  content,
+  onClose,
+  onApply,
+  onRequestSuggestions,
+}: CardEditorSheetProps) {
   const { c } = useTheme()
   const [draft, setDraft] = useState<CardContent>(content)
+  const [suggestions, setSuggestions] = useState<RateSuggestion[]>([])
+  const [suggesting, setSuggesting] = useState(false)
+  const [suggestFailed, setSuggestFailed] = useState(false)
 
   // Reseeded on open rather than on mount: the sheet outlives a single edit,
   // and reopening it should show what is on the card now, not what it showed
   // the first time.
   useEffect(() => {
-    if (visible) setDraft(content)
+    if (visible) {
+      setDraft(content)
+      setSuggestions([])
+      setSuggestFailed(false)
+    }
   }, [visible, content])
+
+  async function handleSuggest() {
+    if (!onRequestSuggestions || suggesting) return
+    setSuggesting(true)
+    setSuggestFailed(false)
+    try {
+      setSuggestions(await onRequestSuggestions())
+    } catch {
+      setSuggestFailed(true)
+    } finally {
+      setSuggesting(false)
+    }
+  }
+
+  function acceptSuggestion(suggestion: RateSuggestion) {
+    setDraft((prev) => ({
+      ...prev,
+      rates: [
+        ...prev.rates,
+        { label: suggestion.label, value: `₹${suggestion.rate.toLocaleString('en-IN')}` },
+      ],
+    }))
+    setSuggestions((prev) => prev.filter((s) => s.kind !== suggestion.kind))
+  }
 
   function set<K extends keyof CardContent>(key: K, value: CardContent[K]) {
     setDraft((prev) => ({ ...prev, [key]: value }))
@@ -163,6 +207,53 @@ export function CardEditorSheet({ visible, content, onClose, onApply }: CardEdit
           <Text style={[styles.addText, { color: c.accentText }]}>Add a rate</Text>
         </PressableScale>
 
+        {/* Only for formats with no history. Her own rates are never revised
+            by this, and a suggestion is not on the card until she adds it. */}
+        {onRequestSuggestions ? (
+          <PressableScale
+            onPress={handleSuggest}
+            disabled={suggesting}
+            accessibilityRole="button"
+            accessibilityLabel="Suggest rates for formats you have not sold"
+            style={[styles.add, { borderColor: c.borderStrong, marginTop: Spacing.sm }]}
+          >
+            <Ionicons name="sparkles-outline" size={16} color={c.accent} />
+            <Text style={[styles.addText, { color: c.accentText }]}>
+              {suggesting ? 'Thinking…' : 'Suggest rates for formats you have not sold'}
+            </Text>
+          </PressableScale>
+        ) : null}
+
+        {suggestFailed ? (
+          <Text style={[styles.hint, { color: c.textMuted }]}>
+            Could not reach the pricing model. Your own rates are unaffected.
+          </Text>
+        ) : null}
+
+        {suggestions.map((suggestion) => (
+          <View
+            key={suggestion.kind}
+            style={[styles.suggestion, { backgroundColor: c.accentLight }]}
+          >
+            <View style={styles.suggestionText}>
+              <Text style={[styles.suggestionTitle, { color: c.textPrimary }]}>
+                {suggestion.label} · ₹{suggestion.rate.toLocaleString('en-IN')}
+              </Text>
+              {suggestion.basis ? (
+                <Text style={[styles.hint, { color: c.textSecondary }]}>{suggestion.basis}</Text>
+              ) : null}
+            </View>
+            <PressableScale
+              onPress={() => acceptSuggestion(suggestion)}
+              hitSlop={HitSlop}
+              accessibilityRole="button"
+              accessibilityLabel={`Add ${suggestion.label} at ${suggestion.rate} rupees`}
+            >
+              <Ionicons name="add-circle" size={22} color={c.accent} />
+            </PressableScale>
+          </View>
+        ))}
+
         <Text style={[styles.section, { color: c.textSecondary }]}>Back</Text>
         <TextField
           label="Paragraph"
@@ -238,6 +329,25 @@ const styles = StyleSheet.create({
   addText: {
     ...Typography.caption,
     fontFamily: FontFamily.medium,
+  },
+  hint: {
+    ...Typography.caption,
+    fontFamily: FontFamily.regular,
+    lineHeight: 17,
+    marginTop: Spacing.xs,
+  },
+  suggestion: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    borderRadius: Radius.md,
+    padding: Spacing.sm,
+    marginTop: Spacing.sm,
+  },
+  suggestionText: { flex: 1 },
+  suggestionTitle: {
+    ...Typography.bodyStrong,
+    fontFamily: FontFamily.semiBold,
   },
   actions: {
     marginTop: Spacing.lg,

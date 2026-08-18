@@ -516,9 +516,33 @@ figure a fact rather than an aspiration.
 Until Meta and YouTube credentials land the card says the reach figures were
 entered by hand, rather than passing them off as measured.
 
-**Two gaps.** There is no photo: `profiles` has no avatar column, so the card
-uses a monogram. And CPV needs view counts on line items, which most deals do
-not carry yet — the card omits it rather than printing a blank.
+**Photos** (032). Up to three, kept so she has a different shot for a fashion
+brand than for a tech brand, one marked as the card's. The three-photo limit is
+a database trigger, not a UI check. The bucket is private and the image travels
+inside the shared document as a data URI, since a signed URL would expire in a
+PDF forwarded to a brand's finance team.
+
+**Themes** (`constants/cardThemes.ts`). Seven, suggested from her niche by
+substring match on the free-text field, changed with a picker, and the choice
+persists — it is a preference, not one of the per-share edits. Every theme is
+CSS: the card is printed as often as it is viewed, and the photograph on it
+should be hers rather than stock.
+
+**Everything is editable before sending**, including the labels and the
+paragraph, and every field is free text — "₹25–35K" and "From ₹25,000 + travel"
+are things creators say that a form of number inputs cannot express. Edits
+apply to that share only; the card is rebuilt from live data next time it
+opens, so a figure adjusted for one negotiation cannot follow her into a later
+one silently.
+
+**AI fills gaps, never revises** (`suggest-rates`). For a format she has never
+charged for, the model proposes a starting price — passed what she already
+charges so a suggested Story does not come back above her real Reel. Proposals
+appear in the editor for review and reach the card only when she adds them.
+
+**One gap left.** CPV needs view counts on line items, which most deals do not
+carry yet; the card omits it rather than printing a blank. Meta Graph API is
+the real source, and waits on credentials (§12).
 
 She can share it straight to WhatsApp or download it.
 

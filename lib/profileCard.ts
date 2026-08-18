@@ -213,6 +213,62 @@ export function compactCount(n: number): string {
   return String(n)
 }
 
+export interface RateSuggestion {
+  kind: DeliverableKind
+  label: string
+  /** Whole rupees. */
+  rate: number
+  /** One line explaining the figure, shown before she accepts it. */
+  basis: string
+}
+
+/** The priceable formats she has never charged for. */
+export function missingRateKinds(data: ProfileCardData): DeliverableKind[] {
+  const priced = new Set(data.rates.map((r) => r.kind))
+  return PRICEABLE_KINDS.filter((kind) => !priced.has(kind))
+}
+
+/**
+ * Asks for a starting price on the formats she has no history for.
+ *
+ * Gap-fill only. Her own rates are always the ones on the card where they
+ * exist, and this never revises them — it is passed what she already charges
+ * purely so a suggested Story does not come back priced above her real Reel.
+ *
+ * Returns proposals, not rates. The caller shows them for review; nothing
+ * reaches the card until she adds it. A card quoting an invented price as if
+ * it had been earned is the worst thing this feature could do to her in a
+ * negotiation.
+ */
+export async function suggestMissingRates(data: ProfileCardData): Promise<RateSuggestion[]> {
+  const missing = missingRateKinds(data)
+  if (missing.length === 0) return []
+
+  const { data: result, error } = await supabase.functions.invoke('suggest-rates', {
+    body: {
+      niche: data.niche,
+      followers: data.followers,
+      engagementRate: data.engagementRate,
+      missing,
+      known: data.rates.map((r) => ({ kind: r.kind, rate: r.typical })),
+    },
+  })
+
+  if (error) throw error
+
+  const rows = (result?.suggestions ?? []) as { kind: string; rate: number; basis: string }[]
+  return rows
+    .filter((row): row is { kind: DeliverableKind; rate: number; basis: string } =>
+      (missing as string[]).includes(row.kind)
+    )
+    .map((row) => ({
+      kind: row.kind,
+      label: DELIVERABLE_LABELS[row.kind],
+      rate: row.rate,
+      basis: row.basis,
+    }))
+}
+
 /** True when there is not enough history for the card to be worth sending. */
 export function cardIsThin(data: ProfileCardData): boolean {
   return data.rates.length === 0 && data.followers === null
