@@ -111,11 +111,18 @@ Three pieces, and all three are needed:
 ### 1. Deploy the sender
 
 ```bash
+# 1. Generate a secret and PRINT it. You need the same value in step 2.
+openssl rand -hex 32
+
+# 2. Give it to the function (paste the value from above).
+npx supabase secrets set CRON_SECRET=<paste it here>
+
+# 3. Deploy.
 npx supabase functions deploy send-due-reminders
-npx supabase secrets set CRON_SECRET="$(openssl rand -hex 32)"
 ```
 
-Keep that secret. The function authenticates on it rather than on a user's
+Keep that secret somewhere: the cron job in step 2 has to send the identical
+string, and there is no way to read it back out of Supabase afterwards. The function authenticates on it rather than on a user's
 JWT, because it reads across every workspace with the service-role key.
 
 ### 2. Wake it on a schedule
@@ -131,8 +138,8 @@ select cron.schedule(
   '*/5 * * * *',
   $$
   select net.http_post(
-    url     := 'https://<project-ref>.supabase.co/functions/v1/send-due-reminders',
-    headers := jsonb_build_object('x-cron-secret', '<the CRON_SECRET you set>')
+    url     := 'https://bbdvgeavtxfxykhiafbp.supabase.co/functions/v1/send-due-reminders',
+    headers := jsonb_build_object('x-cron-secret', '<paste the CRON_SECRET here>')
   );
   $$
 );
