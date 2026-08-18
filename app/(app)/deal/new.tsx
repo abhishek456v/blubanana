@@ -37,6 +37,7 @@ import {
   type RepeatCandidate,
 } from '@/lib/deals'
 import { defaultStageDrafts, replaceStages, type StageDraft } from '@/lib/dealStages'
+import { TRIAL_DEAL_LIMIT, isTrialLimitError } from '@/lib/subscription'
 import { StageEditor } from '@/components/deal/StageEditor'
 import { getAllRatings, summarizeRatings } from '@/lib/reputation'
 import { extractFromImage, extractFromTranscript, transcribeAudio } from '@/lib/aiIntake'
@@ -433,8 +434,15 @@ export default function NewDealScreen() {
       }
 
       router.back()
-    } catch {
-      toast('Could not save deal. Please try again', { tone: 'error' })
+    } catch (error) {
+      // The trial cap is a deliberate refusal, not a failure. Saying "try
+      // again" would send her round the same loop until she gave up.
+      toast(
+        isTrialLimitError(error)
+          ? `Your trial covers ${TRIAL_DEAL_LIMIT} deals. Subscribe from Settings to add more.`
+          : 'Could not save deal. Please try again',
+        { tone: isTrialLimitError(error) ? 'warning' : 'error' }
+      )
     } finally {
       setSaving(false)
     }

@@ -12,6 +12,7 @@ import {
   type ImportCandidate,
 } from '@/lib/importDeals'
 import { formatCurrency, formatDate } from '@/lib/format'
+import { TRIAL_DEAL_LIMIT } from '@/lib/subscription'
 import { ContentMaxWidth, FontFamily, Radius, Spacing, Typography } from '@/constants/design'
 import { useTheme } from '@/hooks/useTheme'
 import { ModalSheet } from '@/components/ModalSheet'
@@ -44,7 +45,9 @@ export default function ImportScreen() {
   const [stage, setStage] = useState<Stage>('pick')
   const [candidates, setCandidates] = useState<ImportCandidate[]>([])
   const [skipped, setSkipped] = useState<Set<string>>(new Set())
-  const [result, setResult] = useState<{ imported: number; failed: number } | null>(null)
+  const [result, setResult] = useState<
+    { imported: number; failed: number; hitTrialLimit: boolean } | null
+  >(null)
 
   const chosen = candidates.filter((candidate) => !skipped.has(candidate.key))
 
@@ -115,7 +118,13 @@ export default function ImportScreen() {
     setStage('importing')
     try {
       const outcome = await importDeals(chosen)
-      setResult({ imported: outcome.imported, failed: outcome.failed.length })
+      setResult({
+        imported: outcome.imported,
+        failed: outcome.failed.length,
+        // Distinguished because it is not a failure she can retry away: the
+        // trial simply ran out of room, and the fix is a subscription.
+        hitTrialLimit: outcome.failed.some((f) => /Trial limit/i.test(f.reason)),
+      })
       setStage('done')
     } catch {
       toast('Could not import those deals', { tone: 'error' })
@@ -250,9 +259,11 @@ export default function ImportScreen() {
               icon="checkmark-circle-outline"
               title={`${result.imported} ${result.imported === 1 ? 'deal' : 'deals'} imported`}
               message={
-                result.failed > 0
-                  ? `${result.failed} could not be saved and were left out. Everything else is on your dashboard, with its deadlines and reminders already set.`
-                  : 'They are on your dashboard now, with their deadlines and reminders already set.'
+                result.hitTrialLimit
+                  ? `Your trial covers ${TRIAL_DEAL_LIMIT} deals, so ${result.failed} could not come across yet. Subscribe and import the rest — nothing is lost.`
+                  : result.failed > 0
+                    ? `${result.failed} could not be saved and were left out. Everything else is on your dashboard, with its deadlines and reminders already set.`
+                    : 'They are on your dashboard now, with their deadlines and reminders already set.'
               }
             />
           ) : null}

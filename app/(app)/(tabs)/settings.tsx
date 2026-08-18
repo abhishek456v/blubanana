@@ -304,6 +304,18 @@ export default function YouScreen() {
             index={2}
           />
           <ListRow
+            title="Plan and billing"
+            subtitle="What you are on, and what it costs"
+            leading={
+              <View style={[styles.linkIcon, { backgroundColor: c.accentLight }]}>
+                <Ionicons name="card-outline" size={18} color={c.accent} />
+              </View>
+            }
+            showChevron
+            onPress={() => router.push('/(app)/plans' as never)}
+            index={3}
+          />
+          <ListRow
             title="Rate card"
             subtitle="What you charge, built from your own deals — to send when a brand asks"
             leading={
@@ -313,7 +325,7 @@ export default function YouScreen() {
             }
             showChevron
             onPress={() => router.push('/(app)/profile/card' as never)}
-            index={3}
+            index={4}
           />
           <ListRow
             title="Team"
@@ -325,7 +337,7 @@ export default function YouScreen() {
             }
             showChevron
             onPress={() => router.push('/(app)/team' as never)}
-            index={4}
+            index={5}
           />
           {/* Reachable after onboarding too: §8.2 makes every onboarding step
               skippable, so the creator most likely to need this is exactly the
@@ -340,7 +352,7 @@ export default function YouScreen() {
             }
             showChevron
             onPress={() => router.push('/(app)/import' as never)}
-            index={5}
+            index={6}
           />
           <ListRow
             title="Export my data"
@@ -352,7 +364,7 @@ export default function YouScreen() {
             }
             showChevron
             onPress={handleExport}
-            index={6}
+            index={7}
           />
           {/* Last, and directly under Export, which is deliberate: the one
               thing that makes this recoverable sits immediately above it. */}
@@ -366,7 +378,7 @@ export default function YouScreen() {
             }
             showChevron
             onPress={() => setDeleteOpen(true)}
-            index={7}
+            index={8}
           />
         </View>
 

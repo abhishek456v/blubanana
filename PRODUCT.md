@@ -80,7 +80,7 @@ product's value the same feature that walls her out of it.
 
 ### After the trial
 
-The workspace goes **read-only**:
+The workspace goes **read-only** (`SubscriptionBanner`, and the gate in 035):
 
 - All her data stays visible.
 - Every action that creates or edits is greyed out.

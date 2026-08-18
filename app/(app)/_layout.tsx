@@ -90,6 +90,7 @@ export default function AppLayout() {
       {/* Full-screen, chromeless: it draws its own progress dots and Skip. */}
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="import" options={{ title: 'Import deals', ...modalScreenOptions }} />
+      <Stack.Screen name="plans" options={{ title: 'Plans', ...modalScreenOptions }} />
       <Stack.Screen name="annual-report" options={{ title: 'Annual report', ...modalScreenOptions }} />
       <Stack.Screen name="team" options={{ title: 'Team', ...modalScreenOptions }} />
     </Stack>

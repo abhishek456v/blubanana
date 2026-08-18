@@ -3,6 +3,7 @@ import { createBrand, getBrands } from './brands'
 import { createDeal } from './deals'
 import { replaceDeliverables } from './deliverables'
 import { replaceStages, defaultStageDrafts } from './dealStages'
+import { TRIAL_DEAL_LIMIT, isTrialLimitError } from './subscription'
 import type { Brand, ExtractedDealFields } from '@/types'
 
 // Importing the deals a creator already has (PRODUCT.md §8.2).
@@ -157,7 +158,11 @@ export async function importDeals(candidates: ImportCandidate[]): Promise<Import
     } catch (error) {
       outcome.failed.push({
         brandName,
-        reason: error instanceof Error ? error.message : 'Could not import this one',
+        reason: isTrialLimitError(error)
+          ? `Trial limit of ${TRIAL_DEAL_LIMIT} deals reached`
+          : error instanceof Error
+            ? error.message
+            : 'Could not import this one',
       })
     }
   }
