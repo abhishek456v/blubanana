@@ -167,7 +167,7 @@ creators raise to brands, even though the tax logic is similar.
 
 | Surface | What it is | Status |
 |---|---|---|
-| **Marketing website** | Public. What the product does, pricing, sign-up, privacy policy. Sends people to the platform | **New** |
+| **Marketing website** | Public. What the product does, pricing, sign-up, privacy policy. Sends people to the platform | **Built** — `web/` |
 | **Platform** (`platform.<domain>`) | The web app. This is the existing Expo web build | **Built** |
 | **iOS / Android apps** | Same codebase, from the App Store and Play Store | **Built**, not yet published |
 
@@ -890,7 +890,15 @@ mocked.
 **8 — Offline capture.** Last, because it touches every write path and is
 easier once those paths have stopped changing.
 
-**9 — Marketing website.**
+**9 — Marketing website. Done.** `web/`: six static pages, no framework, no
+deploy-time build. The palette comes from `constants/design.ts` so the site and
+the app do not feel like two products.
+
+It is also what unblocks payments. Razorpay will not activate a merchant
+account until the site carries Contact with a working phone number, Pricing,
+Terms, Privacy and Cancellation & Refunds — all five exist and are linked from
+every footer. The contact details are still placeholders, which is the one
+thing that will fail an activation.
 
 ---
 
