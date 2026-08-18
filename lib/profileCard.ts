@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 import { getProfile } from './profile'
-import { getSocialAccounts, getStatHistory, summarizeReach, isUsingMockProviders } from './social'
+import { getSocialAccounts, getStatHistory, isLive, summarizeReach } from './social'
 import { DELIVERABLE_LABELS } from '@/constants/labels'
 import type { CardContent, CardStat } from './profileCardHtml'
 import type { Creator, DeliverableKind } from '@/types'
@@ -150,7 +150,10 @@ export async function getProfileCardData(): Promise<ProfileCardData> {
     rates,
     costPerView: cpvs.length > 0 ? median(cpvs.map((v) => Math.round(v * 100))) / 100 : null,
     statsAsOf,
-    statsAreLive: connected.length > 0 && !isUsingMockProviders(),
+    // Per-platform, not global: Instagram can be live while YouTube is still
+    // mocked, and the card must not describe sample figures as measured just
+    // because some other provider happens to be real.
+    statsAreLive: connected.length > 0 && isLive(connected[0].platform),
   }
 }
 

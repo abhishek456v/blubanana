@@ -2,8 +2,11 @@ import { useCallback, useEffect, useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated'
+import * as WebBrowser from 'expo-web-browser'
 import {
+  beginOAuthConnect,
   connectAccount,
+  getProvider,
   disconnectAccount,
   getSocialAccounts,
   getStatHistory,
@@ -67,12 +70,29 @@ export function ConnectedAccounts() {
     load()
   }, [load])
 
+  /**
+   * Two paths, chosen by whether the platform has real credentials.
+   *
+   * With them, this opens Meta's consent screen in a browser and the edge
+   * function writes the account when the redirect lands — so nothing is
+   * "connected" here, and the list refreshes when she comes back to the app.
+   * Without them, the mock connects immediately, which is what keeps the whole
+   * feature demonstrable before app review comes through.
+   */
   async function handleConnect(platform: SocialPlatform) {
     setBusy(platform)
     try {
-      await connectAccount(platform)
-      await load()
-      toast(`${platform === 'instagram' ? 'Instagram' : 'YouTube'} connected`, { tone: 'success' })
+      if (getProvider(platform).isConfigured()) {
+        const url = await beginOAuthConnect(platform)
+        await WebBrowser.openBrowserAsync(url)
+        // She may have approved, declined, or closed the tab. Reloading is the
+        // only honest way to find out which.
+        await load()
+      } else {
+        await connectAccount(platform)
+        await load()
+        toast(`${platform === 'instagram' ? 'Instagram' : 'YouTube'} connected`, { tone: 'success' })
+      }
     } catch {
       toast('Could not connect that account', { tone: 'error' })
     } finally {

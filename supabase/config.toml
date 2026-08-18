@@ -11,3 +11,17 @@ project_id = "bbdvgeavtxfxykhiafbp"
 # called by the app with a signed-in user's JWT and must keep verifying it.
 [functions.send-due-reminders]
 verify_jwt = false
+
+# The Instagram OAuth redirect. Meta sends a browser here with no session at
+# all, so a JWT check would reject the callback before it ran. Its security is
+# the single-use `state` nonce from 033, which ties the callback to the
+# workspace that started the flow.
+[functions.social-oauth]
+verify_jwt = false
+
+# Called by pg_cron for the nightly pass, which has no session either. It
+# authenticates every request itself — the CRON_SECRET for a full sync, or a
+# real user JWT resolved through getUser() and scoped to that caller's
+# workspaces for a single-account refresh.
+[functions.social-sync]
+verify_jwt = false

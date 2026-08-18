@@ -1,5 +1,6 @@
 import { supabase } from '../supabase'
 import { getWorkspaceId } from '../workspace'
+import { MetaGraphProvider } from './meta'
 import { MockSocialProvider } from './mock'
 import type {
   SocialAccount,
@@ -20,12 +21,22 @@ const ACCOUNT_COLUMNS =
 /**
  * Which implementation backs each platform.
  *
- * Both are mocks today. When Meta and Google app review come through, this map
- * is the only thing that changes; every caller goes through the interface, so
- * no screen or service is touched.
+ * Instagram resolves at startup: the real Graph provider when
+ * `EXPO_PUBLIC_META_APP_ID` is set, the mock when it is not. So the switch is
+ * an environment variable rather than a code change — the day credentials
+ * arrive, nothing in this repository needs editing.
+ *
+ * Deliberately not a per-call check. A build that flips between real and
+ * sample data depending on when a function ran would be impossible to reason
+ * about, and `isUsingMockProviders()` labels the whole app at once.
+ *
+ * YouTube stays mocked: it is Google's API, not Meta's, and a second OAuth
+ * integration is its own piece of work rather than a footnote to this one.
  */
+const metaProvider = new MetaGraphProvider()
+
 const PROVIDERS: Record<SocialPlatform, SocialProvider> = {
-  instagram: new MockSocialProvider('instagram'),
+  instagram: metaProvider.isConfigured() ? metaProvider : new MockSocialProvider('instagram'),
   youtube: new MockSocialProvider('youtube'),
 }
 
@@ -42,6 +53,11 @@ export function getProvider(platform: SocialPlatform): SocialProvider {
  */
 export function isUsingMockProviders(): boolean {
   return Object.values(PROVIDERS).every((p) => p instanceof MockSocialProvider)
+}
+
+/** True when a platform's figures are real. Used to label a card's reach. */
+export function isLive(platform: SocialPlatform): boolean {
+  return !(PROVIDERS[platform] instanceof MockSocialProvider)
 }
 
 export async function getSocialAccounts(): Promise<SocialAccount[]> {
@@ -61,6 +77,36 @@ export async function getSocialAccounts(): Promise<SocialAccount[]> {
  * server-side and a token row already exists; here it creates the row itself.
  * Either way the app only ever writes the non-secret columns.
  */
+/**
+ * Starts a real OAuth connection, returning the URL to open.
+ *
+ * The `state` is a single-use nonce recorded server-side before the browser
+ * leaves (033). It is what ties Meta's callback back to this workspace — the
+ * callback arrives with no session, so without it the edge function would have
+ * to take the caller's word for which workspace to write into.
+ *
+ * `crypto.randomUUID` twice rather than once: 122 bits is fine against
+ * guessing, but this value is also the only thing standing between a
+ * replayed callback and someone else's workspace, and the cost of doubling it
+ * is nothing.
+ */
+export async function beginOAuthConnect(platform: SocialPlatform): Promise<string> {
+  const provider = getProvider(platform)
+  if (!provider.isConfigured()) {
+    throw new Error(`${provider.displayName} is not configured on this build`)
+  }
+
+  const workspaceId = await getWorkspaceId()
+  const state = `${crypto.randomUUID()}${crypto.randomUUID()}`.replace(/-/g, '')
+
+  const { error } = await supabase
+    .from('oauth_states')
+    .insert({ state, workspace_id: workspaceId, platform })
+
+  if (error) throw error
+  return provider.buildAuthUrl(state)
+}
+
 export async function connectAccount(platform: SocialPlatform): Promise<SocialAccount> {
   const workspaceId = await getWorkspaceId()
   const provider = getProvider(platform)

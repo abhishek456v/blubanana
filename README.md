@@ -235,6 +235,48 @@ supabase functions deploy transcribe-audio
 supabase functions deploy suggest-rates
 ```
 
+### 5. Instagram (Meta Graph API)
+
+Everything is built and inert until credentials exist. Setting them is the
+whole switch — no code changes:
+
+```bash
+# 1. Server side. The secret must never be in .env or the bundle.
+npx supabase secrets set META_APP_ID=<app id> META_APP_SECRET=<app secret>
+
+# 2. Client side, in .env. This is what makes lib/social use the real Graph
+#    provider instead of the mock; without it the app shows sample figures and
+#    says so on the rate card.
+#    EXPO_PUBLIC_META_APP_ID=<app id>
+
+# 3. Deploy.
+npx supabase functions deploy social-oauth
+npx supabase functions deploy social-sync
+```
+
+In the Meta app dashboard, add this as a **Valid OAuth Redirect URI**:
+
+```
+https://bbdvgeavtxfxykhiafbp.supabase.co/functions/v1/social-oauth
+```
+
+The account being connected has to be an Instagram **professional** (business
+or creator) account linked to a Facebook Page. Meta exposes insights for no
+other kind, and there is no endpoint that reaches an Instagram account without
+going through its Page.
+
+`social-sync` runs nightly (033) and does two things: writes a reach snapshot,
+and writes view counts back onto `deal_deliverables` by matching each
+deliverable's `live_link` to a post permalink. The second is what makes cost
+per view exist on the rate card — it is `rate ÷ views` per line item, and no
+creator is going to type a view count in for every post she has published.
+
+Both functions run with `verify_jwt = false` and authenticate themselves:
+`social-oauth` on the single-use `state` nonce, `social-sync` on either the
+CRON_SECRET or a user JWT scoped to that caller's workspaces.
+```
+```
+
 Both functions require a valid Supabase auth session by default (no extra
 config needed) — only signed-in creators can trigger OpenAI calls.
 
