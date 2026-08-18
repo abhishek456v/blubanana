@@ -19,6 +19,7 @@ export type MessagePurpose =
   | 'payment_reminder_due'
   | 'payment_reminder_overdue'
   | 'ad_rights_followup'
+  | 'invoice_delivery'
   | 'custom'
 
 export type MessageStatus = 'draft' | 'approved' | 'sent' | 'cancelled'

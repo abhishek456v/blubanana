@@ -1,4 +1,5 @@
 import { placeOfSupplyLabel } from '@/constants/gst'
+import { invoiceUpiQr } from './upi'
 import type { Creator, Invoice, InvoiceLineItem } from '@/types'
 
 // Printable HTML for an invoice, fed to expo-print (see lib/invoicePdf.ts).
@@ -147,6 +148,17 @@ export function buildInvoiceHtml(
       : trow(`CGST @ ${halfRate}%`, invoice.cgst_amount) +
         trow(`SGST @ ${halfRate}%`, invoice.sgst_amount)
 
+  // The QR carries the net payable, so the brand scans and pays the exact
+  // figure rather than typing it. Null when the creator has no UPI ID on her
+  // profile, or it is malformed — in which case the invoice simply shows the
+  // bank details it always did, rather than an unscannable square.
+  const upiQr = invoiceUpiQr({
+    upiId: creator.upi_id,
+    payeeName: creator.name,
+    amount: netPayable,
+    invoiceNumber: invoice.invoice_number,
+  })
+
   const paymentRows = [
     creator.upi_id ? ['UPI', creator.upi_id] : null,
     creator.bank_account_number ? ['Account', creator.bank_account_number] : null,
@@ -216,6 +228,15 @@ export function buildInvoiceHtml(
   .kv .k { width: 58px; color: #A29A92; }
   .kv .v { color: #17130F; }
   .note { font-size: 11.5px; color: #78706A; line-height: 1.65; }
+
+  /* The QR sits in the same row as the payment details, deliberately narrow:
+     it is a convenience, not the headline, and a code the width of the column
+     would read as the point of the page. 108px prints to roughly 28mm, which
+     is comfortably above the ~20mm where phone cameras start to struggle. */
+  .qrcol { flex: 0 0 auto; text-align: right; }
+  .qr { width: 108px; margin-left: auto; }
+  .qr svg { display: block; width: 100%; height: auto; shape-rendering: crispEdges; }
+  .qrnote { font-size: 9.5px; color: #78706A; margin-top: 6px; }
 
   .foot { margin-top: 46px; padding-top: 13px; border-top: 1px solid #EDE8E1;
           display: flex; justify-content: space-between; align-items: center;
@@ -367,6 +388,15 @@ export function buildInvoiceHtml(
             ${paymentRows
               .map((row) => `<div class="kv"><span class="k">${row[0]}</span><span class="v">${esc(row[1])}</span></div>`)
               .join('')}
+          </div>`
+        : ''
+    }
+    ${
+      upiQr
+        ? `<div class="col qrcol">
+            <div class="label">Scan to pay</div>
+            <div class="qr">${upiQr.svg}</div>
+            <div class="qrnote">Any UPI app · ${esc(formatINR(netPayable))}</div>
           </div>`
         : ''
     }

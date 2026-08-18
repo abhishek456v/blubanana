@@ -6,6 +6,11 @@ import { getInvoice, getInvoiceLineItems } from '@/lib/invoices'
 import { getProfile } from '@/lib/profile'
 import { buildInvoiceHtml } from '@/lib/invoiceHtml'
 import { shareInvoicePdf } from '@/lib/invoicePdf'
+import { getDeal } from '@/lib/deals'
+import { getContacts, primaryContact } from '@/lib/brandContacts'
+import { sendNow } from '@/lib/messaging'
+import { buildInvoiceMessage } from '@/lib/whatsapp'
+import { isValidUpiId } from '@/lib/upi'
 import type { Creator, Invoice, InvoiceLineItem } from '@/types'
 import { Colors, Spacing, Radius, Typography, FontFamily, ContentMaxWidth } from '@/constants/design'
 import { useTheme } from '@/hooks/useTheme'
@@ -33,6 +38,7 @@ export default function InvoiceDetailScreen() {
   const [lineItems, setLineItems] = useState<InvoiceLineItem[]>([])
   const [loading, setLoading] = useState(true)
   const [sharing, setSharing] = useState(false)
+  const [sendingWhatsApp, setSendingWhatsApp] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -70,6 +76,71 @@ export default function InvoiceDetailScreen() {
       toast('Could not export the PDF', { tone: 'error' })
     } finally {
       setSharing(false)
+    }
+  }
+
+  /**
+   * Hands the invoice to WhatsApp, addressed to the brand's primary contact.
+   *
+   * The contact is looked up here rather than held in state because it is only
+   * needed on this tap: loading it on mount would put two more queries on the
+   * path of a screen most often opened just to look at the invoice.
+   *
+   * The PDF is not attached — a wa.me link carries text only (see
+   * buildInvoiceMessage). The message says the PDF is coming, and the Share
+   * button below it is how she sends it, into the chat this just opened.
+   */
+  async function handleSendOnWhatsApp() {
+    if (!invoice || !creator || sendingWhatsApp) return
+    if (!invoice.deal_id) {
+      toast('This invoice is not linked to a deal, so there is no contact to send it to', {
+        tone: 'warning',
+      })
+      return
+    }
+
+    setSendingWhatsApp(true)
+    try {
+      const deal = await getDeal(invoice.deal_id)
+      const contacts = await getContacts(deal.brand_id)
+      const contact = primaryContact(contacts)
+      const phone = contact?.phone ?? null
+
+      if (!phone) {
+        toast(`No WhatsApp number saved for ${invoice.brand_name}`, { tone: 'warning' })
+        return
+      }
+
+      const netPayable =
+        invoice.total_amount - (invoice.tds_deducted ? (invoice.tds_amount ?? 0) : 0)
+
+      const body = buildInvoiceMessage({
+        brandName: invoice.brand_name,
+        contactPerson: contact?.name ?? null,
+        invoiceNumber: invoice.invoice_number,
+        amount: netPayable,
+        dueDate: invoice.payment_due_date,
+        hasUpiQr: isValidUpiId(creator.upi_id),
+      })
+
+      // Logged to the deal's message history, like every other outbound
+      // message: "did I ever actually send that invoice" is the question this
+      // record exists to answer.
+      const handedOff = await sendNow(
+        {
+          dealId: invoice.deal_id,
+          purpose: 'invoice_delivery',
+          body,
+          recipient: phone,
+        },
+        phone
+      )
+
+      if (!handedOff) toast('Could not open WhatsApp', { tone: 'error' })
+    } catch {
+      toast('Could not send this invoice', { tone: 'error' })
+    } finally {
+      setSendingWhatsApp(false)
     }
   }
 
@@ -182,6 +253,23 @@ export default function InvoiceDetailScreen() {
               </View>
             ) : null}
           </View>
+
+          {/* Above Share, because it is the step that now comes first: open
+              the chat with the invoice's details, then send the PDF into it. */}
+          <TouchableOpacity
+            style={[styles.whatsappButton, { borderColor: c.borderStrong }]}
+            onPress={handleSendOnWhatsApp}
+            disabled={sendingWhatsApp}
+            activeOpacity={0.8}
+          >
+            {sendingWhatsApp ? (
+              <ActivityIndicator color={c.textPrimary} />
+            ) : (
+              <Text style={[styles.shareButtonText, { color: c.textPrimary }]}>
+                Send on WhatsApp
+              </Text>
+            )}
+          </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.shareButton, { backgroundColor: c.fillPrimary }]}
@@ -308,6 +396,16 @@ const styles = StyleSheet.create({
   shareButton: {
     height: 44,
     borderRadius: Radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: Spacing.lg,
+  },
+  // Outlined rather than filled: two solid buttons stacked would compete, and
+  // sending the PDF is still the action that finishes the job.
+  whatsappButton: {
+    height: 44,
+    borderRadius: Radius.full,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: Spacing.lg,

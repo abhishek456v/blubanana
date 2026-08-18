@@ -98,6 +98,39 @@ export function buildLiveLinkMessage(params: {
   return `Hi ${greetingName}, ${deliverable} is live! Here's the link: ${liveLink}`
 }
 
+/**
+ * The message that carries an invoice (§8.8).
+ *
+ * It does not attach the PDF, and cannot: a `wa.me` link takes text only, and
+ * attaching a file needs the WhatsApp Business API, which §0 rules out. So the
+ * message states everything a finance team needs to act on — number, amount,
+ * due date — and says the PDF is coming, because the creator sends it from the
+ * same chat a moment later. Saying so is what stops the brand reading a bare
+ * "here's my invoice" with nothing attached and assuming she forgot.
+ *
+ * The UPI line only appears when there is a QR on the invoice to scan. A
+ * promise of a scannable code on a page that does not carry one would send the
+ * brand looking for something that is not there.
+ */
+export function buildInvoiceMessage(params: {
+  brandName: string
+  contactPerson: string | null
+  invoiceNumber: string
+  amount: number
+  dueDate: string | null
+  hasUpiQr: boolean
+}): string {
+  const { brandName, contactPerson, invoiceNumber, amount, dueDate, hasUpiQr } = params
+  const name = contactPerson?.trim() || brandName
+
+  const terms = dueDate ? `payable by ${formatDate(dueDate)}` : 'payable on receipt'
+  const upi = hasUpiQr
+    ? ' The invoice has a UPI QR on it if that is easier than a transfer.'
+    : ''
+
+  return `Hi ${name}, sharing invoice ${invoiceNumber} for ${formatINR(amount)}, ${terms}. Sending the PDF here now.${upi} Do let me know if anything needs changing for your records.`
+}
+
 // Normalizes a stored phone number into digits-only, assuming an Indian
 // number when given a bare 10-digit local number (reasonable given the
 // schema is INR-only, but not something PRODUCT.md states explicitly).

@@ -386,13 +386,23 @@ can be adjusted before it is finalised. The form pulls from three places:
 | Creator name, address, PAN, GSTIN, bank details, UPI ID | The creator's profile |
 | Line items, description, rates, dates | The invoice form |
 
-**UPI QR code** — **New.** The invoice carries a QR generated from the
+**UPI QR code** — **Built.** The invoice carries a QR generated from the
 creator's UPI ID. The brand scans it and pays her directly, bank to bank.
 Money never touches the platform, so this needs no licensing and costs nothing.
+The code encodes the **net payable** — after TDS, not the invoice total — so
+the brand scans and pays the figure it actually owes. Absent, rather than
+broken, when no valid UPI ID is on the profile.
 
-**Sending** — **New.** One tap sends the invoice to the brand's contact over
-WhatsApp, using the channel already built for payment nudges. Today it is
-export-to-PDF, then find the chat, then attach.
+**Sending** — **Built.** One tap opens WhatsApp to the brand's primary contact
+with the invoice's number, amount and due date already written, and logs it to
+the deal's message history as `invoice_delivery` (027).
+
+It does **not** attach the PDF, and cannot: a `wa.me` link carries text only,
+and attaching a file needs the WhatsApp Business API that §0 rules out. So the
+message says the PDF is coming and the Share button sends it into the chat that
+just opened. Two taps rather than one, against export-then-find-the-chat-then-
+attach — and the brand is never left reading "here's my invoice" with nothing
+attached.
 
 **The template is a design job in its own right.** A single A4 page, and it is
 the only thing a brand's finance team ever sees from this product. It must look
@@ -701,8 +711,7 @@ of month one — its stages and line items, each shifted a month — so every
 existing list, total, reminder and invoice works on them unchanged. The rate is
 per month, not per contract.
 
-Still open: invoice-over-WhatsApp, the UPI QR on the invoice,
-delete-my-account, and tax deadline notifications.
+Still open: delete-my-account, and tax deadline notifications.
 
 **7 — Profile card rebuild**, then real Meta/YouTube APIs when credentials land.
 

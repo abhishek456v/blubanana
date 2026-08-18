@@ -14,6 +14,7 @@ const PURPOSE_LABEL: Record<MessagePurpose, string> = {
   payment_reminder_due: 'Payment due',
   payment_reminder_overdue: 'Chased payment',
   ad_rights_followup: 'Ad rights follow-up',
+  invoice_delivery: 'Sent the invoice',
   custom: 'Message',
 }
 
@@ -23,6 +24,7 @@ const PURPOSE_ICON: Record<MessagePurpose, keyof typeof Ionicons.glyphMap> = {
   payment_reminder_due: 'alert-circle-outline',
   payment_reminder_overdue: 'alert-circle',
   ad_rights_followup: 'megaphone-outline',
+  invoice_delivery: 'document-text-outline',
   custom: 'chatbubble-outline',
 }
 
