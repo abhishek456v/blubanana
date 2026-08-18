@@ -30,6 +30,7 @@ import { formatCurrency, formatDate } from '@/lib/format'
 import { getBrands } from '@/lib/brands'
 import {
   createDeal,
+  generateRetainerMonths,
   getDeals,
   repeatCandidates,
   rescheduleWorkflow,
@@ -100,6 +101,12 @@ export default function NewDealScreen() {
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
 
+  // Retainer (§8.15). Turns this deal into month one of a contract and
+  // generates the rest, rather than making her log twelve near-identical deals.
+  const [retainerEnabled, setRetainerEnabled] = useState(false)
+  const [retainerMonths, setRetainerMonths] = useState<number | null>(null)
+  const [retainerPerPeriod, setRetainerPerPeriod] = useState('')
+
   // Ad rights (optional add-on term, not part of the base deal fields).
   const [adRightsEnabled, setAdRightsEnabled] = useState(false)
   const [adRightsFee, setAdRightsFee] = useState('')
@@ -122,6 +129,9 @@ export default function NewDealScreen() {
   const [extractedItems, setExtractedItems] = useState<ExtractedDeliverable[]>([])
 
   // Live ad-rights maths, mirroring the deal screen's line-item editor.
+  // The rate as typed so far, for the contract-total preview. Separate from the
+  // parsed value in the submit handler, which validates rather than previews.
+  const rateNumPreview = parseInt(rate, 10) || 0
   const perMonthAdRights = adRightsPerMonth(Number(adRightsFee) || 0, adRightsDuration)
   const adRightsExpiryPreview = adRightsExpiry(adRightsStartDate || null, adRightsDuration)
 
@@ -312,6 +322,18 @@ export default function NewDealScreen() {
       return
     }
 
+    const retainerPerPeriodNum = parseInt(retainerPerPeriod, 10)
+    if (retainerEnabled) {
+      if (!retainerMonths) {
+        toast('How many months does the retainer run?', { tone: 'warning' })
+        return
+      }
+      if (!retainerPerPeriod || isNaN(retainerPerPeriodNum) || retainerPerPeriodNum <= 0) {
+        toast('How many deliverables a month?', { tone: 'warning' })
+        return
+      }
+    }
+
     setSaving(true)
     try {
       const created = await createDeal({
@@ -332,6 +354,13 @@ export default function NewDealScreen() {
               ad_rights_start_date: parseDate(adRightsStartDate),
             }
           : null,
+        // Records the contract terms on month one. The remaining months are
+        // generated below, once this deal's stages and line items exist to be
+        // copied from.
+        retainer:
+          retainerEnabled && retainerMonths
+            ? { months: retainerMonths, perPeriod: retainerPerPeriodNum }
+            : null,
       })
 
       // The stages themselves. createDeal only writes the legacy date columns,
@@ -389,6 +418,18 @@ export default function NewDealScreen() {
       } catch {
         // The deal itself saved. Losing the line-item breakdown is recoverable
         // from the deal screen, so it must not fail the whole intake.
+      }
+
+      // Last, because each generated month is a copy of this one and both the
+      // stages and the line items above have to exist first. Not swallowed
+      // like the line items are: a retainer that quietly saved as a single
+      // month is the one outcome this toggle exists to prevent, so the failure
+      // reaches the toast below.
+      if (retainerEnabled && retainerMonths) {
+        await generateRetainerMonths(created, {
+          months: retainerMonths,
+          perPeriod: retainerPerPeriodNum,
+        })
       }
 
       router.back()
@@ -656,6 +697,57 @@ export default function NewDealScreen() {
           <View style={styles.dateFields}>
             <StageEditor stages={stageDrafts} onChange={setStageDrafts} allowDone={false} />
           </View>
+
+          {/* ── Retainer (optional) ───────────────────────────── */}
+          <View style={styles.adRightsHeader}>
+            <Text style={[styles.sectionLabel, styles.adRightsLabel, { color: c.accentText }]}>
+              Retainer
+            </Text>
+            <Switch
+              value={retainerEnabled}
+              onValueChange={setRetainerEnabled}
+              trackColor={{ false: c.border, true: c.accentLight }}
+              thumbColor={retainerEnabled ? c.accent : undefined}
+            />
+          </View>
+
+          {retainerEnabled && (
+            <View style={[styles.adRightsBox, { backgroundColor: c.accentLight, borderColor: c.accent }]}>
+              <Text style={[styles.dateLabel, { color: c.textSecondary }]}>How many months</Text>
+              <View style={styles.platformScroll}>
+                {[3, 6, 9, 12].map((months) => (
+                  <Chip
+                    key={months}
+                    label={`${months} months`}
+                    selected={retainerMonths === months}
+                    onPress={() => setRetainerMonths(months)}
+                  />
+                ))}
+              </View>
+
+              <View style={styles.adRightsDate}>
+                <TextField
+                  label="Deliverables a month"
+                  placeholder="4"
+                  keyboardType="number-pad"
+                  value={retainerPerPeriod}
+                  onChangeText={(v) => setRetainerPerPeriod(v.replace(/[^0-9]/g, ''))}
+                />
+              </View>
+
+              {/* States plainly that the rate is per month and that this save
+                  creates several deals, both of which are otherwise a surprise
+                  the creator only discovers afterwards. */}
+              {retainerMonths ? (
+                <Text style={[styles.adRightsExpiryNote, { color: c.accentText }]}>
+                  {retainerMonths} deals, one a month, each at the rate above
+                  {rateNumPreview > 0
+                    ? ` · ${formatCurrency(rateNumPreview * retainerMonths)} over the contract`
+                    : ''}
+                </Text>
+              ) : null}
+            </View>
+          )}
 
           {/* ── Ad rights (optional) ──────────────────────────── */}
           <View style={styles.adRightsHeader}>

@@ -921,6 +921,20 @@ export default function DealDetailScreen() {
                         <Text style={styles.holdPillText}>On hold</Text>
                       </View>
                     ) : null}
+                    {/* Month one of a retainer carries the contract terms, and
+                        is the only place they are recorded. Without this the
+                        run of monthly deals has no visible explanation and the
+                        stored terms are never shown to anyone. Months two
+                        onward say so in their own description. */}
+                    {deal.is_retainer && deal.retainer_months ? (
+                      <View style={styles.holdPill}>
+                        <Text style={styles.holdPillText}>
+                          {deal.retainer_per_period
+                            ? `Retainer · ${deal.retainer_per_period}/mo × ${deal.retainer_months}`
+                            : `Retainer · ${deal.retainer_months} months`}
+                        </Text>
+                      </View>
+                    ) : null}
                     <StatusPill status={deal.status} onGradient />
                   </View>
                 }

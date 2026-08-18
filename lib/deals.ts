@@ -1,4 +1,7 @@
 import { supabase } from './supabase'
+import { addMonths } from './format'
+import { getStages, replaceStages } from './dealStages'
+import { getDeliverables, replaceDeliverables } from './deliverables'
 import { getWorkspaceId } from './workspace'
 import type { Deal, DealStage, DealStatus, Payment, PaymentStatus, Platform } from '@/types'
 import {
@@ -18,6 +21,13 @@ export interface AdRightsInput {
   ad_rights_start_date: string | null
 }
 
+export interface RetainerInput {
+  /** Contract length in months, counting the first. */
+  months: number
+  /** Deliverables per month. */
+  perPeriod: number
+}
+
 export interface CreateDealInput {
   brand_id: string
   platform: Platform
@@ -31,6 +41,20 @@ export interface CreateDealInput {
   notes?: string | null
   payment_terms?: string | null
   ad_rights?: AdRightsInput | null
+  /**
+   * Turns this into month one of a retainer and generates the rest (§8.15).
+   *
+   * `rate` is then the *per-month* fee, not the contract total: each generated
+   * month is a full deal carrying that rate and its own payment, so the
+   * contract's value is the sum of them.
+   */
+  retainer?: RetainerInput | null
+  /**
+   * Set internally when generating months two onward. Not for callers — a
+   * generated deal cannot itself be a retainer parent, which the database also
+   * enforces (`deals_retainer_not_nested`).
+   */
+  retainer_parent_id?: string | null
 }
 
 // RLS on deals restricts reads to the authenticated user's rows automatically.
@@ -172,6 +196,10 @@ export async function createDeal(input: CreateDealInput): Promise<Deal> {
       deliverable_description: input.deliverable_description,
       rate: input.rate,
       notes: input.notes ?? null,
+      is_retainer: !!input.retainer,
+      retainer_months: input.retainer?.months ?? null,
+      retainer_per_period: input.retainer?.perPeriod ?? null,
+      retainer_parent_id: input.retainer_parent_id ?? null,
       // Typed explicitly. Supabase's .insert() takes a loose object, so a stale
       // literal here type-checks cleanly and fails at the database's check
       // constraint instead — which is how 'intake' survived migration 020's
@@ -231,10 +259,104 @@ export async function createDeal(input: CreateDealInput): Promise<Deal> {
       .update(adRightsReminderFields)
       .eq('id', deal.id)
     if (dealReminderError) throw dealReminderError
-
-    return await readDeal(deal.id)
   } catch {
-    return await readDeal(deal.id)
+    // Swallowed: both rows already exist, and a notification that failed to
+    // schedule must not fail the save.
+  }
+
+  // Note that a retainer's remaining months are NOT generated here. They are
+  // copies of the finished month one — its stages and its line items — and
+  // neither exists yet at this point: the caller writes them after this
+  // returns. See `generateRetainerMonths`.
+  return await readDeal(deal.id)
+}
+
+/**
+ * Creates months two onward of a retainer, as copies of month one.
+ *
+ * Called after the caller has finished setting month one up — its stages and
+ * its line items — because each generated month is a clone of that finished
+ * deal, shifted forward. Generating them inside `createDeal` would copy a deal
+ * that has neither yet, producing months with no deadlines: a retainer whose
+ * whole point is that she stops re-entering the same twelve deadlines by hand.
+ *
+ * Each month is a full `createDeal` rather than a bare insert, so it gets the
+ * payment row, the due-date calculation and the reminders any other deal
+ * would. A second, thinner creation path would drift out of step with the real
+ * one, which is how month seven ends up with no payment record.
+ *
+ * Sequential, not parallel: twelve is the realistic maximum, and a
+ * half-generated contract is far harder to explain than a slow save.
+ */
+export async function generateRetainerMonths(
+  parent: Deal,
+  retainer: RetainerInput
+): Promise<void> {
+  if (retainer.months < 2) return
+
+  // Month one as actually saved, rather than as submitted: the stage editor
+  // and the line-item editor may both have changed it.
+  const [stages, lineItems, firstPayment] = await Promise.all([
+    getStages(parent.id),
+    getDeliverables(parent.id),
+    supabase
+      .from('payments')
+      .select('payment_terms')
+      .eq('deal_id', parent.id)
+      .order('sort_order', { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+  ])
+
+  const baseDescription = parent.deliverable_description
+
+  for (let month = 2; month <= retainer.months; month += 1) {
+    const shift = month - 1
+
+    const child = await createDeal({
+      brand_id: parent.brand_id,
+      platform: parent.platform,
+      // Distinguishable in a flat list. Six rows reading "4 Reels" for the same
+      // brand, differing only by a date, is the confusion this replaces.
+      deliverable_description: `${baseDescription} — month ${month} of ${retainer.months}`,
+      // Null only if it was withheld, which cannot happen here: generating a
+      // retainer means having just created it, which requires seeing the rate.
+      rate: parent.rate ?? 0,
+      notes: parent.notes,
+      payment_terms: (firstPayment.data?.payment_terms as string | null) ?? null,
+      publish_date: null,
+      // Ad rights are a term of the contract, not of each month, and are
+      // already recorded on month one. Repeating them would schedule the same
+      // expiry reminder once per month.
+      ad_rights: null,
+      retainer_parent_id: parent.id,
+    })
+
+    // The same workflow, a month later each time. A stage with no date stays
+    // undated rather than being given one: the creator left it open on month
+    // one and generating a deadline she never set would be an invention.
+    await replaceStages(
+      child.id,
+      stages.map((stage) => ({
+        name: stage.name,
+        due_date: stage.due_date ? addMonths(stage.due_date, shift) : null,
+        done: false,
+      }))
+    )
+
+    if (lineItems.length > 0) {
+      await replaceDeliverables(
+        child.id,
+        lineItems.map((item) => ({
+          kind: item.kind,
+          platform: item.platform ?? undefined,
+          quantity: item.quantity,
+          description: item.description,
+          rate: item.rate,
+          due_date: item.due_date ? addMonths(item.due_date, shift) : null,
+        }))
+      )
+    }
   }
 }
 

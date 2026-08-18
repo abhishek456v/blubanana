@@ -201,6 +201,22 @@ export interface Deal {
    * would fold a hidden figure into a visible total as if it were nothing.
    */
   rate: number | null
+  /**
+   * A retainer contract: "four Reels a month for six months" (§8.15).
+   *
+   * True only on the first month's deal, which carries the contract terms.
+   * Months two onward are ordinary deals with `retainer_parent_id` set — so
+   * every list, total, reminder and invoice already works on them, which is
+   * the whole reason they are real deals rather than a generated schedule
+   * hanging off one row.
+   */
+  is_retainer: boolean
+  /** Contract length, counting the first month. Set only when `is_retainer`. */
+  retainer_months: number | null
+  /** Deliverables per month. Recorded for the brief; not enforced. */
+  retainer_per_period: number | null
+  /** The first month's deal, on months two onward. Null on the parent itself. */
+  retainer_parent_id: string | null
   script_due_date: string | null
   shoot_date: string | null
   edit_done_date: string | null

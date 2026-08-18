@@ -535,7 +535,7 @@ duration, and the start date — and derives the expiry from those rather than
 asking for it twice. A reminder fires before it expires, and a link opens the
 Meta Ad Library so she can check whether the brand is still running the ad.
 
-### 8.15 Retainers — **New**
+### 8.15 Retainers — **Built**
 
 A second toggle on the deal. Many brands sign six- or twelve-month retainers
 with a monthly deliverable count — "four Reels a month for six months".
@@ -695,7 +695,13 @@ permissive, so they widened the right they were written to remove. §7.
 calculator, collection rate, export. `023` also carries the schema for
 retainers and per-area manager access.
 
-Still open: retainer UI, invoice-over-WhatsApp, the UPI QR on the invoice,
+Retainers shipped: a toggle on the new-deal screen captures the length and the
+per-month deliverable count, and the remaining months are generated as copies
+of month one — its stages and line items, each shifted a month — so every
+existing list, total, reminder and invoice works on them unchanged. The rate is
+per month, not per contract.
+
+Still open: invoice-over-WhatsApp, the UPI QR on the invoice,
 delete-my-account, and tax deadline notifications.
 
 **7 — Profile card rebuild**, then real Meta/YouTube APIs when credentials land.
