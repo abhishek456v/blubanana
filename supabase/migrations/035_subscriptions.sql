@@ -106,10 +106,6 @@ on conflict (key) do update
 grant select on billing_terms to authenticated, anon;
 
 
--- ── 1c. Is the intro still running? ─────────────────────────────────────────
--- Counts subscriptions that have actually been paid for, not signups: a
--- trialing workspace has not taken one of the 500 places.
-
 -- ── 1c. The one place a price is computed ───────────────────────────────────
 -- Order of operations, and it is not incidental.
 --
@@ -152,35 +148,6 @@ revoke all on function monthly_rate_paise(boolean) from public;
 revoke all on function term_price_paise(text, boolean) from public;
 grant execute on function monthly_rate_paise(boolean) to authenticated, anon;
 grant execute on function term_price_paise(text, boolean) to authenticated, anon;
-
-
-create or replace function intro_seats_taken()
-returns integer
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select count(*)::integer from subscriptions
-   where intro_applied and not is_internal
-     and status in ('active', 'past_due', 'cancelled')
-$$;
-
-revoke all on function intro_seats_taken() from public;
-grant execute on function intro_seats_taken() to authenticated, anon;
-
-create or replace function intro_is_live()
-returns boolean
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select intro_seats_taken() < (select intro_customer_limit from pricing where id)
-$$;
-
-revoke all on function intro_is_live() from public;
-grant execute on function intro_is_live() to authenticated, anon;
 
 
 -- ── 2. Subscriptions ────────────────────────────────────────────────────────
@@ -248,6 +215,44 @@ create policy "subscriptions: workspace members read"
 -- webhook through the service role; a client that could set its own status to
 -- 'active' would make the entire gate decorative.
 revoke insert, update, delete on subscriptions from authenticated;
+
+
+-- ── 2b. Is the intro still running? ─────────────────────────────────────────
+-- Defined AFTER `subscriptions`, and that is not cosmetic: Postgres validates a
+-- SQL function body when the function is created, so referencing the table from
+-- section 1 fails with "relation subscriptions does not exist". The first run of
+-- this migration did exactly that.
+--
+-- Counts subscriptions that were actually paid for, not signups: a trialing
+-- workspace has not taken one of the 500 places, and neither has a comped one.
+
+create or replace function intro_seats_taken()
+returns integer
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select count(*)::integer from subscriptions
+   where intro_applied and not is_internal
+     and status in ('active', 'past_due', 'cancelled')
+$$;
+
+revoke all on function intro_seats_taken() from public;
+grant execute on function intro_seats_taken() to authenticated, anon;
+
+create or replace function intro_is_live()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select intro_seats_taken() < (select intro_customer_limit from pricing where id)
+$$;
+
+revoke all on function intro_is_live() from public;
+grant execute on function intro_is_live() to authenticated, anon;
 
 
 -- ── 3. Is this workspace allowed to write? ──────────────────────────────────
