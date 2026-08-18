@@ -105,7 +105,10 @@ export function buildPerformance(
         views,
         engagements,
         engagementRate: denominator > 0 ? engagements / denominator : null,
-        costPerMille: views > 0 ? (deliverable.rate / views) * 1000 : null,
+        // Null when the rate is withheld as well as when there are no views:
+        // cost per mille without a cost is not a number worth showing.
+        costPerMille:
+          deliverable.rate !== null && views > 0 ? (deliverable.rate / views) * 1000 : null,
       })
     }
   }

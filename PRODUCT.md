@@ -188,7 +188,8 @@ detail. It is what makes the table safe to read across tenants at all.
 
 ## 7. Roles and permissions
 
-**Change** — the schema supports membership; there is no invite UI.
+**Built** — invite UI in Settings → Team; every switch enforced in the
+database (migrations 024 and 025).
 
 ### Creator (owner)
 
@@ -217,6 +218,19 @@ gets deals, deadlines and contacts, with **every amount masked**.
 no brands. Regardless of what is switched on. This is enforced in the database
 with row-level security, not in the UI, so it holds even against a direct API
 call.
+
+The policy must be `AS RESTRICTIVE`. A permissive delete policy is OR'd with
+the `for all` workspace policy every one of these tables already carries, so it
+grants a second route to the delete rather than removing the first — which is
+exactly what 023 shipped and 024 corrected.
+
+**Every switch is a database boundary, not a UI one.** Six are row filters. The
+seventh, rates, is a column on `deals`, which RLS cannot mask: 025 revokes the
+commercial columns outright and serves them through `deals_secure`, a view that
+nulls them per row. A withheld rate therefore arrives as `null` rather than as
+a number the screen declines to draw — so anything totalling rates must
+propagate the null rather than coalesce it to zero, which would silently
+understate a figure the reader believes is complete.
 
 ---
 
@@ -670,8 +684,12 @@ scheduler keyed to those columns, and the durable chain in
 **4 — Subscriptions.** `subscriptions`, Razorpay integration, the trial gate,
 read-only state, our own GST invoicing.
 
-**5 — Roles.** Membership permission flags, the invite UI, RLS enforcement of
-the delete rule.
+**5 — Roles. Done.** Membership permission flags, the invite UI, and RLS
+enforcement — of the delete rule, of the six row-scoped areas, and of rates via
+the masking views. `024` and `025`.
+
+The delete rule needed correcting rather than adding: 023's policies were
+permissive, so they widened the right they were written to remove. §7.
 
 **6 — The additions.** Done: repeat a deal, expenses, the advance-tax
 calculator, collection rate, export. `023` also carries the schema for

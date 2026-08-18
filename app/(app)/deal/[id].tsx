@@ -228,7 +228,9 @@ export default function DealDetailScreen() {
         // Populate form fields from loaded data.
         setPlatform(data.platform)
         setDeliverable(data.deliverable_description)
-        setRate(data.rate.toString())
+        // Empty when withheld (see `Deal.rate`). The rate input is hidden in
+        // that case, and handleSave leaves the stored figure alone.
+        setRate(data.rate?.toString() ?? '')
         setStageDrafts(
           stagesInOrder(data).map((stage) => ({
             id: stage.id,
@@ -350,7 +352,8 @@ export default function DealDetailScreen() {
       const summary = summarizeDeliverables(items)
       const contentTotal = contentValue(saved)
       setDeliverable(summary)
-      setRate(String(contentTotal))
+      // Blank rather than the string "null" when the total is withheld.
+      setRate(contentTotal === null ? '' : String(contentTotal))
       setDeal({
         ...deal,
         deliverable_description: summary,
@@ -409,8 +412,11 @@ export default function DealDetailScreen() {
   const handleSave = useCallback(async () => {
     if (!deal || paymentsInOrder(deal).length === 0) return
 
+    // A caller who cannot see the rate cannot be asked to re-enter it, and
+    // must not overwrite it with the blank they were shown.
+    const rateWithheld = deal.rate === null
     const rateNum = parseInt(rate, 10)
-    if (!rate || isNaN(rateNum) || rateNum <= 0) {
+    if (!rateWithheld && (!rate || isNaN(rateNum) || rateNum <= 0)) {
       toast('Enter a valid rate in INR', { tone: 'warning' })
       return
     }
@@ -429,13 +435,13 @@ export default function DealDetailScreen() {
       await updateDeal(deal.id, {
         platform,
         deliverable_description: deliverable.trim(),
-        rate: rateNum,
+        ...(rateWithheld ? {} : { rate: rateNum }),
         live_link: liveLink.trim() || null,
         notes: notes.trim() || null,
       })
 
       await updatePaymentRecord(deal, primaryPayment(deal), {
-        amount: rateNum,
+        ...(rateWithheld ? {} : { amount: rateNum }),
         paymentTerms: paymentTerms.trim() || null,
         publishDate: parsedPublishFromStages,
       })
@@ -931,7 +937,7 @@ export default function DealDetailScreen() {
                     label={summarizeDeliverables(deliverables) || PLATFORM_LABELS[platform]}
                     figure={
                       <Figure
-                        value={formatCurrency(parseInt(rate, 10) || 0)}
+                        value={formatCurrency(rate ? parseInt(rate, 10) || 0 : null)}
                         // Steps down on a phone. At `hero` the rate and the
                         // due date are set side by side and nearly touch at
                         // 390px, which reads as one run of digits.
@@ -1227,7 +1233,9 @@ export default function DealDetailScreen() {
                     <DeliverablesCard
                       deliverables={deliverables}
                       onChange={handleDeliverablesChange}
-                      disabled={savingDeliverables}
+                      // Read-only when the rates are withheld: the editor's
+                      // drafts would carry blank prices and save them as zero.
+                      disabled={savingDeliverables || deal.rate === null}
                     />
                   </View>
 

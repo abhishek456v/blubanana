@@ -108,7 +108,14 @@ export function getRateBenchmarkNudge(
     return null
   }
 
-  const usable = chronological.filter((deal) => reachFor(deal) !== null)
+  // A withheld rate (migration 025) disqualifies a deal from the comparison
+  // entirely rather than being treated as zero, which would read as a
+  // catastrophic rate drop and fire the nudge on a manager who simply is not
+  // allowed to see prices.
+  const usable = chronological.filter(
+    (deal): deal is (typeof chronological)[number] & { rate: number } =>
+      reachFor(deal) !== null && deal.rate !== null
+  )
   if (usable.length < 2) return null
 
   const current = usable[usable.length - 1]

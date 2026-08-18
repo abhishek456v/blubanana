@@ -41,7 +41,10 @@ export function DeliverablesCard({ deliverables, onChange, disabled }: Deliverab
 
   const total = totalDealValue(deliverables)
   const content = contentValue(deliverables)
-  const adRightsTotal = total - content
+  // Null propagates rather than subtracting through it: with either side
+  // withheld the difference is not a number, and 0 would read as "no ad
+  // rights fee" — a statement about the deal rather than about access.
+  const adRightsTotal = total !== null && content !== null ? total - content : null
 
   function toDrafts(): DeliverableDraft[] {
     return deliverables.map(draftFromDeliverable)
@@ -91,7 +94,9 @@ export function DeliverablesCard({ deliverables, onChange, disabled }: Deliverab
           {deliverables.length > 0 ? (
             <Text style={[styles.subtitle, { color: c.textSecondary }]}>
               {formatCurrency(content)}
-              {adRightsTotal > 0 ? ` + ${formatCurrency(adRightsTotal)} ad rights` : ''}
+              {adRightsTotal !== null && adRightsTotal > 0
+                ? ` + ${formatCurrency(adRightsTotal)} ad rights`
+                : ''}
             </Text>
           ) : null}
         </View>

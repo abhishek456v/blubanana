@@ -14,7 +14,9 @@ import { PaymentStatusBadge } from '@/components/PaymentStatusBadge'
 export interface InstalmentsCardProps {
   payments: Payment[]
   /** Total agreed on the deal, for the "adds up?" check. */
-  dealRate: number
+  /** Null when withheld from this reader — see `Deal.rate`. The reconciliation
+   *  line below is then omitted rather than computed against a missing total. */
+  dealRate: number | null
   onAdd: (input: { amount: number; due_date: string | null; label: string }) => Promise<void>
   onRemove: (paymentId: string) => void
   onMarkReceived: (payment: Payment) => void
@@ -48,7 +50,9 @@ export function InstalmentsCard({
   const [dueDate, setDueDate] = useState<string | null>(null)
 
   const scheduled = payments.reduce((sum, payment) => sum + payment.amount, 0)
-  const gap = dealRate - scheduled
+  // Null, not zero: with the deal total withheld there is no gap to state, and
+  // zero would assert the schedule adds up exactly — which it might not.
+  const gap = dealRate === null ? null : dealRate - scheduled
 
   const reset = () => {
     setAdding(false)
@@ -185,7 +189,7 @@ export function InstalmentsCard({
       {/* The schedule should add up to what was agreed. Stated rather than
           enforced: a deal can legitimately be part-invoiced, and blocking the
           save would stop her recording the advance before the balance exists. */}
-      {gap !== 0 && payments.length > 0 ? (
+      {gap !== null && gap !== 0 && payments.length > 0 ? (
         <Text style={[styles.gap, { color: c.textMuted }]}>
           {gap > 0
             ? `${formatCurrency(gap)} of the ${formatCurrency(dealRate)} deal is not scheduled yet.`

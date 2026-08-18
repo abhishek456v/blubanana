@@ -87,12 +87,41 @@ export function stagesInOrder(deal: { stages?: DealStage[] | null }): DealStage[
   return [...(deal.stages ?? [])].sort((a, b) => a.sort_order - b.sort_order)
 }
 
+/**
+ * The read path for deals.
+ *
+ * `deals` itself is no longer fully selectable: migration 025 revoked its
+ * commercial columns from every client role, so `rate`, `ad_rights_fee`,
+ * `rate_original` and `fx_rate` arrive only through this view — and arrive
+ * NULL when the caller lacks `can_see_rates` in that workspace.
+ *
+ * Writes still go to the base table. Writing a rate reveals nothing; only
+ * reading does, which is why the split is read-side only. The consequence is
+ * that a write cannot use PostgREST's returning clause to hand back the whole
+ * row, so the two places that need the saved deal re-read it from here.
+ */
+const DEALS_READ = 'deals_secure'
+
+/** Every embed the detail and list screens expect, in one place. */
+const DEAL_EMBEDS =
+  '*, brand:brands(*), payments(id, due_date, status, amount, paid_date, amount_received, tds_amount, label, sort_order, payment_terms), stages:deal_stages(*)'
+
+/** Re-reads a deal through the masking view after a write. */
+async function readDeal(id: string): Promise<Deal> {
+  const { data, error } = await supabase
+    .from(DEALS_READ)
+    .select('*, brand:brands(*)')
+    .eq('id', id)
+    .single()
+
+  if (error) throw error
+  return data as Deal
+}
+
 export async function getDeals(): Promise<DealWithPaymentSummary[]> {
   const { data, error } = await supabase
-    .from('deals')
-    .select(
-      '*, brand:brands(*), payments(id, due_date, status, amount, paid_date, amount_received, tds_amount, label, sort_order, payment_terms), stages:deal_stages(*)'
-    )
+    .from(DEALS_READ)
+    .select(DEAL_EMBEDS)
     .order('created_at', { ascending: false })
 
   if (error) throw error
@@ -102,10 +131,8 @@ export async function getDeals(): Promise<DealWithPaymentSummary[]> {
 // Powers the brand detail screen's deal history section.
 export async function getDealsForBrand(brandId: string): Promise<DealWithPaymentSummary[]> {
   const { data, error } = await supabase
-    .from('deals')
-    .select(
-      '*, brand:brands(*), payments(id, due_date, status, amount, paid_date, amount_received, tds_amount, label, sort_order, payment_terms), stages:deal_stages(*)'
-    )
+    .from(DEALS_READ)
+    .select(DEAL_EMBEDS)
     .eq('brand_id', brandId)
     .order('created_at', { ascending: false })
 
@@ -156,7 +183,9 @@ export async function createDeal(input: CreateDealInput): Promise<Deal> {
       ad_rights_start_date: adRights?.ad_rights_granted ? adRights.ad_rights_start_date : null,
       ad_rights_expires_date: adRightsExpiresDate,
     })
-    .select('*, brand:brands(*)')
+    // Only `id`, because `*` would expand to the revoked commercial columns
+    // and be refused. The full row comes back from the view below.
+    .select('id')
     .single()
 
   if (dealError) throw dealError
@@ -197,17 +226,15 @@ export async function createDeal(input: CreateDealInput): Promise<Deal> {
       .eq('id', payment.id)
     if (paymentReminderError) throw paymentReminderError
 
-    const { data: finalDeal, error: dealReminderError } = await supabase
+    const { error: dealReminderError } = await supabase
       .from('deals')
       .update(adRightsReminderFields)
       .eq('id', deal.id)
-      .select('*, brand:brands(*)')
-      .single()
     if (dealReminderError) throw dealReminderError
 
-    return finalDeal as Deal
+    return await readDeal(deal.id)
   } catch {
-    return deal as Deal
+    return await readDeal(deal.id)
   }
 }
 
@@ -220,7 +247,7 @@ export type DealWithPayments = Deal & { payments: Payment[]; stages: DealStage[]
 
 export async function getDeal(id: string): Promise<DealWithPayments> {
   const { data, error } = await supabase
-    .from('deals')
+    .from(DEALS_READ)
     .select('*, brand:brands(*), payments(*), stages:deal_stages(*)')
     .eq('id', id)
     .single()
@@ -245,15 +272,10 @@ export async function updateDeal(
     >
   >
 ): Promise<Deal> {
-  const { data: updated, error } = await supabase
-    .from('deals')
-    .update(fields)
-    .eq('id', id)
-    .select('*, brand:brands(*)')
-    .single()
+  const { error } = await supabase.from('deals').update(fields).eq('id', id)
   if (error) throw error
 
-  return updated as Deal
+  return await readDeal(id)
 }
 
 /**
@@ -314,7 +336,18 @@ export async function updatePaymentRecord(
     amount,
     paymentTerms,
     publishDate,
-  }: { amount: number; paymentTerms: string | null; publishDate: string | null }
+  }: {
+    /**
+     * Omit to leave the existing amount untouched.
+     *
+     * Used when the caller cannot see the deal's rate (see `Deal.rate`): they
+     * may still edit the terms and the publish date, and must not be able to
+     * overwrite an amount they were never shown.
+     */
+    amount?: number
+    paymentTerms: string | null
+    publishDate: string | null
+  }
 ): Promise<void> {
   if (!payment) return
 
@@ -323,7 +356,12 @@ export async function updatePaymentRecord(
 
   const { error } = await supabase
     .from('payments')
-    .update({ amount, payment_terms: paymentTerms, due_date: dueDate, ...reminderFields })
+    .update({
+      ...(amount === undefined ? {} : { amount }),
+      payment_terms: paymentTerms,
+      due_date: dueDate,
+      ...reminderFields,
+    })
     .eq('id', payment.id)
   if (error) throw error
 }
@@ -559,7 +597,8 @@ export interface RepeatCandidate {
   brandName: string
   platform: Platform
   deliverable: string
-  rate: number
+  /** Null when withheld from this reader — see `Deal.rate`. */
+  rate: number | null
   paymentTerms: string | null
   lastUsed: string
 }

@@ -191,7 +191,16 @@ export interface Deal {
   brand_id: string
   platform: Platform
   deliverable_description: string
-  rate: number // INR, whole rupees
+  /**
+   * INR, whole rupees — and null when the reader is not allowed to see it.
+   *
+   * Migration 025 masks this column for a manager without `can_see_rates`, in
+   * the database rather than on screen, so the value genuinely does not arrive.
+   * Null here means "withheld", never "free": a deal always has a rate. Treat
+   * it as unknown and render a placeholder; do not coalesce it to 0, which
+   * would fold a hidden figure into a visible total as if it were nothing.
+   */
+  rate: number | null
   script_due_date: string | null
   shoot_date: string | null
   edit_done_date: string | null
@@ -276,7 +285,8 @@ export interface Deliverable {
   platform: Platform | null
   quantity: number
   description: string | null
-  rate: number // INR, whole rupees
+  /** INR, whole rupees. Null when withheld — see the note on `Deal.rate`. */
+  rate: number | null
   due_date: string | null
   published_at: string | null
   live_link: string | null

@@ -78,14 +78,14 @@ export async function search(rawQuery: string): Promise<SearchResult[]> {
   const [dealsByText, dealsByBrand, brands, invoices] = await Promise.all([
     rows(
       supabase
-        .from('deals')
+        .from('deals_secure')
         .select(DEAL_SELECT)
         .or(`deliverable_description.ilike.${pattern},notes.ilike.${pattern}`)
         .limit(PER_KIND_LIMIT)
     ),
     rows(
       supabase
-        .from('deals')
+        .from('deals_secure')
         // !inner so the brand filter narrows the deals; over a left join it
         // would return every deal with the non-matching brands nulled out.
         .select('id, deliverable_description, rate, status, brand:brands!inner(name)')

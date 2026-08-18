@@ -11,6 +11,23 @@ export interface MoneyBucket {
   value: number
 }
 
+/**
+ * The same pair, for a total built from `deals.rate` rather than `payments`.
+ *
+ * `value` is null when one of the rates in it is withheld from this reader
+ * (see `Deal.rate`), because a total missing a figure is worse than no total.
+ * The count stays exact: how many deals there were is not a commercial secret,
+ * what they were worth is. `formatCurrency` renders null as an em dash.
+ *
+ * Separate from `MoneyBucket` so the payment-derived figures keep their
+ * non-null guarantee — those are gated as whole tables and never arrive
+ * partially masked.
+ */
+export interface MaskableMoneyBucket {
+  count: number
+  value: number | null
+}
+
 export interface RevenueSummary {
   /**
    * Deals signed this month and what they are worth.
@@ -21,14 +38,15 @@ export interface RevenueSummary {
    * gone. Keyed off `created_at`, which is when the deal was logged; the
    * schema has no separate "confirmed" timestamp to key off instead.
    */
-  lockedThisMonth: MoneyBucket
+  lockedThisMonth: MaskableMoneyBucket
   /** Payments actually received this calendar month. */
   earnedThisMonth: MoneyBucket
   /** Everything billed or expected and not yet received. */
   pending: MoneyBucket
   /** The subset of pending that is already past its due date. */
   overdue: MoneyBucket
-  averageDealValue: number
+  /** Null when any deal's rate is withheld from this reader — see `MoneyBucket`. */
+  averageDealValue: number | null
   /**
    * Of everything invoiced, what share actually arrived, and how long it took.
    *
@@ -66,10 +84,22 @@ export function computeRevenueSummary(deals: DealWithPaymentSummary[]): RevenueS
   // reconciles against a bank statement.
   const landed = ({ payment }: (typeof rows)[number]) => payment.amount_received ?? payment.amount
 
+  // Totals over `rate` are the only ones that can come back withheld; every
+  // other figure on Money is derived from `payments`, which is gated as a whole
+  // table rather than masked per column.
+  const sumRates = (rows: readonly { rate: number | null }[]): number | null => {
+    let sum = 0
+    for (const row of rows) {
+      if (row.rate === null) return null
+      sum += row.rate
+    }
+    return sum
+  }
+
   const lockedDeals = deals.filter((d) => isSameMonth(d.created_at.slice(0, 10), now))
-  const lockedThisMonth: MoneyBucket = {
+  const lockedThisMonth: MaskableMoneyBucket = {
     count: lockedDeals.length,
-    value: lockedDeals.reduce((sum, d) => sum + d.rate, 0),
+    value: sumRates(lockedDeals),
   }
 
   const earnedRows = settled.filter(({ payment }) => isSameMonth(payment.paid_date!, now))
@@ -96,8 +126,9 @@ export function computeRevenueSummary(deals: DealWithPaymentSummary[]): RevenueS
     }
   }
 
+  const dealTotal = sumRates(deals)
   const averageDealValue =
-    deals.length > 0 ? Math.round(deals.reduce((sum, d) => sum + d.rate, 0) / deals.length) : 0
+    deals.length > 0 && dealTotal !== null ? Math.round(dealTotal / deals.length) : null
 
   // Measured against everything billed, settled or not, so a brand sitting on
   // an invoice drags the rate down rather than being quietly excluded.

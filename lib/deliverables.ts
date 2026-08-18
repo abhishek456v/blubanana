@@ -16,7 +16,8 @@ export interface DeliverableInput {
   platform?: Platform | null
   quantity?: number
   description?: string | null
-  rate?: number
+  /** Null when read back from a deal whose rate is withheld — see `Deal.rate`. */
+  rate?: number | null
   due_date?: string | null
   live_link?: string | null
   published_at?: string | null
@@ -27,7 +28,10 @@ export interface DeliverableInput {
 
 export async function getDeliverables(dealId: string): Promise<Deliverable[]> {
   const { data, error } = await supabase
-    .from('deal_deliverables')
+    // The masking view, not the table: 025 revoked `rate` on the base table,
+    // so a manager without rates access reads the line items with the price
+    // NULL rather than not at all.
+    .from('deal_deliverables_secure')
     .select('*')
     .eq('deal_id', dealId)
     .order('sort_order', { ascending: true })
@@ -45,7 +49,7 @@ export async function getDeliverablesForDeals(
   if (dealIds.length === 0) return grouped
 
   const { data, error } = await supabase
-    .from('deal_deliverables')
+    .from('deal_deliverables_secure')
     .select('*')
     .in('deal_id', dealIds)
     .order('sort_order', { ascending: true })
@@ -73,6 +77,17 @@ export async function replaceDeliverables(
   dealId: string,
   items: DeliverableInput[]
 ): Promise<Deliverable[]> {
+  // A withheld rate reads as null, and `rate: item.rate ?? 0` below would
+  // write that back as a real zero — destroying a price the caller was never
+  // allowed to see. The UI disables the editor in that case; this is the guard
+  // that does not depend on the UI having done so.
+  //
+  // `undefined` is fine and means the opposite thing: a new line the creator
+  // has not priced yet, which legitimately starts at zero.
+  if (items.some((item) => item.rate === null)) {
+    throw new Error('Cannot edit line items while their rates are hidden from you')
+  }
+
   const { error: deleteError } = await supabase
     .from('deal_deliverables')
     .delete()
@@ -105,9 +120,12 @@ export async function replaceDeliverables(
       sort_order: index,
     }))
 
-    const { data, error } = await supabase.from('deal_deliverables').insert(rows).select()
+    // No returning clause: it would expand to the revoked `rate` column. The
+    // rows are read back through the view instead, which is also what makes
+    // the caller's copy honest about what they may see.
+    const { error } = await supabase.from('deal_deliverables').insert(rows)
     if (error) throw error
-    inserted = (data ?? []) as Deliverable[]
+    inserted = await getDeliverables(dealId)
   }
 
   await syncDealFromDeliverables(dealId, items)
@@ -171,15 +189,30 @@ export async function syncDealFromDeliverables(
   if (error) throw error
 }
 
-/** Content fee plus any ad-rights fee: what the brand actually pays. */
-export function totalDealValue(deliverables: Deliverable[]): number {
-  return deliverables.reduce((sum, d) => sum + d.rate, 0)
+/**
+ * Sums line-item rates, or returns null if any of them is withheld.
+ *
+ * Null rather than a partial total on purpose. A manager without
+ * `can_see_rates` reads some rates as null (migration 025), and skipping those
+ * rows would produce a smaller number that still looks like the deal's value —
+ * the most misleading of the three options. Refusing to answer is honest.
+ */
+function sumRates(deliverables: Deliverable[]): number | null {
+  let sum = 0
+  for (const d of deliverables) {
+    if (d.rate === null) return null
+    sum += d.rate
+  }
+  return sum
 }
 
-export function contentValue(deliverables: Deliverable[]): number {
-  return deliverables
-    .filter((d) => d.kind !== 'ad_rights')
-    .reduce((sum, d) => sum + d.rate, 0)
+/** Content fee plus any ad-rights fee: what the brand actually pays. */
+export function totalDealValue(deliverables: Deliverable[]): number | null {
+  return sumRates(deliverables)
+}
+
+export function contentValue(deliverables: Deliverable[]): number | null {
+  return sumRates(deliverables.filter((d) => d.kind !== 'ad_rights'))
 }
 
 export interface AdRightsBreakdown {
@@ -206,7 +239,9 @@ export function adRightsBreakdown(deliverable: Deliverable): AdRightsBreakdown |
   if (deliverable.kind !== 'ad_rights') return null
 
   const months = deliverable.duration_months ?? 0
-  if (months <= 0 || deliverable.rate <= 0) return null
+  // A withheld rate cannot be split across months. Null is already this
+  // function's answer for "not enough to compute a truthful figure".
+  if (deliverable.rate === null || months <= 0 || deliverable.rate <= 0) return null
 
   return {
     totalFee: deliverable.rate,

@@ -7,8 +7,14 @@ import { Button, Figure, Sheet, TextField } from '@/components/ui'
 
 export interface PaymentReceivedSheetProps {
   visible: boolean
-  /** What the brand was invoiced. The figure everything else is checked against. */
-  invoiced: number
+  /**
+  * What the brand was invoiced. The figure everything else is checked against.
+  *
+  * Null when withheld from this reader (see `Deal.rate`), in which case the
+  * received amount starts empty rather than being pre-filled with a number
+  * they were not shown.
+  */
+  invoiced: number | null
   brandName: string
   saving?: boolean
   onCancel: () => void
@@ -47,7 +53,7 @@ export function PaymentReceivedSheet({
   // numbers is how the wrong figure gets confirmed by muscle memory.
   useEffect(() => {
     if (visible) {
-      setReceived(String(invoiced))
+      setReceived(invoiced === null ? '' : String(invoiced))
       setTds('0')
     }
   }, [visible, invoiced])
@@ -55,20 +61,24 @@ export function PaymentReceivedSheet({
   const receivedNum = Number(received.replace(/[^0-9]/g, '')) || 0
   const tdsNum = Number(tds.replace(/[^0-9]/g, '')) || 0
   const accounted = receivedNum + tdsNum
-  const gap = invoiced - accounted
+  // Null when the invoiced figure is withheld: there is nothing to reconcile
+  // against, so the check below is omitted rather than run on a guess.
+  const gap = invoiced === null ? null : invoiced - accounted
 
   const onReceivedChange = (value: string) => {
     setReceived(value)
     const next = Number(value.replace(/[^0-9]/g, '')) || 0
     // Offer the shortfall as TDS, which is what it is the overwhelming
     // majority of the time. Never go negative on an overpayment.
-    setTds(String(Math.max(invoiced - next, 0)))
+    // Skipped when the invoiced figure is withheld — there is no shortfall to
+    // derive, and both fields are then typed by hand.
+    if (invoiced !== null) setTds(String(Math.max(invoiced - next, 0)))
   }
 
   const onTdsChange = (value: string) => {
     setTds(value)
     const next = Number(value.replace(/[^0-9]/g, '')) || 0
-    setReceived(String(Math.max(invoiced - next, 0)))
+    if (invoiced !== null) setReceived(String(Math.max(invoiced - next, 0)))
   }
 
   return (
@@ -105,7 +115,7 @@ export function PaymentReceivedSheet({
           a total that does not match the invoice. Not a blocker: brands do
           underpay, and refusing to record reality is worse than flagging it. */}
       <View style={styles.reconcile}>
-        {gap === 0 ? (
+        {gap === null ? null : gap === 0 ? (
           <Text style={[styles.reconcileOk, { color: c.success }]}>
             Adds up to the invoiced amount.
           </Text>
