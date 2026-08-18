@@ -1,57 +1,94 @@
 import { useCallback, useState } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { Image, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/core'
-import { cardIsThin, getProfileCardData, type ProfileCardData } from '@/lib/profileCard'
-import { buildProfileCardHtml } from '@/lib/profileCardHtml'
+import { Ionicons } from '@expo/vector-icons'
+import { LinearGradient } from 'expo-linear-gradient'
+import * as ImagePicker from 'expo-image-picker'
+import { cardIsThin, getProfileCardData, toCardContent } from '@/lib/profileCard'
+import { buildProfileCardHtml, type CardContent } from '@/lib/profileCardHtml'
+import {
+  MAX_PROFILE_PHOTOS,
+  deleteProfilePhoto,
+  getProfilePhotos,
+  photoAsDataUri,
+  setCardPhoto,
+  uploadProfilePhoto,
+  type ProfilePhoto,
+} from '@/lib/profilePhotos'
+import { getProfile, updateProfile } from '@/lib/profile'
 import { sharePdf } from '@/lib/sharePdf'
-import { formatCurrency } from '@/lib/format'
-import { ContentMaxWidth, FontFamily, Radius, Spacing, Typography } from '@/constants/design'
+import { CARD_THEMES, resolveTheme, type CardTheme } from '@/constants/cardThemes'
+import { ContentMaxWidth, FontFamily, HitSlop, Radius, Spacing, Typography } from '@/constants/design'
 import { useTheme } from '@/hooks/useTheme'
 import { ModalSheet } from '@/components/ModalSheet'
+import { CardEditorSheet } from '@/components/profile/CardEditorSheet'
 import {
   Button,
+  Chip,
   EmptyState,
-  Figure,
-  GradientCard,
+  PressableScale,
   RevealScrollView,
   Skeleton,
+  useConfirm,
   useToast,
 } from '@/components/ui'
 
-/** `1.2M` / `48.3K` — mirrors the card itself so the preview cannot disagree. */
-function compactCount(n: number): string {
-  if (n >= 10_000_000) return `${(n / 10_000_000).toFixed(1).replace(/\.0$/, '')}Cr`
-  if (n >= 100_000) return `${(n / 100_000).toFixed(1).replace(/\.0$/, '')}L`
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, '')}K`
-  return String(n)
+function monogram(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return '—'
+  return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase()
 }
 
 /**
  * The shareable card (§8.11) — what a creator sends when a brand says "share
  * your commercials".
  *
- * Nothing here is a field she fills in. The rates are the median of what she
- * has actually charged per deliverable, drawn from her own history, because a
- * card assembled by hand goes stale within weeks and a stale card sent to a
- * brand is worse than none.
+ * Three things are hers to control and they behave differently on purpose:
  *
- * The preview is native and the shared artefact is the HTML in
- * `profileCardHtml.ts`. Two renderings of one dataset is a real risk — they can
- * drift — so the preview deliberately shows the same figures in the same order
- * rather than being a second design.
+ *   * The **photo** and the **theme** persist. They are assets and a
+ *     preference, chosen once and reused.
+ *   * The **text** does not. Every field is editable before sending, and the
+ *     card is rebuilt from live data next time it opens, so a figure adjusted
+ *     for one negotiation cannot follow her into a later one silently.
+ *
+ * The preview below is a native rendering of the same content the document
+ * uses. Two renderers of one dataset can drift, so both are fed from the same
+ * `CardContent` and the same theme rather than being designed twice.
  */
 export default function ProfileCardScreen() {
   const { c } = useTheme()
   const toast = useToast()
+  const confirm = useConfirm()
 
-  const [data, setData] = useState<ProfileCardData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [sharing, setSharing] = useState(false)
+  const [content, setContent] = useState<CardContent | null>(null)
+  const [theme, setTheme] = useState<CardTheme>(CARD_THEMES[0])
+  const [photos, setPhotos] = useState<ProfilePhoto[]>([])
+  const [cardPhotoId, setCardPhotoId] = useState<string | null>(null)
+  const [photoUri, setPhotoUri] = useState<string | null>(null)
+  const [thin, setThin] = useState(false)
+
+  const [editing, setEditing] = useState(false)
+  const [busy, setBusy] = useState(false)
 
   const load = useCallback(async () => {
     try {
-      setData(await getProfileCardData())
+      const [data, profile, saved] = await Promise.all([
+        getProfileCardData(),
+        getProfile(),
+        getProfilePhotos(),
+      ])
+
+      setContent(toCardContent(data))
+      setThin(cardIsThin(data))
+      setTheme(resolveTheme(profile?.card_theme, profile?.niche))
+      setPhotos(saved)
+
+      const chosen =
+        saved.find((p) => p.id === profile?.card_photo_id) ?? saved[0] ?? null
+      setCardPhotoId(chosen?.id ?? null)
+      setPhotoUri(chosen ? await photoAsDataUri(chosen.path) : null)
     } catch {
       toast('Could not build your card', { tone: 'error' })
     } finally {
@@ -65,124 +102,316 @@ export default function ProfileCardScreen() {
     }, [load])
   )
 
-  async function handleShare() {
-    if (!data || sharing) return
-    setSharing(true)
+  async function handlePickTheme(next: CardTheme) {
+    setTheme(next)
     try {
-      await sharePdf(buildProfileCardHtml(data), 'Rate card')
+      await updateProfile({ card_theme: next.key })
+    } catch {
+      // The card still uses the choice for this session; only the memory of it
+      // failed, which is not worth interrupting her to say.
+    }
+  }
+
+  async function handleChoosePhoto(photo: ProfilePhoto) {
+    setCardPhotoId(photo.id)
+    setPhotoUri(await photoAsDataUri(photo.path))
+    try {
+      await setCardPhoto(photo.id)
+    } catch {
+      toast('Could not save that choice', { tone: 'error' })
+    }
+  }
+
+  async function handleAddPhoto() {
+    if (photos.length >= MAX_PROFILE_PHOTOS) {
+      toast(`You can keep up to ${MAX_PROFILE_PHOTOS} photos. Remove one first.`, {
+        tone: 'warning',
+      })
+      return
+    }
+
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (!permission.granted) {
+      toast('Photo access is needed to add a picture', { tone: 'warning' })
+      return
+    }
+
+    const picked = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      // Square, because the card crops to a circle. Letting her frame it here
+      // is the difference between a portrait and a cropped-off forehead.
+      aspect: [1, 1],
+      quality: 0.85,
+      base64: true,
+    })
+    if (picked.canceled || !picked.assets[0]?.base64) return
+
+    setBusy(true)
+    try {
+      const photo = await uploadProfilePhoto(picked.assets[0].base64)
+      setPhotos((prev) => [...prev, photo])
+      await handleChoosePhoto(photo)
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Could not add that photo', {
+        tone: 'error',
+      })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleRemovePhoto(photo: ProfilePhoto) {
+    const ok = await confirm({
+      title: 'Remove this photo?',
+      message: 'It is deleted from your account, not just from the card.',
+      confirmLabel: 'Remove',
+      destructive: true,
+    })
+    if (!ok) return
+
+    try {
+      await deleteProfilePhoto(photo)
+      const remaining = photos.filter((p) => p.id !== photo.id)
+      setPhotos(remaining)
+      if (cardPhotoId === photo.id) {
+        const next = remaining[0] ?? null
+        setCardPhotoId(next?.id ?? null)
+        setPhotoUri(next ? await photoAsDataUri(next.path) : null)
+        await setCardPhoto(next?.id ?? null)
+      }
+    } catch {
+      toast('Could not remove that photo', { tone: 'error' })
+    }
+  }
+
+  async function handleShare() {
+    if (!content || busy) return
+    setBusy(true)
+    try {
+      await sharePdf(buildProfileCardHtml({ content, theme, photoDataUri: photoUri }), 'Rate card')
     } catch {
       toast('Could not share your card', { tone: 'error' })
     } finally {
-      setSharing(false)
+      setBusy(false)
     }
+  }
+
+  if (loading) {
+    return (
+      <ModalSheet title="Rate card">
+        <SafeAreaView style={styles.safe} edges={['bottom']}>
+          <View style={styles.content}>
+            <Skeleton height={280} radius={Radius.lg} />
+          </View>
+        </SafeAreaView>
+      </ModalSheet>
+    )
+  }
+
+  if (!content || thin) {
+    return (
+      <ModalSheet title="Rate card">
+        <SafeAreaView style={styles.safe} edges={['bottom']}>
+          <View style={styles.content}>
+            <EmptyState
+              icon="id-card-outline"
+              title="Not enough history yet"
+              message="Your card is built from what you have actually charged. Log a few deals with their line items and it fills itself in."
+            />
+          </View>
+        </SafeAreaView>
+      </ModalSheet>
+    )
   }
 
   return (
     <ModalSheet title="Rate card">
       <SafeAreaView style={styles.safe} edges={['bottom']}>
         <RevealScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          {loading ? (
-            <Skeleton height={220} radius={Radius.lg} />
-          ) : !data || cardIsThin(data) ? (
-            <EmptyState
-              icon="id-card-outline"
-              title="Not enough history yet"
-              message="Your rate card is built from what you have actually charged. Log a few deals with their line items and it fills itself in."
-            />
-          ) : (
-            <>
-              {/* Front */}
-              <GradientCard gradient="blue" style={styles.card}>
-                <Text style={styles.name}>{data.name}</Text>
-                {data.niche ? <Text style={styles.niche}>{data.niche}</Text> : null}
-                {data.handles.length > 0 ? (
-                  <Text style={styles.handles}>
-                    {data.handles.map((h) => `@${h.handle}`).join('  ·  ')}
-                  </Text>
-                ) : null}
+          {/* Front */}
+          <LinearGradient
+            colors={theme.front.colors as [string, string, ...string[]]}
+            locations={theme.front.locations as [number, number, ...number[]]}
+            start={{ x: 0.1, y: 0 }}
+            end={{ x: 0.9, y: 1 }}
+            style={styles.panel}
+          >
+            <View style={[styles.portrait, { borderColor: 'rgba(255,255,255,0.42)' }]}>
+              {photoUri ? (
+                <Image source={{ uri: photoUri }} style={styles.portraitImage} />
+              ) : (
+                <Text style={[styles.monogram, { color: theme.ink }]}>
+                  {monogram(content.name)}
+                </Text>
+              )}
+            </View>
 
-                <View style={styles.stats}>
-                  {data.followers != null ? (
-                    <View>
-                      <Figure value={compactCount(data.followers)} size="lg" color="#FFFFFF" bold />
-                      <Text style={styles.statLabel}>Followers</Text>
-                    </View>
-                  ) : null}
-                  {data.engagementRate != null ? (
-                    <View>
-                      <Figure
-                        value={`${(data.engagementRate * 100).toFixed(1)}%`}
-                        size="lg"
-                        color="#FFFFFF"
-                        bold
-                      />
-                      <Text style={styles.statLabel}>Engagement</Text>
-                    </View>
-                  ) : null}
-                  {data.costPerView != null ? (
-                    <View>
-                      <Figure
-                        value={`₹${data.costPerView.toFixed(2)}`}
-                        size="lg"
-                        color="#FFFFFF"
-                        bold
-                      />
-                      <Text style={styles.statLabel}>Cost per view</Text>
-                    </View>
-                  ) : null}
-                </View>
-              </GradientCard>
+            <Text style={[styles.name, { color: theme.ink }]}>{content.name}</Text>
+            {content.tagline ? (
+              <Text style={[styles.tagline, { color: theme.inkSoft }]}>{content.tagline}</Text>
+            ) : null}
+            {content.handles ? (
+              <Text style={[styles.handles, { color: theme.ink }]}>{content.handles}</Text>
+            ) : null}
 
-              {/* Back */}
-              <GradientCard gradient="ink" style={styles.card}>
-                <Text style={styles.sectionLabel}>Rates</Text>
-                {data.rates.map((rate) => (
-                  <View key={rate.kind} style={styles.rateRow}>
-                    <Text style={styles.rateLabel}>{rate.label}</Text>
-                    <Text style={styles.rateValue}>{formatCurrency(rate.typical)}</Text>
+            <View style={styles.stats}>
+              {content.stats
+                .filter((s) => s.value.trim())
+                .map((stat, i) => (
+                  <View key={i}>
+                    <Text style={[styles.statValue, { color: theme.ink }]}>{stat.value}</Text>
+                    <Text style={[styles.statLabel, { color: theme.inkSoft }]}>{stat.label}</Text>
                   </View>
                 ))}
-                {data.phone ? (
-                  <>
-                    <Text style={[styles.sectionLabel, styles.contactLabel]}>Contact</Text>
-                    <Text style={styles.contact}>{data.phone}</Text>
-                  </>
-                ) : null}
-              </GradientCard>
+            </View>
+          </LinearGradient>
 
-              {/* Said here rather than on the card. A brand reading the card
-                  does not need to be told how the sausage is made; the creator
-                  does, because it is what makes the number defensible. */}
-              <Text style={[styles.note, { color: c.textMuted }]}>
-                Each rate is the median of what you have actually charged for that
-                deliverable — not a list price. It updates itself as you log deals.
-              </Text>
-
-              {data.costPerView == null ? (
-                <Text style={[styles.note, { color: c.textMuted }]}>
-                  Cost per view appears once your deals carry view counts. Add them on a
-                  deal&apos;s line items.
+          {/* Back */}
+          <LinearGradient
+            colors={theme.back.colors as [string, string, ...string[]]}
+            locations={theme.back.locations as [number, number, ...number[]]}
+            start={{ x: 0.1, y: 0 }}
+            end={{ x: 0.9, y: 1 }}
+            style={styles.panel}
+          >
+            {content.rates.length > 0 ? (
+              <>
+                <Text style={[styles.sectionLabel, { color: theme.inkSoft }]}>
+                  {content.ratesHeading}
                 </Text>
-              ) : null}
+                {content.rates.map((rate, i) => (
+                  <View key={i} style={styles.rateRow}>
+                    <Text style={[styles.rateLabel, { color: theme.ink }]}>{rate.label}</Text>
+                    <Text style={[styles.rateValue, { color: theme.ink }]}>{rate.value}</Text>
+                  </View>
+                ))}
+              </>
+            ) : null}
 
-              {!data.statsAreLive ? (
-                <Text style={[styles.note, { color: c.textMuted }]}>
-                  Follower and engagement figures are the ones you entered. They refresh
-                  themselves once Instagram and YouTube are connected.
+            {content.about ? (
+              <Text style={[styles.about, { color: theme.inkSoft }]}>{content.about}</Text>
+            ) : null}
+
+            {content.contact ? (
+              <>
+                <Text style={[styles.sectionLabel, { color: theme.inkSoft, marginTop: Spacing.md }]}>
+                  {content.contactHeading}
                 </Text>
-              ) : null}
+                <Text style={[styles.contact, { color: theme.ink }]}>{content.contact}</Text>
+              </>
+            ) : null}
+          </LinearGradient>
 
-              <Button
-                label={sharing ? 'Preparing…' : 'Share card'}
-                onPress={handleShare}
-                disabled={sharing}
-                fullWidth
+          {/* Photo */}
+          <Text style={[styles.controlLabel, { color: c.textSecondary }]}>Photo</Text>
+          <View style={styles.photoRow}>
+            {photos.map((photo) => (
+              <PhotoThumb
+                key={photo.id}
+                photo={photo}
+                selected={photo.id === cardPhotoId}
+                onPress={() => handleChoosePhoto(photo)}
+                onRemove={() => handleRemovePhoto(photo)}
               />
-            </>
-          )}
+            ))}
+            {photos.length < MAX_PROFILE_PHOTOS ? (
+              <PressableScale
+                onPress={handleAddPhoto}
+                accessibilityRole="button"
+                accessibilityLabel="Add a photo"
+                style={[styles.addPhoto, { borderColor: c.borderStrong }]}
+              >
+                <Ionicons name="add" size={20} color={c.accent} />
+              </PressableScale>
+            ) : null}
+          </View>
+
+          {/* Theme */}
+          <Text style={[styles.controlLabel, { color: c.textSecondary }]}>Theme</Text>
+          <View style={styles.themeRow}>
+            {CARD_THEMES.map((option) => (
+              <Chip
+                key={option.key}
+                label={option.label}
+                selected={option.key === theme.key}
+                onPress={() => handlePickTheme(option)}
+              />
+            ))}
+          </View>
+
+          <Text style={[styles.note, { color: c.textMuted }]}>
+            Rates are the median of what you have actually charged, so the card stays
+            current on its own. Edits below apply to this send only.
+          </Text>
+
+          <Button label="Edit card" variant="secondary" onPress={() => setEditing(true)} fullWidth />
+          <Button
+            label={busy ? 'Preparing…' : 'Share card'}
+            onPress={handleShare}
+            disabled={busy}
+            fullWidth
+          />
         </RevealScrollView>
+
+        <CardEditorSheet
+          visible={editing}
+          content={content}
+          onClose={() => setEditing(false)}
+          onApply={setContent}
+        />
       </SafeAreaView>
     </ModalSheet>
+  )
+}
+
+function PhotoThumb({
+  photo,
+  selected,
+  onPress,
+  onRemove,
+}: {
+  photo: ProfilePhoto
+  selected: boolean
+  onPress: () => void
+  onRemove: () => void
+}) {
+  const { c } = useTheme()
+  const [uri, setUri] = useState<string | null>(null)
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true
+      photoAsDataUri(photo.path).then((value) => active && setUri(value))
+      return () => {
+        active = false
+      }
+    }, [photo.path])
+  )
+
+  return (
+    <View>
+      <PressableScale
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={selected ? 'Photo used on the card' : 'Use this photo on the card'}
+        style={[
+          styles.thumb,
+          { borderColor: selected ? c.accent : c.border, borderWidth: selected ? 2 : 1 },
+        ]}
+      >
+        {uri ? <Image source={{ uri }} style={styles.thumbImage} /> : null}
+      </PressableScale>
+      <PressableScale
+        onPress={onRemove}
+        hitSlop={HitSlop}
+        accessibilityRole="button"
+        accessibilityLabel="Remove this photo"
+        style={[styles.thumbRemove, { backgroundColor: c.bgSurface }]}
+      >
+        <Ionicons name="close" size={12} color={c.textMuted} />
+      </PressableScale>
+    </View>
   )
 }
 
@@ -196,48 +425,60 @@ const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'center',
   },
-  card: {
+  panel: {
+    borderRadius: Radius.lg,
     padding: Spacing.lg,
-    gap: Spacing.xs,
+    overflow: 'hidden',
+  },
+  portrait: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    borderWidth: 1.5,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+  },
+  portraitImage: { width: '100%', height: '100%' },
+  monogram: {
+    ...Typography.title,
+    fontFamily: FontFamily.semiBold,
   },
   name: {
-    ...Typography.title,
+    ...Typography.display,
     fontFamily: FontFamily.display,
-    color: '#FFFFFF',
+    marginTop: Spacing.md,
   },
-  niche: {
+  tagline: {
     ...Typography.caption,
     fontFamily: FontFamily.regular,
-    color: 'rgba(255,255,255,0.72)',
+    marginTop: Spacing.xs,
   },
   handles: {
     ...Typography.caption,
     fontFamily: FontFamily.regular,
-    color: 'rgba(255,255,255,0.88)',
+    marginTop: 2,
+    opacity: 0.9,
   },
   stats: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: Spacing.lg,
-    marginTop: Spacing.md,
+    marginTop: Spacing.lg,
+  },
+  statValue: {
+    ...Typography.title,
+    fontFamily: FontFamily.semiBold,
   },
   statLabel: {
     ...Typography.label,
     fontFamily: FontFamily.medium,
-    color: 'rgba(255,255,255,0.62)',
     marginTop: 2,
   },
   sectionLabel: {
     ...Typography.label,
     fontFamily: FontFamily.medium,
-    color: 'rgba(255,255,255,0.52)',
-  },
-  contactLabel: {
-    marginTop: Spacing.md,
-  },
-  contact: {
-    ...Typography.body,
-    fontFamily: FontFamily.regular,
-    color: 'rgba(255,255,255,0.9)',
   },
   rateRow: {
     flexDirection: 'row',
@@ -245,17 +486,67 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
     paddingVertical: Spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.12)',
+    borderBottomColor: 'rgba(255,255,255,0.13)',
   },
   rateLabel: {
     ...Typography.body,
     fontFamily: FontFamily.regular,
-    color: 'rgba(255,255,255,0.86)',
+    opacity: 0.88,
   },
   rateValue: {
     ...Typography.bodyStrong,
     fontFamily: FontFamily.semiBold,
-    color: '#FFFFFF',
+  },
+  about: {
+    ...Typography.caption,
+    fontFamily: FontFamily.regular,
+    lineHeight: 18,
+    marginTop: Spacing.md,
+  },
+  contact: {
+    ...Typography.body,
+    fontFamily: FontFamily.regular,
+    marginTop: Spacing.xs,
+  },
+  controlLabel: {
+    ...Typography.label,
+    fontFamily: FontFamily.medium,
+    marginTop: Spacing.xs,
+  },
+  photoRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  thumb: {
+    width: 56,
+    height: 56,
+    borderRadius: Radius.md,
+    overflow: 'hidden',
+  },
+  thumbImage: { width: '100%', height: '100%' },
+  thumbRemove: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addPhoto: {
+    width: 56,
+    height: 56,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  themeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
   },
   note: {
     ...Typography.caption,

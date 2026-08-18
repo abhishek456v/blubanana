@@ -161,6 +161,14 @@ export interface Creator {
   address: string | null
   /** Drives the rate card's suggested theme (§8.11). */
   niche: string | null
+  /**
+   * The rate card's chosen theme key (032). Null means "follow the niche", so
+   * a creator who never opens the picker keeps getting the right suggestion as
+   * her niche changes.
+   */
+  card_theme: string | null
+  /** Which `profile_photos` row the card uses. Null falls back to a monogram. */
+  card_photo_id: string | null
   created_at: string
 }
 

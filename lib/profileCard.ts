@@ -2,6 +2,7 @@ import { supabase } from './supabase'
 import { getProfile } from './profile'
 import { getSocialAccounts, getStatHistory, summarizeReach, isUsingMockProviders } from './social'
 import { DELIVERABLE_LABELS } from '@/constants/labels'
+import type { CardContent, CardStat } from './profileCardHtml'
 import type { Creator, DeliverableKind } from '@/types'
 
 // The shareable card (PRODUCT.md §8.11).
@@ -151,6 +152,65 @@ export async function getProfileCardData(): Promise<ProfileCardData> {
     statsAsOf,
     statsAreLive: connected.length > 0 && !isUsingMockProviders(),
   }
+}
+
+/**
+ * Turns the derived figures into the card's editable text.
+ *
+ * The seam between "what the app knows" and "what she is about to send". After
+ * this point everything is a string she can rewrite, which is why the form can
+ * offer to edit the labels and the paragraph and not just the numbers.
+ *
+ * Called fresh each time the card screen opens. Edits are per-share by design:
+ * the card always starts from live data, so a rate she corrected once cannot
+ * quietly persist into a send six months later when it is no longer true.
+ */
+export function toCardContent(data: ProfileCardData): CardContent {
+  const stats: CardStat[] = []
+  if (data.followers != null) {
+    stats.push({ label: 'Followers', value: compactCount(data.followers) })
+  }
+  if (data.engagementRate != null) {
+    stats.push({ label: 'Engagement', value: `${(data.engagementRate * 100).toFixed(1)}%` })
+  }
+  if (data.costPerView != null) {
+    stats.push({ label: 'Cost per view', value: `₹${data.costPerView.toFixed(2)}` })
+  }
+
+  const sampleTotal = data.rates.reduce((sum, r) => sum + r.sampleSize, 0)
+
+  return {
+    name: data.name,
+    tagline: data.niche ?? '',
+    handles: data.handles.map((h) => `@${h.handle}`).join('  ·  '),
+    stats,
+    ratesHeading: 'Rates',
+    rates: data.rates.map((r) => ({
+      label: r.label,
+      value: `₹${r.typical.toLocaleString('en-IN')}`,
+    })),
+    // Stated as a fact about the numbers, because that is what makes them
+    // negotiable from a position of strength rather than a wish list.
+    about:
+      sampleTotal > 0
+        ? `Every rate is the median of what has actually been charged, across ${sampleTotal} past ${
+            sampleTotal === 1 ? 'deliverable' : 'deliverables'
+          }.`
+        : '',
+    contactHeading: 'Contact',
+    contact: data.phone ?? '',
+    footnote: data.statsAreLive
+      ? `Figures refreshed ${data.statsAsOf ? data.statsAsOf.slice(0, 10) : 'automatically'}`
+      : 'Reach figures entered by hand',
+  }
+}
+
+/** `1.2M` / `48.3K` — how a follower count is spoken, and it has to fit. */
+export function compactCount(n: number): string {
+  if (n >= 10_000_000) return `${(n / 10_000_000).toFixed(1).replace(/\.0$/, '')}Cr`
+  if (n >= 100_000) return `${(n / 100_000).toFixed(1).replace(/\.0$/, '')}L`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, '')}K`
+  return String(n)
 }
 
 /** True when there is not enough history for the card to be worth sending. */

@@ -26,6 +26,8 @@ export async function updateProfile(
       | 'ifsc_code'
       | 'gstin'
       | 'niche'
+      | 'card_theme'
+      | 'card_photo_id'
     >
   >
 ): Promise<Creator> {
