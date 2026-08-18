@@ -1,0 +1,191 @@
+/*
+ * CreatorDesk — the marketing site.
+ *
+ * The palette, the gradients and the type scale are lifted from
+ * constants/design.ts rather than chosen again here. This page and the app are
+ * the same product, and a visitor moving from one to the other should not feel
+ * a seam.
+ *
+ * Hand-written CSS, no build step, no framework. §4 says the site is "separate
+ * and simple", and a marketing page that ships a megabyte of JavaScript to
+ * render five paragraphs is neither.
+ */
+
+:root {
+  --bg: #08080C;
+  --surface: #141419;
+  --surface-raised: #1D1D23;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --text: #FFFFFF;
+  --text-secondary: rgba(255, 255, 255, 0.60);
+  --text-muted: rgba(255, 255, 255, 0.40);
+  --accent: #3B6EF6;
+  --accent-text: #7FA5FF;
+  --accent-light: rgba(59, 110, 246, 0.16);
+  --success: #3DD68C;
+
+  --blue: linear-gradient(150deg, #5E97FF 0%, #1D46E8 34%, #4340D4 62%, #A99BEE 100%);
+  --ink: linear-gradient(150deg, #2A2A31 0%, #17171C 38%, #0E0E12 72%, #1A1A21 100%);
+
+  --radius: 18px;
+  --radius-sm: 12px;
+  --max: 1080px;
+  --prose: 720px;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The ambient wash from the app's dark theme, so the page has the same depth. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(80% 60% at 80% 0%, #1B1E4A 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.wrap { position: relative; z-index: 1; max-width: var(--max); margin: 0 auto; padding: 0 24px; }
+.prose { max-width: var(--prose); }
+
+a { color: var(--accent-text); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+header {
+  position: relative; z-index: 2;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 24px;
+  padding: 22px 24px;
+  max-width: var(--max); margin: 0 auto;
+}
+.logo { display: flex; align-items: center; gap: 10px; font-weight: 650; letter-spacing: -0.02em; }
+.logo-mark {
+  width: 26px; height: 26px; border-radius: 8px; background: var(--blue);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34);
+}
+nav { display: flex; gap: 22px; align-items: center; font-size: 14.5px; }
+nav a { color: var(--text-secondary); }
+nav a:hover { color: var(--text); text-decoration: none; }
+
+/* ── Buttons ────────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 44px; padding: 0 22px; border-radius: 999px;
+  font-size: 15px; font-weight: 600; letter-spacing: -0.01em;
+  background: var(--accent); color: #fff; border: 0; cursor: pointer;
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+.btn:hover { background: #5E88FF; text-decoration: none; transform: translateY(-1px); }
+.btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--border-strong); }
+.btn.ghost:hover { background: rgba(255, 255, 255, 0.04); }
+
+/* ── Hero ───────────────────────────────────────────────────────────────── */
+.hero { padding: 72px 0 40px; }
+h1 {
+  font-size: clamp(34px, 6vw, 58px);
+  line-height: 1.05; letter-spacing: -0.035em; margin: 0 0 20px; font-weight: 700;
+  max-width: 15ch;
+}
+.lede { font-size: clamp(17px, 2.2vw, 20px); color: var(--text-secondary); max-width: 54ch; margin: 0 0 32px; }
+.hero-actions { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.hero-note { font-size: 13.5px; color: var(--text-muted); margin-top: 16px; }
+
+/* ── Sections ───────────────────────────────────────────────────────────── */
+section { padding: 56px 0; }
+h2 {
+  font-size: clamp(24px, 3.4vw, 34px);
+  letter-spacing: -0.028em; line-height: 1.15; margin: 0 0 14px; font-weight: 680;
+}
+h3 { font-size: 18px; letter-spacing: -0.015em; margin: 0 0 8px; font-weight: 620; }
+.section-lede { color: var(--text-secondary); max-width: 58ch; margin: 0 0 32px; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(268px, 1fr)); gap: 16px; }
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 24px;
+}
+.card p { color: var(--text-secondary); margin: 0; font-size: 15px; }
+.card .kicker {
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.16em;
+  color: var(--accent-text); margin-bottom: 10px;
+}
+
+/* ── Pricing ────────────────────────────────────────────────────────────── */
+.price-card {
+  background: var(--ink); border: 1px solid var(--border-strong);
+  border-radius: var(--radius); padding: 32px; max-width: 460px;
+  position: relative; overflow: hidden;
+}
+.price-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: rgba(255, 255, 255, 0.34);
+}
+.offer {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--accent-light); color: var(--accent-text);
+  border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 600;
+  margin-bottom: 20px;
+}
+.price { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+.price .now { font-size: 46px; font-weight: 700; letter-spacing: -0.035em; line-height: 1; }
+.price .was { font-size: 20px; color: var(--text-muted); text-decoration: line-through; }
+.price-meta { color: var(--text-secondary); font-size: 14.5px; margin-bottom: 24px; }
+.includes { list-style: none; padding: 0; margin: 0 0 26px; }
+.includes li {
+  position: relative; padding-left: 26px; margin-bottom: 10px;
+  font-size: 15px; color: var(--text-secondary);
+}
+.includes li::before {
+  content: '✓'; position: absolute; left: 0; color: var(--success); font-weight: 700;
+}
+
+table.terms { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 15px; }
+table.terms th, table.terms td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+table.terms th { color: var(--text-muted); font-weight: 500; font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.1em; }
+table.terms td.num { text-align: right; font-variant-numeric: tabular-nums; }
+table.terms tr:last-child td { border-bottom: 0; }
+
+/* ── Legal pages ────────────────────────────────────────────────────────── */
+.legal { padding: 48px 0 80px; }
+.legal h1 { font-size: clamp(28px, 4vw, 40px); max-width: none; }
+.legal h2 { font-size: 20px; margin-top: 36px; }
+.legal p, .legal li { color: var(--text-secondary); font-size: 15.5px; }
+.legal ul { padding-left: 22px; }
+.updated { color: var(--text-muted); font-size: 13.5px; margin-bottom: 32px; }
+
+.callout {
+  background: var(--accent-light); border: 1px solid rgba(59, 110, 246, 0.3);
+  border-radius: var(--radius-sm); padding: 16px 18px; margin: 24px 0;
+}
+.callout p { margin: 0; color: var(--text); font-size: 14.5px; }
+
+/* ── Footer ─────────────────────────────────────────────────────────────── */
+footer {
+  position: relative; z-index: 1;
+  border-top: 1px solid var(--border); margin-top: 40px; padding: 36px 0 56px;
+  color: var(--text-muted); font-size: 14px;
+}
+.footer-cols { display: flex; flex-wrap: wrap; gap: 40px; justify-content: space-between; }
+.footer-links { display: flex; flex-wrap: wrap; gap: 20px; }
+.footer-links a { color: var(--text-secondary); }
+
+@media (max-width: 640px) {
+  nav { display: none; }
+  .hero { padding: 44px 0 28px; }
+  section { padding: 40px 0; }
+}
