@@ -335,6 +335,18 @@ export default function YouScreen() {
             index={2}
           />
           <ListRow
+            title="Team"
+            subtitle="Invite a manager and choose what they can see"
+            leading={
+              <View style={[styles.linkIcon, { backgroundColor: c.accentLight }]}>
+                <Ionicons name="people" size={18} color={c.accent} />
+              </View>
+            }
+            showChevron
+            onPress={() => router.push('/(app)/team' as never)}
+            index={3}
+          />
+          <ListRow
             title="Export my data"
             subtitle="Every deal, brand, payment, invoice and expense as a file"
             leading={
@@ -344,7 +356,7 @@ export default function YouScreen() {
             }
             showChevron
             onPress={handleExport}
-            index={3}
+            index={4}
           />
         </View>
 

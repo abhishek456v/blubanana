@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import { Stack } from 'expo-router'
+import { claimPendingInvites } from '@/lib/team'
 import { Typography, FontFamily, Spacing } from '@/constants/design'
 import { useTheme } from '@/hooks/useTheme'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
@@ -27,6 +29,19 @@ export const unstable_settings = {
 export default function AppLayout() {
   const { c } = useTheme()
   const isWide = useIsWideScreen()
+
+  // Turn any invite addressed to this account into a membership.
+  //
+  // Here rather than in the sign-up flow because a creator can invite someone
+  // who already has an account, and that person would never pass through
+  // sign-up again to collect it. This layout mounts once per session and only
+  // for a signed-in user, which is exactly the moment the check is worth.
+  //
+  // Failure is swallowed on purpose: an invite that does not resolve must not
+  // stop someone reaching their own workspace.
+  useEffect(() => {
+    claimPendingInvites().catch(() => {})
+  }, [])
 
   // On wide screens, deal/new, deal/[id], brand/new, and profile/edit present
   // as a floating ModalSheet over the still-visible sidebar instead of a
@@ -74,6 +89,7 @@ export default function AppLayout() {
       {/* Full-screen, chromeless: it draws its own progress dots and Skip. */}
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="annual-report" options={{ title: 'Annual report', ...modalScreenOptions }} />
+      <Stack.Screen name="team" options={{ title: 'Team', ...modalScreenOptions }} />
     </Stack>
   )
 }
