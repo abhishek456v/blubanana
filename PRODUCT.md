@@ -70,9 +70,13 @@ that ever crosses that boundary is anonymous, aggregated brand reputation
 ### Trial
 
 - **14 days**, and always the full 14. Creating deals does not shorten it.
-- **Maximum 3 deals** during the trial. Everything else is unlimited.
-- Hitting 3 deals does **not** end the trial — she keeps every other feature
+- **Maximum 10 deals** during the trial. Everything else is unlimited.
+- Hitting the limit does **not** end the trial — she keeps every other feature
   for the remaining days.
+
+Ten rather than three because §8.2's import exists to pull a creator's whole
+book across on day one. A cap of three would make the feature that proves the
+product's value the same feature that walls her out of it.
 
 ### After the trial
 
@@ -88,9 +92,45 @@ she is entitled to impossible. Read-only is the correct end state.
 
 ### Plans
 
-Paid monthly, quarterly, half-yearly or yearly, via **Razorpay** — the right
-choice for India because it covers UPI, cards and netbanking, and supports
-recurring mandates. Stripe is weak for domestic Indian payments.
+**One plan. Every feature, including team invites** (5 seats, raised on
+request). A second tier would have to be carved out of what is already built,
+and seats are the only thing that scales with a customer's size.
+
+List price **₹1,999/month + GST**. Terms of 1, 3, 6 and 9 months all bill at
+that monthly rate; **12 months is 20% off**. The shorter terms are not a
+discount ladder — they exist for the creator who would rather not think about
+it again for a while, and for our cash flow.
+
+**Launch offer: 50% off, for the first 500 paying creators.**
+
+| Term | List | Intro | + GST | Effective |
+|---|---|---|---|---|
+| Monthly | ₹1,999 | **₹999** | ₹1,179 | ₹999/mo |
+| 3 months | ₹5,997 | **₹2,997** | ₹3,536 | ₹999/mo |
+| 6 months | ₹11,994 | **₹5,994** | ₹7,073 | ₹999/mo |
+| 9 months | ₹17,991 | **₹8,991** | ₹10,609 | ₹999/mo |
+| 12 months | ₹19,190 | **₹9,590** | ₹11,316 | ₹799/mo |
+
+**The 500 limit is what makes the struck-through price honest.** A reference
+price no customer is ever charged is a fabricated anchor, which the CCPA's
+dark-pattern guidelines (2023) treat as a misleading advertisement. `intro_seats_taken()`
+counts subscriptions that were actually paid for, so "first 500" is a fact.
+
+**The discount applies to the monthly rate, then the term multiplies.** Halving
+the term price instead yields ₹1,000 for a month (50% of ₹1,999 is ₹999.50) and
+₹2,998 for three, when three months is defined as three times the monthly rate.
+035 asserts all four headline figures.
+
+**The price holds for the term bought; renewal takes the price current then.**
+A yearly subscriber keeps ₹9,590 for twelve months and sees the revised price at
+renewal. Note for the billing work: under RBI's e-mandate rules a change in the
+debit amount needs the customer to re-authorise, so a monthly subscriber whose
+price doubles after the intro must actively approve it — she cannot simply be
+charged more.
+
+Paid via **Razorpay** — the right choice for India because it covers UPI, cards
+and netbanking, and supports recurring mandates. Stripe is weak for domestic
+Indian payments.
 
 Razorpay is used for **one thing only**: the creator paying CreatorDesk. It is
 never involved in brand-to-creator money.
