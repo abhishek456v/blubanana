@@ -480,10 +480,14 @@ work with"* — names only, no explanations, no per-brand ratings, and **no
 worst-list ever**. Publishing a "worst brands" ranking invites defamation
 claims and helps nobody.
 
-### 8.11 The profile card — **Change**
+### 8.11 The profile card — **Built**, as a card
 
-This is **not** a public web page. The current implementation gets this wrong
-and will be rebuilt.
+This is **not** a public web page. Settings → **Rate card** builds a two-sided
+A5 card and shares it through the same PDF path as the invoice.
+
+**The existing public web page at `/creator/[slug]` is still there** and is the
+implementation this section calls wrong. Removing it is a separate decision:
+it means retiring `public_profile_enabled` and `public_share_slug` too.
 
 It is a **shareable card** — the thing a creator sends when a brand says
 "share your commercials". Today she assembles that by hand from Instagram
@@ -501,6 +505,20 @@ Front and back. It carries:
 **It must pull live stats.** Once Meta Graph API is connected, followers,
 engagement and CPV refresh automatically. A card she has to maintain by hand
 goes stale within weeks, and a stale card sent to a brand is worse than none.
+
+Nothing on the card is a field she maintains. **Rates are the median of what
+she has actually charged** for each deliverable, drawn from her own line items
+— the median rather than the mean, because one unusually large deal drags an
+average to a price she has been paid exactly once and cannot defend in a
+negotiation. The sample size is stated on the card, which is what makes the
+figure a fact rather than an aspiration.
+
+Until Meta and YouTube credentials land the card says the reach figures were
+entered by hand, rather than passing them off as measured.
+
+**Two gaps.** There is no photo: `profiles` has no avatar column, so the card
+uses a monogram. And CPV needs view counts on line items, which most deals do
+not carry yet — the card omits it rather than printing a blank.
 
 She can share it straight to WhatsApp or download it.
 
@@ -729,7 +747,9 @@ per month, not per contract.
 
 Step 6 is complete.
 
-**7 — Profile card rebuild**, then real Meta/YouTube APIs when credentials land.
+**7 — Profile card rebuild. Done**, except the two gaps in §8.11 (no avatar
+column; CPV needs view counts) and the decision on retiring `/creator/[slug]`.
+Real Meta/YouTube APIs still wait on credentials.
 
 **8 — Offline capture.** Last, because it touches every write path and is
 easier once those paths have stopped changing.

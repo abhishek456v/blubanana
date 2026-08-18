@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { getInvoice, getInvoiceLineItems } from '@/lib/invoices'
 import { getProfile } from '@/lib/profile'
 import { buildInvoiceHtml } from '@/lib/invoiceHtml'
-import { shareInvoicePdf } from '@/lib/invoicePdf'
+import { sharePdf } from '@/lib/sharePdf'
 import { getDeal } from '@/lib/deals'
 import { getContacts, primaryContact } from '@/lib/brandContacts'
 import { sendNow } from '@/lib/messaging'
@@ -68,7 +68,7 @@ export default function InvoiceDetailScreen() {
     if (!invoice || !creator || sharing) return
     setSharing(true)
     try {
-      await shareInvoicePdf(
+      await sharePdf(
         buildInvoiceHtml(invoice, creator, lineItems),
         invoice.invoice_number
       )

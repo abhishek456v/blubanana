@@ -359,6 +359,18 @@ export default function YouScreen() {
             index={2}
           />
           <ListRow
+            title="Rate card"
+            subtitle="What you charge, built from your own deals — to send when a brand asks"
+            leading={
+              <View style={[styles.linkIcon, { backgroundColor: c.accentLight }]}>
+                <Ionicons name="id-card" size={18} color={c.accent} />
+              </View>
+            }
+            showChevron
+            onPress={() => router.push('/(app)/profile/card' as never)}
+            index={3}
+          />
+          <ListRow
             title="Team"
             subtitle="Invite a manager and choose what they can see"
             leading={
@@ -368,7 +380,7 @@ export default function YouScreen() {
             }
             showChevron
             onPress={() => router.push('/(app)/team' as never)}
-            index={3}
+            index={4}
           />
           <ListRow
             title="Export my data"
@@ -380,7 +392,7 @@ export default function YouScreen() {
             }
             showChevron
             onPress={handleExport}
-            index={4}
+            index={5}
           />
           {/* Last, and directly under Export, which is deliberate: the one
               thing that makes this recoverable sits immediately above it. */}
@@ -394,7 +406,7 @@ export default function YouScreen() {
             }
             showChevron
             onPress={() => setDeleteOpen(true)}
-            index={5}
+            index={6}
           />
         </View>
 
