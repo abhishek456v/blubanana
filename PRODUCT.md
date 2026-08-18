@@ -731,7 +731,7 @@ alone since 011 dropped the `creator_id` columns, so a departing *manager*
 takes nothing of the creator's with them. 028 records that, and fails if a
 `creator_id` is ever reintroduced without deletion being revisited.
 
-### 8.19 Working offline — **New**, native only
+### 8.19 Working offline — **Built**, native only
 
 The promise is "log a deal in thirty seconds", and the moment that matters most
 is on a shoot, in a basement studio, with no signal. Today that fails outright.
@@ -745,6 +745,28 @@ queue too; extraction runs on sync.
 still need a connection. Those are things you sit down to do.
 
 Roughly 20% of the work of true offline, covering the moment that matters.
+
+**A queue of intents, not a local mirror.** Each entry records what she meant,
+and syncing replays the same `createDeal` the online path calls — so an offline
+deal gets the payment row, the due dates, the stages and the reminders through
+exactly the same code. Queuing a pre-built row would fork the creation path in
+two, and the offline copy is the one that would quietly stop matching.
+
+**FIFO, and it stops at the first failure.** A deal queued after its brand must
+be created after it. Stopping rather than skipping matters for the same reason:
+if a brand fails, every deal behind it fails too, and pushing on would burn all
+five retries on each and turn one recoverable error into a queue of dead
+entries. After five attempts an item stops retrying and says why — five
+failures is not a signal problem, it is something the server is rejecting.
+
+**Never phrased as a failure.** "Saved on this phone, it will sync when you have
+signal" is the truth: the capture is on her device and will land. Calling it an
+error would make her retype it.
+
+**Offline intake saves rather than reviews.** §8.3's rule that extraction never
+saves silently is about the online path, where she is standing there to check
+it. Offline the alternative is losing the capture, so it saves and marks itself
+for review in the notes.
 
 ---
 

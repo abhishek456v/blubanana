@@ -51,6 +51,7 @@ import {
   useToast,
 } from '@/components/ui'
 import { SubscriptionBanner } from '@/components/SubscriptionBanner'
+import { SyncBanner } from '@/components/SyncBanner'
 
 type StatusFilter = DealStatus | 'all' | 'attention'
 
@@ -345,6 +346,7 @@ export default function HomeScreen() {
       {/* Above everything, because when the workspace is read-only every other
           control on this screen is already refusing to work. */}
       <SubscriptionBanner />
+      <SyncBanner />
       <ScreenHeader
         // The list's own horizontal padding already insets this block; the
         // header's default padding would put the greeting 16px to the right of

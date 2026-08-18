@@ -38,6 +38,7 @@ import {
 } from '@/lib/deals'
 import { defaultStageDrafts, replaceStages, type StageDraft } from '@/lib/dealStages'
 import { TRIAL_DEAL_LIMIT, isTrialLimitError } from '@/lib/subscription'
+import { queueDeal, shouldQueue } from '@/lib/capture'
 import { StageEditor } from '@/components/deal/StageEditor'
 import { getAllRatings, summarizeRatings } from '@/lib/reputation'
 import { extractFromImage, extractFromTranscript, transcribeAudio } from '@/lib/aiIntake'
@@ -337,6 +338,33 @@ export default function NewDealScreen() {
 
     setSaving(true)
     try {
+      // ── Offline: remember it, and say so ────────────────────────────────────
+      // §8.19's moment — a shoot, a basement studio, no signal. The queue takes
+      // the deal and its stages together, because half a deal arriving is worse
+      // than none and a deal with no stages has no deadlines to remind her of.
+      //
+      // Line items, ad rights and the retainer series are deliberately not
+      // queued: §8.19 scopes offline to capture, and those are refinements she
+      // makes sitting down. They stay editable on the deal once it syncs.
+      if (await shouldQueue()) {
+        await queueDeal(
+          {
+            brand_id: selectedBrandId,
+            platform,
+            deliverable_description: deliverable.trim(),
+            rate: rateNum,
+            payment_terms: paymentTerms.trim() || null,
+            publish_date: stageDrafts[stageDrafts.length - 1]?.due_date ?? null,
+            notes: notes.trim() || null,
+          },
+          stageDrafts,
+          brands.find((b) => b.id === selectedBrandId)?.name ?? 'New deal'
+        )
+        toast('Saved on this phone. It will sync when you have signal.')
+        router.back()
+        return
+      }
+
       const created = await createDeal({
         brand_id: selectedBrandId,
         platform,
