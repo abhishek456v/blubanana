@@ -1,122 +1,84 @@
--- 028: Make deleting an account actually delete the account.
+-- 028: Account deletion needs no row reassignment. Recording why.
 --
--- §8.18 calls this a legal obligation rather than a courtesy: CreatorDesk
--- stores brand contacts' names and phone numbers, which is third-party
--- personal data, and that makes this business a Data Fiduciary under the
--- DPDP Act 2023. A "delete" that leaves rows behind is not compliance.
+-- This migration originally created `reassign_creator_rows_for_deletion()`, on
+-- the reasoning that every business table carries
 --
--- Deleting the auth user alone does not do it. Two gaps:
+--   creator_id uuid not null references profiles(id) on delete cascade
 --
---   1. `workspaces` has no owner column and nothing references profiles from
---      it, so the cascade from auth.users stops at `memberships`. The
---      workspace row survives, and so does everything hanging off it that was
---      not created by the deleted user. The edge function therefore deletes
---      the owned workspaces first — every business table carries
---      `workspace_id ... on delete cascade`, so that is what actually clears
---      the data.
+-- and that deleting a *manager's* account would therefore cascade away the
+-- creator's deals — rows in a workspace the manager merely worked in. That
+-- would have been a serious bug, and the function reassigned those rows to the
+-- workspace owner before deletion.
 --
---   2. Every business table also carries `creator_id references profiles on
---      delete cascade`. For a manager who worked in someone else's workspace,
---      that cascade would delete *the creator's* deals — rows that are not the
---      departing manager's to take with them. This function reassigns them to
---      the workspace owner first.
+-- It was reasoning from 001, 006, 007 and 008, which do declare exactly that.
+-- What it missed is that **011 dropped every one of those columns** — the
+-- contract half of the expand→contract migration 009 describes in its own
+-- header. There is no `creator_id` anywhere any more. Attribution is
+-- `workspace_id` and nothing else.
+--
+-- So the case cannot arise, and the migration's own verification caught it:
+-- "No table carries both creator_id and workspace_id, which cannot be right."
+-- It was right.
+--
+-- ── What deletion actually relies on ────────────────────────────────────────
+--
+-- Left here because the next person to look at deletion will have the same
+-- idea, and this saves them the same detour.
+--
+--   * Every one of the 18 business tables is `workspace_id references
+--     workspaces(id) on delete cascade`. Deleting the workspace is what clears
+--     the data — and it is the step the auth cascade does NOT reach, because
+--     `workspaces` has no column pointing back at a profile. That gap is real
+--     and is why the edge function deletes owned workspaces explicitly.
+--
+--   * The surviving references to `profiles` are:
+--       memberships.user_id          cascade  — their own membership, correct
+--       workspace_invites.invited_by cascade  — invites they sent, in a
+--                                               workspace being deleted anyway
+--       outbound_messages.approved_by  set null — message history survives
+--       audit_logs.actor_user_id       set null — audit trail survives
+--
+--     Two cascades, both of things that are genuinely the departing user's,
+--     and two set-nulls that deliberately preserve a record while forgetting
+--     who. Nothing belonging to another creator hangs off a profile.
 --
 -- Safe to re-run.
 
 
--- ── Reassign what belongs to someone else ───────────────────────────────────
--- Driven off information_schema rather than a hardcoded list, so a business
--- table added later is covered without anyone remembering this file exists.
--- The condition is deliberately narrow: only rows in workspaces the departing
--- user does NOT own. Rows in their own workspaces are theirs, and go.
-
-create or replace function reassign_creator_rows_for_deletion(target uuid)
-returns integer
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  tbl     text;
-  moved   integer := 0;
-  batch   integer;
-begin
-  if target is null then
-    return 0;
-  end if;
-
-  for tbl in
-    select c.table_name
-      from information_schema.columns c
-     where c.table_schema = 'public'
-       and c.column_name = 'creator_id'
-       and exists (
-         select 1 from information_schema.columns w
-          where w.table_schema = 'public'
-            and w.table_name = c.table_name
-            and w.column_name = 'workspace_id'
-       )
-       -- Base tables only. A view with these columns is not updatable here and
-       -- would abort the whole function.
-       and exists (
-         select 1 from information_schema.tables t
-          where t.table_schema = 'public'
-            and t.table_name = c.table_name
-            and t.table_type = 'BASE TABLE'
-       )
-  loop
-    execute format(
-      'update %I t
-          set creator_id = o.user_id
-         from memberships o
-        where t.creator_id = $1
-          and o.workspace_id = t.workspace_id
-          and o.role = ''owner''
-          and o.status = ''active''
-          and o.user_id <> $1
-          and t.workspace_id not in (
-                select m.workspace_id from memberships m
-                 where m.user_id = $1 and m.role = ''owner''
-              )', tbl
-    ) using target;
-
-    get diagnostics batch = row_count;
-    moved := moved + batch;
-  end loop;
-
-  return moved;
-end $$;
-
-revoke all on function reassign_creator_rows_for_deletion(uuid) from public;
--- Only the service role calls this, from the delete-account edge function.
--- `authenticated` is deliberately not granted: a signed-in user has no reason
--- to reassign anyone's rows, including their own.
-grant execute on function reassign_creator_rows_for_deletion(uuid) to service_role;
+-- Removes the function if an earlier attempt at this migration left one behind.
+drop function if exists reassign_creator_rows_for_deletion(uuid);
 
 
 -- ── Verification ────────────────────────────────────────────────────────────
+-- Asserts the premise this migration rests on, so that if a `creator_id` is
+-- ever reintroduced, deletion is revisited rather than quietly going wrong.
 
 do $$
 declare
-  covered text;
+  resurrected text;
+  uncascaded  text;
 begin
-  select string_agg(c.table_name, ', ' order by c.table_name) into covered
-    from information_schema.columns c
-   where c.table_schema = 'public'
-     and c.column_name = 'creator_id'
-     and exists (
-       select 1 from information_schema.columns w
-        where w.table_schema = 'public' and w.table_name = c.table_name
-          and w.column_name = 'workspace_id'
-     );
+  select string_agg(table_name, ', ' order by table_name) into resurrected
+    from information_schema.columns
+   where table_schema = 'public' and column_name = 'creator_id';
 
-  if covered is null then
-    raise exception 'No table carries both creator_id and workspace_id, which cannot be right';
+  if resurrected is not null then
+    raise exception
+      'creator_id is back on: %. Deleting a manager would now cascade away another creator''s rows — revisit the delete-account function.',
+      resurrected;
   end if;
 
-  -- A no-op call proves the dynamic SQL parses against every one of them,
-  -- rather than discovering a bad table name during a real deletion.
-  perform reassign_creator_rows_for_deletion('00000000-0000-0000-0000-000000000000');
+  -- Every workspace-scoped table must cascade, or deleting the workspace
+  -- leaves rows behind and the deletion is incomplete.
+  select string_agg(c.conrelid::regclass::text, ', ') into uncascaded
+    from pg_constraint c
+   where c.contype = 'f'
+     and c.confrelid = 'workspaces'::regclass
+     and c.confdeltype <> 'c';
 
-  raise notice 'OK. Deletion reassignment covers: %', covered;
+  if uncascaded is not null then
+    raise exception 'These tables do not cascade from workspaces: %', uncascaded;
+  end if;
+
+  raise notice 'OK. No creator_id survives, and every workspace reference cascades.';
 end $$;

@@ -61,18 +61,13 @@ Deno.serve(async (req) => {
     if (ownedError) throw ownedError
     const workspaceIds = (owned ?? []).map((m) => m.workspace_id as string)
 
-    // ── 2. Hand back what belongs to other people ────────────────────────────
-    // Before anything is deleted. Every business table carries `creator_id
-    // references profiles on delete cascade`, so a manager's rows in someone
-    // else's workspace would be destroyed by the auth delete at the end — the
-    // creator losing deals because her assistant closed their account.
-    const { error: reassignError } = await admin.rpc(
-      'reassign_creator_rows_for_deletion',
-      { target: user.id }
-    )
-    if (reassignError) throw reassignError
+    // Nothing needs reassigning first. Every business table was attributed by
+    // `creator_id references profiles on delete cascade` until 011 dropped
+    // those columns; attribution is `workspace_id` alone now, so a departing
+    // manager takes nothing of the creator's with them. 028 records the
+    // reasoning and asserts it stays true.
 
-    // ── 3. Stored files ──────────────────────────────────────────────────────
+    // ── 2. Stored files ──────────────────────────────────────────────────────
     // Storage has no foreign keys, so nothing cascades here: the objects would
     // outlive every row that referenced them. Paths are
     // `<workspace_id>/<deal_id>/<file>`, so this walks two levels.
@@ -101,7 +96,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── 4. The workspaces ────────────────────────────────────────────────────
+    // ── 3. The workspaces ────────────────────────────────────────────────────
     // This is the delete that clears the data: every business table is
     // `workspace_id ... on delete cascade`. Deleting the auth user alone would
     // leave the workspace row and anything in it a manager had created.
@@ -113,7 +108,7 @@ Deno.serve(async (req) => {
       if (workspaceError) throw workspaceError
     }
 
-    // ── 5. The account ───────────────────────────────────────────────────────
+    // ── 4. The account ───────────────────────────────────────────────────────
     // Cascades to profiles, and from there to memberships and push tokens.
     // Last, so a failure above leaves an account that can still sign in and
     // try again rather than orphaned data with no owner to delete it.

@@ -597,10 +597,10 @@ and leaves the workspace — and everything in it a manager created — behind. 
 actually clears the data, and removes the stored files, which have no foreign
 keys and so cascade from nothing.
 
-It also reassigns before it deletes (028). Every business table carries
-`creator_id references profiles on delete cascade`, so a departing *manager*
-would otherwise take the creator's deals with them. Those rows pass to the
-workspace owner instead.
+No row reassignment is needed on the way: attribution has been `workspace_id`
+alone since 011 dropped the `creator_id` columns, so a departing *manager*
+takes nothing of the creator's with them. 028 records that, and fails if a
+`creator_id` is ever reintroduced without deletion being revisited.
 
 ### 8.19 Working offline — **New**, native only
 
