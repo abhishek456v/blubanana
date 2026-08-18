@@ -1,0 +1,13 @@
+project_id = "bbdvgeavtxfxykhiafbp"
+
+# send-due-reminders is invoked by pg_cron, which has no user session and so
+# sends no Authorization header. Left at the default, the gateway rejects it
+# with UNAUTHORIZED_NO_AUTH_HEADER before the function runs. The function is
+# not left unprotected: it authenticates on the CRON_SECRET shared secret
+# instead (see the top of its index.ts), which is the whole reason that secret
+# exists.
+#
+# extract-deal and transcribe-audio are deliberately absent here. Those are
+# called by the app with a signed-in user's JWT and must keep verifying it.
+[functions.send-due-reminders]
+verify_jwt = false

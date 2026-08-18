@@ -116,23 +116,34 @@ Three pieces, and all three are needed:
 #    The project itself is already linked (supabase/.temp/project-ref).
 npx supabase login
 
-# 1. Generate a secret and PRINT it. You need the same value in step 2.
-openssl rand -hex 32
+# 1. Generate the secret, give it to the function, and print it.
+#    Copy this block as-is: there is nothing to substitute by hand.
+CRON_SECRET=$(openssl rand -hex 32)
+npx supabase secrets set CRON_SECRET="$CRON_SECRET"
+echo "SAVE THIS - step 2 needs the identical string: $CRON_SECRET"
 
-# 2. Give it to the function (paste the value from above).
-npx supabase secrets set CRON_SECRET=<paste it here>
-
-# 3. Deploy.
+# 2. Deploy.
 npx supabase functions deploy send-due-reminders
 ```
 
-Keep that secret somewhere: the cron job in step 2 has to send the identical
-string, and there is no way to read it back out of Supabase afterwards. The function authenticates on it rather than on a user's
+`supabase/config.toml` sets `verify_jwt = false` for this one function. Do not
+delete it. pg_cron has no user session, so it sends no `Authorization` header,
+and without that setting the gateway rejects every run with
+`UNAUTHORIZED_NO_AUTH_HEADER` before the function executes — the cron job shows
+`succeeded` while `net._http_response` records a 401, so it fails silently
+unless you check the second table. The function is still protected: it
+authenticates on `CRON_SECRET` instead, which is why that secret exists.
+
+Keep that secret somewhere: the cron job in **2. Wake it on a schedule** has to
+send the identical string, and there is no way to read it back out of Supabase afterwards. The function authenticates on it rather than on a user's
 JWT, because it reads across every workspace with the service-role key.
 
 ### 2. Wake it on a schedule
 
-In the SQL editor, once:
+In the SQL editor, once. Replace `<paste the CRON_SECRET here>` with the actual
+value, angle brackets and all — SQL will not complain if you leave the
+placeholder in, it stores it as the secret, and every run then 401s with
+nothing in the logs to say why.
 
 ```sql
 create extension if not exists pg_cron;
@@ -162,13 +173,26 @@ back to on-device scheduling automatically: `registerPushToken()` returns null,
 and `app/_layout.tsx` schedules locally instead. Exactly one of the two runs, so
 reminders are never delivered twice.
 
-To check the job is alive:
+To check the job is alive, in the SQL editor (not the terminal):
 
 ```sql
 select * from cron.job_run_details
 where jobid = (select jobid from cron.job where jobname = 'send-due-reminders')
 order by start_time desc limit 10;
 ```
+
+`succeeded` there only means the timer fired and pg_net queued the request — it
+says nothing about whether the function accepted it. For that, check the reply:
+
+```sql
+select status_code, created from net._http_response order by created desc limit 5;
+```
+
+200 is working. 401 means the request was refused: either `verify_jwt` is back
+on for this function, or the secret in the cron job does not match the one in
+`supabase secrets`. The response body distinguishes them — a gateway rejection
+is JSON (`UNAUTHORIZED_NO_AUTH_HEADER`), the function's own rejection is the
+plain string `Unauthorized`.
 
 ## Conventions
 
