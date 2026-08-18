@@ -44,7 +44,7 @@ export { ProgressRing, type ProgressRingProps } from './ProgressRing'
 
 // The gradient-glass system: the signature card, the dot-matrix figure, and
 // the controls and visualisations that only ever appear on top of them.
-export { Figure, splitFigureRuns, type FigureProps, type FigureRun } from './Figure'
+export { Figure, type FigureProps } from './Figure'
 export {
   GradientCard,
   FigureBlock,

@@ -14,12 +14,11 @@ import * as Notifications from 'expo-notifications'
 import * as Linking from 'expo-linking'
 import { useFonts } from 'expo-font'
 import {
-  Outfit_400Regular,
-  Outfit_500Medium,
-  Outfit_600SemiBold,
-  Outfit_700Bold,
-} from '@expo-google-fonts/outfit'
-import { Doto_500Medium, Doto_700Bold } from '@expo-google-fonts/doto'
+  GoogleSansFlex_400Regular,
+  GoogleSansFlex_500Medium,
+  GoogleSansFlex_600SemiBold,
+  GoogleSansFlex_700Bold,
+} from '@expo-google-fonts/google-sans-flex'
 import {
   DarkTheme,
   DefaultTheme,
@@ -75,17 +74,15 @@ export default function RootLayout() {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Two families, two jobs. Outfit sets every word; Doto sets every figure.
-  // Both have to be resolved before the first frame, because a dot-matrix
-  // figure falling back to the system face is not a subtle degradation: the
-  // amount on the hero card changes shape entirely.
+  // One family, four weights, all resolved before the first frame. Type
+  // falling back to the system face is not a subtle degradation here: the
+  // amount on the hero card is set at 46px, and San Francisco or Roboto at
+  // that size changes the shape of the whole screen.
   const [fontsLoaded] = useFonts({
-    Outfit_400Regular,
-    Outfit_500Medium,
-    Outfit_600SemiBold,
-    Outfit_700Bold,
-    Doto_500Medium,
-    Doto_700Bold,
+    GoogleSansFlex_400Regular,
+    GoogleSansFlex_500Medium,
+    GoogleSansFlex_600SemiBold,
+    GoogleSansFlex_700Bold,
   })
 
   // Hide splash once both fonts and auth state are ready.

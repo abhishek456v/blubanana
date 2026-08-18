@@ -7,6 +7,11 @@
 node_modules/
 .expo/
 dist/
+# …except the website's output, which is what gets deployed. It is built here
+# rather than on the host because the build reads the Supabase URL and anon key
+# out of .env to wire up the live price, and .env is not on the host.
+!web/dist/
+web/.preview/
 build/
 *.jks
 *.p8

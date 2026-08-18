@@ -1,56 +1,72 @@
-# The marketing site
+# The marketing website
 
-Static HTML and one stylesheet. No framework and no build step at deploy time —
-§4 says the site is "separate and simple", and a landing page that ships a
-megabyte of JavaScript to render five paragraphs is neither.
+Static HTML. No framework, no runtime dependencies, nothing to install on the
+host. `web/dist` is committed, so deploying is copying a folder.
 
-## Editing
+## Building
 
-`build-site.mjs` generates the pages so the header, footer and nav cannot drift
-apart across six files. Edit it, then:
-
-```bash
-node build-site.mjs .
+```
+node web/build.mjs
 ```
 
-The generated `.html` files are committed, so deploying needs no toolchain at
-all — point any static host at this directory.
+Writes `web/dist`. The build **fails** if it finds a dead internal link, a
+missing image, a page without a description, or a `TODO` placeholder — the last
+of these because a marketing site with a fake phone number is the specific thing
+that fails a Razorpay merchant activation. Pass `--draft` to build anyway while
+those details are still outstanding.
 
-## Before it goes live
+## Looking at it
 
-Every placeholder lives in the `TODO` object at the top of `build-site.mjs`:
+```
+node web/build.mjs --draft
+cd web/dist && python3 -m http.server 4173
+node web/tools/preview.mjs        # screenshots every page, both widths
+```
 
-| Field | Why it matters |
+`preview.mjs` also reports console errors, failed requests and any page that
+scrolls sideways.
+
+## Images
+
+```
+node web/tools/images.mjs
+```
+
+Reads the app screenshots in `/screenshots`, crops and resizes them, and writes
+WebP at two widths into `web/assets` along with `manifest.json`, which is where
+the `<img>` width and height come from. Chromium does the encoding — it is
+already here for Playwright, and there is no other WebP encoder on this machine.
+
+The screenshots themselves come from a **demo workspace**, never a real one:
+
+```
+node scripts/seed-demo.mjs                          # invented brands, deterministic figures
+npx expo start --web --port 8081                    # in another terminal
+node scripts/drive.mjs --email demo@creatordesk.in --password '…' --all --dark --width 1440 --prefix demo-wide-
+```
+
+## What lives where
+
+| File | What it holds |
 |---|---|
-| `email` | Support, billing and DPDP grievance address |
-| `phone` | **Razorpay rejects an activation without a working number** |
-| `address` | Registered address, required on the site and by Razorpay |
-| `entity` | The legal entity name, as registered |
-| `gstin` | Once GST registration is through |
+| `src/site.mjs` | Company details, prices, the navigation. One fact, one place. |
+| `src/layout.mjs` | `<head>`, header, footer. Every page passes through it. |
+| `src/ui.mjs` | Section builders — hero, split, tabs, FAQ, screenshots. |
+| `src/content/*.mjs` | One file per page: title, description, structured data, body. |
+| `styles.css` | The design system, with the tokens taken from `constants/design.ts`. |
+| `app.js` | Menus, tabs, reveal, and the live price read. Everything else is HTML. |
 
-Set them and re-run the generator.
+## The live price
 
-## Razorpay activation
+The prices on the site are read from the `pricing` table at page load with the
+anon key, and the count of remaining launch places from `intro_seats_taken()`.
+Migration 035 grants both to `anon`; **037** adds the row-level policy without
+which the grant returns an empty list.
 
-Razorpay will not activate a merchant account until the website carries a
-Contact page with a real phone number, Pricing, Terms, Privacy, and a
-Cancellation & Refunds policy. All five exist here and are linked from every
-page's footer, which is where their reviewers look.
+If either call fails, the figures compiled into the markup stand — those are
+correct, just potentially a day behind. Nobody ever sees a blank price.
 
-So this site is a **blocker for taking payments**, not only for marketing.
+## Deploying
 
-## The refund terms are a business decision
-
-`refunds.html` currently promises a full refund within **7 days** of a payment,
-and no pro-rating after that. That is a defensible default, not a researched
-one — read it and change the number if you disagree. It is the one page here
-that commits you to something you may not have decided.
-
-## Legal review
-
-These pages were written against what the application actually does: every
-processor named in the privacy policy appears in this repository, and the
-retention and deletion claims match `delete-account` and migration 028. That
-makes them accurate. It does not make them lawyer-reviewed, and the DPDP Act and
-the GST rules both carry consequences for getting the wording wrong. Have a
-professional read them before launch.
+Any static host. Cloudflare Pages, Netlify, S3, nginx — point it at `web/dist`.
+Clean URLs work everywhere because each page is `<path>/index.html`.

@@ -3,44 +3,6 @@ import { StyleSheet, Text, type StyleProp, type TextStyle } from 'react-native'
 import { FigureSize, FontFamily } from '@/constants/design'
 import { useTheme } from '@/hooks/useTheme'
 
-/**
- * The characters Doto actually contains.
- *
- * Doto is a Latin dot-matrix face with no rupee sign (verified against its
- * cmap: U+20B9 is absent, and so is U+20A8). A missing glyph does not fail
- * loudly, it falls back per-character to whatever the platform picks, so
- * `₹3,75,000` would render its symbol in one arbitrary face and its digits in
- * another, differently on web and on device.
- *
- * Rather than leave that to chance, everything outside this set is set
- * deliberately in the sans. That turns the constraint into the rule the system
- * wants anyway: the digits are the instrument readout, and the symbol, the
- * unit and the month name are words attached to it.
- */
-const DOT_SAFE = /[0-9.,:%+\-/()$ ]/
-
-export interface FigureRun {
-  text: string
-  dotted: boolean
-}
-
-/**
- * Splits a formatted figure into alternating dot-matrix and sans runs.
- *
- * Exported for tests and for callers that need to measure a figure before
- * rendering it.
- */
-export function splitFigureRuns(text: string): FigureRun[] {
-  const runs: FigureRun[] = []
-  for (const char of text) {
-    const dotted = DOT_SAFE.test(char)
-    const last = runs[runs.length - 1]
-    if (last && last.dotted === dotted) last.text += char
-    else runs.push({ text: char, dotted })
-  }
-  return runs
-}
-
 export interface FigureProps {
   /** Already-formatted text (`₹3,75,000`, `28`, `+14%`). */
   value: string
@@ -65,19 +27,19 @@ export interface FigureProps {
 }
 
 /**
- * A number, set in the dot-matrix face.
+ * A number, set as a display figure.
  *
- * The split between Doto for figures and Outfit for words is the identity of
- * this design system, so this component is the only correct way to render an
- * amount, a count or a percentage. Setting `fontFamily: FontFamily.figure` by
- * hand skips the glyph-coverage handling above and produces a broken rupee
- * sign.
+ * Still the only correct way to render an amount, a count or a percentage: it
+ * owns the size scale, the tabular figures and the count-up, and a screen that
+ * sets `fontFamily: FontFamily.figure` by hand gets none of them.
  *
- * The sans runs are set at 0.72 of the figure size rather than matching it.
- * A rupee sign at full size next to dot-matrix digits out-weighs them, because
- * a solid glyph carries roughly half again the visual mass of a dotted one at
- * equal height; a little under three-quarters is where the symbol stops
- * competing with the number it belongs to without shrinking into a superscript.
+ * It used to own something else as well. Figures were set in Doto, a
+ * dot-matrix face with no ₹ glyph (U+20B9 is absent from its cmap), so every
+ * string had to be split into dotted and non-dotted runs and the rupee sign
+ * set separately in the sans at 0.72 size — otherwise `₹3,75,000` rendered its
+ * symbol in whatever face the platform happened to pick, differently on web and
+ * on device. Google Sans Flex contains ₹, so the whole mechanism is gone and a
+ * figure is one run of one font again.
  */
 export function Figure({
   value,
@@ -95,7 +57,6 @@ export function Figure({
   const resolved = color ?? c.textPrimary
 
   const displayed = useCountUp(value, count, format)
-  const runs = splitFigureRuns(displayed)
 
   return (
     <Text
@@ -105,26 +66,11 @@ export function Figure({
         style,
       ]}
       numberOfLines={numberOfLines}
-      // The dotted glyphs are decorative to a screen reader, which reads the
-      // string either way; but a caller that formats "3.8L" wants "3.8 lakh"
-      // announced instead.
+      // A caller that formats "3.8L" wants "3.8 lakh" announced rather than the
+      // abbreviation, which a screen reader would spell out.
       accessibilityLabel={accessibilityLabel ?? value}
     >
-      {runs.map((run, index) =>
-        run.dotted ? (
-          run.text
-        ) : (
-          <Text
-            key={index}
-            style={{
-              fontFamily: FontFamily.medium,
-              fontSize: Math.round(fontSize * 0.72),
-            }}
-          >
-            {run.text}
-          </Text>
-        )
-      )}
+      {displayed}
     </Text>
   )
 }
@@ -202,9 +148,14 @@ function parseFigure(text: string): number | null {
 
 const styles = StyleSheet.create({
   base: {
-    // Dot-matrix glyphs sit on a wide advance width already, so this is small.
-    // At zero the commas in an Indian-grouped amount crowd the digit before
-    // them and `3,75,000` reads as one run.
-    letterSpacing: 0.4,
+    // Tabular figures, for two reasons that both matter here. A column of
+    // amounts aligns on its digits rather than drifting by the width of a 1,
+    // and a counting figure keeps a fixed width as it tweens instead of
+    // twitching sideways on every frame.
+    fontVariant: ['tabular-nums'],
+    // A geometric sans at 34 or 46px sets a little loose for a number that
+    // should read as one object. Small and negative, not enough to touch the
+    // Indian grouping commas.
+    letterSpacing: -0.2,
   },
 })

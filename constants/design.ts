@@ -206,11 +206,12 @@ export const Radius = {
 
 // Sizes only. Weight comes from `FontFamily`, never from `fontWeight`.
 //
-// Outfit ships as a separate file per weight, so the weight is already baked
-// into the family name. Asking for `fontFamily: 'Outfit_400Regular'` and
-// `fontWeight: '600'` together makes native look for a semibold cut of a family
-// that has exactly one cut, fail, and silently fall back to the system face,
-// which is why type looked consistent on web and mismatched on device.
+// Google Sans Flex ships as a separate file per weight, so the weight is
+// already baked into the family name. Asking for
+// `fontFamily: 'GoogleSansFlex_400Regular'` and `fontWeight: '600'` together
+// makes native look for a semibold cut of a family that has exactly one cut,
+// fail, and silently fall back to the system face, which is why type looked
+// consistent on web and mismatched on device.
 export const Typography = {
   display: { fontSize: 32 },
   title: { fontSize: 22 },
@@ -222,14 +223,18 @@ export const Typography = {
 } as const
 
 /**
- * Sizes for dot-matrix figures.
+ * Sizes for display figures.
  *
- * Larger than the equivalent prose sizes, and deliberately so: a dot-matrix
- * glyph is mostly negative space, so it carries perhaps two-thirds the visual
- * weight of a solid glyph at the same point size. Setting a figure at `display`
- * makes it look smaller than the heading above it. Below roughly 20px the dots
- * merge and the face stops reading as dotted at all, which is the entire reason
- * it is here, so `sm` is the floor.
+ * Larger than the equivalent prose sizes, and deliberately so: an amount is the
+ * thing a card is *about*, and a figure set at the same size as the heading
+ * above it reads as a caption rather than as the point of the card.
+ *
+ * These were tuned when figures were set in a dot-matrix face, which is mostly
+ * negative space and therefore needed the extra size to hold its own. Google
+ * Sans Flex is a solid face and carries more weight per point, so `sm` in
+ * particular now has room to come down if a screen wants it. Left as they are
+ * rather than retuned blind: every screen in the app is composed against these
+ * numbers, and changing them is a visual pass, not a token edit.
  */
 export const FigureSize = {
   hero: 46,
@@ -238,32 +243,39 @@ export const FigureSize = {
   sm: 20,
 } as const
 
-// Two families, and the split between them is the identity.
+// One family, at five weights.
 //
-//   Outfit  every word: labels, headings, body, buttons.
-//   Doto    every *display* figure: currency, counts, dates-as-numbers.
+//   Google Sans Flex  every word and every figure.
 //
-// Doto is a dot-matrix face, so it is never used for prose at any size. It has
-// no italic, its punctuation is coarse, and a sentence set in it is unreadable.
-// Use `figure` for the number and `regular` for the word beside it, even when
-// they sit in the same line.
+// This replaced a two-family system — Outfit for words, Doto for figures —
+// where the contrast between a geometric sans and a dot-matrix face was the
+// identity. Doto was dropped deliberately: it is a dot-matrix face, and a
+// dot-matrix readout is the signature of another consumer-technology brand.
+// Borrowing it means a product whose most distinctive element is legible as
+// someone else's, which is a poor trade however good the face is. (It is
+// OFL-licensed and was free to use; this was never a licensing question.)
 //
-// The split is by *size*, not by "is it a number". Below roughly 20px the dots
-// merge and the face stops reading as dotted at all, so it buys nothing and
-// costs legibility — see `FigureSize.sm`, which is the floor. An amount set at
-// body size inside a list row or a table cell therefore stays in Outfit, and
-// that is correct rather than an omission: those are figures being read in a
-// sentence, not figures being displayed. Anything at `FigureSize` goes through
-// the `Figure` component, which also handles the rupee sign (see that file).
+// Google Sans Flex carries the whole system instead. It is a variable family
+// with a wide weight range, drawn for interfaces at both text and display
+// sizes, and — unlike Doto — it contains U+20B9, so `₹3,75,000` sets in one
+// face with no per-character fallback. See `components/ui/Figure.tsx`, which
+// lost an entire glyph-splitting mechanism to that one fact.
+//
+// A figure is still distinguished from prose, but now by *weight and size*
+// rather than by family: `Figure` sets amounts at `FigureSize` in the semibold
+// or bold cut, with tabular figures on so columns line up and a counting
+// animation does not jitter. An amount at body size inside a list row stays in
+// the regular cut, which is correct rather than an omission — that is a figure
+// being read in a sentence, not a figure being displayed.
 export const FontFamily = {
-  regular: 'Outfit_400Regular',
-  medium: 'Outfit_500Medium',
-  semiBold: 'Outfit_600SemiBold',
-  display: 'Outfit_600SemiBold',
-  displayBold: 'Outfit_700Bold',
-  /** Dot-matrix. Numerals only. */
-  figure: 'Doto_500Medium',
-  figureBold: 'Doto_700Bold',
+  regular: 'GoogleSansFlex_400Regular',
+  medium: 'GoogleSansFlex_500Medium',
+  semiBold: 'GoogleSansFlex_600SemiBold',
+  display: 'GoogleSansFlex_600SemiBold',
+  displayBold: 'GoogleSansFlex_700Bold',
+  /** Display figures. Same family — the weight is what sets them apart. */
+  figure: 'GoogleSansFlex_600SemiBold',
+  figureBold: 'GoogleSansFlex_700Bold',
 } as const
 
 // Below `wide`, the app uses the mobile layout (floating dock, edge-to-edge
