@@ -121,9 +121,27 @@ select rebuild_secure_deal_views();
 
 
 -- ── 3. Close the direct path ────────────────────────────────────────────────
--- Revoked from PUBLIC as well as the two client roles: a privilege held via
--- PUBLIC would survive revoking it from `authenticated` and quietly keep the
--- old path open.
+-- The obvious spelling of this does nothing:
+--
+--   revoke select (rate) on deals from authenticated;   -- no-op here
+--
+-- REVOKE SELECT (col) only removes a *column-level* grant. Supabase grants
+-- SELECT on the whole table to anon and authenticated, and a table-wide grant
+-- already implies every column, so there is no column-level entry to remove and
+-- the table-level one is left standing. The first run of this migration failed
+-- its own verification for exactly that reason, which is the verification block
+-- earning its place.
+--
+-- What works: drop the table-wide grant and re-grant the columns individually,
+-- leaving the commercial ones off the list. Built from the live column list, so
+-- a column added later is granted rather than silently unreadable — the mask is
+-- an explicit list in section 1, and nothing else should be affected by it.
+--
+-- anon is not re-granted at all. Nothing unauthenticated reads deals; the
+-- public creator card reads `profiles`.
+--
+-- INSERT, UPDATE and DELETE are untouched, so writes still work — including
+-- writing a rate, which reveals nothing.
 --
 -- service_role is untouched on purpose. The edge functions read across every
 -- workspace with it, and it already bypasses RLS — narrowing it here would
@@ -131,13 +149,24 @@ select rebuild_secure_deal_views();
 
 do $$
 declare
-  tbl text;
-  col text;
+  tbl     text;
+  allowed text;
 begin
   foreach tbl in array array['deals', 'deal_deliverables'] loop
-    foreach col in array secure_deal_masked_columns(tbl) loop
-      execute format('revoke select (%I) on %I from public, anon, authenticated', col, tbl);
-    end loop;
+    execute format('revoke select on %I from public, anon, authenticated', tbl);
+
+    select string_agg(format('%I', column_name), ', ' order by ordinal_position)
+      into allowed
+      from information_schema.columns
+     where table_schema = 'public'
+       and table_name = tbl
+       and not (column_name = any (secure_deal_masked_columns(tbl)));
+
+    if allowed is null then
+      raise exception 'Every column of % is masked, which cannot be right', tbl;
+    end if;
+
+    execute format('grant select (%s) on %I to authenticated', allowed, tbl);
   end loop;
 end $$;
 
