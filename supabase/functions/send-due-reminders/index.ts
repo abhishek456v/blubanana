@@ -61,7 +61,61 @@ Deno.serve(async (req) => {
     return Response.json({ sent: 0, reminders: 0 })
   }
 
-  const reminders = due as DueReminder[]
+  // ── Should this workspace still be nudged? ─────────────────────────────────
+  //
+  // This function runs with the service role, so RLS — including the
+  // subscription gate in 035 — does not apply to it. Whether an expired
+  // workspace keeps receiving reminders is therefore a decision made here, not
+  // one the database makes for us.
+  //
+  // A grace window rather than a hard stop at expiry. The product's whole
+  // promise is that she does not miss a deadline; cutting the reminders off the
+  // hour a card fails would break exactly that promise for someone who fully
+  // intends to pay. Thirty days is long enough to cover a failed renewal and a
+  // holiday, and short enough that we are not notifying a departed customer for
+  // a year.
+  //
+  // Past the window the reminders are marked `expired` rather than skipped.
+  // Skipping would leave them `scheduled` forever, and the day she resubscribed
+  // she would be hit with every nudge that accumulated while she was gone.
+  const GRACE_DAYS = 30
+  const graceCutoff = new Date(Date.now() - GRACE_DAYS * 86_400_000).toISOString()
+
+  const dueWorkspaceIds = [...new Set(due.map((r) => r.workspace_id as string))]
+  const { data: subs } = await supabase
+    .from('subscriptions')
+    .select('workspace_id, status, is_internal, trial_ends_at, current_period_end')
+    .in('workspace_id', dueWorkspaceIds)
+
+  const lapsed = new Set<string>()
+  for (const sub of subs ?? []) {
+    if (sub.is_internal) continue
+    // The moment cover ended, whichever kind of cover it was. A workspace with
+    // no subscription row at all is left alone: fail open, as 035 does.
+    const coveredUntil = sub.current_period_end ?? sub.trial_ends_at
+    const stillCovered =
+      sub.status === 'active' ||
+      sub.status === 'past_due' ||
+      (coveredUntil && coveredUntil > new Date().toISOString())
+
+    if (!stillCovered && coveredUntil && coveredUntil < graceCutoff) {
+      lapsed.add(sub.workspace_id as string)
+    }
+  }
+
+  if (lapsed.size > 0) {
+    const stale = due.filter((r) => lapsed.has(r.workspace_id as string)).map((r) => r.id)
+    if (stale.length > 0) {
+      await supabase.from('reminders').update({ status: 'expired' }).in('id', stale)
+    }
+  }
+
+  const deliverable = due.filter((r) => !lapsed.has(r.workspace_id as string))
+  if (deliverable.length === 0) {
+    return Response.json({ sent: 0, reminders: 0, expired: lapsed.size })
+  }
+
+  const reminders = deliverable as DueReminder[]
   const workspaceIds = [...new Set(reminders.map((r) => r.workspace_id))]
 
   const { data: tokenRows, error: tokenError } = await supabase

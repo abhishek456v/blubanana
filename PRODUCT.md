@@ -90,6 +90,25 @@ The workspace goes **read-only**:
 Locking a creator out of her own records is hostile, and it makes the export
 she is entitled to impossible. Read-only is the correct end state.
 
+**Reminders keep firing for 30 days after cover ends**, then stop. The sender
+runs with the service role and so is not subject to the read-only gate at all —
+whether a lapsed workspace is still nudged is a decision, not a side effect.
+Cutting reminders off the hour a card fails would break the product's central
+promise for someone who fully intends to pay; still nudging her a year later is
+just paying to nag a departed customer. Past the window the outstanding
+reminders are marked `expired` rather than skipped, so resubscribing does not
+detonate every nudge that accumulated while she was gone.
+
+Her ability to *answer* a reminder is deliberately never gated. Being nudged
+about a deadline with no way to mark it done is the worst last impression the
+product could leave.
+
+**Internal accounts** (`subscriptions.is_internal`) are never gated, never
+billed, and excluded from the 500 launch places so comps cannot eat the offer.
+Set by migration today; this belongs in an admin panel, and the block in 035
+should be deleted the day one exists — a list of comped accounts maintained in
+migration files is a list nobody can see.
+
 ### Plans
 
 **One plan. Every feature, including team invites** (5 seats, raised on

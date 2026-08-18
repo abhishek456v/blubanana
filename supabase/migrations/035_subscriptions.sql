@@ -162,7 +162,8 @@ security definer
 set search_path = public
 as $$
   select count(*)::integer from subscriptions
-   where intro_applied and status in ('active', 'past_due', 'cancelled')
+   where intro_applied and not is_internal
+     and status in ('active', 'past_due', 'cancelled')
 $$;
 
 revoke all on function intro_seats_taken() from public;
@@ -218,6 +219,17 @@ create table if not exists subscriptions (
   razorpay_customer_id     text,
   razorpay_subscription_id text,
 
+  /**
+   * Never gated, never billed, and not counted toward the 500 launch places.
+   *
+   * For the founders' own workspaces and, later, anything support comps. An
+   * explicit column rather than the trick of setting status='active' with a
+   * null period end: a future admin panel has to be able to tell an internal
+   * account from a paying customer at a glance, and revenue reporting has to
+   * exclude these rather than quietly counting them.
+   */
+  is_internal      boolean     not null default false,
+
   cancelled_at     timestamptz,
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now()
@@ -261,6 +273,7 @@ as $$
      and m.status = 'active'
      and (
        s.workspace_id is null
+       or s.is_internal
        or (s.status = 'trialing' and s.trial_ends_at > now())
        or (s.status in ('active', 'past_due')
            and (s.current_period_end is null or s.current_period_end > now()))
@@ -276,10 +289,19 @@ grant execute on function auth_writable_workspace_ids() to authenticated;
 -- whole point of read-only rather than locked — and DELETE stays with 024's
 -- owner rule.
 --
--- `reminders`, `outbound_messages` and `push_tokens` are deliberately absent:
--- the server writes those on her behalf, and an expired workspace whose
--- reminder rows cannot be marked sent would generate the same notification
--- every five minutes forever.
+-- `reminders`, `outbound_messages` and `push_tokens` are deliberately absent,
+-- and not for the reason it first appears. The sender runs with the service
+-- role and bypasses RLS entirely, so marking a reminder sent was never at risk.
+--
+-- The risk is the other direction: an expired creator still RECEIVES reminders,
+-- and if her writes were gated she could not answer one. She would be nudged
+-- about a deadline every day with no way to mark it done — nagging a person who
+-- has already stopped paying, which is both useless and the worst possible last
+-- impression of the product.
+--
+-- Whether we keep notifying her at all is a separate question, and the answer
+-- is a grace window in the sender rather than a policy here. See
+-- send-due-reminders.
 
 do $$
 declare
@@ -323,7 +345,7 @@ declare
   is_trialing boolean;
   existing    integer;
 begin
-  select status = 'trialing' and trial_ends_at > now()
+  select status = 'trialing' and trial_ends_at > now() and not is_internal
     into is_trialing
     from subscriptions
    where workspace_id = new.workspace_id;
@@ -389,6 +411,32 @@ $$;
 insert into subscriptions (workspace_id)
 select id from workspaces
 on conflict (workspace_id) do nothing;
+
+
+-- ── 7b. The founder's own workspaces ────────────────────────────────────────
+-- Comped so the trial clock never starts on the account the product is built
+-- and demonstrated from. Matched by email rather than by a pasted uuid: ids are
+-- opaque, and a hardcoded one is impossible to check by reading.
+--
+-- Temporary by design. This belongs in an admin panel, and this block should be
+-- deleted the day one exists — a list of comped accounts maintained in
+-- migration files is a list nobody can see.
+
+do $$
+declare
+  marked integer;
+begin
+  update subscriptions s
+     set is_internal = true, status = 'active', updated_at = now()
+    from memberships m
+    join auth.users u on u.id = m.user_id
+   where m.workspace_id = s.workspace_id
+     and m.role = 'owner'
+     and lower(u.email) in ('abhishek456v@gmail.com');
+
+  get diagnostics marked = row_count;
+  raise notice 'Marked % workspace(s) internal.', marked;
+end $$;
 
 
 -- ── 8. Verification ─────────────────────────────────────────────────────────
