@@ -11,7 +11,12 @@ import type { Deal, ReminderStage } from '@/types'
 // function below ever races with itself, the second write fails loudly instead
 // of quietly producing two nudges for the same piece of work.
 
-export type ReminderType = 'workflow' | 'payment' | 'ad_rights' | 'survey'
+/**
+ * `tax` reminders belong to no deal (029): both `deal_id` and `payment_id` are
+ * null on them, and they are scheduled by a nightly database job rather than by
+ * anything the client does.
+ */
+export type ReminderType = 'workflow' | 'payment' | 'ad_rights' | 'survey' | 'tax'
 
 export type ReminderStatus =
   | 'scheduled'

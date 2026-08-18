@@ -516,8 +516,12 @@ income".
 
 ### 8.13 Tax — **Change**
 
-**Deadline reminders.** **New** — the calculator shows the four dates, but no
-notification fires for them yet. Indian freelancers pay **advance tax quarterly** —
+**Deadline reminders.** **Built** (029) — a nightly database job writes them
+into `reminders`, so the existing sender delivers them alongside everything
+else rather than through a second pipeline with its own quiet-hours logic to
+drift. Advance tax lands 7 days ahead; GST filings 3, because they recur twelve
+times a year and a week's notice on that is noise. GST reminders go only to
+creators with a GSTIN on their profile. Indian freelancers pay **advance tax quarterly** —
 15 June, 15 September, 15 December, 15 March — and missing it means interest
 under sections 234B and 234C. Most creators find out from their CA in March.
 Registered creators also file **GSTR-1** (11th) and **GSTR-3B** (20th) monthly.
@@ -723,7 +727,7 @@ of month one — its stages and line items, each shifted a month — so every
 existing list, total, reminder and invoice works on them unchanged. The rate is
 per month, not per contract.
 
-Still open: tax deadline notifications.
+Step 6 is complete.
 
 **7 — Profile card rebuild**, then real Meta/YouTube APIs when credentials land.
 

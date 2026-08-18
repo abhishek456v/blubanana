@@ -226,7 +226,11 @@ export default function RemindersScreen() {
   function AlertCard({ alert, index }: { alert: Alert; index: number }) {
     const isReminder = alert.kind === 'reminder'
     const deal = isReminder ? alert.deal : alert.item.deal
-    const brandName = deal?.brand?.name ?? 'Unknown brand'
+    // A tax reminder belongs to no deal and no brand (029), so the usual
+    // fallback would label the government's deadline "Unknown brand".
+    const brandName =
+      deal?.brand?.name ??
+      (isReminder && alert.reminder.type === 'tax' ? 'Tax' : 'Unknown brand')
 
     const tone = isReminder
       ? alert.at.getTime() <= Date.now()
