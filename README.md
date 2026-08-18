@@ -111,6 +111,11 @@ Three pieces, and all three are needed:
 ### 1. Deploy the sender
 
 ```bash
+# 0. Authenticate the CLI. Opens a browser; needed once per machine.
+#    Without it, both commands below fail with "Access token not provided".
+#    The project itself is already linked (supabase/.temp/project-ref).
+npx supabase login
+
 # 1. Generate a secret and PRINT it. You need the same value in step 2.
 openssl rand -hex 32
 
