@@ -8,6 +8,7 @@ import { File, Paths } from 'expo-file-system'
 import * as Sharing from 'expo-sharing'
 import { supabase } from '@/lib/supabase'
 import { buildExport } from '@/lib/exportData'
+import { deleteMyAccount } from '@/lib/account'
 import { disablePublicProfile, enablePublicProfile, getProfile } from '@/lib/profile'
 import {
   notificationsEnabledAsync,
@@ -19,6 +20,7 @@ import { useBreakpoint } from '@/hooks/useBreakpoint'
 import { useTheme, useThemeMode, type ThemeMode } from '@/hooks/useTheme'
 import { BrandAvatar } from '@/components/BrandAvatar'
 import { ConnectedAccounts } from '@/components/social/ConnectedAccounts'
+import { DeleteAccountSheet } from '@/components/DeleteAccountSheet'
 import {
   ColumnGap,
   DesktopContentMaxWidth,
@@ -70,6 +72,8 @@ export default function YouScreen() {
   const [profile, setProfile] = useState<Creator | null>(null)
   const [togglingPublic, setTogglingPublic] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [notifPermission, setNotifPermission] = useState<'unknown' | 'granted' | 'denied'>(
     'unknown'
   )
@@ -120,6 +124,26 @@ export default function YouScreen() {
    * that works the same on iOS, Android and web, and a download the app writes
    * somewhere she cannot find is not portability.
    */
+  /**
+   * Deletes the account, then lets the auth listener route to sign-in.
+   *
+   * No success toast: the screen it would appear on is gone by the time it
+   * would render, and a toast is the wrong register for this anyway. The
+   * absence of the app is the confirmation.
+   */
+  async function handleDeleteAccount() {
+    if (deleting) return
+    setDeleting(true)
+    try {
+      await deleteMyAccount()
+      setDeleteOpen(false)
+    } catch {
+      toast('Could not delete your account. Nothing has been removed.', { tone: 'error' })
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   async function handleExport() {
     if (exporting) return
     setExporting(true)
@@ -358,6 +382,20 @@ export default function YouScreen() {
             onPress={handleExport}
             index={4}
           />
+          {/* Last, and directly under Export, which is deliberate: the one
+              thing that makes this recoverable sits immediately above it. */}
+          <ListRow
+            title="Delete my account"
+            subtitle="Permanently removes your workspace and everything in it"
+            leading={
+              <View style={[styles.linkIcon, { backgroundColor: c.dangerLight }]}>
+                <Ionicons name="trash" size={18} color={c.danger} />
+              </View>
+            }
+            showChevron
+            onPress={() => setDeleteOpen(true)}
+            index={5}
+          />
         </View>
 
         <Button
@@ -370,6 +408,13 @@ export default function YouScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <DeleteAccountSheet
+        visible={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={handleDeleteAccount}
+        busy={deleting}
+      />
     </SafeAreaView>
   )
 }

@@ -580,11 +580,23 @@ Until then, be honest in the UI that these figures are manual.
 ratings — as CSV and JSON. Available at any time, including during the
 read-only state after a lapsed trial or subscription.
 
-**Delete my account.** **New.** A real deletion path, not a cancellation. This is a
+**Delete my account.** **Built.** A real deletion path, not a cancellation. This is a
 legal obligation, not a courtesy: CreatorDesk stores brand contacts' names and
 phone numbers, which is **third-party personal data**, making the business a
 Data Fiduciary under India's **Digital Personal Data Protection Act 2023**.
 The marketing site needs a privacy policy for the same reason.
+
+Deleting the auth user is not sufficient and was never going to be. `workspaces`
+has no owner column, so the cascade from `auth.users` stops at `memberships`
+and leaves the workspace — and everything in it a manager created — behind. The
+`delete-account` edge function deletes the owned workspaces first, which is what
+actually clears the data, and removes the stored files, which have no foreign
+keys and so cascade from nothing.
+
+It also reassigns before it deletes (028). Every business table carries
+`creator_id references profiles on delete cascade`, so a departing *manager*
+would otherwise take the creator's deals with them. Those rows pass to the
+workspace owner instead.
 
 ### 8.19 Working offline — **New**, native only
 
@@ -711,7 +723,7 @@ of month one — its stages and line items, each shifted a month — so every
 existing list, total, reminder and invoice works on them unchanged. The rate is
 per month, not per contract.
 
-Still open: delete-my-account, and tax deadline notifications.
+Still open: tax deadline notifications.
 
 **7 — Profile card rebuild**, then real Meta/YouTube APIs when credentials land.
 
