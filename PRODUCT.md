@@ -241,7 +241,7 @@ understate a figure the reader believes is complete.
 Sign up on the website or in the app → 14-day trial starts immediately → she
 lands in an empty workspace. No card required to start.
 
-### 8.2 Onboarding, and importing what she already has — **New**
+### 8.2 Onboarding, and importing what she already has — **Built**
 
 A creator arriving has live deals already. If day one is "type in all eight",
 she leaves.
@@ -252,6 +252,17 @@ in. The extraction already exists (§8.3); this is wiring it to a different
 starting point.
 
 Everything in onboarding is skippable. Nothing is mandatory.
+
+Built as `extract-deals`, the bulk sibling of `extract-deal`, plus an import
+screen reachable from the end of onboarding **and** from Settings — the creator
+most likely to need it later is exactly the one who skipped past the offer.
+
+Nothing saves without review, matching §8.3's rule for every AI path: a misread
+column becomes eight deals with the wrong money in them, and unpicking that by
+hand is worse than never importing. Imported deals go through `createDeal` and
+get the default stages, so they arrive with deadlines and reminders rather than
+as inert rows. A rate the sheet did not state is 0, not a guess — it reads as
+"not recorded" everywhere, where an invented figure would read as fact.
 
 ### 8.3 Getting a deal in — **Built** (plus one new mode)
 
@@ -609,16 +620,23 @@ most weekly.
 This is the only feature in the product that makes her money rather than
 saving her time.
 
-### 8.17 Content performance — **Change**
+### 8.17 Content performance — **Built**, pending credentials
 
-Views, likes, comments and saves per deliverable. Entered manually today.
+Views, likes, comments and saves per deliverable.
 
-**The Instagram and YouTube integrations are currently mocked** — a
-`MockSocialProvider` behind a clean interface, so switching to real Meta Graph
-API and YouTube Data API changes one map and no screens. Real credentials go in
-at deployment.
+**Instagram is built against the real Graph API** (033). `lib/social` picks the
+real provider when `EXPO_PUBLIC_META_APP_ID` is set and the mock when it is
+not, so credentials are the entire switch — no code changes on the day they
+arrive. The nightly `social-sync` writes a reach snapshot and matches each
+deliverable's `live_link` to a post permalink to fill in its view count, which
+is what makes CPV on the rate card computable at all.
 
-Until then, be honest in the UI that these figures are manual.
+**YouTube stays mocked.** It is Google's API, not Meta's, and a second OAuth
+integration is its own piece of work.
+
+Until a platform is live the UI says its figures are manual, per platform
+rather than globally — Instagram being real must not make YouTube's sample
+numbers look measured.
 
 ### 8.18 Export and deletion — **New**
 
@@ -771,9 +789,12 @@ per month, not per contract.
 
 Step 6 is complete.
 
-**7 — Profile card rebuild. Done**, except the two gaps in §8.11 (no avatar
-column; CPV needs view counts) and the decision on retiring `/creator/[slug]`.
-Real Meta/YouTube APIs still wait on credentials.
+**7 — Profile card rebuild. Done.** Themed by niche, photos, every field
+editable before sending, AI gap-fill for unsold formats, and the public page
+retired (031). The Instagram integration is built and inert (033): setting
+`EXPO_PUBLIC_META_APP_ID` plus the function secrets is the whole activation,
+and CPV starts populating from the first nightly sync. YouTube is still
+mocked.
 
 **8 — Offline capture.** Last, because it touches every write path and is
 easier once those paths have stopped changing.

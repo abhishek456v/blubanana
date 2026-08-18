@@ -233,6 +233,7 @@ supabase secrets set OPENAI_API_KEY=sk-proj-...
 supabase functions deploy extract-deal
 supabase functions deploy transcribe-audio
 supabase functions deploy suggest-rates
+supabase functions deploy extract-deals
 ```
 
 ### 5. Instagram (Meta Graph API)
@@ -370,6 +371,7 @@ supabase/
     extract-deal/       GPT-4o extraction — screenshot (vision) or voice transcript in, deal fields out
     transcribe-audio/   Whisper transcription for recorded voice notes
     suggest-rates/      a starting price for deliverables with no history — gap-fill only (§8.11)
+    extract-deals/      the bulk sibling of extract-deal: a whole spreadsheet or screenshot in, many deals out (§8.2)
     _shared/             CORS headers + the extraction prompt shared by both intake paths
 types/
   index.ts             TypeScript interfaces for all four data-model objects, plus ExtractedDealFields

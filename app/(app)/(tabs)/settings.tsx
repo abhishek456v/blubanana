@@ -327,6 +327,21 @@ export default function YouScreen() {
             onPress={() => router.push('/(app)/team' as never)}
             index={4}
           />
+          {/* Reachable after onboarding too: §8.2 makes every onboarding step
+              skippable, so the creator most likely to need this is exactly the
+              one who skipped past the offer. */}
+          <ListRow
+            title="Import deals"
+            subtitle="Bring across a spreadsheet, or a photo of your notes"
+            leading={
+              <View style={[styles.linkIcon, { backgroundColor: c.accentLight }]}>
+                <Ionicons name="cloud-upload" size={18} color={c.accent} />
+              </View>
+            }
+            showChevron
+            onPress={() => router.push('/(app)/import' as never)}
+            index={5}
+          />
           <ListRow
             title="Export my data"
             subtitle="Every deal, brand, payment, invoice and expense as a file"
@@ -337,7 +352,7 @@ export default function YouScreen() {
             }
             showChevron
             onPress={handleExport}
-            index={5}
+            index={6}
           />
           {/* Last, and directly under Export, which is deliberate: the one
               thing that makes this recoverable sits immediately above it. */}
@@ -351,7 +366,7 @@ export default function YouScreen() {
             }
             showChevron
             onPress={() => setDeleteOpen(true)}
-            index={6}
+            index={7}
           />
         </View>
 

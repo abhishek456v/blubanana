@@ -203,6 +203,23 @@ export default function OnboardingScreen() {
                 />
               </View>
 
+              {/* Offered at the end rather than the start: §8.2 says nothing in
+                  onboarding is mandatory, and a creator who lands on a file
+                  picker before she has typed her own name will close the app.
+                  Placed here, it catches her at the moment she has just
+                  finished and is looking at an empty dashboard. */}
+              <PressableScale
+                onPress={() => router.push('/(app)/import' as never)}
+                accessibilityRole="button"
+                accessibilityLabel="Import deals you already have"
+                style={[styles.importRow, { borderColor: c.borderStrong }]}
+              >
+                <Ionicons name="sparkles-outline" size={16} color={c.accent} />
+                <Text style={[styles.importText, { color: c.accentText }]}>
+                  Already tracking deals somewhere? Bring them across
+                </Text>
+              </PressableScale>
+
               <Button label="Finish" fullWidth loading={saving} onPress={handleFinish} />
               <PressableScale
                 onPress={() => setStep('you')}
@@ -222,6 +239,23 @@ export default function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
+  importRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 12,
+  },
+  importText: {
+    fontSize: 13,
+    fontWeight: '500',
+    flexShrink: 1,
+  },
   safe: {
     flex: 1,
   },
