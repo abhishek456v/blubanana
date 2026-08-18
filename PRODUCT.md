@@ -295,7 +295,7 @@ understate a figure the reader believes is complete.
 
 ## 8. How it works
 
-### 8.1 Signing up — **New**
+### 8.1 Signing up — **Built**
 
 Sign up on the website or in the app → 14-day trial starts immediately → she
 lands in an empty workspace. No card required to start.
@@ -402,7 +402,7 @@ slowly fills with deals that are never going to pay.
 
 Un-holding puts it back.
 
-### 8.7 Money in — **Change**
+### 8.7 Money in — **Built**
 
 **Payment terms** are captured on the deal: the amount, and when it is due.
 
@@ -626,7 +626,7 @@ Free-text entry can be parsed by the same AI extraction used elsewhere.
 Expenses feed the annual report, which is what turns "turnover" into "taxable
 income".
 
-### 8.13 Tax — **Change**
+### 8.13 Tax — **Built**
 
 **Deadline reminders.** **Built** (029) — a nightly database job writes them
 into `reminders`, so the existing sender delivers them alongside everything
@@ -707,7 +707,7 @@ Until a platform is live the UI says its figures are manual, per platform
 rather than globally — Instagram being real must not make YouTube's sample
 numbers look measured.
 
-### 8.18 Export and deletion — **New**
+### 8.18 Export and deletion — **Built**
 
 **Export.** **Built.** Everything she has — deals, brands, payments, invoices, expenses,
 ratings — as CSV and JSON. Available at any time, including during the
@@ -875,6 +875,12 @@ easier once those paths have stopped changing.
 ## 12. Open items
 
 - Apple Developer account — needed before iOS push can be tested.
-- Meta Graph API and YouTube Data API credentials — needed to replace the
-  mocked providers, and to make the profile card refresh itself.
-- Final pricing.
+- Meta Graph API credentials — the Instagram integration is built and inert
+  (033); setting `EXPO_PUBLIC_META_APP_ID` plus the function secrets activates
+  it, and cost per view starts populating from the first nightly sync.
+- YouTube Data API — still mocked, and a second OAuth integration in its own
+  right rather than a footnote to Meta's.
+- Razorpay keys — checkout and the webhook are built (036); the keys are the
+  switch, as with Meta.
+
+Pricing is settled: §3.

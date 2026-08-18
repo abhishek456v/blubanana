@@ -25,3 +25,8 @@ verify_jwt = false
 # workspaces for a single-account refresh.
 [functions.social-sync]
 verify_jwt = false
+
+# Razorpay POSTs from their servers with no session. The guard is an HMAC of the
+# raw body against RAZORPAY_WEBHOOK_SECRET, verified before the body is parsed.
+[functions.razorpay-webhook]
+verify_jwt = false

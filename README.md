@@ -276,6 +276,47 @@ Both functions run with `verify_jwt = false` and authenticate themselves:
 `social-oauth` on the single-use `state` nonce, `social-sync` on either the
 CRON_SECRET or a user JWT scoped to that caller's workspaces.
 ```
+
+### 6. Razorpay (billing)
+
+Built and inert, like Instagram. The keys are the switch:
+
+```bash
+npx supabase secrets set \
+  RAZORPAY_KEY_ID=<key id> \
+  RAZORPAY_KEY_SECRET=<key secret> \
+  RAZORPAY_WEBHOOK_SECRET=<webhook secret>
+
+npx supabase functions deploy razorpay-checkout
+npx supabase functions deploy razorpay-webhook
+```
+
+In the Razorpay dashboard, add a webhook pointing at:
+
+```
+https://bbdvgeavtxfxykhiafbp.supabase.co/functions/v1/razorpay-webhook
+```
+
+subscribed to `subscription.activated`, `subscription.charged`,
+`subscription.pending`, `subscription.halted`, `subscription.cancelled` and
+`subscription.completed`.
+
+Until the keys are set, the Subscribe button says payments are not switched on
+yet rather than failing — a 503 with `code: not_configured` is a different thing
+from an error and reads as one.
+
+**The price is never sent by the client.** `razorpay-checkout` receives a term
+and computes the amount with `term_price_paise()` (035), so a tampered request
+cannot buy a year for ₹1. Only a workspace **owner** may subscribe; a manager
+with money access can read what was charged but cannot commit the business to a
+recurring mandate.
+
+**The webhook is the only thing that can mark a subscription paid** — 035
+revokes writes on `subscriptions` from `authenticated`. It verifies an HMAC of
+the *raw* body before parsing it (parsing and re-serialising changes the bytes),
+compares in constant time, and is idempotent on `razorpay_payment_id` so a
+retried event cannot issue a second GST invoice into a series that has to be
+gapless.
 ```
 
 Both functions require a valid Supabase auth session by default (no extra

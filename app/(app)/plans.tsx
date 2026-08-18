@@ -15,6 +15,7 @@ import {
   type Pricing,
   type Term,
 } from '@/lib/subscription'
+import { PaymentsNotConfigured, startCheckout } from '@/lib/billing'
 import { useEntitlement } from '@/hooks/useEntitlement'
 import { ContentMaxWidth, FontFamily, Radius, Spacing, Typography } from '@/constants/design'
 import { useTheme } from '@/hooks/useTheme'
@@ -59,6 +60,7 @@ export default function PlansScreen() {
   const [placesLeft, setPlacesLeft] = useState<number | null>(null)
   const [selected, setSelected] = useState<Term['key']>('yearly')
   const [loading, setLoading] = useState(true)
+  const [starting, setStarting] = useState(false)
 
   const load = useCallback(async () => {
     try {
@@ -96,6 +98,33 @@ export default function PlansScreen() {
   // is the point of counting rather than announcing.
   const introLive = (placesLeft ?? 0) > 0
   const term = terms.find((t) => t.key === selected) ?? terms[0]
+
+  /**
+   * Opens Razorpay, then re-reads rather than assuming.
+   *
+   * The browser closing says nothing: she may have approved, abandoned, or shut
+   * the tab. Only the webhook knows, and it may land a moment later — so the
+   * entitlement is refreshed on return and the banner updates itself when it
+   * does.
+   */
+  async function handleSubscribe() {
+    if (!term || starting) return
+    setStarting(true)
+    try {
+      await startCheckout(term.key)
+      entitlement.refresh()
+      await load()
+    } catch (error) {
+      toast(
+        error instanceof PaymentsNotConfigured
+          ? 'Payments are not switched on yet. Nothing has been charged.'
+          : 'Could not open the payment page',
+        { tone: error instanceof PaymentsNotConfigured ? 'warning' : 'error' }
+      )
+    } finally {
+      setStarting(false)
+    }
+  }
 
   return (
     <ModalSheet title="Plans">
@@ -203,14 +232,11 @@ export default function PlansScreen() {
             ))}
           </Card>
 
-          {/* Deliberately not a disabled button with no explanation. Until
-              Razorpay is connected, saying so is more honest than a control
-              that does nothing when tapped. */}
           <Button
-            label="Payments open shortly"
-            disabled
+            label={starting ? 'Opening…' : 'Subscribe'}
+            onPress={handleSubscribe}
+            disabled={starting || !term}
             fullWidth
-            onPress={() => undefined}
           />
           <Text style={[styles.note, { color: c.textMuted }]}>
             Card, UPI and netbanking through Razorpay. Your price holds for the whole
