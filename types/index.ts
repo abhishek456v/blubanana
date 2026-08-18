@@ -159,10 +159,8 @@ export interface Creator {
   gstin: string | null
   /** Rule 46(a): mandatory on a tax invoice (migration 018). */
   address: string | null
-  // Shown on the shareable public profile card (Phase 3).
+  /** Drives the rate card's suggested theme (§8.11). */
   niche: string | null
-  public_profile_enabled: boolean
-  public_share_slug: string | null
   created_at: string
 }
 

@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { ActivityIndicator, Platform, ScrollView, StyleSheet, Switch, Text, View } from 'react-native'
+import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useFocusEffect } from '@react-navigation/core'
@@ -9,7 +9,7 @@ import * as Sharing from 'expo-sharing'
 import { supabase } from '@/lib/supabase'
 import { buildExport } from '@/lib/exportData'
 import { deleteMyAccount } from '@/lib/account'
-import { disablePublicProfile, enablePublicProfile, getProfile } from '@/lib/profile'
+import { getProfile } from '@/lib/profile'
 import {
   notificationsEnabledAsync,
   scheduledCountAsync,
@@ -50,16 +50,6 @@ const THEME_OPTIONS: { key: ThemeMode; label: string }[] = [
 ]
 import type { Creator } from '@/types'
 
-// Native has no window.location. The public profile card only resolves to a
-// real URL on the web build, so native shows the path with a note instead of
-// a broken link.
-function publicProfileUrl(slug: string): string {
-  if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    return `${window.location.origin}/creator/${slug}`
-  }
-  return `/creator/${slug}`
-}
-
 export default function YouScreen() {
   const { c } = useTheme()
   const router = useRouter()
@@ -70,7 +60,6 @@ export default function YouScreen() {
   const confirm = useConfirm()
 
   const [profile, setProfile] = useState<Creator | null>(null)
-  const [togglingPublic, setTogglingPublic] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -181,20 +170,6 @@ export default function YouScreen() {
     // The root layout notices the cleared session and redirects to sign-in.
   }
 
-  async function handleTogglePublicProfile(next: boolean) {
-    if (togglingPublic) return
-    setTogglingPublic(true)
-    try {
-      setProfile(next ? await enablePublicProfile() : await disablePublicProfile())
-      toast(next ? 'Your profile card is live' : 'Profile card turned off', {
-        tone: next ? 'success' : 'neutral',
-      })
-    } catch {
-      toast('Could not update your profile card', { tone: 'error' })
-    } finally {
-      setTogglingPublic(false)
-    }
-  }
 
   const followerLine =
     profile?.follower_count != null
@@ -290,36 +265,6 @@ export default function YouScreen() {
             ) : null}
           </Card>
         ) : null}
-
-        <Card>
-          <View style={styles.toggleRow}>
-            <View style={styles.toggleText}>
-              <Text style={[styles.cardTitle, { color: c.textPrimary }]}>Profile card</Text>
-              <Text style={[styles.cardHint, { color: c.textSecondary }]}>
-                A public page you can send a brand mid-negotiation. Shows your niche, reach and deals
-                completed. Never shows payment or contact details.
-              </Text>
-            </View>
-            {togglingPublic ? (
-              <ActivityIndicator color={c.textMuted} />
-            ) : (
-              <Switch
-                value={profile?.public_profile_enabled ?? false}
-                onValueChange={handleTogglePublicProfile}
-                trackColor={{ false: c.border, true: c.accentLight }}
-                thumbColor={profile?.public_profile_enabled ? c.accent : undefined}
-              />
-            )}
-          </View>
-
-          {profile?.public_profile_enabled && profile.public_share_slug ? (
-            <View style={[styles.linkBox, { backgroundColor: c.bgPage }]}>
-              <Text style={[styles.link, { color: c.accentText }]} selectable numberOfLines={1}>
-                {publicProfileUrl(profile.public_share_slug)}
-              </Text>
-            </View>
-          ) : null}
-        </Card>
 
         <View style={styles.links}>
           <ListRow
@@ -483,14 +428,6 @@ const styles = StyleSheet.create({
     ...Typography.caption,
     fontFamily: FontFamily.regular,
   },
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.md,
-  },
-  toggleText: {
-    flex: 1,
-  },
   cardTitle: {
     ...Typography.heading,
     fontFamily: FontFamily.semiBold,
@@ -500,12 +437,6 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.regular,
     marginTop: Spacing.xxs,
     lineHeight: 18,
-  },
-  linkBox: {
-    marginTop: Spacing.md,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    borderRadius: Radius.sm,
   },
   link: {
     ...Typography.caption,
