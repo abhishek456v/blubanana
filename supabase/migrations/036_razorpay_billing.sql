@@ -46,7 +46,10 @@ create table if not exists razorpay_plans (
 
 alter table razorpay_plans enable row level security;
 -- No policy at all: only the service role touches this. A plan id is not
--- secret, but nothing in the app has any reason to read one.
+-- secret, but nothing in the app has any reason to read one. The grants are
+-- revoked too rather than relying on RLS alone — two independent reasons the
+-- client cannot reach it.
+revoke all on razorpay_plans from anon, authenticated;
 
 
 -- ── 2. What was actually charged ────────────────────────────────────────────
@@ -99,7 +102,10 @@ create policy "subscription_payments: workspace reads"
   on subscription_payments for select to authenticated
   using (workspace_id in (select auth_workspace_ids_allowing('money')));
 
-revoke insert, update, delete on subscription_payments from authenticated;
+-- From anon as well as authenticated. Supabase grants to both by default, so
+-- revoking from one leaves the other holding the same rights — which is exactly
+-- what the verification below caught on the first run of this migration.
+revoke insert, update, delete on subscription_payments from anon, authenticated;
 
 
 -- ── 3. Our own GST invoices ─────────────────────────────────────────────────
@@ -150,7 +156,7 @@ create policy "subscription_invoices: workspace reads"
   on subscription_invoices for select to authenticated
   using (workspace_id in (select auth_workspace_ids_allowing('money')));
 
-revoke insert, update, delete on subscription_invoices from authenticated;
+revoke insert, update, delete on subscription_invoices from anon, authenticated;
 
 -- The customer's name and GSTIN are snapshotted above precisely so the invoice
 -- still means something once the workspace is gone. Rule 46 invoices are
@@ -187,6 +193,8 @@ revoke all on function next_subscription_invoice_number(text) from public;
 -- ── 5. Verification ─────────────────────────────────────────────────────────
 
 do $$
+declare
+  leaked text;
 begin
   if to_regclass('public.subscription_payments') is null
      or to_regclass('public.subscription_invoices') is null
@@ -197,14 +205,19 @@ begin
   -- Financial records must never be writable from a client session. A creator
   -- who could edit what she was charged, or issue herself an invoice, is a
   -- creator who can corrupt our GST return.
-  if exists (
-    select 1 from information_schema.column_privileges
-     where table_schema = 'public'
-       and table_name in ('subscription_payments', 'subscription_invoices')
-       and privilege_type in ('INSERT', 'UPDATE', 'DELETE')
-       and grantee in ('authenticated', 'anon', 'PUBLIC')
-  ) then
-    raise exception 'Billing records are writable from a client session';
+  --
+  -- table_privileges, not column_privileges: DELETE is a table-level privilege
+  -- and does not appear in the column view at all, so the obvious check would
+  -- have verified two of the three and reported success.
+  select string_agg(distinct grantee || ' on ' || table_name, ', ') into leaked
+    from information_schema.table_privileges
+   where table_schema = 'public'
+     and table_name in ('subscription_payments', 'subscription_invoices', 'razorpay_plans')
+     and privilege_type in ('INSERT', 'UPDATE', 'DELETE')
+     and grantee in ('authenticated', 'anon', 'PUBLIC');
+
+  if leaked is not null then
+    raise exception 'Billing records are writable from a client session: %', leaked;
   end if;
 
   -- Our tax records must survive a workspace being deleted, and must not block
