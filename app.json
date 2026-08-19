@@ -9,10 +9,10 @@
     "icon": "./assets/icon.png",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "ai.automitra.blubanana"
+      "bundleIdentifier": "in.blubanana.app"
     },
     "android": {
-      "package": "ai.automitra.blubanana",
+      "package": "in.blubanana.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#141210"
