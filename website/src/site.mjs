@@ -16,32 +16,31 @@ import { readFileSync } from 'node:fs'
  */
 export const COMPANY = {
   entity: 'Blubanana',
-  legalName: 'TODO: the registered legal entity name',
-  address: 'TODO: registered address, city, state, PIN',
-  phone: 'TODO: a number that is answered',
+  legalName: 'Blubanana Marketing',
+  address: 'WeWork, HSR Layout, Bengaluru 560102',
+  phone: '+91 78000 39987',
   email: 'hello@blubanana.in',
-  support: 'support@blubanana.in',
+  support: 'hello@blubanana.in',
   gstin: null,
   hours: 'Monday to Friday, 10am to 7pm IST',
-  /** Digits only, for the wa.me link. */
-  whatsapp: 'TODO',
+  /** Digits only, for the wa.me link. Same number as the phone line. */
+  whatsapp: '917800039987',
 }
 
 /**
- * Read from .env at build time and written into the page.
+ * Read from the environment, then from the file.
  *
  * Public by definition: the anon key is compiled into the app's own bundle and
  * is the key row-level security is designed around. It reaches exactly two
- * things here — the pricing row and the launch-seat count — both granted to
+ * things here, the pricing row and the launch seat count, both granted to
  * `anon` by migration 035 for this purpose.
+ *
+ * On this machine the values live in platform/.env, where Expo requires them.
+ * On a build server that file does not exist and they are set in the project's
+ * settings instead, so both have to be tried or the hosted build silently loses
+ * the live price and the counter.
  */
 export const SUPABASE = (() => {
-  // Environment variables first, then the file.
-  //
-  // On this machine the values live in platform/.env, where Expo requires
-  // them. On a build server that file does not exist and the values are set in
-  // the project's settings instead, so both have to be tried or the hosted
-  // build silently loses the live price and the launch counter.
   const fromEnv = {
     url: process.env.EXPO_PUBLIC_SUPABASE_URL ?? null,
     anonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? null,

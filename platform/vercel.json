@@ -1,4 +1,17 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    {
+      "comment": "Every route in the app is resolved by JavaScript, so a request for an inner screen has to be answered with index.html rather than a 404. Vercel checks the filesystem first, so real files are still served as themselves.",
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "comment": "The Expo bundle and its assets are content hashed.",
+      "source": "/(_expo|assets)/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    }
+  ]
 }
