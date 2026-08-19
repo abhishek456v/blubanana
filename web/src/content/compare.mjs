@@ -49,7 +49,7 @@ const hero = `<section class="hero" style="padding-bottom:0">
   <div class="container">
     <h1 class="reveal" style="max-width:19ch">You already have a system. Here is what it costs you.</h1>
     <p class="lede reveal" style="max-width:54ch;margin-top:18px">
-      A spreadsheet, a notes app and a good memory get most creators to about eight live deals. This is what breaks after that.
+      A spreadsheet and a good memory get most creators to about eight live deals. This is what breaks after that.
     </p>
   </div>
 </section>`
@@ -60,17 +60,17 @@ const three = section({
       <div class="card">
         <div class="icon-badge">${icon('chart')}</div>
         <h4>A spreadsheet</h4>
-        <p>Free, and completely silent. It has never once told you that a payment is late.</p>
+        <p>Free, and completely silent. It has never told you a payment is late.</p>
       </div>
       <div class="card">
         <div class="icon-badge">${icon('doc')}</div>
         <h4>Notes and chat threads</h4>
-        <p>Fine for one deal. By the eighth, the terms of the third are somewhere in a conversation from March.</p>
+        <p>By the eighth deal, the terms of the third are lost in a chat from March.</p>
       </div>
       <div class="card">
         <div class="icon-badge">${icon('globe')}</div>
         <h4>A tool built abroad</h4>
-        <p>Good software, written for a market where brands pay on time and the year starts in January.</p>
+        <p>Good software, for a market where brands pay on time.</p>
       </div>
     </div>
     ${table}`,
@@ -82,11 +82,11 @@ const india = section({
     ${head({
       eyebrow: 'Made in India',
       title: 'The problem was worth understanding first',
-      lede: 'Half the money up front and the rest whenever finance gets to it. Deals agreed in a DM at midnight. A brand that ghosts after the shoot. March arriving with no idea what is owed.',
+      lede: 'Half up front, the rest whenever finance gets to it. Deals agreed in a DM at midnight. March arriving with no idea what is owed.',
       align: 'center',
     })}
-    <p class="lede reveal center" style="max-width:600px;margin-top:22px">
-      None of that is a feature request a foreign tool would ever receive. It is the whole job here.
+    <p class="lede reveal center" style="max-width:560px;margin-top:20px">
+      None of that is a feature request a foreign tool would ever receive.
     </p>`,
 })
 

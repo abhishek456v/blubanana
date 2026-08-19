@@ -13,7 +13,7 @@ const hero = `<section class="hero" style="padding-bottom:20px">
   <div class="container">
     <h1 class="reveal" style="max-width:11ch">Talk to a person</h1>
     <p class="lede reveal" style="max-width:50ch;margin-top:18px">
-      Every message here is answered by someone who works on the product. Not a bot, and not a queue that closes itself after three days.
+      Answered by someone who works on the product. Not a bot.
     </p>
   </div>
 </section>`
@@ -76,17 +76,17 @@ const self = section({
       <div class="card">
         <div class="icon-badge">${icon('chart')}</div>
         <h4>Export everything</h4>
-        <p>Settings, then Export my data. CSV and JSON, all of it, at any time, including while your account is read only.</p>
+        <p>Settings, then Export my data. CSV and JSON, at any time.</p>
       </div>
       <div class="card">
         <div class="icon-badge">${icon('shield')}</div>
         <h4>Delete your account</h4>
-        <p>Settings, then Delete my account. It genuinely deletes the workspace and every file in it. You do not have to ask us.</p>
+        <p>Settings, then Delete my account. It genuinely deletes everything.</p>
       </div>
       <div class="card">
         <div class="icon-badge">${icon('wallet')}</div>
         <h4>Cancel a subscription</h4>
-        <p>Settings, then Plan and billing. Cancelling stops the next renewal and you keep access to the end of the term.</p>
+        <p>Settings, then Plan and billing. You keep access to the end of the term.</p>
       </div>
     </div>`,
 })

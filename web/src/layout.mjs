@@ -186,7 +186,7 @@ ${script ? `<script src="${assets.tools}"></script>\n<script>${script}</script>`
  */
 function announceBar() {
   return `<div class="announce" id="announce" hidden>
-  <span><b>Launch offer.</b> 50% off for the first 500 creators<span data-seats-line hidden>, and <b><span data-seats-left></span> places are left</span></span>
+  <span><b>Launch offer.</b> 50% off for the first 500 creators<span data-seats-line hidden>, and <b data-seats-left></b> places are left</span></span>
   <button class="announce-close" aria-label="Dismiss">✕</button>
 </div>`
 }

@@ -13,8 +13,7 @@
 
 import { PRICING, SITE, inr } from '../site.mjs'
 import {
-  closingCta, faq, faqSchema, head, icon, planCard, section, split, tabs,
-  uiCapture, uiDashboard, uiDeal, uiInvoice, uiMoney, uiRateCard, uiReminders, uiTaxCalendar, uiTeam,
+  closingCta, demoApp, faq, faqSchema, head, icon, planCard, section, split, tabs, uiTeam,
 } from '../ui.mjs'
 
 const QUESTIONS = [
@@ -56,7 +55,7 @@ const hero = `<section class="hero">
         </div>
         <p class="fine reveal">No card needed. Works on the web, iOS and Android.</p>
       </div>
-      <div class="reveal">${uiDashboard()}</div>
+      <div class="reveal">${demoApp({ id: 'hero' })}</div>
     </div>
   </div>
 </section>`
@@ -68,17 +67,17 @@ const promises = section({
       <div class="card">
         <div class="icon-badge">${icon('bolt')}</div>
         <h4>Never miss a deal</h4>
-        <p>Screenshot the message, or say it out loud. It is logged in thirty seconds.</p>
+        <p>Screenshot the message, or say it out loud.</p>
       </div>
       <div class="card">
         <div class="icon-badge">${icon('bell')}</div>
         <h4>Never miss a deadline</h4>
-        <p>Every stage has a date, and your phone tells you before it passes.</p>
+        <p>Your phone tells you before a date passes.</p>
       </div>
       <div class="card">
         <div class="icon-badge">${icon('wallet')}</div>
         <h4>Never miss a payment</h4>
-        <p>You always know what is owed, how late it is, and what to send.</p>
+        <p>You know what is owed, and how late.</p>
       </div>
     </div>`,
 })
@@ -89,52 +88,21 @@ const features = section({
     ${head({
       eyebrow: 'What it does',
       title: 'Six jobs, one place',
-      lede: 'The work that sits between agreeing a deal and the money arriving.',
+      lede: 'Pick one and it opens. Nothing here leaves the page.',
     })}
-    ${tabs([
-      {
-        id: 'capture',
-        label: 'Log a deal',
-        title: 'A deal takes thirty seconds',
-        copy: 'Screenshot the brand’s message, say it out loud, or type it. You check it before it saves.',
-        art: uiCapture(),
-      },
-      {
-        id: 'deadlines',
-        label: 'Deadlines',
-        title: 'Reminders that actually arrive',
-        copy: 'Sent from our servers, so they reach you whether or not the app is open, and even when the shoot had no signal.',
-        art: uiReminders(),
-      },
-      {
-        id: 'money',
-        label: 'Payments',
-        title: 'Chase without writing the message',
-        copy: 'The follow up is already written and gets firmer the longer it goes. You read it and send it yourself.',
-        art: uiMoney(),
-      },
-      {
-        id: 'invoices',
-        label: 'Invoices',
-        title: 'Accepted first time',
-        copy: 'Correct tax, your payment code on the document, and one tap to send it on WhatsApp.',
-        art: uiInvoice(),
-      },
-      {
-        id: 'tax',
-        label: 'Tax',
-        title: 'Know before the date, not after',
-        copy: 'Your income, your expenses, and the four dates the law sets, worked out as you go.',
-        art: uiTaxCalendar(),
-      },
-      {
-        id: 'ratecard',
-        label: 'Rate card',
-        title: 'A rate card you did not have to write',
-        copy: 'Built from what you have actually charged, so you are not guessing when a brand asks.',
-        art: uiRateCard(),
-      },
-    ])}`,
+    <div style="margin-top:40px">
+      ${tabs(
+        [
+          { id: 'capture', label: 'Log a deal', screen: 'newdeal', title: 'A deal takes thirty seconds', copy: 'Screenshot the message, say it out loud, or type it. You check it before it saves.' },
+          { id: 'deadlines', label: 'Deadlines', screen: 'deal', title: 'Every stage carries a date', copy: 'Name the stages yourself, and your phone tells you before one passes.' },
+          { id: 'money', label: 'Payments', screen: 'money', title: 'Chase without writing the message', copy: 'The follow up is written for you, and gets firmer the longer it goes.' },
+          { id: 'invoices', label: 'Invoices', screen: 'invoice', title: 'Accepted first time', copy: 'Correct tax, a code they can scan, and one tap to send it on WhatsApp.' },
+          { id: 'tax', label: 'Tax', screen: 'tax', title: 'Know before the date', copy: 'Worked out from your own income and expenses, across April to March.' },
+          { id: 'ratecard', label: 'Rate card', screen: 'ratecard', title: 'Ready when a brand asks', copy: 'Built from what you have actually charged, not what you hope to.' },
+        ],
+        { frame: 'features' }
+      )}
+    </div>`,
 })
 
 const steps = section({
@@ -142,9 +110,9 @@ const steps = section({
   inner: `
     ${head({ eyebrow: 'How it goes', title: 'Three steps, then it runs itself', align: 'center' })}
     <div class="steps reveal" style="margin-top:44px">
-      <div class="step"><h4>Bring what you already have</h4><p>Point it at your spreadsheet or a photo of your notes. Every live deal comes across.</p></div>
-      <div class="step"><h4>Log the next one in the chat</h4><p>Screenshot the message. The brief, the rate and the dates are read out for you to check.</p></div>
-      <div class="step"><h4>Answer your phone</h4><p>It tells you what is due, what is late, and what to send. You approve every message.</p></div>
+      <div class="step"><h4>Bring what you have</h4><p>Point it at your spreadsheet. Every live deal comes across.</p></div>
+      <div class="step"><h4>Log the next one in the chat</h4><p>Screenshot the message and check what it read.</p></div>
+      <div class="step"><h4>Answer your phone</h4><p>It says what is due and what is late.</p></div>
     </div>`,
 })
 
@@ -154,7 +122,7 @@ const team = split({
   words: `
     <div class="eyebrow">Working with a manager</div>
     <h2>Share the work without sharing your rates</h2>
-    <p class="lede" style="margin-top:16px">You decide what they see, area by area, and nobody but you can delete anything.</p>`,
+    <p class="lede" style="margin-top:16px">You decide what they see. Nobody but you can delete anything.</p>`,
 })
 
 const COMPARE = [
@@ -171,7 +139,7 @@ const compare = section({
     ${head({
       eyebrow: 'Why not the alternatives',
       title: 'Built by people who understand the problem',
-      lede: 'Foreign tools are good software written for a different country. A spreadsheet is free and silent.',
+      lede: 'A spreadsheet is free and silent. Foreign tools are good software for another country.',
     })}
     <div class="table-wrap cmp reveal" style="margin-top:36px">
       <table>
@@ -198,29 +166,29 @@ const india = section({
       <div class="reveal">
         <div class="eyebrow">Made in India</div>
         <h2>For how creators here actually get paid</h2>
-        <p class="lede" style="margin-top:16px">Four things are true of almost every brand deal in this country, and every one of them is a place money goes missing.</p>
+        <p class="lede" style="margin-top:16px">Four things are true of almost every brand deal here, and each one is where money goes missing.</p>
       </div>
       <div class="reveal">
         <div class="grid g-2">
           <div class="card">
             <div class="icon-badge">${icon('wallet')}</div>
             <h4>Half now, half much later</h4>
-            <p>The advance and the balance are two payments with two dates. Tracked apart, so a deal is never half forgotten.</p>
+            <p>Two payments, two dates, tracked apart.</p>
           </div>
           <div class="card">
             <div class="icon-badge">${icon('chart')}</div>
             <h4>TDS comes off before you see it</h4>
-            <p>Invoiced, received and withheld are three different numbers. Your return needs all three, and only one hits your bank.</p>
+            <p>Invoiced, received and withheld are three numbers. Your return needs all three.</p>
           </div>
           <div class="card">
             <div class="icon-badge">${icon('phone')}</div>
             <h4>Nobody replies to email</h4>
-            <p>The invoice and the follow up go to WhatsApp, to the person at the brand who actually answers.</p>
+            <p>Invoices and follow ups go where brands actually answer.</p>
           </div>
           <div class="card">
             <div class="icon-badge">${icon('calendar')}</div>
             <h4>Your year ends in March</h4>
-            <p>Income, expenses, TDS and GST across April to March, so what you hand your CA is already in the shape they need.</p>
+            <p>April to March, in the shape your CA already works in.</p>
           </div>
         </div>
       </div>
@@ -233,7 +201,7 @@ const pricing = section({
     <div class="split" style="align-items:center">
       <div class="reveal">
         ${head({ eyebrow: 'One plan', title: 'Everything, for one price' })}
-        <p class="lede" style="margin-top:16px">No tier where reminders cost extra, and no add on for inviting your manager.</p>
+        <p class="lede" style="margin-top:16px">No tier where reminders cost extra.</p>
         <ul class="includes" style="margin-top:26px">
           <li><span class="tick">${icon('check', { size: 15, stroke: 2.4 })}</span> Every feature, nothing held back</li>
           <li><span class="tick">${icon('check', { size: 15, stroke: 2.4 })}</span> Up to ${PRICING.seats} people in your workspace</li>
@@ -277,7 +245,7 @@ export default {
     hero, promises, features, steps, team, compare, india, pricing, questions,
     closingCta({
       title: 'Start with the deals you already have',
-      sub: `The importer brings them across in minutes. Subscribe if you are sure, or take ${PRICING.trialDays} days first.`,
+      sub: `The importer brings them across in minutes.`,
       href: SITE.subscribe,
       primary: 'Subscribe',
       secondary: [`${PRICING.trialDays} day trial`, SITE.signup],

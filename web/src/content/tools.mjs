@@ -50,7 +50,7 @@ function toolPage({ path, name, h1, line, description, form, out, how, related =
     <div class="split">
       <div class="reveal">
         <h2>It does this from your real deals</h2>
-        <p class="lede" style="margin-top:16px">Inside Blubanana the figures come from the work you have already logged, and it reminds you before the date rather than after.</p>
+        <p class="lede" style="margin-top:16px">Inside Blubanana these come from the deals you have logged, and it reminds you before the date.</p>
         <div class="btn-row" style="margin-top:24px">
           <a class="btn" href="${SITE.signup}">Start free for ${PRICING.trialDays} days</a>
         </div>
@@ -74,7 +74,7 @@ function toolPage({ path, name, h1, line, description, form, out, how, related =
       body,
       closingCta({
         title: 'Stop working this out by hand',
-        sub: `Blubanana keeps it up to date from the deals you log. ${PRICING.trialDays} days free, no card.`,
+        sub: `Blubanana keeps it current from the deals you log.`,
         href: SITE.signup,
       }),
     ].join('\n'),
@@ -112,7 +112,7 @@ const advanceTax = toolPage({
     <div><span class="fine">Tax expected for the year</span><div class="out-big figure" id="total">-</div></div>
     <div id="rows"></div>
     <p class="tool-note" id="note"></p>`,
-  how: 'Section 211 sets the four dates and the cumulative percentages: 15% by 15 June, 45% by 15 September, 75% by 15 December and the balance by 15 March. This applies your own effective rate to your own figure, which is the only honest way to do it without knowing the rest of your income.',
+  how: 'Section 211 sets the dates and the percentages: 15% by 15 June, 45% by 15 September, 75% by 15 December, the balance by 15 March.',
   script: `
     const $ = (id) => document.getElementById(id)
     document.querySelectorAll('.preset').forEach((b) => b.addEventListener('click', () => {
@@ -159,7 +159,7 @@ const tdsTool = toolPage({
     <div class="out-row"><span>Invoice total</span><b id="r-total">-</b></div>
     <div class="out-row"><span>TDS withheld</span><b id="r-tds">-</b></div>
     <p class="tool-note">TDS is not lost. It sits against your PAN and you claim it when you file.</p>`,
-  how: 'TDS is deducted on the value of the service, never on the GST charged on top of it. Getting that the wrong way round is the usual reason a creator’s arithmetic disagrees with the brand’s remittance advice, by exactly the tax on the tax.',
+  how: 'TDS comes off the value of the service, never the GST on top of it. That is the usual reason your figure and the brand’s disagree.',
   script: `
     const $ = (id) => document.getElementById(id)
     document.querySelectorAll('.preset').forEach((b) => b.addEventListener('click', () => {
@@ -199,7 +199,7 @@ const gstTool = toolPage({
     <div><span class="fine">Invoice total</span><div class="out-big figure" id="g-total">-</div></div>
     <div id="g-rows"></div>
     <p class="tool-note" id="g-note"></p>`,
-  how: 'Under the IGST Act a supply is inter State when the supplier’s state and the place of supply differ, and intra State when they match. That single comparison decides whether the invoice carries IGST at the full rate or CGST and SGST at half each.',
+  how: 'A supply is inter State when your state and the place of supply differ. That one comparison decides IGST, or CGST and SGST at half each.',
   script: `
     const $ = (id) => document.getElementById(id)
     document.querySelectorAll('.preset').forEach((b) => b.addEventListener('click', () => {
@@ -310,7 +310,7 @@ const engagementTool = toolPage({
     <div class="out-row"><span>On reach</span><b id="err">-</b></div>
     <div class="out-row"><span>Total interactions</span><b id="eri">-</b></div>
     <p class="tool-note">On followers is the media kit number. On reach describes how one post actually did, and is the more useful of the two.</p>`,
-  how: 'Interactions divided by the denominator, times one hundred. Saves and shares are counted because on Reels they carry more weight with the algorithm than a like does, and brands increasingly ask for them separately.',
+  how: 'Interactions divided by the denominator, times one hundred. Saves and shares count, because on Reels they carry more weight than a like.',
   script: `
     const $ = (id) => document.getElementById(id)
     document.querySelectorAll('.preset').forEach((b) => b.addEventListener('click', () => {
@@ -345,7 +345,7 @@ const index = {
     <div class="eyebrow reveal">Free tools</div>
     <h1 class="reveal" style="max-width:16ch">Five calculators, no sign up</h1>
     <p class="lede reveal" style="max-width:54ch;margin-top:18px">
-      The arithmetic every Indian creator ends up doing on the back of a notebook, done properly. Nothing to install and no email required.
+      The arithmetic every creator ends up doing on the back of a notebook, done properly.
     </p>
   </div>
 </section>

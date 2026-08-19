@@ -131,6 +131,22 @@ for (const p of written) {
   if (p.title.length > 65) warn(`${p.path} → title over 65 characters, search will truncate it`)
 
   /*
+   * Tags have to balance.
+   *
+   * This is here because of a single unclosed <b> in the announcement bar. The
+   * browser did what browsers do and reopened it around everything after it, so
+   * every page inherited font-weight 700 and the whole site read as shouting.
+   * Nothing in the markup looked wrong, the build passed, and it took a
+   * computed-style dump to find. A tag count would have caught it instantly.
+   */
+  const body = p.html.slice(p.html.indexOf('<body>'))
+  for (const tag of ['b', 'strong', 'span', 'div', 'p', 'a', 'section', 'ul', 'li', 'table', 'tr', 'td']) {
+    const open = (body.match(new RegExp(`<${tag}[\\s>]`, 'g')) ?? []).length
+    const close = (body.match(new RegExp(`</${tag}>`, 'g')) ?? []).length
+    if (open !== close) warn(`${p.path} → ${open} <${tag}> against ${close} </${tag}>`)
+  }
+
+  /*
    * No dashes in the copy.
    *
    * A house rule, and a defensible one: an em dash reads as a writing tic, and

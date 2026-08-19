@@ -431,3 +431,35 @@ types/
 
 `EXPO_PUBLIC_*` variables are bundled into the client. The others are server-side
 only (Edge Functions / scripts) — never reference them in app code.
+
+## Putting the platform on platform.blubanana.in
+
+The marketing site is `blubanana.in` and the app is `platform.blubanana.in`.
+They are two separate deployments of two separate folders.
+
+**1. Build the app for the web.**
+
+```
+npm run build:web
+```
+
+This writes `dist/`. It has to run here rather than on the host, because the
+Supabase URL and anon key are read from `.env` at build time and `.env` is not
+in the repository.
+
+**2. Put `dist/` on a host.** Netlify is the least fiddly: sign in, choose "Add
+new site", then "Deploy manually", and drag the `dist` folder onto the page.
+Cloudflare Pages and Vercel work the same way. The rewrite file the build writes
+is what makes a refresh on any screen work instead of 404ing.
+
+**3. Point the subdomain at it.** In the host, add the custom domain
+`platform.blubanana.in`. It will show you one DNS record to create, normally a
+CNAME called `platform` pointing at something like `your-site.netlify.app`. Add
+that record wherever `blubanana.in` is registered. It usually resolves within
+the hour, and the certificate is issued automatically once it does.
+
+**4. Do the same for the site**, with `web/dist` and the bare domain
+`blubanana.in`.
+
+Nobody can do step 3 for you: it needs the login for the registrar that holds
+the domain.

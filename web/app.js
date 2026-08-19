@@ -70,9 +70,13 @@
     const tabs = [...list.querySelectorAll('.tab')]
     const panels = tabs.map((tab) => document.getElementById(tab.getAttribute('aria-controls')))
 
+    const frame = list.dataset.frame ? document.querySelector(`[data-demo="${list.dataset.frame}"]`) : null
+
     const show = (index) => {
       tabs.forEach((tab, i) => tab.setAttribute('aria-selected', String(i === index)))
       panels.forEach((panel, i) => panel.toggleAttribute('data-active', i === index))
+      const screen = tabs[index]?.dataset.screenGo
+      if (frame && screen && frame.goTo) frame.goTo(screen)
     }
 
     tabs.forEach((tab, index) => tab.addEventListener('click', () => show(index)))
@@ -119,6 +123,58 @@
   } else {
     reveals.forEach((element) => element.classList.add('in'))
   }
+
+  /* ── the walkable demo ─────────────────────────────────────────────────── */
+  /*
+   * Every screen is already in the page; this only decides which one is shown.
+   * No routing, no history, no network. A visitor can open a deal, raise an
+   * invoice and come back, and nothing they do here can fail or be submitted.
+   */
+  document.querySelectorAll('[data-demo]').forEach((frame) => {
+    const screens = [...frame.querySelectorAll('[data-screen]')]
+    const rail = [...frame.querySelectorAll('.rail-btn')]
+
+    const go = (name) => {
+      const target = screens.find((s) => s.dataset.screen === name)
+      if (!target) return
+      screens.forEach((s) => (s.hidden = s !== target))
+      // The rail follows where you are, and a screen it does not list leaves
+      // the last one lit rather than lighting nothing.
+      const railed = rail.find((b) => b.dataset.go === name)
+      if (railed) rail.forEach((b) => b.classList.toggle('on', b === railed))
+      frame.dispatchEvent(new CustomEvent('demo:go', { detail: name }))
+    }
+
+    frame.addEventListener('click', (event) => {
+      const hit = event.target.closest('[data-go]')
+      if (!hit || !frame.contains(hit)) return
+      event.preventDefault()
+
+      // Opening a specific deal carries that row's brand into the detail screen,
+      // so tapping the third row does not show the first one's name.
+      if (hit.dataset.deal) {
+        const source = hit
+        const detail = frame.querySelector('[data-screen="deal"]')
+        const name = source.querySelector('.t')?.textContent
+        const work = source.querySelector('.m')?.textContent
+        const amount = source.querySelector('.amt')?.textContent
+        const avatar = source.querySelector('.bavatar')
+        if (detail && name) {
+          detail.querySelector('[data-deal-name]').textContent = name
+          detail.querySelector('[data-deal-work]').textContent = (work || '').split(' · ')[0]
+          detail.querySelector('[data-deal-amount]').textContent = amount
+          const target = detail.querySelector('[data-deal-avatar]')
+          target.textContent = avatar.textContent
+          target.style.background = avatar.style.background
+        }
+      }
+
+      go(hit.dataset.go)
+    })
+
+    frame.dataset.go = ''
+    frame.goTo = go
+  })
 
   /* ── the plan selector ─────────────────────────────────────────────────── */
   document.querySelectorAll('[data-plan]').forEach((card) => {

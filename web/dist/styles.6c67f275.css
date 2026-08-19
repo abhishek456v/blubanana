@@ -47,6 +47,10 @@
   --amber-soft: #FDF0DC;
   --rose: #C22C4A;
   --rose-soft: #FCE9ED;
+  /* The third way in. Yellow so it reads as an alternative rather than as a
+     weaker version of the button above it. */
+  --yellow: #F6C042;
+  --on-yellow: #1E1503;
 
   --shadow-sm: 0 1px 2px rgba(11, 11, 18, 0.05), 0 4px 14px rgba(11, 11, 18, 0.05);
   --shadow-md: 0 2px 6px rgba(11, 11, 18, 0.06), 0 18px 44px rgba(11, 11, 18, 0.09);
@@ -126,6 +130,12 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; }
+
+/* The UA rule for [hidden] is `display: none` at element specificity, so any
+   class that sets display beats it. Every screen in the demo frame sets
+   `display: grid`, which is how all nine ended up stacked on top of each other
+   while the JavaScript believed only one was showing. */
+[hidden] { display: none !important; }
 
 html {
   scroll-behavior: smooth;
@@ -239,9 +249,9 @@ p:last-child { margin-bottom: 0; }
 }
 .header .container { display: flex; align-items: center; gap: 22px; }
 .logo { display: inline-flex; align-items: center; }
-.wm { font-size: 21px; font-weight: 700; letter-spacing: -0.035em; }
+.wm { font-size: 25px; font-weight: 700; letter-spacing: -0.035em; }
 .wm-a { color: var(--accent-text); }
-.footer .wm, .sheet .wm { font-size: 20px; }
+.footer .wm, .sheet .wm { font-size: 23px; }
 
 .nav { display: flex; align-items: center; gap: 2px; margin-left: 6px; }
 .nav-item { position: relative; }
@@ -555,6 +565,22 @@ p:last-child { margin-bottom: 0; }
 .list-row .r { text-align: right; }
 .list-row .amt { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
 
+.app-screens { min-width: 0; }
+.rail-btn { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; color: var(--text-3); transition: background 140ms ease, color 140ms ease; }
+.rail-btn:hover { background: var(--border); color: var(--text); }
+.rail-btn.on { background: var(--accent); color: var(--on-accent); }
+.app-back { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; background: var(--bg-alt); color: var(--text-2); flex: none; }
+.app-back:hover { background: var(--border-strong); color: var(--text); }
+
+/* Anything with somewhere to go behaves like it does. */
+.app [data-go] { cursor: pointer; text-align: inherit; font: inherit; color: inherit; border: none; width: 100%; transition: transform 120ms ease, background 140ms ease; }
+.app button.stat, .app button.list-row { display: grid; }
+.app button.act { display: flex; }
+.app [data-go]:hover { background: var(--border); }
+.app button.stat-hero:hover { background: var(--accent-hover); }
+.app [data-go]:active { transform: scale(0.995); }
+.demo-hint { grid-column: 1 / -1; padding: 9px 18px; border-top: 1px solid var(--border); font-size: 11.5px; color: var(--text-3); background: var(--bg-alt); }
+
 /* the printed invoice, at full fidelity */
 .paper { background: #fff; color: #17130F; border-radius: var(--r-lg); box-shadow: var(--shadow-lg); padding: 26px; font-size: 11.5px; line-height: 1.5; display: grid; gap: 14px; }
 :root[data-theme='dark'] .paper { box-shadow: 0 30px 80px rgba(0,0,0,.7); }
@@ -641,8 +667,17 @@ tr:last-child td { border-bottom: none; }
 .term-pill[aria-pressed='true'] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-text); font-weight: 500; }
 .term-pill .save { font-size: 11.5px; padding: 2px 7px; border-radius: 999px; background: var(--green-soft); color: var(--green); font-weight: 600; }
 .save-badge { font-size: 13px; font-weight: 600; padding: 5px 11px; border-radius: 999px; background: var(--green-soft); color: var(--green); }
-.plan-cta { margin-top: 26px; }
-.plan-cta .btn { flex: 1; min-width: 140px; }
+.plan-cta { margin-top: 26px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.plan-cta .btn { width: 100%; min-width: 0; }
+.btn-trial { background: var(--yellow); color: var(--on-yellow); border: none; }
+.btn-trial:hover { background: color-mix(in srgb, var(--yellow) 88%, #000); }
+/* Its own line, and the width of one button rather than two, so it reads as a
+   third option and not as a wider, more important one. */
+.plan-cta .btn-trial { grid-column: 1 / -1; justify-self: center; width: calc(50% - 5px); }
+@media (max-width: 520px) {
+  .plan-cta { grid-template-columns: 1fr; }
+  .plan-cta .btn-trial { width: 100%; }
+}
 
 /* ── faq ─────────────────────────────────────────────────────────────────── */
 .faq { border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; background: var(--surface); }

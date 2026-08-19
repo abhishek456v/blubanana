@@ -11,47 +11,35 @@ import { closingCta, faq, faqSchema, head, planCard, planCta, section } from '..
 const QUESTIONS = [
   [
     'Is the ₹1,999 a real price?',
-    `Yes, and that is the reason the launch offer is capped. ${PRICING.introSeats} creators pay ${inr(PRICING.introMonthly)}; after those places are taken, everyone pays ${inr(PRICING.listMonthly)}. A “discount” from a price nobody is ever charged is a fabricated reference price, and we are not going to open with one.`,
-  ],
-  [
-    'What happens to my price at renewal?',
-    'The price you start on holds for the entire term you bought. A yearly subscriber keeps their price for twelve months. At renewal, whatever the price is then applies, and if the amount changes your bank will ask you to approve the new mandate. Nobody gets silently charged more.',
+    `It is what everyone pays once the first ${PRICING.introSeats} creators have subscribed. A discount from a price nobody is ever charged is a fabricated one, and we are not opening with that.`,
   ],
   [
     'Why are 3, 6 and 9 months not cheaper per month?',
-    'Because they are not a discount ladder. They exist for the creator who would rather not think about it again for a while. Only the twelve-month term is discounted, at 20%.',
+    'They are not a discount ladder. They exist for the creator who would rather not think about it again for a while. Only the twelve month term is discounted.',
   ],
   [
-    'Do I need a card to start?',
-    `No. The ${PRICING.trialDays} day trial takes an email address. You can create ${PRICING.trialDeals} deals in that time, and everything else is unlimited. Reaching ${PRICING.trialDeals} does not end the trial early.`,
-  ],
-  [
-    'What if I stop paying?',
-    'Your workspace becomes read only. Everything stays visible and exportable for as long as the account exists. We do not lock you out of your own records because a plan lapsed, and deadline and payment reminders keep arriving for another 30 days.',
-  ],
-  [
-    'Is GST included in these prices?',
-    `No. Every figure here is exclusive of GST at ${PRICING.gstPercent}%, which is added at checkout. You get a proper tax invoice, carrying your GSTIN if you have given us one.`,
-  ],
-  [
-    'Can I get a refund?',
-    'Within 30 days of a payment, yes, in full, and we will not ask how much you used it. After that the term has been provided and is not refunded. The full terms are on the refunds page.',
+    'Is GST included?',
+    `No. Every figure is before GST at ${PRICING.gstPercent}%, and you get a tax invoice carrying your GSTIN if you have given us one.`,
   ],
   [
     'How many people can use one workspace?',
-    `Up to ${PRICING.seats}, included. You choose what each of them can see, area by area, and no invited manager can delete anything, ever.`,
+    `Up to ${PRICING.seats}. You choose what each of them sees, and no invited manager can delete anything.`,
+  ],
+  [
+    'Do I need a card to start?',
+    `No. The trial takes an email address and lets you create ${PRICING.trialDeals} deals.`,
   ],
 ]
 
 const INCLUDED = [
-  ['Unlimited deals, brands, contacts and invoices', 'No caps once you are paying. The trial’s ten-deal limit is the only one that exists.'],
-  ['Deadline and payment reminders', 'Sent from a server, so they arrive whether or not you have opened the app this week.'],
-  ['Screenshot, voice and spreadsheet capture', 'Including the importer that brings your existing deals across on day one.'],
-  ['GST invoicing to Rule 46, with a UPI QR', 'CGST and SGST or IGST from the place of supply. Non-GST invoices if you are not registered.'],
-  ['TDS, expenses and the advance-tax calculator', 'Plus an April-to-March report you can hand to a CA.'],
-  ['Your rate card, and rate benchmarking', 'Built from what you have actually charged, with the sample size stated.'],
-  [`Up to ${PRICING.seats} people in your workspace`, 'With seven separate permission switches, enforced in the database.'],
-  ['Export everything, at any time', 'CSV and JSON, including while your account is read only.'],
+  'Unlimited deals, brands, contacts and invoices',
+  'Deadline and payment reminders, sent from a server',
+  'Screenshot, voice and spreadsheet capture',
+  'GST invoices, with a UPI code brands can scan',
+  'TDS, expenses and the advance tax calculator',
+  'Your rate card, built from what you have charged',
+  `Up to ${PRICING.seats} people, with separate permissions`,
+  'Export everything, at any time',
 ]
 
 const hero = `<section class="hero" style="padding-bottom:44px">
@@ -59,15 +47,9 @@ const hero = `<section class="hero" style="padding-bottom:44px">
     <div class="hero-grid">
       <div>
         <h1 class="reveal" style="max-width:13ch">One plan. Everything in it.</h1>
-        <p class="lede reveal" style="max-width:46ch;margin-top:18px">
-          No tier where reminders cost extra, and no add on for inviting your manager. The only decision is how long you pay for at a time.
+        <p class="lede reveal" style="max-width:44ch;margin-top:18px">
+          Every feature on every term. The only decision is how long you pay for at a time.
         </p>
-        <ul class="includes reveal" style="margin-top:28px">
-          <li><span class="tick">✓</span> ${PRICING.trialDays} day trial, and no card to start</li>
-          <li><span class="tick">✓</span> 30 days money back on any payment</li>
-          <li><span class="tick">✓</span> Cancel inside the app, with no retention call</li>
-          <li><span class="tick">✓</span> Your price is locked for the term you buy</li>
-        </ul>
       </div>
       <div class="reveal">
         ${planCard({ pricing: PRICING, inr, subscribe: SITE.subscribe, trial: SITE.signup })}
@@ -81,39 +63,26 @@ const included = section({
   className: 'band-line',
   inner: `
     ${head({ eyebrow: 'Nothing held back', title: 'What you get', lede: 'All of it, on every term.' })}
-    <div class="grid g-2 reveal" style="margin-top:40px">
-      ${INCLUDED.map(([title, note]) => `<div class="card"><h4>${title}</h4><p class="dim">${note}</p></div>`).join('')}
-    </div>`,
+    <ul class="includes reveal" style="margin-top:36px;grid-template-columns:1fr 1fr;display:grid;gap:14px 40px">
+      ${INCLUDED.map((line) => `<li><span class="tick">✓</span> ${line}</li>`).join('')}
+    </ul>`,
 })
 
 const straight = section({
-  className: 'band-line',
   inner: `
-    ${head({ eyebrow: 'The parts people get caught by', title: 'Said plainly, before you pay' })}
+    ${head({ title: 'Three things worth knowing before you pay', align: 'center' })}
     <div class="grid g-3 reveal" style="margin-top:40px">
       <div class="card">
         <h4>30 days to change your mind</h4>
-        <p class="dim">Cancel within 30 days of any payment and we refund it in full. We will not ask how much you used it. After that a term already provided is not refunded.</p>
+        <p>Cancel within 30 days of any payment and we refund it in full, without asking how much you used it.</p>
       </div>
       <div class="card">
         <h4>Your price is fixed for your term</h4>
-        <p class="dim">Renewal takes whatever the price is then. If the amount changes, your bank asks you to approve the new mandate first. RBI’s rules require it, and we would do it anyway.</p>
+        <p>Renewal takes the price current then, and your bank asks you to approve any change first.</p>
       </div>
       <div class="card">
         <h4>A lapsed plan is read only, not locked</h4>
-        <p class="dim">Everything stays visible and exportable. Reminders keep arriving for another 30 days, because a missed deadline is not a fair punishment for a card that failed.</p>
-      </div>
-      <div class="card">
-        <h4>We never touch your brand money</h4>
-        <p class="dim">Brands pay you directly, bank to bank. Razorpay is involved in exactly one transaction: you paying us.</p>
-      </div>
-      <div class="card">
-        <h4>A tax invoice, every time</h4>
-        <p class="dim">GST at ${PRICING.gstPercent}% on top of the figures above, and an invoice carrying your GSTIN if you have one.</p>
-      </div>
-      <div class="card">
-        <h4>Cancel from inside the app</h4>
-        <p class="dim">Settings → Plan and billing, or write to <a href="mailto:${COMPANY.email}" style="color:var(--accent-text)">${COMPANY.email}</a>. No retention call.</p>
+        <p>Everything stays visible and exportable, and reminders keep arriving for another 30 days.</p>
       </div>
     </div>`,
 })

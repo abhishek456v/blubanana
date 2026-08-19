@@ -6,7 +6,8 @@
     "start": "expo start",
     "ios": "expo start --ios",
     "android": "expo start --android",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "build:web": "expo export --platform web && node scripts/after-export.mjs"
   },
   "dependencies": {
     "@expo-google-fonts/google-sans-flex": "^0.4.5",

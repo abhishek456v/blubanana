@@ -29,6 +29,7 @@ const PATHS = {
   bolt: '<path d="M12.4 2.6 5 12.4h5l-1.4 7 7.4-9.8h-5l1.4-7Z"/>',
   globe: '<circle cx="11" cy="11" r="8"/><path d="M3 11h16M11 3c2.2 2.4 3.2 5.2 3.2 8s-1 5.6-3.2 8c-2.2-2.4-3.2-5.2-3.2-8s1-5.6 3.2-8Z"/>',
   refresh: '<path d="M18 6.4V11h-4.6"/><path d="M17.4 11a6.6 6.6 0 1 1-1.8-4.6L18 8.8"/>',
+  back: '<path d="M13.4 4.6 7 11l6.4 6.4"/>',
 }
 
 export function icon(name, { size = 20, stroke = 1.7 } = {}) {
@@ -86,21 +87,27 @@ export function faqSchema(items) {
  * the site at the right tab instead of scrolling to a heading. With JavaScript
  * off the first panel is simply the one shown and every link still resolves.
  */
-export function tabs(items) {
+export function tabs(items, { frame } = {}) {
   const buttons = items
-    .map((item, i) => `<button class="tab" role="tab" aria-selected="${i === 0}" aria-controls="${item.id}" id="tab-${item.id}">${item.label}</button>`)
+    .map(
+      (item, i) =>
+        `<button class="tab" role="tab" aria-selected="${i === 0}" aria-controls="${item.id}" id="tab-${item.id}"${item.screen ? ` data-screen-go="${item.screen}"` : ''}>${item.label}</button>`
+    )
     .join('')
   const panels = items
     .map(
       (item, i) => `<div class="panel" role="tabpanel" id="${item.id}" aria-labelledby="tab-${item.id}"${i === 0 ? ' data-active' : ''}>
-        <div class="split split-tab">
-          <div>${item.art}</div>
-          <div><h3>${item.title}</h3><p class="lede" style="margin-top:14px">${item.copy}</p></div>
-        </div>
+        <h3>${item.title}</h3><p class="lede" style="margin-top:12px">${item.copy}</p>
       </div>`
     )
     .join('')
-  return `<div class="reveal"><div class="tabs" role="tablist">${buttons}</div>${panels}</div>`
+
+  // The tab row and the frame move together: pick a tab and the demo opens that
+  // screen, so the copy and the thing it describes are never out of step.
+  return `<div class="split split-tab reveal">
+    <div><div class="tabs" role="tablist"${frame ? ` data-frame="${frame}"` : ''}>${buttons}</div>${panels}</div>
+    <div>${frame ? demoApp({ id: frame, start: items[0].screen ?? 'home' }) : ''}</div>
+  </div>`
 }
 
 /**
@@ -111,10 +118,10 @@ export function tabs(items) {
  * them self select: subscribe, read what is in it, or try it first.
  */
 export function planCta({ subscribe, trial, included = '#included', size = '' } = {}) {
-  return `<div class="btn-row plan-cta">
+  return `<div class="plan-cta">
     <a class="btn ${size}" href="${subscribe}">Subscribe</a>
     <a class="btn btn-ghost ${size}" href="${included}">What is included</a>
-    <a class="btn btn-ghost ${size}" href="${trial}">14 day trial</a>
+    <a class="btn btn-trial ${size}" href="${trial}">14 day trial</a>
   </div>`
 }
 
@@ -156,7 +163,7 @@ export function planCard({ pricing, inr, subscribe, trial, compact = false }) {
     <p class="dim" style="font-size:16px"><b data-plan-permonth></b> a month, <span data-plan-gst></span> with ${pricing.gstPercent}% GST</p>
     <p class="fine" data-plan-renew style="margin-top:6px"></p>
     ${planCta({ subscribe, trial })}
-    ${compact ? '' : `<p class="fine" style="margin-top:16px">Card, UPI and netbanking. Cancel any time, and 30 days money back.</p>`}
+    ${compact ? '' : `<p class="fine" style="margin-top:14px">Card, UPI or netbanking.</p>`}
   </div>`
 }
 
@@ -181,7 +188,197 @@ function bavatar(d) {
   return `<div class="bavatar" style="background:${d.tint}">${d.initials}</div>`
 }
 
-/** The dashboard, which is what a creator opens the app to see. */
+
+/* ── the demo, which actually works ──────────────────────────────────────── */
+/*
+ * Every screen below is in the page at once and one is shown at a time. The
+ * rail navigates, the quick actions open, a deal row opens that deal, and a
+ * back arrow returns. Nothing leaves the frame and nothing is submitted: this
+ * is a product you can walk through before signing up, not a live account.
+ *
+ * Still drawn rather than screenshotted, for the same two reasons as before:
+ * the app's interface is not finished, and no real workspace belongs on a
+ * public page.
+ */
+
+const railItems = [
+  ['home', 'chart', 'Home'],
+  ['deals', 'bolt', 'Deals'],
+  ['money', 'wallet', 'Money'],
+  ['team', 'users', 'Team'],
+  ['invoice', 'doc', 'Invoices'],
+]
+
+const backBar = (title, note = '') =>
+  `<div class="app-head">
+    <div style="display:flex;align-items:center;gap:10px">
+      <button class="app-back" data-go="home" aria-label="Back">${icon('back', { size: 15 })}</button>
+      <div><div class="app-hi" style="font-size:15px">${title}</div>${note ? `<div class="app-date">${note}</div>` : ''}</div>
+    </div>
+  </div>`
+
+const dealRow = (d, i) => `<button class="list-row" data-go="deal" data-deal="${i}">
+  ${bavatar(d)}
+  <div style="text-align:left"><div class="t">${d.name}</div><div class="m">${d.work} · ${d.state}</div></div>
+  <div class="r"><div class="amt">${d.amount}</div><span class="chip ${chipClass[d.chip[1]]}" style="margin-top:3px">${d.chip[0]}</span></div>
+</button>`
+
+const screenHome = () => `
+  <div class="app-head">
+    <div><div class="app-date">${TODAY}</div><div class="app-hi">Morning, ${CREATOR.name.split(' ')[0]}</div></div>
+    <div class="app-avatar">${CREATOR.initials}</div>
+  </div>
+  <div class="stat-row">
+    <button class="stat stat-hero" data-go="money"><div class="k">Owed to you</div><div class="v">${MONEY.owed}</div><div class="s">${MONEY.owedNote}</div></button>
+    <button class="stat" data-go="money"><div class="k">Received</div><div class="v">${MONEY.received}</div><div class="s">This month</div></button>
+    <button class="stat" data-go="deals"><div class="k">Live deals</div><div class="v">${MONEY.live}</div><div class="s">In progress</div></button>
+  </div>
+  <div class="act-row">
+    <button class="act" data-go="newdeal"><span>${icon('camera', { size: 15 })}</span> New deal</button>
+    <button class="act" data-go="invoice"><span>${icon('doc', { size: 15 })}</span> Raise invoice</button>
+    <button class="act" data-go="tax"><span>${icon('chart', { size: 15 })}</span> Year in review</button>
+  </div>
+  <div class="list">
+    <div class="list-head">Needs you today</div>
+    ${DEALS.map(dealRow).join('')}
+  </div>`
+
+const screenDeals = () => `
+  ${backBar('All deals', `${DEALS.length} of ${MONEY.live}`)}
+  <div class="chip-row"><span class="chip chip-blue">All</span><span class="chip">Live</span><span class="chip">Unpaid</span><span class="chip">Paid</span></div>
+  <div class="list">${DEALS.map(dealRow).join('')}</div>`
+
+const screenDeal = () => `
+  ${backBar('Deal', 'Skincare campaign')}
+  <div class="ui-row">
+    <div class="bavatar" data-deal-avatar style="background:${DEALS[0].tint}">${DEALS[0].initials}</div>
+    <div><div class="ui-label" data-deal-name>${DEALS[0].name}</div><div class="ui-meta" data-deal-work>${DEALS[0].work}</div></div>
+    <span class="ui-label" data-deal-amount>${DEALS[0].amount}</span>
+  </div>
+  <div class="track" style="padding:8px 4px 4px">
+    <div class="track-step done"><div class="track-dot">${icon('check', { size: 12, stroke: 2.6 })}</div><span>Script</span></div>
+    <div class="track-step done"><div class="track-dot">${icon('check', { size: 12, stroke: 2.6 })}</div><span>Shoot</span></div>
+    <div class="track-step now"><div class="track-dot"></div><span>Edit</span></div>
+    <div class="track-step"><div class="track-dot"></div><span>Publish</span></div>
+  </div>
+  <div class="ui-row">
+    <div class="ui-avatar" style="background:#0F9D63">${icon('check', { size: 16 })}</div>
+    <div><div class="ui-label">Advance, 50%</div><div class="ui-meta">Received on signing</div></div>
+    <span class="ui-label">₹22,500</span>
+  </div>
+  <div class="ui-row">
+    <div class="ui-avatar" style="background:#E08A17">${icon('wallet', { size: 16 })}</div>
+    <div><div class="ui-label">Balance, 50%</div><div class="ui-meta">Due 30 days after publish</div></div>
+    <span class="ui-label">₹22,500</span>
+  </div>
+  <div class="act-row" style="grid-template-columns:1fr 1fr">
+    <button class="act" data-go="invoice"><span>${icon('doc', { size: 15 })}</span> Raise invoice</button>
+    <button class="act" data-go="money"><span>${icon('wallet', { size: 15 })}</span> Chase payment</button>
+  </div>`
+
+const screenMoney = () => {
+  const bars = [38, 62, 44, 78, 56, 92]
+  return `
+  ${backBar('Money', 'Last six months')}
+  <div class="stat-row" style="grid-template-columns:1fr 1fr">
+    <div class="stat stat-hero"><div class="k">Still out</div><div class="v">${MONEY.owed}</div><div class="s">${MONEY.owedNote}</div></div>
+    <div class="stat"><div class="k">Collected</div><div class="v">${MONEY.collection}</div><div class="s">Of everything invoiced</div></div>
+  </div>
+  <div class="bars">${bars.map((h, i) => `<div class="bar ${i === bars.length - 1 ? 'on' : ''}" style="height:${h}%"></div>`).join('')}</div>
+  <div class="list">${DEALS.slice(1).map(dealRow).join('')}</div>`
+}
+
+const screenNewDeal = () => {
+  const d = DEALS[2]
+  return `
+  ${backBar('New deal', 'about 30 seconds')}
+  <div class="chip-row">
+    <span class="chip chip-blue">${icon('camera', { size: 13 })} Screenshot</span>
+    <span class="chip">${icon('mic', { size: 13 })} Voice</span>
+    <span class="chip">${icon('keyboard', { size: 13 })} Type</span>
+    <span class="chip">${icon('refresh', { size: 13 })} Repeat</span>
+  </div>
+  <div class="ui-row">
+    ${bavatar(d)}
+    <div><div class="ui-label">${d.name}</div><div class="ui-meta">Read from the screenshot</div></div>
+    <span class="chip chip-green">Found</span>
+  </div>
+  <div class="ui-row" style="grid-template-columns:1fr">
+    <div><div class="ui-meta">Deliverables</div><div class="chip-row" style="margin-top:8px"><span class="chip chip-blue">1 Feed post</span><span class="chip chip-blue">2 Stories</span></div></div>
+  </div>
+  <div class="ui-row" style="grid-template-columns:1fr auto">
+    <div><div class="ui-meta">Rate</div><div class="ui-label" style="margin-top:2px">₹28,000</div></div>
+    <span class="chip">Check before saving</span>
+  </div>
+  <button class="act" data-go="deal" style="justify-content:center"><span>${icon('check', { size: 15 })}</span> Save the deal</button>`
+}
+
+const screenInvoice = () => `
+  ${backBar('Invoice', INVOICE.number)}
+  <div style="display:grid;gap:10px">
+    ${uiInvoice()}
+    <button class="act" data-go="money" style="justify-content:center"><span>${icon('phone', { size: 15 })}</span> Send on WhatsApp</button>
+  </div>`
+
+const screenTax = () => {
+  const dates = [['15 Jun', '₹54,000'], ['15 Sep', '₹1,08,000'], ['15 Dec', '₹1,08,000'], ['15 Mar', '₹90,000']]
+  return `
+  ${backBar('Year in review', 'April to March')}
+  <div class="stat stat-hero"><div class="k">Advance tax expected</div><div class="v">₹3,60,000</div><div class="s">From your income, less your expenses</div></div>
+  <div class="cal">${dates.map(([d, amt], i) => `<div class="${i === 1 ? 'soon' : ''}"><b>${d}</b><span>${amt}</span></div>`).join('')}</div>
+  <button class="act" data-go="ratecard" style="justify-content:center"><span>${icon('users', { size: 15 })}</span> Open your rate card</button>`
+}
+
+const screenTeam = () => {
+  const areas = [['Deals and deadlines', true], ['Brands and contacts', true], ['Invoices', true], ['Rates', false], ['Bank details', false]]
+  return `
+  ${backBar('Invite a manager', 'You choose what they see')}
+  ${areas.map(([label, on]) => `<div class="ui-row" style="grid-template-columns:1fr auto;padding:11px 12px">
+    <span class="ui-label">${label}</span><span class="chip ${on ? 'chip-green' : ''}">${on ? 'Visible' : 'Hidden'}</span>
+  </div>`).join('')}
+  <div class="ui-row" style="grid-template-columns:auto 1fr;background:var(--rose-soft)">
+    ${icon('shield', { size: 17 })}
+    <span class="ui-label" style="color:var(--rose)">Nobody but you can delete anything</span>
+  </div>`
+}
+
+const screenRateCard = () => `
+  ${backBar('Rate card', 'Ready to send')}
+  ${uiRateCard()}`
+
+const SCREENS = {
+  home: screenHome,
+  deals: screenDeals,
+  deal: screenDeal,
+  money: screenMoney,
+  newdeal: screenNewDeal,
+  invoice: screenInvoice,
+  tax: screenTax,
+  team: screenTeam,
+  ratecard: screenRateCard,
+}
+
+/** The whole thing, walkable. `id` scopes it so two can sit on one page. */
+export function demoApp({ id = 'demo', start = 'home' } = {}) {
+  const rail = railItems
+    .map(
+      ([screen, glyph, label]) =>
+        `<button class="rail-btn${screen === start ? ' on' : ''}" data-go="${screen}" aria-label="${label}" title="${label}">${icon(glyph, { size: 17 })}</button>`
+    )
+    .join('')
+
+  const screens = Object.entries(SCREENS)
+    .map(([name, render]) => `<div class="app-body" data-screen="${name}"${name === start ? '' : ' hidden'}>${render()}</div>`)
+    .join('')
+
+  return `<div class="app" data-demo="${id}">
+    <div class="app-rail">${rail}</div>
+    <div class="app-screens">${screens}</div>
+    <div class="demo-hint">Have a click around. Nothing here leaves the page.</div>
+  </div>`
+}
+
+/** The dashboard, static, for places that only need to show it. */
 export function uiDashboard() {
   return `<div class="app">
     <div class="app-rail">
