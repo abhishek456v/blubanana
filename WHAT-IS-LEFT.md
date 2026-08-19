@@ -23,16 +23,21 @@ fake phone number is exactly what fails a Razorpay check.
 
 Send me those four and the site builds clean the same day.
 
-### 2. Put the two sites online
+### 2. Put the two sites online  ·  everything is packaged and waiting
 
-They are two separate things and go to two separate addresses.
+The domain is with Hostinger, so both sites can live there and no DNS records
+need typing at all.
 
-- **The website** goes to `blubanana.in`
-- **The app** goes to `platform.blubanana.in`
+- **The website** goes to `blubanana.in`, from `deploy/website.zip`
+- **The app** goes to `platform.blubanana.in`, from `deploy/platform.zip`
 
-The steps are in `README.md` under "Putting the platform on
-platform.blubanana.in". The part nobody can do for you is the last one: adding a
-DNS record needs the login for wherever you bought the domain.
+Both zips are built and sitting in `deploy/`. The click by click steps are in
+`README.md` under "Putting both sites online, on Hostinger": upload, extract,
+delete the zip, check the certificate.
+
+The one thing to confirm first: the account needs a **hosting plan**, not only
+the registered domain. hPanel shows "Websites" if you have one. If not, say so
+and I will give you the DNS records to point it at free hosting instead.
 
 ### 3. Razorpay
 

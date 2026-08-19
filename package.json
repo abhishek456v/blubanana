@@ -1,0 +1,8 @@
+{
+  "name": "blubanana",
+  "private": true,
+  "scripts": {
+    "package": "mkdir -p deploy && rm -f deploy/website.zip deploy/platform.zip && (cd website/dist && zip -rq ../../deploy/website.zip .) && (cd platform/dist && zip -rq ../../deploy/platform.zip .) && ls -lh deploy",
+    "build": "cd website && npm run build && cd ../platform && npm run build:web"
+  }
+}

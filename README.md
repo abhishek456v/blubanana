@@ -470,34 +470,54 @@ types/
 `EXPO_PUBLIC_*` variables are bundled into the client. The others are server-side
 only (Edge Functions / scripts) — never reference them in app code.
 
-## Putting the platform on platform.blubanana.in
+## Putting both sites online, on Hostinger
 
-The marketing site is `blubanana.in` and the app is `platform.blubanana.in`.
-They are two separate deployments of two separate folders.
+The domain is registered with Hostinger, so both sites can live there and no DNS
+records need typing anywhere. What you need is a **hosting plan** on that
+account, not only the domain: hPanel shows "Websites" if you have one.
 
-**1. Build the app for the web.**
+Build and package both, which takes about a minute:
 
+```bash
+cd website && npm run build          # writes website/dist
+cd ../platform && npm run build:web  # writes platform/dist
+cd .. && npm run package             # writes deploy/website.zip and deploy/platform.zip
 ```
-npm run build:web
-```
 
-This writes `platform/dist/`. It has to run here rather than on the host, because the
-Supabase URL and anon key are read from `.env` at build time and `.env` is not
-in the repository.
+Both must be built here rather than on the host: the Supabase URL and key come
+from `platform/.env`, which is not in the repository.
 
-**2. Put `platform/dist/` on a host.** Netlify is the least fiddly: sign in, choose "Add
-new site", then "Deploy manually", and drag the `dist` folder onto the page.
-Cloudflare Pages and Vercel work the same way. The rewrite file the build writes
-is what makes a refresh on any screen work instead of 404ing.
+### The website, at blubanana.in
 
-**3. Point the subdomain at it.** In the host, add the custom domain
-`platform.blubanana.in`. It will show you one DNS record to create, normally a
-CNAME called `platform` pointing at something like `your-site.netlify.app`. Add
-that record wherever `blubanana.in` is registered. It usually resolves within
-the hour, and the certificate is issued automatically once it does.
+1. hPanel, then **Websites**, then **Dashboard** for blubanana.in
+2. **File Manager**, and open `public_html`
+3. Delete whatever placeholder page is in there
+4. Upload `deploy/website.zip`, right click it, **Extract**, then delete the zip
 
-**4. Do the same for the site**, with `website/dist` and the bare domain
-`blubanana.in`.
+### The app, at platform.blubanana.in
 
-Nobody can do step 3 for you: it needs the login for the registrar that holds
-the domain.
+1. hPanel, then **Domains**, then **Subdomains**
+2. Create `platform`. Hostinger will suggest a folder; a custom document root
+   **outside** `public_html` is tidier, because a subdomain folder placed inside
+   it inherits the parent's rules
+3. Open that folder in **File Manager**
+4. Upload `deploy/platform.zip`, **Extract**, delete the zip
+
+### Then
+
+- hPanel, **Security**, **SSL**: check both have a certificate. Hostinger issues
+  them automatically, usually within minutes
+- Open `platform.blubanana.in/sign-in` and sign in. If it loads but a refresh on
+  an inner page 404s, the `.htaccess` did not extract; make sure hidden files are
+  showing in File Manager and that it is in the folder root
+
+Each upload carries a `.htaccess` written by the build. The app's one sends every
+unknown path to `index.html`, which is what makes a refresh work anywhere in it.
+Both set caching so the hashed files are kept forever and the pages never are.
+
+### If there is no hosting plan on the account
+
+Then the domain is registered but nothing serves it. Either add a Hostinger plan,
+or host the files free on Cloudflare Pages or Netlify and point Hostinger's DNS
+at them. Tell me which and I will write out the records.
+

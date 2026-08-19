@@ -41,3 +41,6 @@ expo-env.d.ts
 # @end expo-cli
 # Screenshots from platform/scripts/drive.mjs. Regenerate, do not commit.
 screenshots/
+
+# Upload packages, rebuilt by `npm run package`
+deploy/

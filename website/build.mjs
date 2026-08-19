@@ -103,6 +103,26 @@ ${PAGES.map((p) => `  <url><loc>${SITE.origin}${p.path === '/' ? '/' : p.path}</
 `
 )
 
+// Apache and LiteSpeed, which is what Hostinger runs. The site is real files in
+// real folders, so it needs no rewrite; it needs the caching rules, because the
+// stylesheet and the scripts carry a hash of their contents in the filename and
+// the pages that reference them must not be cached at all.
+writeFileSync(
+  join(DIST, '.htaccess'),
+  `<IfModule mod_headers.c>
+  <FilesMatch "\\.(js|css|woff2|png|jpg|svg|webp)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  <FilesMatch "\\.html$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+</IfModule>
+
+# Serve a friendlier 404 than the server's default.
+ErrorDocument 404 /index.html
+`
+)
+
 writeFileSync(
   join(DIST, 'robots.txt'),
   `User-agent: *\nAllow: /\n\nSitemap: ${SITE.origin}/sitemap.xml\n`
