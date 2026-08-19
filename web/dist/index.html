@@ -19,7 +19,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@400..700&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@400..700&display=swap">
-<link rel="stylesheet" href="/styles.6c67f275.css">
+<link rel="stylesheet" href="/styles.3c12d173.css">
 <script>
   /* Applied before the first paint. A stored preference arriving a frame late
      is a white flash on a dark page, which is worse than no toggle at all. */
@@ -335,8 +335,10 @@
     <p class="lede" style="margin-top:16px">Pick one and it opens. Nothing here leaves the page.</p>
   </div>
     <div style="margin-top:40px">
-      <div class="split split-tab reveal">
-    <div><div class="tabs" role="tablist" data-frame="features"><button class="tab" role="tab" aria-selected="true" aria-controls="capture" id="tab-capture" data-screen-go="newdeal">Log a deal</button><button class="tab" role="tab" aria-selected="false" aria-controls="deadlines" id="tab-deadlines" data-screen-go="deal">Deadlines</button><button class="tab" role="tab" aria-selected="false" aria-controls="money" id="tab-money" data-screen-go="money">Payments</button><button class="tab" role="tab" aria-selected="false" aria-controls="invoices" id="tab-invoices" data-screen-go="invoice">Invoices</button><button class="tab" role="tab" aria-selected="false" aria-controls="tax" id="tab-tax" data-screen-go="tax">Tax</button><button class="tab" role="tab" aria-selected="false" aria-controls="ratecard" id="tab-ratecard" data-screen-go="ratecard">Rate card</button></div><div class="panel" role="tabpanel" id="capture" aria-labelledby="tab-capture" data-active>
+      <div class="reveal">
+    <div class="tabs" role="tablist" data-frame="features"><button class="tab" role="tab" aria-selected="true" aria-controls="capture" id="tab-capture" data-screen-go="newdeal">Log a deal</button><button class="tab" role="tab" aria-selected="false" aria-controls="deadlines" id="tab-deadlines" data-screen-go="deal">Deadlines</button><button class="tab" role="tab" aria-selected="false" aria-controls="money" id="tab-money" data-screen-go="money">Payments</button><button class="tab" role="tab" aria-selected="false" aria-controls="invoices" id="tab-invoices" data-screen-go="invoice">Invoices</button><button class="tab" role="tab" aria-selected="false" aria-controls="tax" id="tab-tax" data-screen-go="tax">Tax</button><button class="tab" role="tab" aria-selected="false" aria-controls="ratecard" id="tab-ratecard" data-screen-go="ratecard">Rate card</button></div>
+    <div class="split split-tab">
+      <div><div class="panel" role="tabpanel" id="capture" aria-labelledby="tab-capture" data-active>
         <h3>A deal takes thirty seconds</h3><p class="lede" style="margin-top:12px">Screenshot the message, say it out loud, or type it. You check it before it saves.</p>
       </div><div class="panel" role="tabpanel" id="deadlines" aria-labelledby="tab-deadlines">
         <h3>Every stage carries a date</h3><p class="lede" style="margin-top:12px">Name the stages yourself, and your phone tells you before one passes.</p>
@@ -349,7 +351,7 @@
       </div><div class="panel" role="tabpanel" id="ratecard" aria-labelledby="tab-ratecard">
         <h3>Ready when a brand asks</h3><p class="lede" style="margin-top:12px">Built from what you have actually charged, not what you hope to.</p>
       </div></div>
-    <div><div class="app" data-demo="features">
+      <div><div class="app" data-demo="features">
     <div class="app-rail"><button class="rail-btn" data-go="home" aria-label="Home" title="Home"><svg viewBox="0 0 22 22" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 18V9M9.4 18V4.6M14.8 18v-6.4M20 18H2.4"/></svg></button><button class="rail-btn" data-go="deals" aria-label="Deals" title="Deals"><svg viewBox="0 0 22 22" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.4 2.6 5 12.4h5l-1.4 7 7.4-9.8h-5l1.4-7Z"/></svg></button><button class="rail-btn" data-go="money" aria-label="Money" title="Money"><svg viewBox="0 0 22 22" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="16" height="11" rx="2.4"/><path d="M3 10h16M15 13.5h1.6"/></svg></button><button class="rail-btn" data-go="team" aria-label="Team" title="Team"><svg viewBox="0 0 22 22" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8.4" cy="8.4" r="3.2"/><path d="M2.6 18.4c0-3 2.6-4.8 5.8-4.8s5.8 1.8 5.8 4.8"/><path d="M15 6.2a3 3 0 0 1 0 5.6M16.6 18.4c0-2 .3-3.2-1-4.2"/></svg></button><button class="rail-btn" data-go="invoice" aria-label="Invoices" title="Invoices"><svg viewBox="0 0 22 22" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3h5L17 8.4v10.1A1.5 1.5 0 0 1 15.5 20h-9A1.5 1.5 0 0 1 5 18.5v-14Z"/><path d="M11.4 3v5.6H17"/></svg></button></div>
     <div class="app-screens"><div class="app-body" data-screen="home" hidden>
   <div class="app-head">
@@ -580,6 +582,7 @@
   </div></div></div>
     <div class="demo-hint">Have a click around. Nothing here leaves the page.</div>
   </div></div>
+    </div>
   </div>
     </div></div></section>
 <section class="band band-alt"><div class="container">

@@ -531,12 +531,22 @@ p:last-child { margin-bottom: 0; }
   overflow: hidden;
   display: grid;
   grid-template-columns: 62px 1fr;
+  grid-template-rows: 1fr auto;
   font-size: 13px;
+  /*
+   * Fixed, and this is the important part.
+   *
+   * Screens are different lengths, so a frame that sized itself to its content
+   * changed height on every click, and the headline sitting beside it slid up
+   * and down the page. The demo is a window into a product; a window does not
+   * resize when you look at a different room.
+   */
+  height: 548px;
 }
-.app-rail { background: var(--bg-alt); border-right: 1px solid var(--border); padding: 14px 0; display: grid; gap: 6px; align-content: start; justify-items: center; }
+.app-rail { grid-row: 1; background: var(--bg-alt); border-right: 1px solid var(--border); padding: 14px 0; display: grid; gap: 6px; align-content: start; justify-items: center; }
 .app-rail i { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; color: var(--text-3); }
 .app-rail i.on { background: var(--accent); color: var(--on-accent); }
-.app-body { padding: 18px; display: grid; gap: 14px; min-width: 0; }
+.app-body { padding: 18px; display: grid; gap: 14px; min-width: 0; align-content: start; }
 .app-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .app-hi { font-size: 17px; font-weight: 600; letter-spacing: -0.02em; }
 .app-date { font-size: 11.5px; color: var(--text-3); }
@@ -565,15 +575,21 @@ p:last-child { margin-bottom: 0; }
 .list-row .r { text-align: right; }
 .list-row .amt { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
 
-.app-screens { min-width: 0; }
+.app-screens { min-width: 0; overflow-y: auto; overscroll-behavior: contain; }
+.app-screens::-webkit-scrollbar { width: 6px; }
+.app-screens::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
 .rail-btn { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; color: var(--text-3); transition: background 140ms ease, color 140ms ease; }
 .rail-btn:hover { background: var(--border); color: var(--text); }
 .rail-btn.on { background: var(--accent); color: var(--on-accent); }
-.app-back { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; background: var(--bg-alt); color: var(--text-2); flex: none; }
+.app .app-back { width: 28px; height: 28px; flex: none; border-radius: 8px; display: grid; place-items: center; background: var(--bg-alt); color: var(--text-2); flex: none; }
 .app-back:hover { background: var(--border-strong); color: var(--text); }
 
 /* Anything with somewhere to go behaves like it does. */
-.app [data-go] { cursor: pointer; text-align: inherit; font: inherit; color: inherit; border: none; width: 100%; transition: transform 120ms ease, background 140ms ease; }
+/* `width: 100%` is right for a row or a tile and wrong for the back button,
+   which was being stretched across the header and pushing the title into a
+   column narrow enough to wrap "All deals" onto two lines. */
+.app [data-go] { cursor: pointer; text-align: inherit; font: inherit; color: inherit; border: none; transition: transform 120ms ease, background 140ms ease; }
+.app [data-go]:not(.app-back) { width: 100%; }
 .app button.stat, .app button.list-row { display: grid; }
 .app button.act { display: flex; }
 .app [data-go]:hover { background: var(--border); }
@@ -623,13 +639,13 @@ p:last-child { margin-bottom: 0; }
 .tool-card:hover { border-color: var(--border-strong); }
 
 /* ── tabs ───────────────────────────────────────────────────────────────── */
-.tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 40px 0 34px; }
+.tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 36px 0 30px; }
 .tab { padding: 10px 18px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-2); font-size: 15px; background: var(--surface); transition: all 150ms ease; }
 .tab:hover { color: var(--text); border-color: var(--border-strong); }
 .tab[aria-selected='true'] { background: var(--accent); border-color: transparent; color: var(--on-accent); }
 .panel { display: none; }
 .panel[data-active] { display: block; animation: fade 260ms ease; }
-.split-tab { align-items: center; gap: 56px; }
+.split-tab { align-items: center; gap: 56px; grid-template-columns: 0.9fr 1.1fr; }
 @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
 /* ── steps ──────────────────────────────────────────────────────────────── */
@@ -671,9 +687,9 @@ tr:last-child td { border-bottom: none; }
 .plan-cta .btn { width: 100%; min-width: 0; }
 .btn-trial { background: var(--yellow); color: var(--on-yellow); border: none; }
 .btn-trial:hover { background: color-mix(in srgb, var(--yellow) 88%, #000); }
-/* Its own line, and the width of one button rather than two, so it reads as a
-   third option and not as a wider, more important one. */
-.plan-cta .btn-trial { grid-column: 1 / -1; justify-self: center; width: calc(50% - 5px); }
+/* Directly beneath Subscribe, at the same width, so it reads as the other way
+   of doing the same thing rather than as a wider, louder option. */
+.plan-cta .btn-trial { grid-column: 1; }
 @media (max-width: 520px) {
   .plan-cta { grid-template-columns: 1fr; }
   .plan-cta .btn-trial { width: 100%; }
@@ -794,8 +810,13 @@ tr:last-child td { border-bottom: none; }
 }
 
 @media (max-width: 940px) {
-  .app { grid-template-columns: 1fr; }
-  .app-rail { display: none; }
+  .app { height: 500px; }
+}
+
+@media (max-width: 560px) {
+  .app { grid-template-columns: 52px 1fr; font-size: 12.5px; height: 470px; }
+  .app-rail { padding: 10px 0; }
+  .app-body { padding: 14px; }
 }
 
 @media (max-width: 680px) {

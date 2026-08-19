@@ -102,11 +102,16 @@ export function tabs(items, { frame } = {}) {
     )
     .join('')
 
-  // The tab row and the frame move together: pick a tab and the demo opens that
-  // screen, so the copy and the thing it describes are never out of step.
-  return `<div class="split split-tab reveal">
-    <div><div class="tabs" role="tablist"${frame ? ` data-frame="${frame}"` : ''}>${buttons}</div>${panels}</div>
-    <div>${frame ? demoApp({ id: frame, start: items[0].screen ?? 'home' }) : ''}</div>
+  // The tab row runs the full width above the split rather than inside the left
+  // column, where six pills wrapped onto two rows and left a hole above them.
+  // Tab and frame move together: pick one and the demo opens that screen, so
+  // the copy and the thing it describes are never out of step.
+  return `<div class="reveal">
+    <div class="tabs" role="tablist"${frame ? ` data-frame="${frame}"` : ''}>${buttons}</div>
+    <div class="split split-tab">
+      <div>${panels}</div>
+      <div>${frame ? demoApp({ id: frame, start: items[0].screen ?? 'home' }) : ''}</div>
+    </div>
   </div>`
 }
 
