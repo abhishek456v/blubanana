@@ -139,7 +139,7 @@ export default function YouScreen() {
     try {
       const bundle = await buildExport()
       const json = JSON.stringify(bundle, null, 2)
-      const name = `creatordesk-export-${new Date().toISOString().slice(0, 10)}.json`
+      const name = `blubanana-export-${new Date().toISOString().slice(0, 10)}.json`
 
       if (Platform.OS === 'web') {
         // No filesystem to share from; hand it to the browser directly.
@@ -236,7 +236,7 @@ export default function YouScreen() {
               {notifPermission === 'granted'
                 ? `${scheduledCount} scheduled with iOS right now.`
                 : notifPermission === 'denied'
-                  ? 'Turned off. Enable notifications for CreatorDesk in Settings.'
+                  ? 'Turned off. Enable notifications for Blubanana in Settings.'
                   : 'Checking…'}
             </Text>
             <Button
@@ -254,7 +254,7 @@ export default function YouScreen() {
             ) : null}
             {testState === 'denied' ? (
               <Text style={[styles.cardHint, { color: c.warning }]}>
-                iOS refused. Notifications are off for CreatorDesk in Settings.
+                iOS refused. Notifications are off for Blubanana in Settings.
               </Text>
             ) : null}
             {testState === 'failed' ? (

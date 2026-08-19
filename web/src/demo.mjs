@@ -15,6 +15,10 @@
 // appearance, in an obviously illustrative interface, is what keeps it a
 // depiction of the product rather than a claim about a customer.
 
+/** One fixed date everywhere, so nothing on the site looks stale or invented
+ *  at a glance. */
+export const TODAY = '1st January, 2026'
+
 export const CREATOR = {
   name: 'Preeti Nainwal',
   initials: 'PN',
@@ -22,7 +26,7 @@ export const CREATOR = {
   niche: 'Lifestyle and travel',
   followers: '1.8L',
   phone: '+91 98765 43210',
-  email: 'preeti@example.com',
+  email: 'preeti@blubanana.in',
   city: 'Indiranagar, Bengaluru 560038',
   pan: 'ABCDE1234F',
   gstin: '29ABCDE1234F1Z5',
@@ -45,7 +49,7 @@ export const DEALS = [
   { ...brand('Nykaa', 0), work: 'Reel and 3 Stories', amount: '₹45,000', state: 'Publish due in 2 days', chip: ['Live', 'blue'] },
   { ...brand('boAt', 1), work: '1 Reel', amount: '₹35,500', state: 'Payment 6 days late', chip: ['Overdue', 'rose'] },
   { ...brand('Mamaearth', 2), work: 'Feed post and 2 Stories', amount: '₹28,000', state: 'Edit due tomorrow', chip: ['Active', 'amber'] },
-  { ...brand('Zomato', 3), work: 'YouTube integration', amount: '₹1,20,000', state: 'Paid on 14 August', chip: ['Paid', 'green'] },
+  { ...brand('Zomato', 3), work: 'YouTube integration', amount: '₹1,20,000', state: 'Paid in full', chip: ['Paid', 'green'] },
 ]
 
 export const MONEY = {
@@ -60,7 +64,7 @@ export const MONEY = {
 
 export const INVOICE = {
   number: 'INV-014',
-  date: '15 August 2026',
+  date: '1 January 2026',
   billedTo: 'Lenskart',
   contact: 'Accounts payable',
   gstin: '06AABCL4567T1Z6',

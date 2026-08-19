@@ -12,7 +12,7 @@ const body = `<section class="legal">
     <p class="updated" style="margin-top:14px">Last updated 19 August 2026</p>
 
     <p style="margin-top:26px">
-      These terms govern your use of CreatorDesk, provided by ${COMPANY.legalName}. By creating an
+      These terms govern your use of Blubanana, provided by ${COMPANY.legalName}. By creating an
       account you agree to them.
     </p>
 
@@ -44,7 +44,7 @@ const body = `<section class="legal">
 
     <h2>Acceptable use</h2>
     <p>
-      Do not use CreatorDesk to break the law, to message people who have not agreed to hear from
+      Do not use Blubanana to break the law, to message people who have not agreed to hear from
       you, or to store data about others that you have no right to hold. Do not attempt to reach
       another workspace.
     </p>
@@ -91,8 +91,8 @@ const body = `<section class="legal">
 
 export default {
   path: '/terms',
-  title: 'Terms and conditions | CreatorDesk',
+  title: 'Terms and conditions | Blubanana',
   description:
-    'The terms of using CreatorDesk: what the service provides, what it deliberately is not, how billing works, and where liability sits.',
+    'The terms of using Blubanana: what the service provides, what it deliberately is not, how billing works, and where liability sits.',
   body: [body, closingCta({ title: 'Start when you are ready.', sub: 'Fourteen days free, and no card to cancel.', href: SITE.signup })].join('\n'),
 }

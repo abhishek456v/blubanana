@@ -23,7 +23,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
         <View style={[styles.glow, { backgroundColor: dark.accentLight }]} />
         <View style={styles.brandTop}>
           <Mark size={30} color={dark.accent} />
-          <Text style={[styles.logoWord, { color: dark.textPrimary }]}>CreatorDesk</Text>
+          <Text style={[styles.logoWord, { color: dark.textPrimary }]}>blubanana</Text>
         </View>
 
         <View>

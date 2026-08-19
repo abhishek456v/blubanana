@@ -5,7 +5,7 @@ import { getWorkspaceId } from './workspace'
  * Everything a creator has, as one JSON document.
  *
  * Two reasons this exists, and the second is not optional. It is a trust
- * signal on a paid product — she can leave with her records. And CreatorDesk
+ * signal on a paid product — she can leave with her records. And Blubanana
  * stores brand contacts' names and phone numbers, which is third-party
  * personal data, making the business a Data Fiduciary under India's Digital
  * Personal Data Protection Act 2023; portability is a duty, not a courtesy.

@@ -17,7 +17,7 @@ const body = `<section class="legal">
     <h2>The trial comes first</h2>
     <p>
       Every account starts with ${PRICING.trialDays} days free and no card. The trial exists so
-      that nobody has to pay to find out whether CreatorDesk suits them. You can create
+      that nobody has to pay to find out whether Blubanana suits them. You can create
       ${PRICING.trialDeals} deals in that time; everything else is unlimited.
     </p>
 
@@ -76,7 +76,7 @@ const body = `<section class="legal">
 
 export default {
   path: '/refunds',
-  title: 'Cancellation and refunds | CreatorDesk',
+  title: 'Cancellation and refunds | Blubanana',
   description:
     'Cancel any time, and get a full refund within 30 days of a payment. How cancellation works, what happens to your data afterwards, and how long a refund takes to reach you.',
   body: [body, closingCta({ title: 'Fourteen days free, first.', sub: 'No card, so there is nothing to refund.', href: SITE.signup })].join('\n'),

@@ -111,7 +111,7 @@ export default function RootLayout() {
     }
   }, [session, loading, fontsLoaded, segments, isPasswordRecovery])
 
-  // Native-only: catch password-recovery deep links (creatordesk://reset-
+  // Native-only: catch password-recovery deep links (blubanana://reset-
   // password#...). Web doesn't need this: the Supabase client parses
   // window.location itself and fires PASSWORD_RECOVERY, caught above.
   useEffect(() => {

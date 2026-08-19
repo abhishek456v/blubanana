@@ -1209,7 +1209,7 @@ export default function DealDetailScreen() {
                       {notificationsOff ? (
                         <Text style={[styles.reminderWarning, { color: c.warning }]}>
                           Notifications are off, so this will only appear here. Turn them
-                          on for CreatorDesk in Settings.
+                          on for Blubanana in Settings.
                         </Text>
                       ) : null}
                     </View>

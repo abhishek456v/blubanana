@@ -1,4 +1,4 @@
-# CreatorDesk — Product Specification
+# Blubanana — Product Specification
 
 **This is the single source of truth.** It supersedes the earlier `PRODUCT.md`
 (which scoped a Phase 1 that has long since been overtaken), `DESIGN.md` and
@@ -18,7 +18,21 @@ lives only in a chat log is a decision that will be lost.
 
 ---
 
-## 1. What CreatorDesk is
+## 1. What Blubanana is
+
+**The product was called CreatorDesk until 19 August 2026.** The rename is
+complete in everything a user sees: the app, the website, the invoice and rate
+card marks, the store listing, the deep link scheme and the bundle identifier.
+
+Two things were deliberately left as they were. Local storage keys still read
+`creatordesk.*`, because renaming `creatordesk.offline.queue.v1` would strand
+any capture already sitting in a queue on a device, and that is the one piece of
+local state that cannot be reproduced. Migration comments keep the old name too:
+they are an applied historical record, and rewriting history to match a present
+decision is how a record stops being worth reading.
+
+The wordmark is set in lower case, with "blu" carrying the accent colour.
+
 
 A business-management app for Indian content creators. It replaces the
 spreadsheet, the notes app and the mental arithmetic a creator uses to run
@@ -158,12 +172,12 @@ Paid via **Razorpay** — the right choice for India because it covers UPI, card
 and netbanking, and supports recurring mandates. Stripe is weak for domestic
 Indian payments.
 
-Razorpay is used for **one thing only**: the creator paying CreatorDesk. It is
+Razorpay is used for **one thing only**: the creator paying Blubanana. It is
 never involved in brand-to-creator money.
 
 ### GST on our own revenue
 
-CreatorDesk sells a SaaS subscription to Indian customers and therefore owes
+Blubanana sells a SaaS subscription to Indian customers and therefore owes
 GST on it, and must issue a GST invoice to each subscriber — carrying their
 GSTIN where they have one. This is a separate billing system from the invoices
 creators raise to brands, even though the tax logic is similar.
@@ -660,7 +674,7 @@ year, April to March, with income, TDS and GST. It reports **gross and net**,
 so "tax-ready" means taxable income rather than turnover.
 
 A creator can add what the app never saw — AdSense, affiliate income, a deal
-paid outside CreatorDesk, an expense paid in cash, TDS showing in her 26AS from
+paid outside Blubanana, an expense paid in cash, TDS showing in her 26AS from
 a brand that never invoiced here. Every field accepts a negative, because a
 refund is a correction downward and a form that only takes positives forces her
 to fudge it somewhere else.
@@ -721,7 +735,7 @@ ratings — as CSV and JSON. Available at any time, including during the
 read-only state after a lapsed trial or subscription.
 
 **Delete my account.** **Built.** A real deletion path, not a cancellation. This is a
-legal obligation, not a courtesy: CreatorDesk stores brand contacts' names and
+legal obligation, not a courtesy: Blubanana stores brand contacts' names and
 phone numbers, which is **third-party personal data**, making the business a
 Data Fiduciary under India's **Digital Personal Data Protection Act 2023**.
 The marketing site needs a privacy policy for the same reason.

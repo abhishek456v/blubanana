@@ -59,7 +59,7 @@ export function AnnualAdjustmentsSheet({
       <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
         <Text style={[styles.intro, { color: c.textSecondary }]}>
           Anything this app never saw — AdSense, affiliate income, a deal paid outside
-          CreatorDesk, an expense paid in cash, or TDS showing in your 26AS from a brand
+          Blubanana, an expense paid in cash, or TDS showing in your 26AS from a brand
           that never invoiced here.
         </Text>
         <Text style={[styles.intro, { color: c.textMuted }]}>

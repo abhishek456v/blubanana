@@ -7,7 +7,7 @@
 //
 // The arithmetic is imported from the app's own modules through
 // web/browser/tools.ts, so the advance tax split here and the one inside
-// CreatorDesk are the same function rather than two copies waiting to disagree.
+// Blubanana are the same function rather than two copies waiting to disagree.
 
 import { PRICING, SITE, TOOLS } from '../site.mjs'
 import { closingCta, head, icon, section } from '../ui.mjs'
@@ -50,7 +50,7 @@ function toolPage({ path, name, h1, line, description, form, out, how, related =
     <div class="split">
       <div class="reveal">
         <h2>It does this from your real deals</h2>
-        <p class="lede" style="margin-top:16px">Inside CreatorDesk the figures come from the work you have already logged, and it reminds you before the date rather than after.</p>
+        <p class="lede" style="margin-top:16px">Inside Blubanana the figures come from the work you have already logged, and it reminds you before the date rather than after.</p>
         <div class="btn-row" style="margin-top:24px">
           <a class="btn" href="${SITE.signup}">Start free for ${PRICING.trialDays} days</a>
         </div>
@@ -67,14 +67,14 @@ function toolPage({ path, name, h1, line, description, form, out, how, related =
 
   return {
     path,
-    title: `${name} for Indian creators | CreatorDesk`,
+    title: `${name} for Indian creators | Blubanana`,
     description,
     script,
     body: [
       body,
       closingCta({
         title: 'Stop working this out by hand',
-        sub: `CreatorDesk keeps it up to date from the deals you log. ${PRICING.trialDays} days free, no card.`,
+        sub: `Blubanana keeps it up to date from the deals you log. ${PRICING.trialDays} days free, no card.`,
         href: SITE.signup,
       }),
     ].join('\n'),
@@ -236,20 +236,37 @@ const gstTool = toolPage({
 const rateTool = toolPage({
   path: '/tools/rate-calculator',
   name: 'Rate calculator',
-  h1: 'What is a post of yours worth?',
-  line: 'Brands buy attention by the thousand views. This turns your reach into a range you can quote.',
+  h1: 'What should you charge for a post?',
+  line: 'Brands buy attention by the thousand views. Tell it what one past deal paid, and it prices the next one at the same rate.',
   description:
-    'Turn your average views into a rate range you can quote to a brand, using cost per thousand views. Free rate calculator for Indian creators.',
+    'Work out what to charge for a Reel, a Short or a video, from a deal you have already done. Free rate calculator for Indian creators.',
   form: `
-    ${field('views', 'Average views on a post', 'Take the last five of the same format and average them.', number('views', 120000, 'min="0" step="1000"'))}
-    ${field('cpmlow', 'Lower end of your band', 'Rupees per thousand views.', money('cpmlow', 200, 'min="0" step="10"'))}
-    ${field('cpmhigh', 'Upper end of your band', 'Where you land depends on the category, the usage and how much work it is.', money('cpmhigh', 500, 'min="0" step="10"'))}`,
+    <p class="hint" style="margin:0 0 4px">
+      <b style="color:var(--text)">Start from a deal you have done.</b>
+      Most creators have no idea what their cost per view is, and they do not need to:
+      one past fee and the views that post got contains it already.
+    </p>
+    ${field('fee', 'What a brand last paid you for one post', '', money('fee', 45000, 'min="0" step="1000"'), [['25K', 25000], ['45K', 45000], ['80K', 80000]])}
+    ${field('pastviews', 'Views that post got', '', number('pastviews', 150000, 'min="0" step="1000"'))}
+    <div class="rule"></div>
+    ${field('views', 'Expected views on the new post', 'Average the last five of the same format.', number('views', 220000, 'min="0" step="1000"'))}
+    <details class="advanced">
+      <summary>I have never been paid for a post</summary>
+      <div style="padding-top:14px;display:grid;gap:16px">
+        <p class="hint" style="margin:0">
+          Then set the band yourself and treat the answer as an opening position rather than a market rate.
+          Nobody can honestly publish a going rate for every category.
+        </p>
+        ${field('cpmlow', 'Lower end, per thousand views', '', money('cpmlow', 200, 'min="0" step="10"'))}
+        ${field('cpmhigh', 'Upper end, per thousand views', '', money('cpmhigh', 500, 'min="0" step="10"'))}
+      </div>
+    </details>`,
   out: `
-    <div><span class="fine">A range you can quote</span><div class="out-big figure" id="range">-</div></div>
-    <div class="out-row"><span>At the lower end</span><b id="rlow">-</b></div>
-    <div class="out-row"><span>At the upper end</span><b id="rhigh">-</b></div>
-    <p class="tool-note">Add for exclusivity, for usage rights, and for anything that takes a second shoot day. Those are separate line items, not goodwill.</p>`,
-  how: 'This is arithmetic on your own numbers, not a market benchmark. Nobody can honestly publish a going rate for every category, and a page that tried would be guessing with your livelihood. Inside CreatorDesk the range comes from what you have actually been paid, with the sample size stated.',
+    <div><span class="fine">Quote somewhere in here</span><div class="out-big figure" id="range">-</div></div>
+    <div class="out-row"><span>Your rate per thousand views</span><b id="cpm">-</b></div>
+    <div class="out-row"><span>Straight multiple of the last deal</span><b id="mid">-</b></div>
+    <p class="tool-note">Then add for exclusivity, for usage rights, and for anything needing a second shoot day. Those are separate line items, not goodwill.</p>`,
+  how: 'Cost per thousand views is the unit a brand is actually buying, and the one number that lets you compare a Reel with a fourteen minute video. Working it backwards out of a deal you have already closed gives you your own figure rather than somebody else\'s average, which is the only defensible one in a negotiation.',
   script: `
     const $ = (id) => document.getElementById(id)
     document.querySelectorAll('.preset').forEach((b) => b.addEventListener('click', () => {
@@ -258,13 +275,17 @@ const rateTool = toolPage({
       target.dispatchEvent(new Event('input', { bubbles: true }))
     }))
     function run() {
+      const fee = Number($('fee').value) || 0
+      const past = Number($('pastviews').value) || 0
       const views = Number($('views').value) || 0
-      const low = Number($('cpmlow').value) || 0
-      const high = Number($('cpmhigh').value) || 0
+      const own = CD.cpmFromDeal(fee, past)
+      // Her own rate when there is one, and the band she set when there is not.
+      const low = own > 0 ? own * 0.85 : Number($('cpmlow').value) || 0
+      const high = own > 0 ? own * 1.25 : Number($('cpmhigh').value) || 0
       const r = CD.rateFromReach(views, Math.min(low, high), Math.max(low, high))
       $('range').textContent = CD.inr(r.low) + ' to ' + CD.inr(r.high)
-      $('rlow').textContent = CD.inr(r.low)
-      $('rhigh').textContent = CD.inr(r.high)
+      $('cpm').textContent = own > 0 ? CD.inr(own) : 'set your band'
+      $('mid').textContent = own > 0 ? CD.inr((own / 1000) * views) : '-'
     }
     document.querySelectorAll('.tool-form input').forEach((i) => i.addEventListener('input', run))
     run()`,
@@ -315,7 +336,7 @@ const engagementTool = toolPage({
 /* ── the index ───────────────────────────────────────────────────────────── */
 const index = {
   path: '/tools',
-  title: 'Free calculators for Indian creators | CreatorDesk',
+  title: 'Free calculators for Indian creators | Blubanana',
   description:
     'Five free calculators for content creators in India: advance tax, TDS, GST, what to charge, and engagement rate. No sign up, nothing to install.',
   body: `

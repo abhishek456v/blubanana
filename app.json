@@ -1,18 +1,18 @@
 {
   "expo": {
-    "name": "CreatorDesk",
-    "slug": "creatordesk",
-    "scheme": "creatordesk",
+    "name": "Blubanana",
+    "slug": "blubanana",
+    "scheme": "blubanana",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "icon": "./assets/icon.png",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "ai.automitra.creatordesk"
+      "bundleIdentifier": "ai.automitra.blubanana"
     },
     "android": {
-      "package": "ai.automitra.creatordesk",
+      "package": "ai.automitra.blubanana",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#141210"
@@ -33,13 +33,13 @@
       [
         "expo-audio",
         {
-          "microphonePermission": "CreatorDesk uses your microphone to record voice notes for deal intake."
+          "microphonePermission": "Blubanana uses your microphone to record voice notes for deal intake."
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "CreatorDesk uses your photo library to read deal screenshots you choose to import."
+          "photosPermission": "Blubanana uses your photo library to read deal screenshots you choose to import."
         }
       ],
       "expo-notifications",

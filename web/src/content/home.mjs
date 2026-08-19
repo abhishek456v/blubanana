@@ -13,13 +13,13 @@
 
 import { PRICING, SITE, inr } from '../site.mjs'
 import {
-  closingCta, faq, faqSchema, head, icon, section, split, tabs,
+  closingCta, faq, faqSchema, head, icon, planCard, section, split, tabs,
   uiCapture, uiDashboard, uiDeal, uiInvoice, uiMoney, uiRateCard, uiReminders, uiTaxCalendar, uiTeam,
 } from '../ui.mjs'
 
 const QUESTIONS = [
   [
-    'Does CreatorDesk take a cut of my deals?',
+    'Does Blubanana take a cut of my deals?',
     'No. Brands pay you directly, bank to bank. We charge a subscription and nothing else.',
   ],
   [
@@ -54,7 +54,7 @@ const hero = `<section class="hero">
           <a class="btn btn-lg" href="${SITE.signup}">Start free for ${PRICING.trialDays} days</a>
           <a class="btn btn-lg btn-ghost" href="#capture">See how it works</a>
         </div>
-        <p class="fine reveal">No card needed. Works on the web, iPhone and Android.</p>
+        <p class="fine reveal">No card needed. Works on the web, iOS and Android.</p>
       </div>
       <div class="reveal">${uiDashboard()}</div>
     </div>
@@ -173,9 +173,9 @@ const compare = section({
       title: 'Built by people who understand the problem',
       lede: 'Foreign tools are good software written for a different country. A spreadsheet is free and silent.',
     })}
-    <div class="table-wrap reveal" style="margin-top:36px">
+    <div class="table-wrap cmp reveal" style="margin-top:36px">
       <table>
-        <thead><tr><th></th><th class="num-cell">Spreadsheet</th><th class="num-cell">A foreign tool</th><th class="num-cell">CreatorDesk</th></tr></thead>
+        <thead><tr><th></th><th class="num-cell">Spreadsheet</th><th class="num-cell">A foreign tool</th><th class="num-cell">Blubanana</th></tr></thead>
         <tbody>
           ${COMPARE.map(
             ([label, a, b, c]) => `<tr>
@@ -197,44 +197,53 @@ const india = section({
     <div class="split">
       <div class="reveal">
         <div class="eyebrow">Made in India</div>
-        <h2>For how creators here actually work</h2>
-        <p class="lede" style="margin-top:16px">Deals arrive in a DM, half the money comes up front, the rest arrives late, and nobody thinks about tax until March.</p>
+        <h2>For how creators here actually get paid</h2>
+        <p class="lede" style="margin-top:16px">Four things are true of almost every brand deal in this country, and every one of them is a place money goes missing.</p>
       </div>
       <div class="reveal">
         <div class="grid g-2">
-          <div class="card"><div class="icon-badge">${icon('phone')}</div><h4>WhatsApp, not email</h4><p>Invoices and follow ups go where brands actually reply.</p></div>
-          <div class="card"><div class="icon-badge">${icon('wallet')}</div><h4>Paid straight to your bank</h4><p>A code on the invoice they scan. The money never passes through us.</p></div>
-          <div class="card"><div class="icon-badge">${icon('calendar')}</div><h4>April to March</h4><p>The financial year the rest of your paperwork uses.</p></div>
-          <div class="card"><div class="icon-badge">${icon('globe')}</div><h4>Rupees, written properly</h4><p>Lakhs and crores, grouped the way you read them.</p></div>
+          <div class="card">
+            <div class="icon-badge">${icon('wallet')}</div>
+            <h4>Half now, half much later</h4>
+            <p>The advance and the balance are two payments with two dates. Tracked apart, so a deal is never half forgotten.</p>
+          </div>
+          <div class="card">
+            <div class="icon-badge">${icon('chart')}</div>
+            <h4>TDS comes off before you see it</h4>
+            <p>Invoiced, received and withheld are three different numbers. Your return needs all three, and only one hits your bank.</p>
+          </div>
+          <div class="card">
+            <div class="icon-badge">${icon('phone')}</div>
+            <h4>Nobody replies to email</h4>
+            <p>The invoice and the follow up go to WhatsApp, to the person at the brand who actually answers.</p>
+          </div>
+          <div class="card">
+            <div class="icon-badge">${icon('calendar')}</div>
+            <h4>Your year ends in March</h4>
+            <p>Income, expenses, TDS and GST across April to March, so what you hand your CA is already in the shape they need.</p>
+          </div>
         </div>
       </div>
     </div>`,
 })
 
 const pricing = section({
+  id: 'included',
   inner: `
     <div class="split" style="align-items:center">
       <div class="reveal">
         ${head({ eyebrow: 'One plan', title: 'Everything, for one price' })}
         <p class="lede" style="margin-top:16px">No tier where reminders cost extra, and no add on for inviting your manager.</p>
+        <ul class="includes" style="margin-top:26px">
+          <li><span class="tick">${icon('check', { size: 15, stroke: 2.4 })}</span> Every feature, nothing held back</li>
+          <li><span class="tick">${icon('check', { size: 15, stroke: 2.4 })}</span> Up to ${PRICING.seats} people in your workspace</li>
+          <li><span class="tick">${icon('check', { size: 15, stroke: 2.4 })}</span> Unlimited deals, brands and invoices</li>
+          <li><span class="tick">${icon('check', { size: 15, stroke: 2.4 })}</span> 30 days money back on any payment</li>
+        </ul>
         <div class="btn-row" style="margin-top:24px"><a class="link-arrow" href="/pricing">See the full pricing</a></div>
       </div>
       <div class="reveal">
-        <div class="price-card">
-          <div class="offer-chip" data-intro-chip hidden>Launch offer, ${PRICING.introPercent}% off</div>
-          <div class="price-line">
-            <span class="price-now figure" data-price-monthly>${inr(PRICING.introMonthly)}</span>
-            <span class="price-was figure strike" data-price-list>${inr(PRICING.listMonthly)}</span>
-          </div>
-          <p class="dim" style="font-size:16px">per month plus GST, or ${inr(PRICING.terms[4].intro)} for the year</p>
-          <ul class="includes" style="margin:24px 0">
-            <li><span class="tick">${icon('check', { size: 15, stroke: 2.4 })}</span> Every feature, nothing held back</li>
-            <li><span class="tick">${icon('check', { size: 15, stroke: 2.4 })}</span> Up to ${PRICING.seats} people in your workspace</li>
-            <li><span class="tick">${icon('check', { size: 15, stroke: 2.4 })}</span> Unlimited deals, brands and invoices</li>
-            <li><span class="tick">${icon('check', { size: 15, stroke: 2.4 })}</span> 30 day money back guarantee</li>
-          </ul>
-          <a class="btn" style="width:100%" href="${SITE.signup}">Start your ${PRICING.trialDays} day trial</a>
-        </div>
+        ${planCard({ pricing: PRICING, inr, subscribe: SITE.subscribe, trial: SITE.signup, included: '/pricing#included', compact: true })}
       </div>
     </div>`,
 })
@@ -249,14 +258,14 @@ const questions = section({
 
 export default {
   path: '/',
-  title: 'CreatorDesk, the business app for Indian creators',
+  title: 'Blubanana, the business app for Indian creators',
   description:
     'Track every brand deal, hit every deadline and get paid on time. Invoices, reminders, payments and tax in one app, made for creators in India.',
   schema: [
     {
       '@context': 'https://schema.org',
       '@type': 'SoftwareApplication',
-      name: 'CreatorDesk',
+      name: 'Blubanana',
       applicationCategory: 'BusinessApplication',
       operatingSystem: 'Web, iOS, Android',
       description: 'Business management for Indian content creators: brand deals, deadlines, invoices, payments and tax.',
@@ -268,9 +277,10 @@ export default {
     hero, promises, features, steps, team, compare, india, pricing, questions,
     closingCta({
       title: 'Start with the deals you already have',
-      sub: `${PRICING.trialDays} days free, no card, and the importer brings them across in minutes.`,
-      href: SITE.signup,
-      secondary: ['See pricing', '/pricing'],
+      sub: `The importer brings them across in minutes. Subscribe if you are sure, or take ${PRICING.trialDays} days first.`,
+      href: SITE.subscribe,
+      primary: 'Subscribe',
+      secondary: [`${PRICING.trialDays} day trial`, SITE.signup],
     }),
   ].join('\n'),
 }

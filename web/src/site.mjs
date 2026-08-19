@@ -15,12 +15,12 @@ import { readFileSync } from 'node:fs'
  * missing page, it is the specific thing that fails a merchant activation.
  */
 export const COMPANY = {
-  entity: 'CreatorDesk',
+  entity: 'Blubanana',
   legalName: 'TODO: the registered legal entity name',
   address: 'TODO: registered address, city, state, PIN',
   phone: 'TODO: a number that is answered',
-  email: 'hello@creatordesk.in',
-  support: 'support@creatordesk.in',
+  email: 'hello@blubanana.in',
+  support: 'support@blubanana.in',
   gstin: null,
   hours: 'Monday to Friday, 10am to 7pm IST',
   /** Digits only, for the wa.me link. */
@@ -48,12 +48,16 @@ export const SUPABASE = (() => {
 })()
 
 export const SITE = {
-  name: 'CreatorDesk',
-  domain: 'creatordesk.in',
-  origin: 'https://creatordesk.in',
-  platform: 'https://platform.creatordesk.in',
-  signup: 'https://platform.creatordesk.in/sign-up',
-  login: 'https://platform.creatordesk.in/sign-in',
+  name: 'Blubanana',
+  /** The logo sets it in lower case, with "blu" carrying the accent. */
+  wordmark: ['blu', 'banana'],
+  domain: 'blubanana.in',
+  origin: 'https://blubanana.in',
+  platform: 'https://platform.blubanana.in',
+  signup: 'https://platform.blubanana.in/sign-up',
+  login: 'https://platform.blubanana.in/sign-in',
+  /** For someone who has already decided. Skips the trial and goes to checkout. */
+  subscribe: 'https://platform.blubanana.in/plans',
   tagline: 'The business side of being a creator',
 }
 

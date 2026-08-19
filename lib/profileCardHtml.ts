@@ -229,7 +229,7 @@ export function buildProfileCardHtml({
 
     <div class="foot">
       <span>${esc(content.footnote)}</span>
-      <span>CreatorDesk</span>
+      <span>blubanana</span>
     </div>
   </div>
 

@@ -120,6 +120,39 @@
     reveals.forEach((element) => element.classList.add('in'))
   }
 
+  /* ── the plan selector ─────────────────────────────────────────────────── */
+  document.querySelectorAll('[data-plan]').forEach((card) => {
+    let terms
+    try {
+      terms = JSON.parse(card.getAttribute('data-plan'))
+    } catch (e) {
+      return
+    }
+    const pills = [...card.querySelectorAll('.term-pill')]
+    const set = (el, value) => card.querySelectorAll(el).forEach((n) => (n.textContent = value))
+
+    const show = (index) => {
+      const term = terms[index]
+      pills.forEach((pill, i) => pill.setAttribute('aria-pressed', String(i === index)))
+      set('[data-plan-total]', term.total)
+      set('[data-plan-list]', term.list)
+      set('[data-plan-permonth]', term.perMonth)
+      set('[data-plan-gst]', term.withGst)
+      set('[data-plan-save]', term.save > 0 ? 'Save ' + term.save + '%' : '')
+      // Said here rather than in a footnote. The price someone starts on holds
+      // for the term they bought, and the renewal is the thing they will
+      // otherwise discover on the day it is charged.
+      set(
+        '[data-plan-renew]',
+        'Locked for ' + (term.months === 1 ? 'the month' : term.months + ' months') + '. Renews at the price current then, and your bank asks you to approve any change.'
+      )
+      card.querySelectorAll('[data-plan-save]').forEach((n) => (n.hidden = term.save <= 0))
+    }
+
+    pills.forEach((pill, i) => pill.addEventListener('click', () => show(i)))
+    show(pills.findIndex((p) => p.getAttribute('aria-pressed') === 'true') || 0)
+  })
+
   /* ── live pricing ──────────────────────────────────────────────────────── */
   /*
    * Migration 035 grants `select` on `pricing` and `execute` on

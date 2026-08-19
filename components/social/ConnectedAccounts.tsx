@@ -150,7 +150,7 @@ export function ConnectedAccounts() {
     <Card>
       <Text style={[styles.title, { color: c.textPrimary }]}>Your accounts</Text>
       <Text style={[styles.hint, { color: c.textSecondary }]}>
-        Connect to track how your reach moves against your rates. Read-only, so CreatorDesk never
+        Connect to track how your reach moves against your rates. Read-only, so Blubanana never
         posts anything.
       </Text>
 

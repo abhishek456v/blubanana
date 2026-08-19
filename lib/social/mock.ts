@@ -40,7 +40,7 @@ export class MockSocialProvider implements SocialProvider {
   buildAuthUrl(state: string): string {
     // Never opened. The mock connect path writes the row directly, since
     // there is no real authorisation server to redirect to.
-    return `creatordesk://social/mock-callback?state=${encodeURIComponent(state)}`
+    return `blubanana://social/mock-callback?state=${encodeURIComponent(state)}`
   }
 
   async fetchStats(accountId: string): Promise<FetchedStats> {

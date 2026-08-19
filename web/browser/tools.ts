@@ -2,7 +2,7 @@
 //
 // It re-exports the app's own modules rather than reimplementing them. That is
 // the entire point of these pages: the advance tax split on the website and the
-// advance tax split inside CreatorDesk are the same function, so a change to the
+// advance tax split inside Blubanana are the same function, so a change to the
 // statute is one edit and both move together. A second copy would be wrong
 // eventually, and wrong in a way nobody would notice until someone filed on it.
 //
@@ -45,11 +45,23 @@ export function engagement(likes: number, comments: number, saves: number, denom
 /**
  * A rate range from what a post actually reaches.
  *
- * This is arithmetic on the creator's own numbers, not a market benchmark: cost
- * per thousand views is the unit brands buy in, and the band is the one she
- * sets. A page that invented a going rate would be guessing with someone's
- * livelihood, and it would be wrong differently in every category.
+ * Arithmetic on the creator's own numbers, never a market benchmark. Nobody can
+ * honestly publish a going rate for every category, and a page that tried would
+ * be guessing with someone's livelihood.
  */
 export function rateFromReach(views: number, cpmLow: number, cpmHigh: number) {
   return { low: Math.round((views / 1000) * cpmLow), high: Math.round((views / 1000) * cpmHigh) }
+}
+
+/**
+ * The rate a creator has already commanded, per thousand views.
+ *
+ * This is the answer to "I do not know what my cost per view should be": you
+ * do not have to know it, because a deal you have already done contains it. One
+ * past fee and the views that post got is enough to price the next one, and it
+ * is her own number rather than someone else's average.
+ */
+export function cpmFromDeal(fee: number, views: number): number {
+  if (!views) return 0
+  return (fee / views) * 1000
 }

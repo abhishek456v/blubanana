@@ -106,7 +106,7 @@ export default function TaxScreen() {
                   bold
                 />
                 <View style={styles.breakdown}>
-                  <Row label="Received through CreatorDesk" value={figures.received} c={c} />
+                  <Row label="Received through Blubanana" value={figures.received} c={c} />
                   {figures.other > 0 ? (
                     <Row label="Other income you added" value={figures.other} c={c} />
                   ) : null}
@@ -120,7 +120,7 @@ export default function TaxScreen() {
                 onChangeText={setOtherIncome}
                 keyboardType="number-pad"
                 placeholder="0"
-                hint="Salary, interest, anything CreatorDesk never saw"
+                hint="Salary, interest, anything Blubanana never saw"
               />
 
               <TextField

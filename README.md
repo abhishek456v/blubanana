@@ -1,4 +1,4 @@
-# CreatorDesk
+# Blubanana
 
 A mobile CRM for content creators — never miss a deal, a deadline, or a payment.
 Built with Expo (React Native) + Supabase + OpenAI.

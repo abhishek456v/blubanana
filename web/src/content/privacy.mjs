@@ -5,7 +5,7 @@
 // claims match the `delete-account` edge function and migration 028, including
 // the six-year invoice exception migration 036's billing tables rely on.
 //
-// That matters beyond tidiness: CreatorDesk stores brand contacts' names and
+// That matters beyond tidiness: Blubanana stores brand contacts' names and
 // phone numbers, which is third-party personal data, which makes the business a
 // Data Fiduciary under the DPDP Act 2023. A policy that describes a different
 // product is not a smaller problem than no policy.
@@ -19,7 +19,7 @@ const body = `<section class="legal">
     <p class="updated" style="margin-top:14px">Last updated 19 August 2026</p>
 
     <p style="margin-top:26px">
-      CreatorDesk provides software that helps content creators manage brand collaborations. This
+      Blubanana provides software that helps content creators manage brand collaborations. This
       policy explains what we collect, why, who it goes to, and what you can require of us. It is
       written to India’s Digital Personal Data Protection Act, 2023.
     </p>
@@ -80,7 +80,7 @@ const body = `<section class="legal">
 
     <h2>Children</h2>
     <p>
-      CreatorDesk is not intended for anyone under 18, and we do not knowingly create accounts for
+      Blubanana is not intended for anyone under 18, and we do not knowingly create accounts for
       children.
     </p>
 
@@ -108,9 +108,9 @@ const body = `<section class="legal">
 
 export default {
   path: '/privacy',
-  title: 'Privacy policy | CreatorDesk',
+  title: 'Privacy policy | Blubanana',
   description:
-    'What CreatorDesk collects, why, who processes it, how long it is kept, and how to export or delete everything. Written to India’s DPDP Act, 2023.',
+    'What Blubanana collects, why, who processes it, how long it is kept, and how to export or delete everything. Written to India’s DPDP Act, 2023.',
   body: [
     body,
     closingCta({ title: 'Your data stays yours.', sub: `Export all of it whenever you like, on every plan and after one ends.`, href: SITE.signup }),

@@ -99,10 +99,10 @@ async function planIdFor(termKey: string, amountPaise: number): Promise<string> 
     period: shape.period,
     interval: shape.interval,
     item: {
-      name: `CreatorDesk — ${termKey}`,
+      name: `Blubanana ${termKey}`,
       amount: amountPaise,
       currency: 'INR',
-      description: 'CreatorDesk subscription',
+      description: 'Blubanana subscription',
     },
   })
 

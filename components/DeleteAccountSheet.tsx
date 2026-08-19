@@ -48,7 +48,7 @@ export function DeleteAccountSheet({
       <Text style={[styles.body, { color: c.textSecondary }]}>
         This permanently deletes your workspace and everything in it — every deal,
         brand, contact, payment, invoice, expense and file. It cannot be undone,
-        and nobody at CreatorDesk can recover it afterwards.
+        and nobody at Blubanana can recover it afterwards.
       </Text>
 
       <Text style={[styles.body, { color: c.textSecondary }]}>

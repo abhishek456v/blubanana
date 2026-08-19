@@ -6,7 +6,7 @@
 // fourth question unanswered is the one people write in about.
 
 import { COMPANY, PRICING, SITE, inr } from '../site.mjs'
-import { closingCta, faq, faqSchema, head, section } from '../ui.mjs'
+import { closingCta, faq, faqSchema, head, planCard, planCta, section } from '../ui.mjs'
 
 const QUESTIONS = [
   [
@@ -54,51 +54,25 @@ const INCLUDED = [
   ['Export everything, at any time', 'CSV and JSON, including while your account is read only.'],
 ]
 
-const table = `<div class="table-wrap reveal" style="margin-top:40px">
-  <table>
-    <thead>
-      <tr><th>Term</th><th class="num-cell" data-intro-only>List price</th><th class="num-cell">You pay</th><th class="num-cell">Per month</th><th class="num-cell">With ${PRICING.gstPercent}% GST</th></tr>
-    </thead>
-    <tbody>
-      ${PRICING.terms
-        .map(
-          (term) => `<tr>
-        <td><strong>${term.label}</strong>${term.key === 'yearly' ? ' <span style="color:var(--success)">· 20% off</span>' : ''}</td>
-        <td class="num-cell strike" data-intro-only>${inr(term.list)}</td>
-        <td class="num-cell"><strong>${inr(term.intro)}</strong></td>
-        <td class="num-cell">${inr(term.perMonth)}</td>
-        <td class="num-cell">${inr(Math.round(term.intro * (1 + PRICING.gstPercent / 100)))}</td>
-      </tr>`
-        )
-        .join('')}
-    </tbody>
-  </table>
-</div>`
-
-const hero = `<section class="hero" style="padding-bottom:0">
+const hero = `<section class="hero" style="padding-bottom:44px">
   <div class="container">
-    <div class="offer-chip reveal" data-intro-chip hidden>
-      Launch offer, ${PRICING.introPercent}% off
+    <div class="hero-grid">
+      <div>
+        <h1 class="reveal" style="max-width:13ch">One plan. Everything in it.</h1>
+        <p class="lede reveal" style="max-width:46ch;margin-top:18px">
+          No tier where reminders cost extra, and no add on for inviting your manager. The only decision is how long you pay for at a time.
+        </p>
+        <ul class="includes reveal" style="margin-top:28px">
+          <li><span class="tick">✓</span> ${PRICING.trialDays} day trial, and no card to start</li>
+          <li><span class="tick">✓</span> 30 days money back on any payment</li>
+          <li><span class="tick">✓</span> Cancel inside the app, with no retention call</li>
+          <li><span class="tick">✓</span> Your price is locked for the term you buy</li>
+        </ul>
+      </div>
+      <div class="reveal">
+        ${planCard({ pricing: PRICING, inr, subscribe: SITE.subscribe, trial: SITE.signup })}
+      </div>
     </div>
-    <h1 class="reveal" style="max-width:14ch">One plan. Everything in it.</h1>
-    <p class="lede reveal" style="max-width:60ch;margin-top:22px">
-      There is no tier where deadline reminders cost extra, and no add-on for inviting your
-      manager. The only decision is how long you would like to pay for at a time.
-    </p>
-    <div class="price-line reveal" style="margin-top:44px">
-      <span class="price-now figure" data-price-monthly>${inr(PRICING.introMonthly)}</span>
-      <span class="price-was figure strike" data-price-list>${inr(PRICING.listMonthly)}</span>
-      <span class="dim" style="font-size:18px">per month + GST</span>
-    </div>
-    <div class="btn-row reveal" style="margin-top:30px">
-      <a class="btn btn-lg" href="${SITE.signup}">Start free for ${PRICING.trialDays} days</a>
-      <a class="btn btn-lg btn-ghost" href="#included">What is included</a>
-    </div>
-    <p class="fine reveal">No card needed · Cancel any time · 30-day money-back guarantee</p>
-    ${table}
-    <p class="fine reveal" style="margin-top:16px">
-      All prices in Indian rupees. Card, UPI and netbanking through Razorpay.
-    </p>
   </div>
 </section>`
 
@@ -144,7 +118,7 @@ const straight = section({
     </div>`,
 })
 
-const questions = `<section class="band band-line">
+const questions = `<section class="band band-alt">
   <div class="container">
     ${head({ eyebrow: 'Billing questions', title: 'The rest of it', align: 'center' })}
     <div style="max-width:820px;margin:44px auto 0">${faq(QUESTIONS)}</div>
@@ -153,7 +127,7 @@ const questions = `<section class="band band-line">
 
 export default {
   path: '/pricing',
-  title: 'Pricing | CreatorDesk',
+  title: 'Pricing | Blubanana',
   description: `One plan with every feature, from ${inr(PRICING.introMonthly)} a month plus GST. ${PRICING.trialDays}-day free trial, no card required, and a 30-day money-back guarantee.`,
   schema: [faqSchema(QUESTIONS)],
   body: [

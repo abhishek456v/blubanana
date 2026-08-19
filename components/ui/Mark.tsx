@@ -7,7 +7,7 @@ export interface MarkProps {
 }
 
 /**
- * The CreatorDesk mark: an open ring, cut on the right.
+ * The Blubanana mark: an open ring, cut on the right.
  *
  * Reads as a C, but the opening is the point: this is a product about a
  * business loop that does not close on its own.

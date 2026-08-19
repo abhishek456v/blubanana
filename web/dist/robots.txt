@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://creatordesk.in/sitemap.xml
+Sitemap: https://blubanana.in/sitemap.xml

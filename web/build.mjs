@@ -89,7 +89,7 @@ cpSync(join(ROOT, 'assets'), join(DIST, 'assets'), { recursive: true })
 
 writeFileSync(
   join(DIST, 'assets', 'favicon.svg'),
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#08080C"/><path d="M25.5 9.8A11 11 0 1 0 25.5 22.2" stroke="#3B6EF6" stroke-width="4.6" stroke-linecap="round" fill="none"/></svg>`
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#0E2E6E"/><text x="16" y="23" font-family="system-ui,sans-serif" font-size="20" font-weight="700" fill="#FFFFFF" text-anchor="middle">b</text></svg>`
 )
 
 writeFileSync(

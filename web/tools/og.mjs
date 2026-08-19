@@ -23,18 +23,16 @@ const html = `<!DOCTYPE html><html><head>
     width: 1200px; height: 630px; background: #FFFFFF; color: #0B0B12;
     font-family: 'Google Sans Flex', system-ui, sans-serif;
     padding: 78px; display: flex; flex-direction: column; justify-content: space-between;
-    background-image: radial-gradient(620px 420px at 88% 8%, #E8EEFF, transparent 68%);
+    background-image: radial-gradient(620px 420px at 88% 8%, #E9EDF7, transparent 68%);
   }
-  .mark { display: flex; align-items: center; gap: 13px; font-size: 27px; font-weight: 600; letter-spacing: -.02em; }
+  .mark { font-size: 34px; font-weight: 700; letter-spacing: -.035em; }
+  .mark b { color: #0E2E6E; font-weight: 700; }
   h1 { font-size: 68px; line-height: 1.06; letter-spacing: -.035em; font-weight: 700; max-width: 17ch; }
   p { font-size: 27px; color: #55555F; margin-top: 24px; }
   .foot { display: flex; gap: 12px; }
-  .chip { padding: 11px 20px; border-radius: 999px; background: #F0F4FF; color: #2A57D8; font-size: 20px; font-weight: 500; }
+  .chip { padding: 11px 20px; border-radius: 999px; background: #F2F5FB; color: #0E2E6E; font-size: 20px; font-weight: 500; }
 </style></head><body>
-  <div class="mark">
-    <svg width="30" height="30" viewBox="0 0 32 32" fill="none"><path d="M27 8.5A12.5 12.5 0 1 0 27 23.5" stroke="#3B6EF6" stroke-width="5" stroke-linecap="round"/></svg>
-    CreatorDesk
-  </div>
+  <div class="mark"><b>blu</b>banana</div>
   <div>
     <h1>Brand deals, deadlines and payments. One app.</h1>
     <p>Made for Indian creators.</p>

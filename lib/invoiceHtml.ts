@@ -86,7 +86,7 @@ export function amountInWords(amount: number): string {
   return `${parts.join(' ')} ${n === 1 ? 'Rupee' : 'Rupees'} Only`
 }
 
-/** The CreatorDesk mark, as inline SVG so the PDF needs no image asset. */
+/** The Blubanana mark, as inline SVG so the PDF needs no image asset. */
 function markSvg(size: number, color: string): string {
   const c = size / 2
   const r = size / 2 - size * 0.11
@@ -417,7 +417,7 @@ export function buildInvoiceHtml(
 
   <div class="foot">
     <span>This is a computer-generated invoice and does not require a signature.</span>
-    <span class="mark">${markSvg(11, '#9A9186')} CreatorDesk</span>
+    <span class="mark">${markSvg(11, '#9A9186')} blubanana</span>
   </div>
 </body>
 </html>`.trim()

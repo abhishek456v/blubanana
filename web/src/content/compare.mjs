@@ -24,21 +24,21 @@ const ROWS = [
   ['Priced in rupees, on the April to March year', false, false, true],
 ]
 
-const table = `<div class="table-wrap reveal" style="margin-top:36px">
+const table = `<div class="table-wrap cmp reveal" style="margin-top:36px">
   <table>
     <thead><tr>
       <th style="min-width:260px"></th>
       <th class="num-cell">A spreadsheet</th>
       <th class="num-cell">A tool built abroad</th>
-      <th class="num-cell">CreatorDesk</th>
+      <th class="num-cell">Blubanana</th>
     </tr></thead>
     <tbody>
       ${ROWS.map(
         ([label, a, b, c]) => `<tr>
         <td><strong>${label}</strong></td>
-        <td class="num-cell ${a ? 'yes' : 'no'}">${a ? 'Yes' : 'No'}</td>
-        <td class="num-cell ${b ? 'yes' : 'no'}">${b ? 'Yes' : 'No'}</td>
-        <td class="num-cell ${c ? 'yes' : 'no'}">${c ? 'Yes' : 'No'}</td>
+        <td class="num-cell ${a ? 'yes' : 'no'}" data-label="A spreadsheet">${a ? 'Yes' : 'No'}</td>
+        <td class="num-cell ${b ? 'yes' : 'no'}" data-label="A tool built abroad">${b ? 'Yes' : 'No'}</td>
+        <td class="num-cell ${c ? 'yes' : 'no'}" data-label="Blubanana">${c ? 'Yes' : 'No'}</td>
       </tr>`
       ).join('')}
     </tbody>
@@ -92,9 +92,9 @@ const india = section({
 
 export default {
   path: '/compare',
-  title: 'CreatorDesk compared with a spreadsheet and foreign tools',
+  title: 'Blubanana compared with a spreadsheet and foreign tools',
   description:
-    'How CreatorDesk compares with a spreadsheet, a notes app and business tools built for other countries, on the work that actually costs an Indian creator money.',
+    'How Blubanana compares with a spreadsheet, a notes app and business tools built for other countries, on the work that actually costs an Indian creator money.',
   body: [
     hero,
     three,

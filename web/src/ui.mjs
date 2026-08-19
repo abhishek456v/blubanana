@@ -7,7 +7,7 @@
 // instead: no names, no brands, no account numbers, no rupee figures. Where a
 // quantity matters, it is a proportion.
 
-import { CREATOR, DEALS, INVOICE, MONEY, RATES, REMINDERS } from './demo.mjs'
+import { CREATOR, DEALS, INVOICE, MONEY, RATES, REMINDERS, TODAY } from './demo.mjs'
 
 export const esc = (s) =>
   String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -103,6 +103,63 @@ export function tabs(items) {
   return `<div class="reveal"><div class="tabs" role="tablist">${buttons}</div>${panels}</div>`
 }
 
+/**
+ * The three ways in, side by side.
+ *
+ * One trial button forces everybody down the same path, including the creator
+ * who has already decided and would rather just pay. Three buttons let each of
+ * them self select: subscribe, read what is in it, or try it first.
+ */
+export function planCta({ subscribe, trial, included = '#included', size = '' } = {}) {
+  return `<div class="btn-row plan-cta">
+    <a class="btn ${size}" href="${subscribe}">Subscribe</a>
+    <a class="btn btn-ghost ${size}" href="${included}">What is included</a>
+    <a class="btn btn-ghost ${size}" href="${trial}">14 day trial</a>
+  </div>`
+}
+
+/**
+ * The plan card: pick a term, see one price.
+ *
+ * Five rows of a table asked the reader to do the comparison themselves. A
+ * selector answers the only question they have, which is what it costs for the
+ * length they are thinking of, and states the renewal price in the same breath
+ * so the number is never a surprise later.
+ */
+export function planCard({ pricing, inr, subscribe, trial, compact = false }) {
+  const terms = pricing.terms
+    .map(
+      (term, i) => `<button class="term-pill" data-term="${i}" aria-pressed="${term.key === 'yearly'}">
+        ${term.label}${term.key === 'yearly' ? `<span class="save">Save ${pricing.yearlyDiscount}%</span>` : ''}
+      </button>`
+    )
+    .join('')
+
+  const data = pricing.terms.map((term) => ({
+    label: term.label,
+    months: term.months,
+    total: inr(term.intro),
+    list: inr(term.list),
+    perMonth: inr(term.perMonth),
+    withGst: inr(Math.round(term.intro * (1 + pricing.gstPercent / 100))),
+    save: Math.round(((term.list - term.intro) / term.list) * 100),
+  }))
+
+  return `<div class="price-card" data-plan='${JSON.stringify(data).replace(/'/g, '&#39;')}'>
+    <div class="offer-chip" data-intro-chip hidden>Launch offer, ${pricing.introPercent}% off</div>
+    <div class="term-pills">${terms}</div>
+    <div class="price-line">
+      <span class="price-now figure" data-plan-total>-</span>
+      <span class="price-was figure strike" data-plan-list>-</span>
+      <span class="save-badge" data-plan-save></span>
+    </div>
+    <p class="dim" style="font-size:16px"><b data-plan-permonth></b> a month, <span data-plan-gst></span> with ${pricing.gstPercent}% GST</p>
+    <p class="fine" data-plan-renew style="margin-top:6px"></p>
+    ${planCta({ subscribe, trial })}
+    ${compact ? '' : `<p class="fine" style="margin-top:16px">Card, UPI and netbanking. Cancel any time, and 30 days money back.</p>`}
+  </div>`
+}
+
 export function closingCta({ title, sub, primary = 'Start free', href, secondary }) {
   return `<section class="close-cta">
     <div class="container reveal">
@@ -137,7 +194,7 @@ export function uiDashboard() {
     <div class="app-body">
       <div class="app-head">
         <div>
-          <div class="app-date">Tuesday, 19 August</div>
+          <div class="app-date">${TODAY}</div>
           <div class="app-hi">Morning, ${CREATOR.name.split(' ')[0]}</div>
         </div>
         <div class="app-avatar">${CREATOR.initials}</div>
@@ -187,7 +244,7 @@ export function uiDeal() {
     </div>
     <div class="ui-row">
       <div class="ui-avatar" style="background:var(--green)">${icon('check', { size: 16 })}</div>
-      <div><div class="ui-label">Advance, 50%</div><div class="ui-meta">Received 2 August</div></div>
+      <div><div class="ui-label">Advance, 50%</div><div class="ui-meta">Received on signing</div></div>
       <span class="ui-label">₹22,500</span>
     </div>
     <div class="ui-row">

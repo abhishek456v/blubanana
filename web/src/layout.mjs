@@ -7,8 +7,14 @@
 
 import { COMPANY, FOOTER, NAV, PRICING, SITE, SUPABASE } from './site.mjs'
 
-/** The mark, as inline SVG — the same C the app draws and the invoice carries. */
-const LOGO = `<svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M27 8.5A12.5 12.5 0 1 0 27 23.5" stroke="#3B6EF6" stroke-width="5" stroke-linecap="round"/></svg>`
+/**
+ * The wordmark.
+ *
+ * Set in lower case with "blu" carrying the accent, which is the whole logo:
+ * two words, one colour break, no icon. A mark drawn badly is worse than no
+ * mark, and a name this distinctive does not need one to be recognisable.
+ */
+const LOGO = `<span class="wm"><span class="wm-a">${SITE.wordmark[0]}</span>${SITE.wordmark[1]}</span>`
 
 const CHEV = `<svg class="chev" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`
 
@@ -35,7 +41,7 @@ function header() {
 
   return `<header class="header">
   <div class="container">
-    <a class="logo" href="/">${LOGO} ${SITE.name}</a>
+    <a class="logo" href="/">${LOGO}</a>
     <nav class="nav">${items}</nav>
     <div class="nav-actions">
       <button class="theme-toggle" aria-label="Switch between light and dark">${THEME_ICONS}</button>
@@ -48,7 +54,7 @@ function header() {
 
 <div class="sheet" id="sheet">
   <div class="sheet-top">
-    <a class="logo" href="/">${LOGO} ${SITE.name}</a>
+    <a class="logo" href="/">${LOGO}</a>
     <button class="burger" aria-label="Close menu">✕</button>
   </div>
   ${NAV.map((entry) =>
@@ -73,7 +79,7 @@ function footer() {
   <div class="container">
     <div class="footer-cols">
       <div>
-        <a class="logo" href="/" style="margin-bottom:16px">${LOGO} ${SITE.name}</a>
+        <a class="logo" href="/" style="margin-bottom:16px">${LOGO}</a>
         <p class="fine" style="margin-bottom:10px">${SITE.tagline}. Built in India, for Indian creators.</p>
         <p class="fine">${COMPANY.address}</p>
         <p class="fine"><a href="mailto:${COMPANY.email}">${COMPANY.email}</a> · ${COMPANY.phone}</p>
