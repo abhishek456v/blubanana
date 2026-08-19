@@ -3,11 +3,17 @@
 Two lists. The first is things only you can do, because they need a login, a
 bank account, a legal identity or a decision. The second is building work.
 
-Updated 19 August 2026.
+Updated 20 August 2026.
 
 ---
 
 ## Your list
+
+### 0. Push the code to GitHub
+
+Everything built in this session is on this machine only. Sixty eight commits
+have never been pushed. If the laptop dies tonight, all of it goes with it. Say
+the word and it takes one command.
 
 ### 1. Four contact details  ·  blocks everything to do with money
 
@@ -88,10 +94,6 @@ in one command.
 
 ### Website, still to build
 
-- **Eight product pages.** One per feature: logging deals, deadlines, payments,
-  invoices, tax, the rate card, the team, and working offline. Right now those
-  are sections of the homepage. Separate pages are how someone searching for one
-  specific thing finds you.
 - **Three audience pages.** For Instagram creators, for YouTube creators, and
   for managers. The same argument in each audience's own words.
 - **About and Security.** Who built it and why; how the data is kept apart. The
