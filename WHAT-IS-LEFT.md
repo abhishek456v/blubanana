@@ -9,12 +9,6 @@ Updated 20 August 2026.
 
 ## Your list
 
-### 0. Push the code to GitHub
-
-Everything built in this session is on this machine only. Sixty eight commits
-have never been pushed. If the laptop dies tonight, all of it goes with it. Say
-the word and it takes one command.
-
 ### 1. Four contact details  ·  blocks everything to do with money
 
 The website will not finish building until these are real, on purpose, because a
@@ -69,24 +63,20 @@ An Apple Developer account, which costs about ₹8,900 a year. Needed before the
 iPhone app can be tested on a real device or submitted. Android does not need
 anything equivalent to start.
 
-### 7. Rename the repository on GitHub
+### 7. One decision left
 
-The code now lives in three clear folders, but the repository is still called
-`crm-app`. Renaming it needs your GitHub login:
+**Do you want analytics?** Plausible is about ₹800 a month and needs no cookie
+banner. Google Analytics is free and does need one. Or nothing for now.
 
-1. Open the repository on GitHub, then **Settings**
-2. Change **Repository name** to `blubanana`, and press Rename
+### 8. Settled
 
-GitHub forwards the old address automatically, so nothing breaks while you get
-round to it. Tell me once it is done and I will point this copy at the new name
-in one command.
-
-### 8. Two decisions
-
-- **Are you a creator yourself?** If so the site can say "built by a creator",
-  which is worth a great deal and which I will not write unless it is true.
-- **Do you want analytics?** Plausible is about ₹800 a month and needs no cookie
-  banner. Google Analytics is free and does. Or nothing for now.
+- **Who built it.** You are not a creator; a creator is helping you find the
+  real problems. The About page says exactly that, because it is true and it
+  reads better than the version everyone else writes. No names are on the site.
+- **The repository** is renamed to `blubanana` and this copy points at it.
+- **The brand colour** is `#023C85`. The dark theme uses a lightened cut of the
+  same hue for filled buttons, because the original against a black page is
+  1.99:1 and the button disappears.
 
 ---
 
@@ -94,12 +84,9 @@ in one command.
 
 ### Website, still to build
 
-- **Three audience pages.** For Instagram creators, for YouTube creators, and
-  for managers. The same argument in each audience's own words.
-- **About and Security.** Who built it and why; how the data is kept apart. The
-  security page matters more than it sounds, because it is what a manager or a
-  brand reads before trusting the product with a creator's money.
-- **A blog.** Structure first, then articles.
+- **A blog.** Structure first, then articles. Held back on purpose: a blog with
+  three posts and no fourth reads worse than no blog, so this is worth starting
+  when there is someone to keep it going.
 
 ### Product, still to build
 
@@ -124,5 +111,7 @@ in one command.
 The app, the platform and the website are built. Deals, deadlines, reminders,
 payments, GST invoices, tax, the rate card, expenses, team permissions, export,
 account deletion, offline capture, and the subscription and billing plumbing.
-Thirteen pages of website including five working calculators. All of it is
+Twenty seven pages of website: eight feature pages, three audience pages,
+About, Security, five working calculators, the comparison, pricing and the
+legal set. All of it is
 waiting on the list above rather than on more building.

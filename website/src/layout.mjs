@@ -7,6 +7,7 @@
 
 import { COMPANY, FOOTER, NAV, PRICING, SITE, SUPABASE } from './site.mjs'
 import { PRODUCT_NAV } from './content/product.mjs'
+import { AUDIENCE_NAV } from './content/audience.mjs'
 
 /**
  * The wordmark.
@@ -23,8 +24,9 @@ const BURGER = `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d=
 
 const THEME_ICONS = `<svg class="sun" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="4"/><path d="M11 2v2M11 18v2M2 11h2M18 11h2M4.6 4.6l1.4 1.4M16 16l1.4 1.4M17.4 4.6 16 6M6 16l-1.4 1.4"/></svg><svg class="moon" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13.4A7.6 7.6 0 0 1 8.6 4 7.6 7.6 0 1 0 18 13.4Z"/></svg>`
 
-/** `'product'` stands in for the feature pages, which describe themselves. */
-const resolve = (items) => (items === 'product' ? PRODUCT_NAV : items)
+/** The page sets describe themselves, so a new one joins the menu by existing. */
+const SETS = { product: PRODUCT_NAV, audience: AUDIENCE_NAV }
+const resolve = (items) => SETS[items] ?? items
 
 function header() {
   const items = NAV.map((entry) => {

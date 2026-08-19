@@ -20,7 +20,7 @@
 :root {
   --bg: #FFFFFF;
   --bg-alt: #F6F7F9;
-  --bg-tint: #EFF8FC;
+  --bg-tint: #F1F5FC;
   --surface: #FFFFFF;
   --border: rgba(11, 11, 18, 0.09);
   --border-strong: rgba(11, 11, 18, 0.16);
@@ -29,20 +29,16 @@
   --text-3: #85858F;
 
   /*
-   * Olympic blue, the same #008ECC in both themes.
-   *
-   * Two tokens rather than one, because a colour that works as a fill does not
-   * automatically work as text. White on #008ECC is about 3.4:1, which is fine
-   * for a button label or a filled tile and short of the 4.5:1 that body text
-   * needs. So `--accent` fills things and `--accent-text` is a darkened cut of
-   * the same hue for links and small type on the page ground.
+   * #023C85. Deep enough that white sits on it at 10.6:1, so a button label, a
+   * filled tile and a link on the page ground can all be the same colour with
+   * no darkened cut needed. The dark theme is where it needs help; see below.
    */
-  --accent: #008ECC;
-  --accent-hover: #0079AF;
-  --accent-text: #00658F;
-  --accent-soft: #E1F3FB;
+  --accent: #023C85;
+  --accent-hover: #0B4EA3;
+  --accent-text: #023C85;
+  --accent-soft: #E7EDF8;
   --on-accent: #FFFFFF;
-  --grad-card: linear-gradient(142deg, #35B4E8 0%, #008ECC 50%, #005E88 100%);
+  --grad-card: linear-gradient(142deg, #1E5CB8 0%, #023C85 52%, #011E45 100%);
 
   --green: #0F7A4A;
   --green-soft: #E4F5EC;
@@ -74,7 +70,7 @@
   :root:not([data-theme='light']) {
     --bg: #000000;
     --bg-alt: #0B0B0E;
-    --bg-tint: #04161F;
+    --bg-tint: #060D1A;
     --surface: #131317;
     --border: rgba(255, 255, 255, 0.10);
     --border-strong: rgba(255, 255, 255, 0.20);
@@ -82,14 +78,18 @@
     --text-2: rgba(255, 255, 255, 0.66);
     --text-3: rgba(255, 255, 255, 0.44);
 
-    --accent: #008ECC;
-    --accent-hover: #21A3DC;
-    /* Lifted off the fill colour, because #008ECC as text on black is a
-       squint. The fill stays exactly the brand blue. */
-    --accent-text: #55BCE8;
-    --accent-soft: rgba(0, 142, 204, 0.20);
+    /*
+     * Lightened, and not by preference. #023C85 against a black page measures
+     * 1.99:1, so a filled control and the page behind it are nearly the same
+     * shade and the button's edge disappears. This cut of the same hue reaches
+     * 4.89:1 against the page, and still holds white text at 4.29:1.
+     */
+    --accent: #3B79D6;
+    --accent-hover: #5A92E4;
+    --accent-text: #8FB4EE;
+    --accent-soft: rgba(59, 121, 214, 0.20);
     --on-accent: #FFFFFF;
-    --grad-card: linear-gradient(142deg, #21A3DC 0%, #008ECC 52%, #00435F 100%);
+    --grad-card: linear-gradient(142deg, #5A92E4 0%, #3B79D6 52%, #10305E 100%);
 
     --green: #46D68F;
     --green-soft: rgba(70, 214, 143, 0.14);
@@ -107,7 +107,7 @@
 :root[data-theme='dark'] {
   --bg: #000000;
   --bg-alt: #0B0B0E;
-  --bg-tint: #04161F;
+  --bg-tint: #060D1A;
   --surface: #131317;
   --border: rgba(255, 255, 255, 0.10);
   --border-strong: rgba(255, 255, 255, 0.20);
@@ -115,14 +115,18 @@
   --text-2: rgba(255, 255, 255, 0.66);
   --text-3: rgba(255, 255, 255, 0.44);
 
-  --accent: #008ECC;
-  --accent-hover: #21A3DC;
-  /* Lifted off the fill colour, because #008ECC as text on black is a
-     squint. The fill stays exactly the brand blue. */
-  --accent-text: #55BCE8;
-  --accent-soft: rgba(0, 142, 204, 0.20);
+  /*
+   * Lightened, and not by preference. #023C85 against a black page measures
+   * 1.99:1, so a filled control and the page behind it are nearly the same
+   * shade and the button's edge disappears. This cut of the same hue reaches
+   * 4.89:1 against the page, and still holds white text at 4.29:1.
+   */
+  --accent: #3B79D6;
+  --accent-hover: #5A92E4;
+  --accent-text: #8FB4EE;
+  --accent-soft: rgba(59, 121, 214, 0.20);
   --on-accent: #FFFFFF;
-  --grad-card: linear-gradient(142deg, #21A3DC 0%, #008ECC 52%, #00435F 100%);
+  --grad-card: linear-gradient(142deg, #5A92E4 0%, #3B79D6 52%, #10305E 100%);
 
   --green: #46D68F;
   --green-soft: rgba(70, 214, 143, 0.14);

@@ -89,7 +89,8 @@ for (const [name, path, width, height, fullPage] of SHOTS) {
   const onAccent = await page.evaluate(() => {
     const out = []
     document.querySelectorAll('body *').forEach((el) => {
-      if (getComputedStyle(el).backgroundColor !== 'rgb(0, 142, 204)') return
+      const bg = getComputedStyle(el).backgroundColor
+      if (bg !== 'rgb(2, 60, 133)' && bg !== 'rgb(59, 121, 214)') return
       if (!el.getBoundingClientRect().width) return
       ;[el, ...el.querySelectorAll('*')].forEach((kid) => {
         const c = getComputedStyle(kid).color

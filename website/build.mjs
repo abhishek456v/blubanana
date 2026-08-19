@@ -29,12 +29,14 @@ import refunds from './src/content/refunds.mjs'
 import compare from './src/content/compare.mjs'
 import tools from './src/content/tools.mjs'
 import product from './src/content/product.mjs'
+import audience from './src/content/audience.mjs'
+import company from './src/content/company.mjs'
 
 const DRAFT = process.argv.includes('--draft')
 const ROOT = dirname(fileURLToPath(import.meta.url))
 const DIST = join(ROOT, 'dist')
 
-const PAGES = [home, pricing, compare, contact, terms, privacy, refunds, ...product, ...tools]
+const PAGES = [home, pricing, compare, contact, terms, privacy, refunds, ...product, ...audience, ...company, ...tools]
 
 rmSync(DIST, { recursive: true, force: true })
 mkdirSync(DIST, { recursive: true })
@@ -90,7 +92,7 @@ cpSync(join(ROOT, 'assets'), join(DIST, 'assets'), { recursive: true })
 
 writeFileSync(
   join(DIST, 'assets', 'favicon.svg'),
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#008ECC"/><text x="16" y="23" font-family="system-ui,sans-serif" font-size="20" font-weight="700" fill="#FFFFFF" text-anchor="middle">b</text></svg>`
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#023C85"/><text x="16" y="23" font-family="system-ui,sans-serif" font-size="20" font-weight="700" fill="#FFFFFF" text-anchor="middle">b</text></svg>`
 )
 
 writeFileSync(

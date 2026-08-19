@@ -117,6 +117,7 @@ export const NAV = [
   { label: 'Features', href: '/features', items: 'product' },
   { label: 'Free tools', href: '/tools', items: TOOLS.map(([href, title, note]) => [href, title, note]) },
   { label: 'Pricing', href: '/pricing' },
+  { label: 'Who it is for', href: '/for/instagram-creators', items: 'audience' },
   { label: 'Compare', href: '/compare' },
   { label: 'Contact', href: '/contact' },
 ]
@@ -127,6 +128,8 @@ export const FOOTER = [
   {
     title: 'Company',
     links: [
+      ['/about', 'About'],
+      ['/security', 'Security'],
       ['/pricing', 'Pricing'],
       ['/compare', 'Compare'],
       ['/contact', 'Contact'],
