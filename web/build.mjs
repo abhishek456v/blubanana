@@ -12,7 +12,8 @@
 // one thing that fails a Razorpay merchant activation — so the build now treats
 // that as an error rather than a note in a README nobody re-reads.
 
-import { cpSync, mkdirSync, readdirSync, rmSync, writeFileSync, existsSync } from 'node:fs'
+import { cpSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync, existsSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { page } from './src/layout.mjs'
@@ -37,27 +38,9 @@ const PAGES = [home, pricing, compare, contact, terms, privacy, refunds, ...tool
 rmSync(DIST, { recursive: true, force: true })
 mkdirSync(DIST, { recursive: true })
 
-// ── render ──────────────────────────────────────────────────────────────────
-const written = []
-for (const spec of PAGES) {
-  const html = page(spec)
-  // Clean URLs: /pricing is a directory with an index.html in it, so the site
-  // works identically on Cloudflare Pages, Netlify, S3 and a plain nginx.
-  const dir = spec.path === '/' ? DIST : join(DIST, spec.path.replace(/^\//, ''))
-  mkdirSync(dir, { recursive: true })
-  writeFileSync(join(dir, 'index.html'), html)
-  written.push({ ...spec, html, file: join(dir, 'index.html') })
-}
-
-// ── static files ────────────────────────────────────────────────────────────
-cpSync(join(ROOT, 'styles.css'), join(DIST, 'styles.css'))
-cpSync(join(ROOT, 'app.js'), join(DIST, 'app.js'))
-cpSync(join(ROOT, 'assets'), join(DIST, 'assets'), { recursive: true })
-
-// The calculators, compiled from the app's own modules rather than rewritten.
-// `lib/tax.ts` and `constants/gst.ts` are pure arithmetic with no imports, so
-// they cross into a browser bundle untouched, and the advance tax split on the
-// website is then literally the same function as the one in the app.
+// ── assets, fingerprinted ───────────────────────────────────────────────────
+// The bundle has to exist before any page is rendered, because its hash goes
+// into every <script> tag.
 await esbuild({
   entryPoints: [join(ROOT, 'browser', 'tools.ts')],
   bundle: true,
@@ -68,6 +51,41 @@ await esbuild({
   outfile: join(DIST, 'tools.js'),
   logLevel: 'warning',
 })
+
+const hash = (contents) => createHash('sha1').update(contents).digest('hex').slice(0, 8)
+
+function fingerprint(name, contents) {
+  const dot = name.lastIndexOf('.')
+  const file = `${name.slice(0, dot)}.${hash(contents)}${name.slice(dot)}`
+  writeFileSync(join(DIST, file), contents)
+  return `/${file}`
+}
+
+const cssSource = readFileSync(join(ROOT, 'styles.css'))
+const jsSource = readFileSync(join(ROOT, 'app.js'))
+const toolsSource = readFileSync(join(DIST, 'tools.js'))
+rmSync(join(DIST, 'tools.js'))
+
+const assets = {
+  css: fingerprint('styles.css', cssSource),
+  js: fingerprint('app.js', jsSource),
+  tools: fingerprint('tools.js', toolsSource),
+}
+
+// ── render ──────────────────────────────────────────────────────────────────
+const written = []
+for (const spec of PAGES) {
+  const html = page({ ...spec, assets })
+  // Clean URLs: /pricing is a directory with an index.html in it, so the site
+  // works identically on Cloudflare Pages, Netlify, S3 and a plain nginx.
+  const dir = spec.path === '/' ? DIST : join(DIST, spec.path.replace(/^\//, ''))
+  mkdirSync(dir, { recursive: true })
+  writeFileSync(join(dir, 'index.html'), html)
+  written.push({ ...spec, html, file: join(dir, 'index.html') })
+}
+
+// ── static files ────────────────────────────────────────────────────────────
+cpSync(join(ROOT, 'assets'), join(DIST, 'assets'), { recursive: true })
 
 writeFileSync(
   join(DIST, 'assets', 'favicon.svg'),
@@ -100,7 +118,7 @@ for (const p of written) {
   // until a visitor finds it.
   for (const [, href] of p.html.matchAll(/href="(\/[^"#]*)(#[^"]*)?"/g)) {
     const path = href.replace(/\/$/, '') || '/'
-    if (path.startsWith('/assets/') || path === '/styles.css' || path === '/app.js') continue
+    if (path.startsWith('/assets/') || /\.(css|js)$/.test(path)) continue
     if (!routes.has(path)) warn(`${p.path} → dead link ${href}`)
   }
   // Every image the markup asks for must exist in the asset folder.

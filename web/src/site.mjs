@@ -109,6 +109,7 @@ export const TOOLS = [
 export const NAV = [
   {
     label: 'Product',
+    href: '/#features',
     items: [
       ['/#capture', 'Log a deal in 30 seconds', 'A screenshot, your voice, or typing'],
       ['/#deadlines', 'Deadlines that reach you', 'Sent from a server, not your phone'],
@@ -118,7 +119,7 @@ export const NAV = [
       ['/#ratecard', 'Your rate card', 'Built from what you have actually charged'],
     ],
   },
-  { label: 'Free tools', items: TOOLS.map(([href, title, note]) => [href, title, note]) },
+  { label: 'Free tools', href: '/tools', items: TOOLS.map(([href, title, note]) => [href, title, note]) },
   { label: 'Pricing', href: '/pricing' },
   { label: 'Compare', href: '/compare' },
   { label: 'Contact', href: '/contact' },

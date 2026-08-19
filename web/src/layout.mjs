@@ -24,8 +24,11 @@ function header() {
     const menu = entry.items
       .map(([href, title, note]) => `<a href="${href}"><span class="mt">${title}</span><span class="md">${note}</span></a>`)
       .join('')
+    // The parent is a real link as well as a menu. Making a visitor open a
+    // dropdown to reach the section it is named after is a small tax charged on
+    // every visit, and the menu still opens on hover for anyone who wants it.
     return `<div class="nav-item">
-        <button class="nav-link" aria-expanded="false">${entry.label}${CHEV}</button>
+        <a class="nav-link" href="${entry.href}">${entry.label}${CHEV}</a>
         <div class="menu">${menu}</div>
       </div>`
   }).join('')
@@ -50,7 +53,7 @@ function header() {
   </div>
   ${NAV.map((entry) =>
     entry.items
-      ? `<h5>${entry.label}</h5>${entry.items.map(([href, title]) => `<a href="${href}">${title}</a>`).join('')}`
+      ? `<h5><a href="${entry.href}" style="padding:0;border:none;font:inherit;color:inherit">${entry.label}</a></h5>${entry.items.map(([href, title]) => `<a href="${href}">${title}</a>`).join('')}`
       : `<a href="${entry.href}">${entry.label}</a>`
   ).join('')}
   <a class="btn" href="${SITE.signup}">Start free</a>
@@ -94,7 +97,16 @@ function footer() {
  * build-time figure stands — a number slightly out of date is honest; a
  * counter that renders blank looks broken.
  */
-export function page({ title, description, path, body, schema = [], announce = true, script = '' }) {
+/**
+ * `assets` carries content hashed filenames.
+ *
+ * Without them a browser that has seen this site before keeps serving itself
+ * the old stylesheet, and a redesign appears not to have happened. That is not
+ * hypothetical: it is exactly what went wrong on the first review of this
+ * rebuild. A hash in the filename makes a stale cache impossible rather than
+ * unlikely.
+ */
+export function page({ title, description, path, body, schema = [], announce = true, script = '', assets }) {
   const canonical = `${SITE.origin}${path === '/' ? '' : path}`
   const structured = schema.length
     ? `<script type="application/ld+json">${JSON.stringify(schema.length === 1 ? schema[0] : schema)}</script>`
@@ -132,7 +144,7 @@ export function page({ title, description, path, body, schema = [], announce = t
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@400..700&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@400..700&display=swap">
-<link rel="stylesheet" href="/styles.css">
+<link rel="stylesheet" href="${assets.css}">
 <script>
   /* Applied before the first paint. A stored preference arriving a frame late
      is a white flash on a dark page, which is worse than no toggle at all. */
@@ -150,8 +162,8 @@ ${header()}
 ${body}
 </main>
 ${footer()}
-<script src="/app.js" defer></script>
-${script ? `<script src="/tools.js"></script>\n<script>${script}</script>` : ''}
+<script src="${assets.js}" defer></script>
+${script ? `<script src="${assets.tools}"></script>\n<script>${script}</script>` : ''}
 </body>
 </html>`
 }

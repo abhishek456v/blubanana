@@ -13,8 +13,8 @@
 
 import { PRICING, SITE, inr } from '../site.mjs'
 import {
-  closingCta, faq, faqSchema, head, icon, section, split,
-  uiCapture, uiDeal, uiInvoice, uiMoney, uiRateCard, uiReminders, uiTaxCalendar, uiTeam,
+  closingCta, faq, faqSchema, head, icon, section, split, tabs,
+  uiCapture, uiDashboard, uiDeal, uiInvoice, uiMoney, uiRateCard, uiReminders, uiTaxCalendar, uiTeam,
 } from '../ui.mjs'
 
 const QUESTIONS = [
@@ -56,10 +56,7 @@ const hero = `<section class="hero">
         </div>
         <p class="fine reveal">No card needed. Works on the web, iPhone and Android.</p>
       </div>
-      <div class="reveal" style="display:grid;gap:14px;justify-items:center">
-        ${uiDeal()}
-        ${uiReminders({ count: 2, width: '430px' })}
-      </div>
+      <div class="reveal">${uiDashboard()}</div>
     </div>
   </div>
 </section>`
@@ -86,64 +83,69 @@ const promises = section({
     </div>`,
 })
 
-const capture = split({
-  id: 'capture',
-  art: uiCapture(),
-  words: `
-    <div class="eyebrow">Getting it in</div>
-    <h2>A deal takes thirty seconds</h2>
-    <p class="lede" style="margin-top:16px">Screenshot the brand's message, say it out loud, or type it. You check it before it saves.</p>`,
+const features = section({
+  id: 'features',
+  inner: `
+    ${head({
+      eyebrow: 'What it does',
+      title: 'Six jobs, one place',
+      lede: 'The work that sits between agreeing a deal and the money arriving.',
+    })}
+    ${tabs([
+      {
+        id: 'capture',
+        label: 'Log a deal',
+        title: 'A deal takes thirty seconds',
+        copy: 'Screenshot the brand’s message, say it out loud, or type it. You check it before it saves.',
+        art: uiCapture(),
+      },
+      {
+        id: 'deadlines',
+        label: 'Deadlines',
+        title: 'Reminders that actually arrive',
+        copy: 'Sent from our servers, so they reach you whether or not the app is open, and even when the shoot had no signal.',
+        art: uiReminders(),
+      },
+      {
+        id: 'money',
+        label: 'Payments',
+        title: 'Chase without writing the message',
+        copy: 'The follow up is already written and gets firmer the longer it goes. You read it and send it yourself.',
+        art: uiMoney(),
+      },
+      {
+        id: 'invoices',
+        label: 'Invoices',
+        title: 'Accepted first time',
+        copy: 'Correct tax, your payment code on the document, and one tap to send it on WhatsApp.',
+        art: uiInvoice(),
+      },
+      {
+        id: 'tax',
+        label: 'Tax',
+        title: 'Know before the date, not after',
+        copy: 'Your income, your expenses, and the four dates the law sets, worked out as you go.',
+        art: uiTaxCalendar(),
+      },
+      {
+        id: 'ratecard',
+        label: 'Rate card',
+        title: 'A rate card you did not have to write',
+        copy: 'Built from what you have actually charged, so you are not guessing when a brand asks.',
+        art: uiRateCard(),
+      },
+    ])}`,
 })
 
-const deadlines = split({
-  id: 'deadlines',
-  flip: true,
+const steps = section({
   className: 'band-alt',
-  art: uiReminders(),
-  words: `
-    <div class="eyebrow">Staying on top of it</div>
-    <h2>Reminders that actually arrive</h2>
-    <p class="lede" style="margin-top:16px">They are sent from our servers, so they reach you whether or not the app is open, and even when you had no signal on the shoot.</p>`,
-})
-
-const money = split({
-  id: 'money',
-  art: uiMoney(),
-  words: `
-    <div class="eyebrow">The awkward part</div>
-    <h2>Chase a payment without writing the message</h2>
-    <p class="lede" style="margin-top:16px">The follow up is already written and gets firmer the longer it goes. You read it and send it yourself.</p>`,
-})
-
-const invoices = split({
-  id: 'invoices',
-  flip: true,
-  className: 'band-alt',
-  art: uiInvoice(),
-  words: `
-    <div class="eyebrow">Getting paid</div>
-    <h2>An invoice the brand's finance team accepts first time</h2>
-    <p class="lede" style="margin-top:16px">Correct tax, your payment code on the document, and one tap to send it on WhatsApp.</p>`,
-})
-
-const tax = split({
-  id: 'tax',
-  art: uiTaxCalendar(),
-  words: `
-    <div class="eyebrow">March</div>
-    <h2>Know what to set aside before the date, not after</h2>
-    <p class="lede" style="margin-top:16px">Your income, your expenses, the four dates the law sets, and a year end summary your CA can use.</p>`,
-})
-
-const ratecard = split({
-  id: 'ratecard',
-  flip: true,
-  className: 'band-alt',
-  art: uiRateCard(),
-  words: `
-    <div class="eyebrow">When a brand asks</div>
-    <h2>A rate card you did not have to write</h2>
-    <p class="lede" style="margin-top:16px">Built from what you have actually charged, so you are not guessing at the moment you are most likely to undersell yourself.</p>`,
+  inner: `
+    ${head({ eyebrow: 'How it goes', title: 'Three steps, then it runs itself', align: 'center' })}
+    <div class="steps reveal" style="margin-top:44px">
+      <div class="step"><h4>Bring what you already have</h4><p>Point it at your spreadsheet or a photo of your notes. Every live deal comes across.</p></div>
+      <div class="step"><h4>Log the next one in the chat</h4><p>Screenshot the message. The brief, the rate and the dates are read out for you to check.</p></div>
+      <div class="step"><h4>Answer your phone</h4><p>It tells you what is due, what is late, and what to send. You approve every message.</p></div>
+    </div>`,
 })
 
 const team = split({
@@ -263,8 +265,7 @@ export default {
     faqSchema(QUESTIONS),
   ],
   body: [
-    hero, promises, capture, deadlines, money, invoices, tax, ratecard, team,
-    compare, india, pricing, questions,
+    hero, promises, features, steps, team, compare, india, pricing, questions,
     closingCta({
       title: 'Start with the deals you already have',
       sub: `${PRICING.trialDays} days free, no card, and the importer brings them across in minutes.`,

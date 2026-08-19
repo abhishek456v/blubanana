@@ -7,6 +7,8 @@
 // instead: no names, no brands, no account numbers, no rupee figures. Where a
 // quantity matters, it is a proportion.
 
+import { CREATOR, DEALS, INVOICE, MONEY, RATES, REMINDERS } from './demo.mjs'
+
 export const esc = (s) =>
   String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
@@ -77,6 +79,30 @@ export function faqSchema(items) {
   }
 }
 
+/**
+ * Tabbed features.
+ *
+ * Each panel carries the id the navigation points at, so a menu item can open
+ * the site at the right tab instead of scrolling to a heading. With JavaScript
+ * off the first panel is simply the one shown and every link still resolves.
+ */
+export function tabs(items) {
+  const buttons = items
+    .map((item, i) => `<button class="tab" role="tab" aria-selected="${i === 0}" aria-controls="${item.id}" id="tab-${item.id}">${item.label}</button>`)
+    .join('')
+  const panels = items
+    .map(
+      (item, i) => `<div class="panel" role="tabpanel" id="${item.id}" aria-labelledby="tab-${item.id}"${i === 0 ? ' data-active' : ''}>
+        <div class="split split-tab">
+          <div>${item.art}</div>
+          <div><h3>${item.title}</h3><p class="lede" style="margin-top:14px">${item.copy}</p></div>
+        </div>
+      </div>`
+    )
+    .join('')
+  return `<div class="reveal"><div class="tabs" role="tablist">${buttons}</div>${panels}</div>`
+}
+
 export function closingCta({ title, sub, primary = 'Start free', href, secondary }) {
   return `<section class="close-cta">
     <div class="container reveal">
@@ -92,50 +118,66 @@ export function closingCta({ title, sub, primary = 'Start free', href, secondary
 
 /* ── the drawings ──────────────────────────────────────────────────────── */
 
-const AV = { blue: '#3B6EF6', violet: '#7C5CF0', green: '#0F9D63', amber: '#E08A17', rose: '#E2557A' }
+const chipClass = { blue: 'chip-blue', green: 'chip-green', amber: 'chip-amber', rose: 'chip-rose' }
 
-function avatar(color, glyph) {
-  return `<div class="ui-avatar" style="background:${color}">${icon(glyph, { size: 17 })}</div>`
+function bavatar(d) {
+  return `<div class="bavatar" style="background:${d.tint}">${d.initials}</div>`
 }
 
-/** Four ways a deal gets in, and the form it lands on. */
-export function uiCapture() {
-  return `<div class="ui" style="max-width:400px">
-    <div class="ui-top"><span class="ui-title">New deal</span><span class="ui-sub">about 30 seconds</span></div>
-    <div class="chip-row">
-      <span class="chip chip-blue">${icon('camera', { size: 13 })} Screenshot</span>
-      <span class="chip">${icon('mic', { size: 13 })} Voice</span>
-      <span class="chip">${icon('keyboard', { size: 13 })} Type</span>
-      <span class="chip">${icon('refresh', { size: 13 })} Repeat</span>
+/** The dashboard, which is what a creator opens the app to see. */
+export function uiDashboard() {
+  return `<div class="app">
+    <div class="app-rail">
+      <i class="on">${icon('chart', { size: 17 })}</i>
+      <i>${icon('bolt', { size: 17 })}</i>
+      <i>${icon('wallet', { size: 17 })}</i>
+      <i>${icon('users', { size: 17 })}</i>
+      <i>${icon('doc', { size: 17 })}</i>
     </div>
-    <div class="ui-row" style="grid-template-columns:1fr">
-      <div>
-        <div class="ui-meta">Deliverables</div>
-        <div class="chip-row" style="margin-top:8px">
-          <span class="chip chip-blue">Reel</span><span class="chip">Story</span>
-          <span class="chip">Carousel</span><span class="chip">Short</span><span class="chip">Video</span>
+    <div class="app-body">
+      <div class="app-head">
+        <div>
+          <div class="app-date">Tuesday, 19 August</div>
+          <div class="app-hi">Morning, ${CREATOR.name.split(' ')[0]}</div>
         </div>
+        <div class="app-avatar">${CREATOR.initials}</div>
       </div>
-    </div>
-    <div class="ui-row" style="grid-template-columns:1fr">
-      <div>
-        <div class="ui-meta">Payment terms</div>
-        <div class="chip-row" style="margin-top:8px">
-          <span class="chip chip-blue">50% advance</span><span class="chip chip-blue">50% on delivery</span>
-        </div>
+
+      <div class="stat-row">
+        <div class="stat stat-hero"><div class="k">Owed to you</div><div class="v">${MONEY.owed}</div><div class="s">${MONEY.owedNote}</div></div>
+        <div class="stat"><div class="k">Received</div><div class="v">${MONEY.received}</div><div class="s">This month</div></div>
+        <div class="stat"><div class="k">Live deals</div><div class="v">${MONEY.live}</div><div class="s">In progress</div></div>
+      </div>
+
+      <div class="act-row">
+        <div class="act"><span>${icon('camera', { size: 15 })}</span> New deal</div>
+        <div class="act"><span>${icon('doc', { size: 15 })}</span> Raise invoice</div>
+        <div class="act"><span>${icon('chart', { size: 15 })}</span> Year in review</div>
+      </div>
+
+      <div class="list">
+        <div class="list-head">Needs you today</div>
+        ${DEALS.map(
+          (d) => `<div class="list-row">
+          ${bavatar(d)}
+          <div><div class="t">${d.name}</div><div class="m">${d.work} · ${d.state}</div></div>
+          <div class="r"><div class="amt">${d.amount}</div><span class="chip ${chipClass[d.chip[1]]}" style="margin-top:3px">${d.chip[0]}</span></div>
+        </div>`
+        ).join('')}
       </div>
     </div>
   </div>`
 }
 
-/** A deal moving through stages the creator named herself. */
+/** One deal, and the stages its creator named herself. */
 export function uiDeal() {
-  return `<div class="ui" style="max-width:430px">
+  const d = DEALS[0]
+  return `<div class="ui" style="max-width:420px">
     <div class="ui-top"><span class="ui-title">Deal</span><span class="chip chip-blue">Live</span></div>
     <div class="ui-row">
-      ${avatar(AV.violet, 'bolt')}
-      <div><div class="ui-label">Reel and 3 Stories</div><div class="ui-meta">Skincare brand</div></div>
-      <span class="chip chip-green">On track</span>
+      ${bavatar(d)}
+      <div><div class="ui-label">${d.name}</div><div class="ui-meta">${d.work}</div></div>
+      <span class="ui-label">${d.amount}</span>
     </div>
     <div class="track" style="padding:6px 4px 2px">
       <div class="track-step done"><div class="track-dot">${icon('check', { size: 12, stroke: 2.6 })}</div><span>Script</span></div>
@@ -144,116 +186,152 @@ export function uiDeal() {
       <div class="track-step"><div class="track-dot"></div><span>Publish</span></div>
     </div>
     <div class="ui-row">
-      ${avatar(AV.green, 'wallet')}
-      <div><div class="ui-label">Advance</div><div class="ui-meta">Received</div></div>
-      <span class="chip chip-green">Paid</span>
+      <div class="ui-avatar" style="background:var(--green)">${icon('check', { size: 16 })}</div>
+      <div><div class="ui-label">Advance, 50%</div><div class="ui-meta">Received 2 August</div></div>
+      <span class="ui-label">₹22,500</span>
     </div>
     <div class="ui-row">
-      ${avatar(AV.amber, 'wallet')}
-      <div><div class="ui-label">Balance</div><div class="ui-meta">Due after publish</div></div>
-      <span class="chip chip-amber">Scheduled</span>
+      <div class="ui-avatar" style="background:#E08A17">${icon('wallet', { size: 16 })}</div>
+      <div><div class="ui-label">Balance, 50%</div><div class="ui-meta">Due 30 days after publish</div></div>
+      <span class="ui-label">₹22,500</span>
     </div>
   </div>`
 }
 
-/** What actually reaches the phone. No amount, ever, which is the product's own rule. */
+/** Four ways a deal gets in. */
+export function uiCapture() {
+  const d = DEALS[2]
+  return `<div class="ui" style="max-width:400px">
+    <div class="ui-top"><span class="ui-title">New deal</span><span class="ui-sub">about 30 seconds</span></div>
+    <div class="chip-row">
+      <span class="chip chip-blue">${icon('camera', { size: 13 })} Screenshot</span>
+      <span class="chip">${icon('mic', { size: 13 })} Voice</span>
+      <span class="chip">${icon('keyboard', { size: 13 })} Type</span>
+      <span class="chip">${icon('refresh', { size: 13 })} Repeat</span>
+    </div>
+    <div class="ui-row">
+      ${bavatar(d)}
+      <div><div class="ui-label">${d.name}</div><div class="ui-meta">Read from the screenshot</div></div>
+      <span class="chip chip-green">Found</span>
+    </div>
+    <div class="ui-row" style="grid-template-columns:1fr">
+      <div>
+        <div class="ui-meta">Deliverables</div>
+        <div class="chip-row" style="margin-top:8px"><span class="chip chip-blue">1 Feed post</span><span class="chip chip-blue">2 Stories</span></div>
+      </div>
+    </div>
+    <div class="ui-row" style="grid-template-columns:1fr auto">
+      <div><div class="ui-meta">Rate</div><div class="ui-label" style="margin-top:2px">₹28,000</div></div>
+      <span class="chip">Check before saving</span>
+    </div>
+  </div>`
+}
+
+/** What reaches the phone. No amount, ever, which is the product's own rule. */
 export function uiReminders({ count = 4, width = '400px' } = {}) {
-  const notes = [
-    ['bell', 'var(--accent)', 'Shoot is due tomorrow', 'Skincare brand'],
-    ['wallet', 'var(--rose)', 'A payment is overdue', 'Tap to send a follow up'],
-    ['calendar', 'var(--green)', 'Advance tax due 15 September', 'Set aside before the date'],
-    ['refresh', 'var(--accent)', 'Saved without signal', 'It will sync on its own'],
-  ]
-  return `<div style="display:grid;gap:12px;max-width:${width}">${notes
-    .slice(0, count)
+  const colors = { accent: 'var(--accent)', rose: 'var(--rose)', green: 'var(--green)' }
+  return `<div style="display:grid;gap:12px;max-width:${width}">${REMINDERS.slice(0, count)
     .map(
-      ([glyph, color, title, body]) => `<div class="note">
-      <div class="n-icon" style="background:${color}">${icon(glyph, { size: 15 })}</div>
+      ([glyph, tone, title, body]) => `<div class="note">
+      <div class="n-icon" style="background:${colors[tone]}">${icon(glyph, { size: 15 })}</div>
       <div><div class="n-title">${title}</div><div class="n-body">${body}</div></div>
     </div>`
     )
     .join('')}</div>`
 }
 
-/** Money, as proportions. Nobody's earnings appear on this page. */
+/** Money in, money owed, and who is late. */
 export function uiMoney() {
   const bars = [38, 62, 44, 78, 56, 92]
   return `<div class="ui" style="max-width:420px">
     <div class="ui-top"><span class="ui-title">Money</span><span class="ui-sub">Last six months</span></div>
+    <div class="stat-row" style="grid-template-columns:1fr 1fr">
+      <div class="stat stat-hero"><div class="k">Still out</div><div class="v">${MONEY.owed}</div><div class="s">${MONEY.owedNote}</div></div>
+      <div class="stat"><div class="k">Collected</div><div class="v">${MONEY.collection}</div><div class="s">Of everything invoiced</div></div>
+    </div>
     <div class="bars">${bars.map((h, i) => `<div class="bar ${i === bars.length - 1 ? 'on' : ''}" style="height:${h}%"></div>`).join('')}</div>
-    <div class="bar-legend"><span>Received</span><span>Still out</span></div>
-    <div class="ui-row">
-      ${avatar(AV.green, 'check')}
-      <div><div class="ui-label">Paid</div><div class="ui-meta">Settled and reconciled</div></div>
-      <span class="chip chip-green">Closed</span>
-    </div>
-    <div class="ui-row">
-      ${avatar(AV.amber, 'wallet')}
-      <div><div class="ui-label">Due soon</div><div class="ui-meta">Terms agreed on the deal</div></div>
-      <span class="chip chip-amber">Waiting</span>
-    </div>
-    <div class="ui-row">
-      ${avatar(AV.rose, 'bell')}
-      <div><div class="ui-label">Overdue</div><div class="ui-meta">Follow up ready to send</div></div>
-      <span class="chip chip-rose">Chase</span>
-    </div>
+    ${DEALS.slice(1, 4)
+      .map(
+        (d) => `<div class="ui-row">
+      ${bavatar(d)}
+      <div><div class="ui-label">${d.name}</div><div class="ui-meta">${d.state}</div></div>
+      <span class="chip ${chipClass[d.chip[1]]}">${d.chip[0]}</span>
+    </div>`
+      )
+      .join('')}
   </div>`
 }
 
-/** The invoice, as a document rather than as anyone's data. */
+/** The invoice, at the fidelity a finance team would actually receive. */
 export function uiInvoice() {
-  return `<div class="doc" style="max-width:380px">
-    <div class="doc-split">
-      <div style="display:grid;gap:7px;flex:1">
-        <div class="doc-line w55"></div><div class="doc-line w40" style="height:7px"></div>
+  return `<div class="paper" style="max-width:400px">
+    <div class="p-head">
+      <div>
+        <div class="p-name">${CREATOR.name}</div>
+        <div class="p-muted">${CREATOR.city}<br>GSTIN ${CREATOR.gstin}<br>PAN ${CREATOR.pan}</div>
       </div>
-      <span class="chip chip-blue">Tax invoice</span>
+      <div><div class="p-kind">Tax invoice</div><div class="p-num">${INVOICE.number}</div><div class="p-muted">${INVOICE.date}</div></div>
     </div>
-    <div class="doc-rule"></div>
-    <div style="display:grid;gap:9px">
-      <div class="doc-line w70"></div><div class="doc-line w55"></div><div class="doc-line w25"></div>
+    <div class="p-rule"></div>
+    <div>
+      <div class="p-kind" style="text-align:left">Billed to</div>
+      <div class="p-name" style="font-size:12.5px;margin-top:3px">${INVOICE.billedTo}</div>
+      <div class="p-muted">GSTIN ${INVOICE.gstin}</div>
     </div>
-    <div class="doc-rule"></div>
-    <div class="chip-row"><span class="chip">CGST</span><span class="chip">SGST</span><span class="chip chip-blue">or IGST</span><span class="chip">TDS</span></div>
-    <div class="doc-split" style="align-items:flex-end">
-      <div style="display:grid;gap:8px;flex:1"><div class="doc-line w40"></div><div class="doc-line w55"></div></div>
-      <div class="doc-qr" title="UPI"></div>
+    <table>
+      <thead><tr><th style="text-align:left">Description</th><th style="text-align:right">Amount</th></tr></thead>
+      <tbody><tr><td>${INVOICE.line}<br><span style="color:#A29A92">SAC ${INVOICE.hsn}</span></td><td style="text-align:right">${INVOICE.amount}</td></tr></tbody>
+    </table>
+    <div>
+      <div class="p-tot"><span>Subtotal</span><span>${INVOICE.amount}</span></div>
+      <div class="p-tot"><span>IGST at 18%</span><span>${INVOICE.gst}</span></div>
+      <div class="p-tot"><span>Less TDS withheld</span><span>${INVOICE.tds}</span></div>
+      <div class="p-tot big"><span>Amount due</span><span>${INVOICE.due}</span></div>
     </div>
-    <div class="btn btn-sm" style="width:100%;pointer-events:none">Send on WhatsApp</div>
+    <div class="p-rule"></div>
+    <div class="p-head" style="align-items:flex-end">
+      <div class="p-muted">Pay by UPI<br>${CREATOR.upi}<br>A/C ${CREATOR.account}<br>IFSC ${CREATOR.ifsc}</div>
+      <div class="p-qr"></div>
+    </div>
   </div>`
 }
 
 /** The card a creator sends when a brand asks for commercials. */
 export function uiRateCard() {
-  const rows = [['Reel', 84], ['Story', 38], ['Carousel', 56], ['Short', 62], ['Integration', 96]]
   return `<div class="ratecard" style="max-width:340px">
     <div class="rc-top">
-      <div class="rc-face"></div>
-      <div style="display:grid;gap:7px;flex:1"><div class="rc-line" style="width:62%"></div><div class="rc-line" style="width:40%;opacity:.7"></div></div>
+      <div class="rc-face" style="display:grid;place-items:center;font-weight:600;font-size:15px">${CREATOR.initials}</div>
+      <div>
+        <div style="font-size:16px;font-weight:600;letter-spacing:-.02em">${CREATOR.name}</div>
+        <div style="font-size:12px;opacity:.78">${CREATOR.niche} · ${CREATOR.followers} followers</div>
+      </div>
     </div>
     <div>
-      ${rows.map(([label, pct]) => `<div class="rc-row"><span>${label}</span><span class="rc-bar"><i style="width:${pct}%"></i></span></div>`).join('')}
+      ${RATES.map(
+        ([label, amount, pct]) => `<div class="rc-row"><span>${label}</span><span style="display:flex;align-items:center;gap:10px"><span class="rc-bar"><i style="width:${pct}%"></i></span><b style="font-variant-numeric:tabular-nums">${amount}</b></span></div>`
+      ).join('')}
     </div>
-    <div style="font-size:11.5px;opacity:.78">Every rate is the median of what you have actually charged</div>
+    <div style="font-size:11px;opacity:.78">Every rate is the median of what you have actually charged</div>
   </div>`
 }
 
-/** The four dates section 211 sets. Public facts, so this is the one calendar the site can honestly draw. */
+/** The four dates section 211 sets. */
 export function uiTaxCalendar() {
-  const dates = [['15 Jun', '15%'], ['15 Sep', '45%'], ['15 Dec', '75%'], ['15 Mar', '100%']]
+  const dates = [['15 Jun', '₹54,000'], ['15 Sep', '₹1,08,000'], ['15 Dec', '₹1,08,000'], ['15 Mar', '₹90,000']]
   return `<div class="ui" style="max-width:420px">
     <div class="ui-top"><span class="ui-title">Advance tax</span><span class="ui-sub">Section 211</span></div>
-    <div class="cal">
-      ${dates.map(([d, pct], i) => `<div class="${i === 1 ? 'soon' : ''}"><b>${d}</b><span>${pct} cumulative</span></div>`).join('')}
+    <div class="stat" style="background:var(--accent);color:#fff">
+      <div class="k" style="color:rgba(255,255,255,.76)">Expected for the year</div>
+      <div class="v" style="font-size:26px">₹3,60,000</div>
+      <div class="s" style="color:rgba(255,255,255,.76)">From your income, less your expenses</div>
     </div>
-    <div class="ui-row">
-      ${avatar(AV.blue, 'chart')}
-      <div><div class="ui-label">Worked out from your own deals</div><div class="ui-meta">Income in, expenses off, you adjust the rest</div></div>
+    <div class="cal">
+      ${dates.map(([d, amt], i) => `<div class="${i === 1 ? 'soon' : ''}"><b>${d}</b><span>${amt}</span></div>`).join('')}
     </div>
   </div>`
 }
 
-/** Permission switches, which is what a manager or an agency is really asking about. */
+/** What a manager can and cannot see. */
 export function uiTeam() {
   const areas = [['Deals and deadlines', true], ['Brands and contacts', true], ['Invoices', true], ['Rates', false], ['Bank details', false]]
   return `<div class="ui" style="max-width:390px">

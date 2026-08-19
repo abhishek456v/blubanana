@@ -32,28 +32,25 @@
   /* ── menus ─────────────────────────────────────────────────────────────── */
   // Hover opens them on a mouse (CSS). A touch device has no hover, so the
   // trigger is also a real button that toggles a class.
-  document.querySelectorAll('.nav-item > button').forEach((button) => {
-    const item = button.parentElement
-    button.addEventListener('click', (event) => {
-      event.preventDefault()
-      const open = item.classList.toggle('open')
-      button.setAttribute('aria-expanded', String(open))
-      document.querySelectorAll('.nav-item.open').forEach((other) => {
-        if (other !== item) {
-          other.classList.remove('open')
-          other.querySelector('button')?.setAttribute('aria-expanded', 'false')
-        }
+  // Hover opens the menus on a pointer device, which CSS handles alone. On a
+  // touch screen there is no hover, so the first tap opens the menu and the
+  // second follows the link.
+  const coarse = window.matchMedia('(hover: none)').matches
+  if (coarse) {
+    document.querySelectorAll('.nav-item > .nav-link').forEach((link) => {
+      const item = link.parentElement
+      link.addEventListener('click', (event) => {
+        if (item.classList.contains('open')) return
+        event.preventDefault()
+        document.querySelectorAll('.nav-item.open').forEach((other) => other.classList.remove('open'))
+        item.classList.add('open')
       })
     })
-  })
-
-  document.addEventListener('click', (event) => {
-    if (event.target.closest('.nav-item')) return
-    document.querySelectorAll('.nav-item.open').forEach((item) => {
-      item.classList.remove('open')
-      item.querySelector('button')?.setAttribute('aria-expanded', 'false')
+    document.addEventListener('click', (event) => {
+      if (event.target.closest('.nav-item')) return
+      document.querySelectorAll('.nav-item.open').forEach((item) => item.classList.remove('open'))
     })
-  })
+  }
 
   const sheet = document.getElementById('sheet')
   document.querySelectorAll('.burger').forEach((burger) => {
@@ -69,7 +66,7 @@
   })
 
   /* ── tabs ──────────────────────────────────────────────────────────────── */
-  document.querySelectorAll('[data-tabs]').forEach((list) => {
+  document.querySelectorAll('.tabs').forEach((list) => {
     const tabs = [...list.querySelectorAll('.tab')]
     const panels = tabs.map((tab) => document.getElementById(tab.getAttribute('aria-controls')))
 
@@ -79,6 +76,19 @@
     }
 
     tabs.forEach((tab, index) => tab.addEventListener('click', () => show(index)))
+
+    // A menu item points at a panel, not at a heading, so arriving with a hash
+    // has to open that tab as well as scroll to it. Otherwise every Product
+    // menu item lands on the same visible panel and the menu looks broken.
+    const openFromHash = () => {
+      const id = location.hash.slice(1)
+      const index = panels.findIndex((panel) => panel && panel.id === id)
+      if (index < 0) return
+      show(index)
+      list.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+    window.addEventListener('hashchange', openFromHash)
+    openFromHash()
     // Arrow keys, because a tablist that only takes clicks is not a tablist.
     list.addEventListener('keydown', (event) => {
       const current = tabs.indexOf(document.activeElement)

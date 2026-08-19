@@ -12,6 +12,15 @@
 import { PRICING, SITE, TOOLS } from '../site.mjs'
 import { closingCta, head, icon, section } from '../ui.mjs'
 
+/** The row of every tool, on every tool page. Moving between them should not
+ *  require going back up to a menu. */
+function toolNav(current) {
+  return `<nav class="tool-nav reveal">${TOOLS.map(
+    ([href, title]) =>
+      `<a href="${href}"${href === current ? ' aria-current="page"' : ''}>${title.replace(' calculator', '')}</a>`
+  ).join('')}</nav>`
+}
+
 /** Every tool page has the same bones, so a fix to one shape fixes five pages. */
 function toolPage({ path, name, h1, line, description, form, out, how, related = 3, script }) {
   const others = TOOLS.filter(([href]) => href !== path).slice(0, related)
@@ -19,13 +28,14 @@ function toolPage({ path, name, h1, line, description, form, out, how, related =
   const body = `
 <section class="hero" style="padding-bottom:0">
   <div class="container">
-    <div class="eyebrow reveal">Free tool</div>
-    <h1 class="reveal" style="max-width:18ch;font-size:clamp(32px,4.4vw,50px)">${h1}</h1>
+    <div class="eyebrow reveal">Free tool, no sign up</div>
+    <h1 class="reveal" style="max-width:18ch;font-size:clamp(30px,4vw,46px)">${h1}</h1>
     <p class="lede reveal" style="max-width:52ch;margin-top:18px">${line}</p>
+    ${toolNav(path)}
   </div>
 </section>
 
-<section class="band">
+<section class="band" style="padding-top:56px">
   <div class="container">
     <div class="tool reveal">
       <div class="tool-form">${form}</div>
@@ -71,11 +81,20 @@ function toolPage({ path, name, h1, line, description, form, out, how, related =
   }
 }
 
-const field = (id, label, hint, input) =>
-  `<div class="field"><label for="${id}">${label}</label>${input}${hint ? `<span class="hint">${hint}</span>` : ''}</div>`
+const field = (id, label, hint, input, presets) =>
+  `<div class="field">
+    <label for="${id}">${label}</label>
+    ${input}
+    ${presets ? `<div class="preset-row">${presets.map((v) => `<button type="button" class="preset" data-for="${id}" data-value="${v[1]}">${v[0]}</button>`).join('')}</div>` : ''}
+    ${hint ? `<span class="hint">${hint}</span>` : ''}
+  </div>`
 
 const number = (id, value, extra = '') =>
   `<input id="${id}" type="number" inputmode="decimal" value="${value}" ${extra}>`
+
+/** A rupee mark sitting inside the box, so the field reads as money at a glance. */
+const money = (id, value, extra = '') =>
+  `<div class="money-input"><span>₹</span>${number(id, value, extra)}</div>`
 
 /* ── 1. advance tax ──────────────────────────────────────────────────────── */
 const advanceTax = toolPage({
@@ -86,9 +105,9 @@ const advanceTax = toolPage({
   description:
     'Work out what to set aside for advance tax by 15 June, 15 September, 15 December and 15 March. Free, no sign up, built for Indian content creators.',
   form: `
-    ${field('income', 'Expected income this year', 'After your expenses. Everything you earn, not only what came through brand deals.', number('income', 1200000, 'min="0" step="10000"'))}
+    ${field('income', 'Expected income this year', 'After your expenses. Everything you earn, not only what came through brand deals.', money('income', 1200000, 'min="0" step="10000"'), [['5L', 500000], ['12L', 1200000], ['25L', 2500000], ['50L', 5000000]])}
     ${field('rate', 'Your effective tax rate', 'Ask your CA. Rates change most budgets, so this tool will not guess one for you.', number('rate', 30, 'min="0" max="60" step="1"'))}
-    ${field('paid', 'Already paid or deducted', 'TDS the brands withheld counts here.', number('paid', 0, 'min="0" step="5000"'))}`,
+    ${field('paid', 'Already paid or deducted', 'TDS the brands withheld counts here.', money('paid', 0, 'min="0" step="5000"'))}`,
   out: `
     <div><span class="fine">Tax expected for the year</span><div class="out-big figure" id="total">-</div></div>
     <div id="rows"></div>
@@ -96,6 +115,11 @@ const advanceTax = toolPage({
   how: 'Section 211 sets the four dates and the cumulative percentages: 15% by 15 June, 45% by 15 September, 75% by 15 December and the balance by 15 March. This applies your own effective rate to your own figure, which is the only honest way to do it without knowing the rest of your income.',
   script: `
     const $ = (id) => document.getElementById(id)
+    document.querySelectorAll('.preset').forEach((b) => b.addEventListener('click', () => {
+      const target = $(b.dataset.for)
+      target.value = b.dataset.value
+      target.dispatchEvent(new Event('input', { bubbles: true }))
+    }))
     function run() {
       const income = Number($('income').value) || 0
       const rate = Number($('rate').value) || 0
@@ -125,7 +149,7 @@ const tdsTool = toolPage({
   description:
     'Work out GST, invoice total, TDS withheld and what actually lands in your account on a brand deal. Free TDS calculator for Indian content creators.',
   form: `
-    ${field('base', 'Deal amount', 'What you agreed with the brand, before any tax.', number('base', 100000, 'min="0" step="1000"'))}
+    ${field('base', 'Deal amount', 'What you agreed with the brand, before any tax.', money('base', 100000, 'min="0" step="1000"'), [['25K', 25000], ['50K', 50000], ['1L', 100000], ['3L', 300000]])}
     ${field('gst', 'GST you charge', 'Zero if you are not registered for GST.', `<select id="gst"><option value="18">18%</option><option value="0">Not registered</option></select>`)}
     ${field('tdsrate', 'TDS rate the brand deducts', 'Usually 10% for professional services under section 194J. Ask the brand which section they are deducting under.', `<select id="tdsrate"><option value="10">10%, section 194J</option><option value="2">2%, section 194C</option><option value="5">5%, section 194H</option><option value="1">1%</option></select>`)}`,
   out: `
@@ -138,6 +162,11 @@ const tdsTool = toolPage({
   how: 'TDS is deducted on the value of the service, never on the GST charged on top of it. Getting that the wrong way round is the usual reason a creator’s arithmetic disagrees with the brand’s remittance advice, by exactly the tax on the tax.',
   script: `
     const $ = (id) => document.getElementById(id)
+    document.querySelectorAll('.preset').forEach((b) => b.addEventListener('click', () => {
+      const target = $(b.dataset.for)
+      target.value = b.dataset.value
+      target.dispatchEvent(new Event('input', { bubbles: true }))
+    }))
     function run() {
       const base = Number($('base').value) || 0
       const gst = Number($('gst').value) || 0
@@ -162,7 +191,7 @@ const gstTool = toolPage({
   description:
     'Work out whether your invoice carries CGST and SGST or IGST, and how much of each. Free GST calculator for Indian creators and freelancers.',
   form: `
-    ${field('amount', 'Invoice amount', 'Before tax.', number('amount', 100000, 'min="0" step="1000"'))}
+    ${field('amount', 'Invoice amount', 'Before tax.', money('amount', 100000, 'min="0" step="1000"'), [['25K', 25000], ['50K', 50000], ['1L', 100000], ['3L', 300000]])}
     ${field('rate2', 'GST rate', 'Creator and influencer services are usually 18%.', `<select id="rate2"><option value="18">18%</option><option value="5">5%</option><option value="12">12%</option><option value="28">28%</option></select>`)}
     ${field('mine', 'Your state', 'Where you are registered.', `<select id="mine"></select>`)}
     ${field('theirs', 'The brand’s state', 'The place of supply for a registered recipient is their registered address.', `<select id="theirs"></select>`)}`,
@@ -173,6 +202,11 @@ const gstTool = toolPage({
   how: 'Under the IGST Act a supply is inter State when the supplier’s state and the place of supply differ, and intra State when they match. That single comparison decides whether the invoice carries IGST at the full rate or CGST and SGST at half each.',
   script: `
     const $ = (id) => document.getElementById(id)
+    document.querySelectorAll('.preset').forEach((b) => b.addEventListener('click', () => {
+      const target = $(b.dataset.for)
+      target.value = b.dataset.value
+      target.dispatchEvent(new Event('input', { bubbles: true }))
+    }))
     const options = CD.GST_STATE_OPTIONS.map((o) => '<option value="' + o.code + '">' + o.name + '</option>').join('')
     $('mine').innerHTML = options
     $('theirs').innerHTML = options
@@ -208,8 +242,8 @@ const rateTool = toolPage({
     'Turn your average views into a rate range you can quote to a brand, using cost per thousand views. Free rate calculator for Indian creators.',
   form: `
     ${field('views', 'Average views on a post', 'Take the last five of the same format and average them.', number('views', 120000, 'min="0" step="1000"'))}
-    ${field('cpmlow', 'Lower end of your band', 'Rupees per thousand views.', number('cpmlow', 200, 'min="0" step="10"'))}
-    ${field('cpmhigh', 'Upper end of your band', 'Where you land depends on the category, the usage and how much work it is.', number('cpmhigh', 500, 'min="0" step="10"'))}`,
+    ${field('cpmlow', 'Lower end of your band', 'Rupees per thousand views.', money('cpmlow', 200, 'min="0" step="10"'))}
+    ${field('cpmhigh', 'Upper end of your band', 'Where you land depends on the category, the usage and how much work it is.', money('cpmhigh', 500, 'min="0" step="10"'))}`,
   out: `
     <div><span class="fine">A range you can quote</span><div class="out-big figure" id="range">-</div></div>
     <div class="out-row"><span>At the lower end</span><b id="rlow">-</b></div>
@@ -218,6 +252,11 @@ const rateTool = toolPage({
   how: 'This is arithmetic on your own numbers, not a market benchmark. Nobody can honestly publish a going rate for every category, and a page that tried would be guessing with your livelihood. Inside CreatorDesk the range comes from what you have actually been paid, with the sample size stated.',
   script: `
     const $ = (id) => document.getElementById(id)
+    document.querySelectorAll('.preset').forEach((b) => b.addEventListener('click', () => {
+      const target = $(b.dataset.for)
+      target.value = b.dataset.value
+      target.dispatchEvent(new Event('input', { bubbles: true }))
+    }))
     function run() {
       const views = Number($('views').value) || 0
       const low = Number($('cpmlow').value) || 0
@@ -253,6 +292,11 @@ const engagementTool = toolPage({
   how: 'Interactions divided by the denominator, times one hundred. Saves and shares are counted because on Reels they carry more weight with the algorithm than a like does, and brands increasingly ask for them separately.',
   script: `
     const $ = (id) => document.getElementById(id)
+    document.querySelectorAll('.preset').forEach((b) => b.addEventListener('click', () => {
+      const target = $(b.dataset.for)
+      target.value = b.dataset.value
+      target.dispatchEvent(new Event('input', { bubbles: true }))
+    }))
     const pct = (n) => n.toFixed(2) + '%'
     function run() {
       const f = Number($('followers').value) || 0
@@ -268,4 +312,43 @@ const engagementTool = toolPage({
     run()`,
 })
 
-export default [advanceTax, tdsTool, gstTool, rateTool, engagementTool]
+/* ── the index ───────────────────────────────────────────────────────────── */
+const index = {
+  path: '/tools',
+  title: 'Free calculators for Indian creators | CreatorDesk',
+  description:
+    'Five free calculators for content creators in India: advance tax, TDS, GST, what to charge, and engagement rate. No sign up, nothing to install.',
+  body: `
+<section class="hero" style="padding-bottom:0">
+  <div class="container">
+    <div class="eyebrow reveal">Free tools</div>
+    <h1 class="reveal" style="max-width:16ch">Five calculators, no sign up</h1>
+    <p class="lede reveal" style="max-width:54ch;margin-top:18px">
+      The arithmetic every Indian creator ends up doing on the back of a notebook, done properly. Nothing to install and no email required.
+    </p>
+  </div>
+</section>
+
+<section class="band">
+  <div class="container">
+    <div class="grid g-2 reveal">
+      ${TOOLS.map(
+        ([href, title, note]) => `<a class="card tool-card" href="${href}">
+        <div class="icon-badge">${icon('chart')}</div>
+        <h4>${title}</h4>
+        <p>${note}</p>
+        <span class="link-arrow" style="margin-top:14px">Open it</span>
+      </a>`
+      ).join('')}
+    </div>
+  </div>
+</section>
+
+${closingCta({
+  title: 'The app does all of this from your real deals',
+  sub: `And reminds you before the date rather than after. ${PRICING.trialDays} days free, no card.`,
+  href: SITE.signup,
+})}`,
+}
+
+export default [index, advanceTax, tdsTool, gstTool, rateTool, engagementTool]
