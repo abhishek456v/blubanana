@@ -16,6 +16,7 @@ import {
   type AttentionItem,
 } from '@/lib/insights'
 import { getProfile } from '@/lib/profile'
+import { useAuth } from '@/hooks/useAuth'
 import { shouldOfferOnboarding } from '@/lib/onboarding'
 import { parseLocalDate } from '@/lib/format'
 import type { DealStatus } from '@/types'
@@ -85,6 +86,7 @@ const BRAND_PERIODS = ['This month', 'This year', 'All time'] as const
  * variations of the same card would look like a system and read like a wall.
  */
 export default function HomeScreen() {
+  const { session } = useAuth()
   const { c } = useTheme()
   const { isDesktop } = useBreakpoint()
   const router = useRouter()
@@ -119,13 +121,21 @@ export default function HomeScreen() {
         ])
         setDeals(dealData)
       } catch {
-        toast('Could not load your deals', { tone: 'error' })
+        // Silent when there is no session.
+        //
+        // Both screens sit under the signed in group, but the redirect to sign
+        // in runs in an effect, so they mount and fetch for a frame or two
+        // first. That fetch is refused, which is correct, and telling someone
+        // who is being sent to a login screen that their deals failed to load
+        // is not. It reached production as a red toast flashing over the sign
+        // in page.
+        if (session) toast('Could not load your deals', { tone: 'error' })
       } finally {
         setLoading(false)
         setRefreshing(false)
       }
     },
-    [toast]
+    [toast, session]
   )
 
   useFocusEffect(

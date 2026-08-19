@@ -25,6 +25,7 @@ import {
 } from '@/constants/design'
 import { useBreakpoint } from '@/hooks/useBreakpoint'
 import { useTheme } from '@/hooks/useTheme'
+import { useAuth } from '@/hooks/useAuth'
 import { EarningsCard } from '@/components/home'
 import { DealRow } from '@/components/DealRow'
 import {
@@ -59,6 +60,7 @@ import {
  */
 export default function MoneyScreen() {
   const { c } = useTheme()
+  const { session } = useAuth()
   const { isDesktop } = useBreakpoint()
   const router = useRouter()
   const toast = useToast()
@@ -77,7 +79,15 @@ export default function MoneyScreen() {
       try {
         setDeals(await getDeals())
       } catch {
-        toast('Could not load your deals', { tone: 'error' })
+        // Silent when there is no session.
+        //
+        // Both screens sit under the signed in group, but the redirect to sign
+        // in runs in an effect, so they mount and fetch for a frame or two
+        // first. That fetch is refused, which is correct, and telling someone
+        // who is being sent to a login screen that their deals failed to load
+        // is not. It reached production as a red toast flashing over the sign
+        // in page.
+        if (session) toast('Could not load your deals', { tone: 'error' })
       }
       try {
         setInvoices(await getInvoices())
@@ -88,7 +98,7 @@ export default function MoneyScreen() {
         setRefreshing(false)
       }
     },
-    [toast]
+    [toast, session]
   )
 
   useFocusEffect(
