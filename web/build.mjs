@@ -130,6 +130,14 @@ for (const p of written) {
   if (!p.description || p.description.length < 60) warn(`${p.path} → description too short for search results`)
   if (p.title.length > 65) warn(`${p.path} → title over 65 characters, search will truncate it`)
 
+  // A stacked comparison row shows its values with no header above them, so a
+  // cell that has not been given its column name reads as a bare "No".
+  for (const [block] of p.html.matchAll(/<div class="table-wrap cmp[\s\S]*?<\/table>/g)) {
+    const cells = (block.match(/<td class="num-cell/g) ?? []).length
+    const labelled = (block.match(/<td class="num-cell[^>]*data-label=/g) ?? []).length
+    if (cells !== labelled) warn(`${p.path} → ${cells - labelled} comparison cell(s) with no data-label`)
+  }
+
   /*
    * Tags have to balance.
    *

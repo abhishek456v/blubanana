@@ -148,9 +148,9 @@ const compare = section({
           ${COMPARE.map(
             ([label, a, b, c]) => `<tr>
             <td><strong>${label}</strong></td>
-            <td class="num-cell ${a ? 'yes' : 'no'}">${a ? 'Yes' : 'No'}</td>
-            <td class="num-cell ${b ? 'yes' : 'no'}">${b ? 'Yes' : 'No'}</td>
-            <td class="num-cell ${c ? 'yes' : 'no'}">${c ? 'Yes' : 'No'}</td>
+            <td class="num-cell ${a ? 'yes' : 'no'}" data-label="Spreadsheet">${a ? 'Yes' : 'No'}</td>
+            <td class="num-cell ${b ? 'yes' : 'no'}" data-label="A foreign tool">${b ? 'Yes' : 'No'}</td>
+            <td class="num-cell ${c ? 'yes' : 'no'}" data-label="Blubanana">${c ? 'Yes' : 'No'}</td>
           </tr>`
           ).join('')}
         </tbody>

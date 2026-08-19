@@ -18,6 +18,7 @@ mkdirSync(OUT, { recursive: true })
 
 const SHOTS = [
   ['home', '/', 1440, 1000, true],
+  ['home-360', '/', 360, 800, true],
   ['home-phone', '/', 390, 900, true],
   ['home-dark', '/?theme=dark', 1440, 1000, true],
   ['pricing', '/pricing', 1440, 1000, true],
@@ -59,6 +60,22 @@ for (const [name, path, width, height, fullPage] of SHOTS) {
   // desktop and everybody notices on a phone.
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
   if (overflow > 1) problems.push(`${name}: page scrolls horizontally by ${overflow}px`)
+
+  // On touch widths, anything you are meant to press has to be pressable. An
+  // inline link inside a sentence is exempt; a link that is its own row is not.
+  if (width <= 680) {
+    const small = await page.evaluate(() =>
+      [...document.querySelectorAll('a, button, summary, input, select')]
+        .filter((el) => {
+          const r = el.getBoundingClientRect()
+          if (!r.height || r.height >= 32) return false
+          return getComputedStyle(el).display !== 'inline'
+        })
+        .map((el) => `${el.tagName}.${String(el.className).split(' ')[0] || '-'}`)
+        .slice(0, 5)
+    )
+    if (small.length) problems.push(`${name}: tap targets under 32px: ${[...new Set(small)].join(', ')}`)
+  }
 
   await page.screenshot({ path: `${OUT}/${name}.png`, fullPage })
   console.log(`  ${OUT}/${name}.png`)

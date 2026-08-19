@@ -769,8 +769,11 @@ tr:last-child td { border-bottom: none; }
 .reach-row p { font-size: 15.5px; margin: 0; }
 .reach-value { font-size: 16px; font-weight: 500; color: var(--accent-text); white-space: nowrap; }
 @media (max-width: 680px) {
-  .reach-row { grid-template-columns: 40px 1fr; padding: 20px; gap: 16px; }
-  .reach-value { grid-column: 2; }
+  .reach-row { grid-template-columns: 40px minmax(0, 1fr); padding: 20px; gap: 16px; }
+  /* A grid track's automatic minimum is its content, and an email address does
+     not break, so the row grew past the screen on a narrow phone. */
+  .reach-row > * { min-width: 0; }
+  .reach-value { grid-column: 2; white-space: normal; overflow-wrap: anywhere; }
 }
 
 /* ── legal ───────────────────────────────────────────────────────────────── */
@@ -820,7 +823,21 @@ tr:last-child td { border-bottom: none; }
   .split.flip > :first-child { order: 0; }
   .g-3, .g-4, .steps { grid-template-columns: 1fr 1fr; }
   .split-tab { grid-template-columns: 1fr; }
-  .tool-out { position: static; }
+  /*
+   * The answer moves above the inputs and pins under the header.
+   *
+   * Below them it scrolled out of view the moment someone changed a figure, so
+   * the tool appeared to do nothing. Pinned to the bottom instead it covered
+   * the fields being typed into, which was worse. Above and sticky is the only
+   * arrangement where the number and the input that drives it are both on
+   * screen, and it is compacted so it takes a third of the phone rather than a
+   * half.
+   */
+  .tool { display: flex; flex-direction: column; align-items: stretch; }
+  .tool-out { order: -1; position: sticky; top: calc(var(--header-h) + 8px); z-index: 5; padding: 18px 20px; gap: 8px; }
+  .tool-out .out-big { font-size: clamp(26px, 7.5vw, 34px); }
+  .tool-out .out-row { padding: 7px 0; font-size: 14px; }
+  .tool-out .tool-note { display: none; }
 }
 
 @media (max-width: 940px) {
@@ -828,13 +845,49 @@ tr:last-child td { border-bottom: none; }
 }
 
 @media (max-width: 560px) {
-  .app { grid-template-columns: 52px 1fr; font-size: 12.5px; height: 470px; }
-  .app-rail { padding: 10px 0; }
+  /*
+   * The rail becomes a bottom bar.
+   *
+   * A 52px vertical rail costs a seventh of a phone screen, and it is not what
+   * a phone app looks like anyway: navigation lives along the bottom, within
+   * reach of a thumb. Same buttons, same behaviour, more room for the thing
+   * being demonstrated.
+   */
+  .app { grid-template-columns: 1fr; grid-template-rows: 1fr auto auto; font-size: 12.5px; height: 520px; }
+  .app-rail {
+    grid-row: 2;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+    border-right: none;
+    border-top: 1px solid var(--border);
+    padding: 7px 4px;
+  }
+  .rail-btn { width: 40px; height: 34px; }
   .app-body { padding: 14px; }
+  .demo-hint { grid-row: 3; }
 }
 
 @media (max-width: 680px) {
   body { font-size: 16px; }
+  .container { padding: 0 20px; }
+
+  /*
+   * Tap targets.
+   *
+   * A footer link is 18px of text, which is a comfortable click with a mouse
+   * and a coin toss with a thumb. These grow on touch sizes only, so the
+   * desktop keeps its density.
+   */
+  .footer ul { gap: 2px; }
+  .footer ul a { display: block; padding: 9px 0; }
+  .announce-close { padding: 10px 12px; }
+  .link-arrow { padding: 7px 0; }
+  .footer .fine a { display: inline-block; padding: 7px 0; }
+  .menu a, .sheet a { padding-top: 13px; padding-bottom: 13px; }
+  button.chip { padding: 8px 12px; }
+  .app .app-back { width: 34px; height: 34px; }
   .stat-row, .act-row { grid-template-columns: 1fr; }
   .band { padding: 58px 0; }
   .band-sm { padding: 42px 0; }
