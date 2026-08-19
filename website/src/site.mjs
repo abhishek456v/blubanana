@@ -36,16 +36,25 @@ export const COMPANY = {
  * `anon` by migration 035 for this purpose.
  */
 export const SUPABASE = (() => {
+  // Environment variables first, then the file.
+  //
+  // On this machine the values live in platform/.env, where Expo requires
+  // them. On a build server that file does not exist and the values are set in
+  // the project's settings instead, so both have to be tried or the hosted
+  // build silently loses the live price and the launch counter.
+  const fromEnv = {
+    url: process.env.EXPO_PUBLIC_SUPABASE_URL ?? null,
+    anonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? null,
+  }
+  if (fromEnv.url && fromEnv.anonKey) return fromEnv
+
   try {
-    // Expo requires .env at its own project root, so the one file lives in
-    // platform/ and the website reads across to it. Only the two EXPO_PUBLIC_
-    // values are used here, and both are public by design.
     const env = readFileSync(new URL('../../platform/.env', import.meta.url), 'utf8')
     const read = (key) => env.match(new RegExp(`^${key}=(.+)$`, 'm'))?.[1]?.trim() ?? null
     return { url: read('EXPO_PUBLIC_SUPABASE_URL'), anonKey: read('EXPO_PUBLIC_SUPABASE_ANON_KEY') }
   } catch {
-    // No .env (a clean checkout, or CI). The site still builds; the prices are
-    // simply the ones below rather than the ones in the database.
+    // Neither. The site still builds; the prices are the ones compiled into it
+    // rather than the ones in the database.
     return { url: null, anonKey: null }
   }
 })()
