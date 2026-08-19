@@ -87,10 +87,10 @@ const features = section({
   inner: `
     ${head({
       eyebrow: 'What it does',
-      title: 'Six jobs, one place',
+      title: 'Eight jobs, one place',
       lede: 'Pick one and it opens. Nothing here leaves the page.',
     })}
-    <div style="margin-top:40px">
+    <div style="margin-top:36px">
       ${tabs(
         [
           { id: 'capture', label: 'Log a deal', screen: 'newdeal', title: 'A deal takes thirty seconds', copy: 'Screenshot the message, say it out loud, or type it. You check it before it saves.' },
@@ -99,10 +99,13 @@ const features = section({
           { id: 'invoices', label: 'Invoices', screen: 'invoice', title: 'Accepted first time', copy: 'Correct tax, a code they can scan, and one tap to send it on WhatsApp.' },
           { id: 'tax', label: 'Tax', screen: 'tax', title: 'Know before the date', copy: 'Worked out from your own income and expenses, across April to March.' },
           { id: 'ratecard', label: 'Rate card', screen: 'ratecard', title: 'Ready when a brand asks', copy: 'Built from what you have actually charged, not what you hope to.' },
+          { id: 'team', label: 'Managers', screen: 'team', title: 'Share the work, not your rates', copy: 'You decide what they see, and nobody but you can delete anything.' },
+          { id: 'offline', label: 'Offline', screen: 'offline', title: 'Works with no signal', copy: 'It saves on the phone and syncs itself when you are back.' },
         ],
         { frame: 'features' }
       )}
-    </div>`,
+    </div>
+    <div class="btn-row reveal" style="margin-top:28px"><a class="link-arrow" href="/features">See all eight in detail</a></div>`,
 })
 
 const steps = section({

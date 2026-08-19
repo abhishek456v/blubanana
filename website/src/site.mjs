@@ -114,7 +114,7 @@ export const TOOLS = [
  * link with no page behind it, so this cannot quietly rot either.
  */
 export const NAV = [
-  { label: 'Product', href: '/product', items: 'product' },
+  { label: 'Features', href: '/features', items: 'product' },
   { label: 'Free tools', href: '/tools', items: TOOLS.map(([href, title, note]) => [href, title, note]) },
   { label: 'Pricing', href: '/pricing' },
   { label: 'Compare', href: '/compare' },
@@ -122,7 +122,7 @@ export const NAV = [
 ]
 
 export const FOOTER = [
-  { title: 'Product', links: 'product' },
+  { title: 'Features', links: 'product' },
   { title: 'Free tools', links: TOOLS.map(([href, title]) => [href, title.replace(' calculator', '')]) },
   {
     title: 'Company',

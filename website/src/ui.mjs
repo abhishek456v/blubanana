@@ -98,6 +98,7 @@ export function tabs(items, { frame } = {}) {
     .map(
       (item, i) => `<div class="panel" role="tabpanel" id="${item.id}" aria-labelledby="tab-${item.id}"${i === 0 ? ' data-active' : ''}>
         <h3>${item.title}</h3><p class="lede" style="margin-top:12px">${item.copy}</p>
+        ${item.link ? `<a class="link-arrow" href="${item.link[1]}" style="margin-top:16px">${item.link[0]}</a>` : ''}
       </div>`
     )
     .join('')
@@ -244,7 +245,7 @@ const screenHome = () => `
     <button class="act" data-go="tax"><span>${icon('chart', { size: 15 })}</span> Year in review</button>
   </div>
   <div class="list">
-    <div class="list-head">Needs you today</div>
+    <div class="list-head">Reminders</div>
     ${DEALS.map(dealRow).join('')}
   </div>`
 
@@ -358,6 +359,29 @@ const screenRateCard = () => `
   ${backBar('Rate card', 'Ready to send')}
   ${uiRateCard()}`
 
+const screenOffline = () => `
+  ${backBar('Saved on this phone', 'Waiting for signal')}
+  <div class="ui-row" style="grid-template-columns:auto 1fr;background:var(--accent-soft)">
+    ${icon('refresh', { size: 17 })}
+    <span class="ui-label" style="color:var(--accent-text)">Three captures will sync on their own</span>
+  </div>
+  ${[
+    ['A new deal', 'Typed on the shoot'],
+    ['A screenshot', 'Will be read when it lands'],
+    ['Shoot marked done', 'One stage, one tap'],
+  ]
+    .map(
+      ([label, meta]) => `<div class="ui-row">
+    <div class="ui-avatar" style="background:#7C5CF0">${icon('bolt', { size: 16 })}</div>
+    <div><div class="ui-label">${label}</div><div class="ui-meta">${meta}</div></div>
+    <span class="chip">Queued</span>
+  </div>`
+    )
+    .join('')}
+  <div class="ui-row" style="grid-template-columns:1fr">
+    <span class="ui-meta">Nothing is lost and nothing is retyped. It is not an error, so it is not phrased as one.</span>
+  </div>`
+
 const SCREENS = {
   home: screenHome,
   deals: screenDeals,
@@ -368,6 +392,7 @@ const SCREENS = {
   tax: screenTax,
   team: screenTeam,
   ratecard: screenRateCard,
+  offline: screenOffline,
 }
 
 /** The whole thing, walkable. `id` scopes it so two can sit on one page. */
@@ -422,7 +447,7 @@ export function uiDashboard() {
       </div>
 
       <div class="list">
-        <div class="list-head">Needs you today</div>
+        <div class="list-head">Reminders</div>
         ${DEALS.map(
           (d) => `<div class="list-row">
           ${bavatar(d)}

@@ -9,7 +9,7 @@
 // was thought about, three questions, and where to go next.
 
 import { PRICING, SITE } from '../site.mjs'
-import { closingCta, demoApp, faq, faqSchema, head, icon, planCta, section, uiReminders } from '../ui.mjs'
+import { closingCta, demoApp, faq, faqSchema, head, icon, planCta, tabs } from '../ui.mjs'
 
 const PAGES = [
   {
@@ -195,7 +195,7 @@ const PAGES = [
     line: 'It saves to your phone and syncs itself when you are back.',
     description:
       'Create deals, add brands and tick off stages with no connection. Blubanana saves them on the phone and syncs when signal returns, without losing anything.',
-    art: uiReminders({ count: 4, width: '100%' }),
+    screen: 'offline',
     why: 'The promise is that a deal takes thirty seconds, and the moment that matters most is not at a desk. It is on a shoot, in a basement studio, with a brand asking whether you can add two Stories.',
     steps: [
       ['Log it anyway', 'Creating a deal, adding a brand and marking a stage done all work with no connection.'],
@@ -230,7 +230,7 @@ function productPage(spec, all) {
           <a class="btn btn-lg btn-ghost" href="/pricing">See pricing</a>
         </div>
       </div>
-      <div class="reveal">${spec.art ?? demoApp({ id: spec.slug, start: spec.screen })}</div>
+      <div class="reveal">${demoApp({ id: spec.slug, start: spec.screen })}</div>
     </div>
   </div>
 </section>
@@ -278,7 +278,7 @@ function productPage(spec, all) {
     <div class="grid g-3 reveal" style="margin-top:36px">
       ${others
         .map(
-          (other) => `<a class="card tool-card" href="/product/${other.slug}">
+          (other) => `<a class="card tool-card" href="/features/${other.slug}">
         <h4>${other.nav}</h4><p>${other.line}</p>
         <span class="link-arrow" style="margin-top:12px">Open</span>
       </a>`
@@ -292,7 +292,7 @@ function productPage(spec, all) {
 </section>`
 
   return {
-    path: `/product/${spec.slug}`,
+    path: `/features/${spec.slug}`,
     title: `${spec.nav} | Blubanana`,
     description: spec.description,
     schema: [faqSchema(spec.questions)],
@@ -309,37 +309,38 @@ function productPage(spec, all) {
   }
 }
 
-export const PRODUCT_NAV = PAGES.map((p) => [`/product/${p.slug}`, p.nav, p.line])
+export const PRODUCT_NAV = PAGES.map((p) => [`/features/${p.slug}`, p.nav, p.line])
 
 /** The overview, so "Product" in the menu goes somewhere as well as opening. */
 const overview = {
-  path: '/product',
-  title: 'What Blubanana does | Blubanana',
+  path: '/features',
+  title: 'Features | Blubanana',
   description:
     'Everything Blubanana does for an Indian creator: logging deals, deadlines, payments, GST invoices, tax, your rate card, managers, and working with no signal.',
   body: `
-<section class="hero" style="padding-bottom:0">
+<section class="hero" style="padding-bottom:24px">
   <div class="container">
-    <div class="eyebrow reveal">The product</div>
+    <div class="eyebrow reveal">Features</div>
     <h1 class="reveal" style="max-width:15ch">Eight jobs, one place</h1>
     <p class="lede reveal" style="max-width:52ch;margin-top:18px">
-      The work that sits between agreeing a deal and the money arriving.
+      The work that sits between agreeing a deal and the money arriving. Pick one and it opens.
     </p>
   </div>
 </section>
 
-<section class="band">
+<section class="band" style="padding-top:24px">
   <div class="container">
-    <div class="grid g-2 reveal">
-      ${PAGES.map(
-        (page) => `<a class="card tool-card" href="/product/${page.slug}">
-        <div class="icon-badge">${icon('bolt')}</div>
-        <h4>${page.nav}</h4>
-        <p>${page.line}</p>
-        <span class="link-arrow" style="margin-top:14px">Open</span>
-      </a>`
-      ).join('')}
-    </div>
+    ${tabs(
+      PAGES.map((page) => ({
+        id: `t-${page.slug}`,
+        label: page.nav,
+        screen: page.screen,
+        title: page.h1,
+        copy: page.line,
+        link: ['Read more', `/features/${page.slug}`],
+      })),
+      { frame: 'features-index' }
+    )}
   </div>
 </section>
 

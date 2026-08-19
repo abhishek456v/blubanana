@@ -64,7 +64,7 @@
   --r-lg: 18px;
   --r-xl: 26px;
 
-  --container: 1160px;
+  --container: 1280px;
   --prose: 700px;
   --header-h: 68px;
 }
@@ -170,6 +170,20 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 
 /* ── layout ──────────────────────────────────────────────────────────────── */
 .container { width: 100%; max-width: var(--container); margin: 0 auto; padding: 0 24px; }
+
+/*
+ * A fixed 1160px column looks composed on a laptop and marooned on a 27 inch
+ * screen, where the content huddles in the middle third with a field of white
+ * either side. The container grows with the viewport and then stops, because
+ * a line of prose past about 80 characters gets hard to track back from.
+ */
+@media (min-width: 1500px) {
+  :root { --container: 1400px; }
+  .container { padding: 0 40px; }
+}
+@media (min-width: 1900px) {
+  :root { --container: 1560px; }
+}
 .prose { max-width: var(--prose); }
 .band { padding: 84px 0; }
 .band-sm { padding: 56px 0; }
@@ -335,18 +349,25 @@ p:last-child { margin-bottom: 0; }
 .sheet .btn { display: flex; margin-top: 26px; }
 
 /* ── hero ────────────────────────────────────────────────────────────────── */
-.hero { position: relative; padding: 84px 0 76px; overflow: hidden; }
+.hero { position: relative; padding: 84px 0 76px; }
+/*
+ * The wash behind a hero.
+ *
+ * It used to be two radial gradients on an oversized box with `overflow:
+ * hidden` on the section, which clipped them: the colour was still solid where
+ * the box ended, so every page carried a pale blue rectangle with three visible
+ * edges under the header. This is one ellipse centred above the top edge that
+ * has faded to nothing well inside its own box, so there is no edge to see.
+ */
 .hero::before {
   content: '';
   position: absolute;
-  inset: -280px -10% auto -10%;
-  height: 780px;
-  background:
-    radial-gradient(600px 380px at 26% 62%, var(--accent-soft), transparent 68%),
-    radial-gradient(560px 340px at 82% 40%, var(--accent-soft), transparent 70%);
+  inset: 0;
+  background: radial-gradient(130% 78% at 50% -18%, var(--accent-soft) 0%, transparent 62%);
   pointer-events: none;
+  z-index: 0;
 }
-.hero > * { position: relative; }
+.hero > * { position: relative; z-index: 1; }
 .hero h1 { max-width: 19ch; }
 .hero .lede { max-width: 46ch; margin-top: 20px; }
 .hero .btn-row { margin-top: 32px; }
