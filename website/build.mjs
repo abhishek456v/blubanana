@@ -32,6 +32,22 @@ import product from './src/content/product.mjs'
 import company from './src/content/company.mjs'
 
 const DRAFT = process.argv.includes('--draft')
+
+/*
+ * Placeholders may reach a temporary address. They may never reach the real one.
+ *
+ * The rule used to be "never build with a TODO in it", which is right for the
+ * live site and wrong for a preview: it blocked the first deploy to a
+ * blubanana.vercel.app address, which is precisely where you want to look at
+ * the thing before the details exist.
+ *
+ * So the strictness follows the domain rather than a flag someone has to
+ * remember to remove. On a build server, if the production URL is the real
+ * domain, a placeholder fails the build. On a vercel.app address it is a
+ * warning. Locally it stays an error, which is what keeps them out of a commit.
+ */
+const PRODUCTION_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL ?? ''
+const ON_TEMPORARY_HOST = Boolean(process.env.VERCEL) && !PRODUCTION_URL.includes('blubanana.in')
 const ROOT = dirname(fileURLToPath(import.meta.url))
 const DIST = join(ROOT, 'dist')
 
@@ -130,6 +146,7 @@ writeFileSync(
 
 // ── checks ──────────────────────────────────────────────────────────────────
 const problems = []
+const placeholders = new Set()
 const warn = (message) => problems.push(message)
 
 const routes = new Set(PAGES.map((p) => p.path))
@@ -192,12 +209,24 @@ for (const p of written) {
 
   // The blocker. Razorpay's reviewers call the number on the contact page.
   const todos = [...p.html.matchAll(/TODO[^<"]*/g)].map((m) => m[0].trim())
-  for (const todo of new Set(todos)) warn(`${p.path} → placeholder: "${todo}"`)
+  for (const todo of new Set(todos)) {
+    if (ON_TEMPORARY_HOST) placeholders.add(todo)
+    else warn(`${p.path} → placeholder: "${todo}"`)
+  }
 }
 
 const size = readdirSync(join(DIST, 'assets')).length
 console.log(`\n${written.length} pages · ${size} asset files · dist/`)
 for (const p of written) console.log(`  ${p.path.padEnd(12)} ${(p.html.length / 1024).toFixed(0)}KB`)
+
+if (placeholders.size) {
+  console.log(`\n${'-'.repeat(64)}`)
+  console.log(`This is a preview address, so ${placeholders.size} placeholder(s) were allowed through:`)
+  for (const todo of placeholders) console.log(`  ${todo}`)
+  console.log('\nThe same build will FAIL once blubanana.in is attached to this')
+  console.log('project, which is what stops a placeholder reaching the real site.')
+  console.log('-'.repeat(64))
+}
 
 if (problems.length) {
   console.log(`\n${problems.length} problem(s):`)
