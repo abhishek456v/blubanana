@@ -77,6 +77,26 @@ for (const [name, path, width, height, fullPage] of SHOTS) {
     if (small.length) problems.push(`${name}: tap targets under 32px: ${[...new Set(small)].join(', ')}`)
   }
 
+  // Text on a filled accent surface has to be white. This is checked rather
+  // than trusted because the fault only ever showed in one theme: in dark mode
+  // the inherited page colour is white anyway, so a near black number on a blue
+  // tile looked correct until someone opened the light theme.
+  const onAccent = await page.evaluate(() => {
+    const out = []
+    document.querySelectorAll('body *').forEach((el) => {
+      if (getComputedStyle(el).backgroundColor !== 'rgb(0, 142, 204)') return
+      if (!el.getBoundingClientRect().width) return
+      ;[el, ...el.querySelectorAll('*')].forEach((kid) => {
+        const c = getComputedStyle(kid).color
+        if (c !== 'rgb(255, 255, 255)' && !c.startsWith('rgba(255, 255, 255')) {
+          out.push(`${String(el.className).split(' ')[0] || el.tagName} > ${kid.tagName} = ${c}`)
+        }
+      })
+    })
+    return [...new Set(out)].slice(0, 4)
+  })
+  if (onAccent.length) problems.push(`${name}: not white on the accent: ${onAccent.join(', ')}`)
+
   await page.screenshot({ path: `${OUT}/${name}.png`, fullPage })
   console.log(`  ${OUT}/${name}.png`)
   await page.close()

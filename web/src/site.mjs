@@ -105,24 +105,13 @@ export const TOOLS = [
 /**
  * The navigation.
  *
- * Product currently points at sections of the homepage. Those become pages of
- * their own in the next phase, at which point only the hrefs here change, which
- * is why the menu is data rather than markup. The build fails on any internal
- * link with no page behind it, so this cannot quietly rot.
+ * `items: 'product'` is filled in by the layout from the product pages
+ * themselves, so a new feature page appears in the menu and the footer by
+ * existing rather than by being remembered. The build fails on any internal
+ * link with no page behind it, so this cannot quietly rot either.
  */
 export const NAV = [
-  {
-    label: 'Product',
-    href: '/#features',
-    items: [
-      ['/#capture', 'Log a deal in 30 seconds', 'A screenshot, your voice, or typing'],
-      ['/#deadlines', 'Deadlines that reach you', 'Sent from a server, not your phone'],
-      ['/#money', 'Payments and chasing', 'Advances, balances, and the follow up written for you'],
-      ['/#invoices', 'Invoices brands accept', 'Correct tax, and a UPI code they can scan'],
-      ['/#tax', 'Tax without the March panic', 'Advance tax, expenses, April to March'],
-      ['/#ratecard', 'Your rate card', 'Built from what you have actually charged'],
-    ],
-  },
+  { label: 'Product', href: '/product', items: 'product' },
   { label: 'Free tools', href: '/tools', items: TOOLS.map(([href, title, note]) => [href, title, note]) },
   { label: 'Pricing', href: '/pricing' },
   { label: 'Compare', href: '/compare' },
@@ -130,17 +119,7 @@ export const NAV = [
 ]
 
 export const FOOTER = [
-  {
-    title: 'Product',
-    links: [
-      ['/#capture', 'Logging deals'],
-      ['/#deadlines', 'Deadlines'],
-      ['/#money', 'Payments'],
-      ['/#invoices', 'Invoices'],
-      ['/#tax', 'Tax'],
-      ['/#ratecard', 'Rate card'],
-    ],
-  },
+  { title: 'Product', links: 'product' },
   { title: 'Free tools', links: TOOLS.map(([href, title]) => [href, title.replace(' calculator', '')]) },
   {
     title: 'Company',

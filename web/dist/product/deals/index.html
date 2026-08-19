@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en" data-supabase-url="https://bbdvgeavtxfxykhiafbp.supabase.co" data-supabase-key="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJiZHZnZWF2dHhmeHlraGlhZmJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjEwNjIsImV4cCI6MjA5OTE5NzA2Mn0.vXcuwVznpLbMPqY6maaumqYqqzaGaUppLmZIIxHuS54" data-intro-seats="500">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Logging a deal | Blubanana</title>
+<meta name="description" content="Log a brand collaboration from a screenshot, a voice note or by typing. Blubanana reads the brief, the rate and the dates and shows them to you before anything saves.">
+<link rel="canonical" href="https://blubanana.in/product/deals">
+<meta name="theme-color" content="#08080C">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Blubanana">
+<meta property="og:title" content="Logging a deal | Blubanana">
+<meta property="og:description" content="Log a brand collaboration from a screenshot, a voice note or by typing. Blubanana reads the brief, the rate and the dates and shows them to you before anything saves.">
+<meta property="og:url" content="https://blubanana.in/product/deals">
+<meta property="og:image" content="https://blubanana.in/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@400..700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@400..700&display=swap">
+<link rel="stylesheet" href="/styles.e789a5af.css">
+<script>
+  /* Applied before the first paint. A stored preference arriving a frame late
+     is a white flash on a dark page, which is worse than no toggle at all. */
+  try {
+    var t = localStorage.getItem('cd-theme')
+    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t)
+  } catch (e) {}
+</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What if it reads something wrong?","acceptedAnswer":{"@type":"Answer","text":"You correct it before saving. The model proposes and you decide, on every path."}},{"@type":"Question","name":"Can I bring deals I already have?","acceptedAnswer":{"@type":"Answer","text":"Yes. Point the importer at a spreadsheet or a photo of your notes and they come across together."}},{"@type":"Question","name":"Does it work in Hindi?","acceptedAnswer":{"@type":"Answer","text":"Voice notes and screenshots in Hinglish are read correctly. Fully Devanagari text is less reliable today."}}]}</script>
+</head>
+<body>
+<div class="announce" id="announce" hidden>
+  <span><b>Launch offer.</b> 50% off for the first 500 creators<span data-seats-line hidden>, and <b data-seats-left></b> places are left</span></span>
+  <button class="announce-close" aria-label="Dismiss">✕</button>
+</div>
+<header class="header">
+  <div class="container">
+    <a class="logo" href="/"><span class="wm"><span class="wm-a">blu</span>banana</span></a>
+    <nav class="nav"><div class="nav-item">
+        <a class="nav-link" href="/product">Product<svg class="chev" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <div class="menu"><a href="/product/deals"><span class="mt">Logging a deal</span><span class="md">Screenshot the message, say it out loud, or type it. You check it before it saves.</span></a><a href="/product/deadlines"><span class="mt">Deadlines</span><span class="md">Every stage carries a date, and your phone tells you before it passes.</span></a><a href="/product/payments"><span class="mt">Payments and chasing</span><span class="md">The follow up is already written, and gets firmer the longer it goes.</span></a><a href="/product/invoices"><span class="mt">Invoices</span><span class="md">Correct tax, your payment code on the document, and one tap to send it.</span></a><a href="/product/tax"><span class="mt">Tax and year end</span><span class="md">Advance tax on the four dates the law sets, from your own income and expenses.</span></a><a href="/product/rate-card"><span class="mt">Your rate card</span><span class="md">Built from what you have actually charged, so you are not guessing.</span></a><a href="/product/team"><span class="mt">Managers and team</span><span class="md">You decide what they see, area by area. Nobody but you can delete anything.</span></a><a href="/product/offline"><span class="mt">Working offline</span><span class="md">It saves to your phone and syncs itself when you are back.</span></a></div>
+      </div><div class="nav-item">
+        <a class="nav-link" href="/tools">Free tools<svg class="chev" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <div class="menu"><a href="/tools/advance-tax-calculator"><span class="mt">Advance tax calculator</span><span class="md">What to set aside, and by which of the four dates</span></a><a href="/tools/tds-calculator"><span class="mt">TDS calculator</span><span class="md">They deducted 10%. What actually reaches your bank</span></a><a href="/tools/gst-calculator"><span class="mt">GST calculator</span><span class="md">CGST and SGST, or IGST, worked out from the two states</span></a><a href="/tools/rate-calculator"><span class="mt">Rate calculator</span><span class="md">What your reach is worth, per format</span></a><a href="/tools/engagement-rate-calculator"><span class="mt">Engagement rate calculator</span><span class="md">The number every brand asks for first</span></a></div>
+      </div><div class="nav-item"><a class="nav-link" href="/pricing">Pricing</a></div><div class="nav-item"><a class="nav-link" href="/compare">Compare</a></div><div class="nav-item"><a class="nav-link" href="/contact">Contact</a></div></nav>
+    <div class="nav-actions">
+      <button class="theme-toggle" aria-label="Switch between light and dark"><svg class="sun" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="4"/><path d="M11 2v2M11 18v2M2 11h2M18 11h2M4.6 4.6l1.4 1.4M16 16l1.4 1.4M17.4 4.6 16 6M6 16l-1.4 1.4"/></svg><svg class="moon" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13.4A7.6 7.6 0 0 1 8.6 4 7.6 7.6 0 1 0 18 13.4Z"/></svg></button>
+      <a class="login" href="https://platform.blubanana.in/sign-in">Log in</a>
+      <a class="btn btn-sm" href="https://platform.blubanana.in/sign-up">Start free</a>
+      <button class="burger" aria-label="Open menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 7h18M3 12h18M3 17h18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+    </div>
+  </div>
+</header>
+
+<div class="sheet" id="sheet">
+  <div class="sheet-top">
+    <a class="logo" href="/"><span class="wm"><span class="wm-a">blu</span>banana</span></a>
+    <button class="burger" aria-label="Close menu">✕</button>
+  </div>
+  <h5><a href="/product" style="padding:0;border:none;font:inherit;color:inherit">Product</a></h5><a href="/product/deals">Logging a deal</a><a href="/product/deadlines">Deadlines</a><a href="/product/payments">Payments and chasing</a><a href="/product/invoices">Invoices</a><a href="/product/tax">Tax and year end</a><a href="/product/rate-card">Your rate card</a><a href="/product/team">Managers and team</a><a href="/product/offline">Working offline</a><h5><a href="/tools" style="padding:0;border:none;font:inherit;color:inherit">Free tools</a></h5><a href="/tools/advance-tax-calculator">Advance tax calculator</a><a href="/tools/tds-calculator">TDS calculator</a><a href="/tools/gst-calculator">GST calculator</a><a href="/tools/rate-calculator">Rate calculator</a><a href="/tools/engagement-rate-calculator">Engagement rate calculator</a><a href="/pricing">Pricing</a><a href="/compare">Compare</a><a href="/contact">Contact</a>
+  <a class="btn" href="https://platform.blubanana.in/sign-up">Start free</a>
+  <a class="btn btn-ghost" href="https://platform.blubanana.in/sign-in" style="display:flex;margin-top:10px">Log in</a>
+</div>
+<main>
+
+<section class="hero" style="padding-bottom:56px">
+  <div class="container">
+    <div class="hero-grid">
+      <div>
+        <div class="eyebrow reveal">Never miss a deal</div>
+        <h1 class="reveal" style="max-width:15ch;font-size:clamp(32px,4.2vw,48px)">Log a brand deal in thirty seconds</h1>
+        <p class="lede reveal" style="max-width:44ch;margin-top:18px">Screenshot the message, say it out loud, or type it. You check it before it saves.</p>
+        <div class="btn-row reveal" style="margin-top:28px">
+          <a class="btn btn-lg" href="https://platform.blubanana.in/sign-up">Start free for 14 days</a>
+          <a class="btn btn-lg btn-ghost" href="/pricing">See pricing</a>
+        </div>
+      </div>
+      <div class="reveal"><div class="app" data-demo="deals">
+    <div class="app-rail"><button class="rail-btn" data-go="home" aria-label="Home" title="Home"><svg viewBox="0 0 22 22" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 18V9M9.4 18V4.6M14.8 18v-6.4M20 18H2.4"/></svg></button><button class="rail-btn" data-go="deals" aria-label="Deals" title="Deals"><svg viewBox="0 0 22 22" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.4 2.6 5 12.4h5l-1.4 7 7.4-9.8h-5l1.4-7Z"/></svg></button><button class="rail-btn" data-go="money" aria-label="Money" title="Money"><svg viewBox="0 0 22 22" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="16" height="11" rx="2.4"/><path d="M3 10h16M15 13.5h1.6"/></svg></button><button class="rail-btn" data-go="team" aria-label="Team" title="Team"><svg viewBox="0 0 22 22" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8.4" cy="8.4" r="3.2"/><path d="M2.6 18.4c0-3 2.6-4.8 5.8-4.8s5.8 1.8 5.8 4.8"/><path d="M15 6.2a3 3 0 0 1 0 5.6M16.6 18.4c0-2 .3-3.2-1-4.2"/></svg></button><button class="rail-btn" data-go="invoice" aria-label="Invoices" title="Invoices"><svg viewBox="0 0 22 22" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3h5L17 8.4v10.1A1.5 1.5 0 0 1 15.5 20h-9A1.5 1.5 0 0 1 5 18.5v-14Z"/><path d="M11.4 3v5.6H17"/></svg></button></div>
+    <div class="app-screens"><div class="app-body" data-screen="home" hidden>
+  <div class="app-head">
+    <div><div class="app-date">1st January, 2026</div><div class="app-hi">Morning, Preeti</div></div>
+    <div class="app-avatar">PN</div>
+  </div>
+  <div class="stat-row">
+    <button class="stat stat-hero" data-go="money"><div class="k">Owed to you</div><div class="v">₹3,75,000</div><div class="s">Across 11 unpaid deals</div></button>
+    <button class="stat" data-go="money"><div class="k">Received</div><div class="v">₹65,500</div><div class="s">This month</div></button>
+    <button class="stat" data-go="deals"><div class="k">Live deals</div><div class="v">11</div><div class="s">In progress</div></button>
+  </div>
+  <div class="act-row">
+    <button class="act" data-go="newdeal"><span><svg viewBox="0 0 22 22" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a2 2 0 0 1 2-2h2l1.2-2h5.6L15 6h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8Z"/><circle cx="11" cy="12" r="3.2"/></svg></span> New deal</button>
+    <button class="act" data-go="invoice"><span><svg viewBox="0 0 22 22" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3h5L17 8.4v10.1A1.5 1.5 0 0 1 15.5 20h-9A1.5 1.5 0 0 1 5 18.5v-14Z"/><path d="M11.4 3v5.6H17"/></svg></span> Raise invoice</button>
+    <button class="act" data-go="tax"><span><svg viewBox="0 0 22 22" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 18V9M9.4 18V4.6M14.8 18v-6.4M20 18H2.4"/></svg></span> Year in review</button>
+  </div>
+  <div class="list">
+    <div class="list-head">Needs you today</div>
+    <button class="list-row" data-go="deal" data-deal="0">
+  <div class="bavatar" style="background:#3B6EF6">N</div>
+  <div style="text-align:left"><div class="t">Nykaa</div><div class="m">Reel and 3 Stories · Publish due in 2 days</div></div>
+  <div class="r"><div class="amt">₹45,000</div><span class="chip chip-blue" style="margin-top:3px">Live</span></div>
+</button><button class="list-row" data-go="deal" data-deal="1">
+  <div class="bavatar" style="background:#7C5CF0">B</div>
+  <div style="text-align:left"><div class="t">boAt</div><div class="m">1 Reel · Payment 6 days late</div></div>
+  <div class="r"><div class="amt">₹35,500</div><span class="chip chip-rose" style="margin-top:3px">Overdue</span></div>
+</button><button class="list-row" data-go="deal" data-deal="2">
+  <div class="bavatar" style="background:#0F9D63">M</div>
+  <div style="text-align:left"><div class="t">Mamaearth</div><div class="m">Feed post and 2 Stories · Edit due tomorrow</div></div>
+  <div class="r"><div class="amt">₹28,000</div><span class="chip chip-amber" style="margin-top:3px">Active</span></div>
+</button><button class="list-row" data-go="deal" data-deal="3">
+  <div class="bavatar" style="background:#E08A17">Z</div>
+  <div style="text-align:left"><div class="t">Zomato</div><div class="m">YouTube integration · Paid in full</div></div>
+  <div class="r"><div class="amt">₹1,20,000</div><span class="chip chip-green" style="margin-top:3px">Paid</span></div>
+</button>
+  </div></div><div class="app-body" data-screen="deals" hidden>
+  <div class="app-head">
+    <div style="display:flex;align-items:center;gap:10px">
+      <button class="app-back" data-go="home" aria-label="Back"><svg viewBox="0 0 22 22" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.4 4.6 7 11l6.4 6.4"/></svg></button>
+      <div><div class="app-hi" style="font-size:15px">All deals</div><div class="app-date">4 of 11</div></div>
+    </div>
+  </div>
+  <div class="chip-row"><span class="chip chip-blue">All</span><span class="chip">Live</span><span class="chip">Unpaid</span><span class="chip">Paid</span></div>
+  <div class="list"><button class="list-row" data-go="deal" data-deal="0">
+  <div class="bavatar" style="background:#3B6EF6">N</div>
+  <div style="text-align:left"><div class="t">Nykaa</div><div class="m">Reel and 3 Stories · Publish due in 2 days</div></div>
+  <div class="r"><div class="amt">₹45,000</div><span class="chip chip-blue" style="margin-top:3px">Live</span></div>
+</button><button class="list-row" data-go="deal" data-deal="1">
+  <div class="bavatar" style="background:#7C5CF0">B</div>
+  <div style="text-align:left"><div class="t">boAt</div><div class="m">1 Reel · Payment 6 days late</div></div>
+  <div class="r"><div class="amt">₹35,500</div><span class="chip chip-rose" style="margin-top:3px">Overdue</span></div>
+</button><button class="list-row" data-go="deal" data-deal="2">
+  <div class="bavatar" style="background:#0F9D63">M</div>
+  <div style="text-align:left"><div class="t">Mamaearth</div><div class="m">Feed post and 2 Stories · Edit due tomorrow</div></div>
+  <div class="r"><div class="amt">₹28,000</div><span class="chip chip-amber" style="margin-top:3px">Active</span></div>
+</button><button class="list-row" data-go="deal" data-deal="3">
+  <div class="bavatar" style="background:#E08A17">Z</div>
+  <div style="text-align:left"><div class="t">Zomato</div><div class="m">YouTube integration · Paid in full</div></div>
+  <div class="r"><div class="amt">₹1,20,000</div><span class="chip chip-green" style="margin-top:3px">Paid</span></div>
+</button></div></div><div class="app-body" data-screen="deal" hidden>
+  <div class="app-head">
+    <div style="display:flex;align-items:center;gap:10px">
+      <button class="app-back" data-go="home" aria-label="Back"><svg viewBox="0 0 22 22" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.4 4.6 7 11l6.4 6.4"/></svg></button>
+      <div><div class="app-hi" style="font-size:15px">Deal</div><div class="app-date">Skincare campaign</div></div>
+    </div>
+  </div>
+  <div class="ui-row">
+    <div class="bavatar" data-deal-avatar style="background:#3B6EF6">N</div>
+    <div><div class="ui-label" data-deal-name>Nykaa</div><div class="ui-meta" data-deal-work>Reel and 3 Stories</div></div>
+    <span class="ui-label" data-deal-amount>₹45,000</span>
+  </div>
+  <div class="track" style="padding:8px 4px 4px">
+    <div class="track-step done"><div class="track-dot"><svg viewBox="0 0 22 22" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 11.5 9 16l9.5-9.5"/></svg></div><span>Script</span></div>
+    <div class="track-step done"><div class="track-dot"><svg viewBox="0 0 22 22" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 11.5 9 16l9.5-9.5"/></svg></div><span>Shoot</span></div>
+    <div class="track-step now"><div class="track-dot"></div><span>Edit</span></div>
+    <div class="track-step"><div class="track-dot"></div><span>Publish</span></div>
+  </div>
+  <div class="ui-row">
+    <div class="ui-avatar" style="background:#0F9D63"><svg viewBox="0 0 22 22" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 11.5 9 16l9.5-9.5"/></svg></div>
+    <div><div class="ui-label">Advance, 50%</div><div class="ui-meta">Received on signing</div></div>
+    <span class="ui-label">₹22,500</span>
+  </div>
+  <div class="ui-row">
+    <div class="ui-avatar" style="background:#E08A17"><svg viewBox="0 0 22 22" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="16" height="11" rx="2.4"/><path d="M3 10h16M15 13.5h1.6"/></svg></div>
+    <div><div class="ui-label">Balance, 50%</div><div class="ui-meta">Due 30 days after publish</div></div>
+    <span class="ui-label">₹22,500</span>
+  </div>
+  <div class="act-row" style="grid-template-columns:1fr 1fr">
+    <button class="act" data-go="invoice"><span><svg viewBox="0 0 22 22" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3h5L17 8.4v10.1A1.5 1.5 0 0 1 15.5 20h-9A1.5 1.5 0 0 1 5 18.5v-14Z"/><path d="M11.4 3v5.6H17"/></svg></span> Raise invoice</button>
+    <button class="act" data-go="money"><span><svg viewBox="0 0 22 22" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="16" height="11" rx="2.4"/><path d="M3 10h16M15 13.5h1.6"/></svg></span> Chase payment</button>
+  </div></div><div class="app-body" data-screen="money" hidden>
+  <div class="app-head">
+    <div style="display:flex;align-items:center;gap:10px">
+      <button class="app-back" data-go="home" aria-label="Back"><svg viewBox="0 0 22 22" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.4 4.6 7 11l6.4 6.4"/></svg></button>
+      <div><div class="app-hi" style="font-size:15px">Money</div><div class="app-date">Last six months</div></div>
+    </div>
+  </div>
+  <div class="stat-row" style="grid-template-columns:1fr 1fr">
+    <div class="stat stat-hero"><div class="k">Still out</div><div class="v">₹3,75,000</div><div class="s">Across 11 unpaid deals</div></div>
+    <div class="stat"><div class="k">Collected</div><div class="v">92%</div><div class="s">Of everything invoiced</div></div>
+  </div>
+  <div class="bars"><div class="bar " style="height:38%"></div><div class="bar " style="height:62%"></div><div class="bar " style="height:44%"></div><div class="bar " style="height:78%"></div><div class="bar " style="height:56%"></div><div class="bar on" style="height:92%"></div></div>
+  <div class="list"><button class="list-row" data-go="deal" data-deal="0">
+  <div class="bavatar" style="background:#7C5CF0">B</div>
+  <div style="text-align:left"><div class="t">boAt</div><div class="m">1 Reel · Payment 6 days late</div></div>
+  <div class="r"><div class="amt">₹35,500</div><span class="chip chip-rose" style="margin-top:3px">Overdue</span></div>
+</button><button class="list-row" data-go="deal" data-deal="1">
+  <div class="bavatar" style="background:#0F9D63">M</div>
+  <div style="text-align:left"><div class="t">Mamaearth</div><div class="m">Feed post and 2 Stories · Edit due tomorrow</div></div>
+  <div class="r"><div class="amt">₹28,000</div><span class="chip chip-amber" style="margin-top:3px">Active</span></div>
+</button><button class="list-row" data-go="deal" data-deal="2">
+  <div class="bavatar" style="background:#E08A17">Z</div>
+  <div style="text-align:left"><div class="t">Zomato</div><div class="m">YouTube integration · Paid in full</div></div>
+  <div class="r"><div class="amt">₹1,20,000</div><span class="chip chip-green" style="margin-top:3px">Paid</span></div>
+</button></div></div><div class="app-body" data-screen="newdeal">
+  <div class="app-head">
+    <div style="display:flex;align-items:center;gap:10px">
+      <button class="app-back" data-go="home" aria-label="Back"><svg viewBox="0 0 22 22" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.4 4.6 7 11l6.4 6.4"/></svg></button>
+      <div><div class="app-hi" style="font-size:15px">New deal</div><div class="app-date">about 30 seconds</div></div>
+    </div>
+  </div>
+  <div class="chip-row">
+    <button class="chip chip-blue" data-mode="screenshot"><svg viewBox="0 0 22 22" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a2 2 0 0 1 2-2h2l1.2-2h5.6L15 6h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8Z"/><circle cx="11" cy="12" r="3.2"/></svg> Screenshot</button><button class="chip" data-mode="voice"><svg viewBox="0 0 22 22" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8.4" y="3" width="5.2" height="10" rx="2.6"/><path d="M5.5 11a5.5 5.5 0 0 0 11 0M11 16.5V19"/></svg> Voice</button><button class="chip" data-mode="type"><svg viewBox="0 0 22 22" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.6" y="6" width="16.8" height="12" rx="2.4"/><path d="M6 10h.01M9 10h.01M12 10h.01M15 10h.01M7 14h8"/></svg> Type</button><button class="chip" data-mode="repeat"><svg viewBox="0 0 22 22" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6.4V11h-4.6"/><path d="M17.4 11a6.6 6.6 0 1 1-1.8-4.6L18 8.8"/></svg> Repeat</button>
+  </div>
+  <div class="ui-row">
+    <div class="bavatar" style="background:#0F9D63">M</div>
+    <div><div class="ui-label">Mamaearth</div><div class="ui-meta" data-source>Read from the screenshot</div></div>
+    <span class="chip chip-green" data-found>Found</span>
+  </div>
+  <div class="ui-row" style="grid-template-columns:1fr">
+    <div><div class="ui-meta">Deliverables</div><div class="chip-row" style="margin-top:8px"><span class="chip chip-blue">1 Feed post</span><span class="chip chip-blue">2 Stories</span></div></div>
+  </div>
+  <div class="ui-row" style="grid-template-columns:1fr auto">
+    <div><div class="ui-meta">Rate</div><div class="ui-label" style="margin-top:2px">₹28,000</div></div>
+    <span class="chip">Check before saving</span>
+  </div>
+  <button class="act" data-go="deal" style="justify-content:center"><span><svg viewBox="0 0 22 22" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 11.5 9 16l9.5-9.5"/></svg></span> Save the deal</button></div><div class="app-body" data-screen="invoice" hidden>
+  <div class="app-head">
+    <div style="display:flex;align-items:center;gap:10px">
+      <button class="app-back" data-go="home" aria-label="Back"><svg viewBox="0 0 22 22" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.4 4.6 7 11l6.4 6.4"/></svg></button>
+      <div><div class="app-hi" style="font-size:15px">Invoice</div><div class="app-date">INV-014</div></div>
+    </div>
+  </div>
+  <div style="display:grid;gap:10px">
+    <div class="paper" style="max-width:400px">
+    <div class="p-head">
+      <div>
+        <div class="p-name">Preeti Nainwal</div>
+        <div class="p-muted">Indiranagar, Bengaluru 560038<br>GSTIN 29ABCDE1234F1Z5<br>PAN ABCDE1234F</div>
+      </div>
+      <div><div class="p-kind">Tax invoice</div><div class="p-num">INV-014</div><div class="p-muted">1 January 2026</div></div>
+    </div>
+    <div class="p-rule"></div>
+    <div>
+      <div class="p-kind" style="text-align:left">Billed to</div>
+      <div class="p-name" style="font-size:12.5px;margin-top:3px">Lenskart</div>
+      <div class="p-muted">GSTIN 06AABCL4567T1Z6</div>
+    </div>
+    <table>
+      <thead><tr><th style="text-align:left">Description</th><th style="text-align:right">Amount</th></tr></thead>
+      <tbody><tr><td>Reel and 3 Stories, as agreed<br><span style="color:#A29A92">SAC 998397</span></td><td style="text-align:right">₹60,000</td></tr></tbody>
+    </table>
+    <div>
+      <div class="p-tot"><span>Subtotal</span><span>₹60,000</span></div>
+      <div class="p-tot"><span>IGST at 18%</span><span>₹10,800</span></div>
+      <div class="p-tot"><span>Less TDS withheld</span><span>₹6,000</span></div>
+      <div class="p-tot big"><span>Amount due</span><span>₹64,800</span></div>
+    </div>
+    <div class="p-rule"></div>
+    <div class="p-head" style="align-items:flex-end">
+      <div class="p-muted">Pay by UPI<br>preeti.nainwal@upi<br>A/C 9876 5432 1098<br>IFSC HDFC0001234</div>
+      <div class="p-qr"></div>
+    </div>
+  </div>
+    <button class="act" data-go="money" style="justify-content:center"><span><svg viewBox="0 0 22 22" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2.6" width="10" height="16.8" rx="2.4"/><path d="M9.4 16.6h3.2"/></svg></span> Send on WhatsApp</button>
+  </div></div><div class="app-body" data-screen="tax" hidden>
+  <div class="app-head">
+    <div style="display:flex;align-items:center;gap:10px">
+      <button class="app-back" data-go="home" aria-label="Back"><svg viewBox="0 0 22 22" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.4 4.6 7 11l6.4 6.4"/></svg></button>
+      <div><div class="app-hi" style="font-size:15px">Year in review</div><div class="app-date">April to March</div></div>
+    </div>
+  </div>
+  <div class="stat stat-hero"><div class="k">Advance tax expected</div><div class="v">₹3,60,000</div><div class="s">From your income, less your expenses</div></div>
+  <div class="cal"><div class=""><b>15 Jun</b><span>₹54,000</span></div><div class="soon"><b>15 Sep</b><span>₹1,08,000</span></div><div class=""><b>15 Dec</b><span>₹1,08,000</span></div><div class=""><b>15 Mar</b><span>₹90,000</span></div></div>
+  <button class="act" data-go="ratecard" style="justify-content:center"><span><svg viewBox="0 0 22 22" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8.4" cy="8.4" r="3.2"/><path d="M2.6 18.4c0-3 2.6-4.8 5.8-4.8s5.8 1.8 5.8 4.8"/><path d="M15 6.2a3 3 0 0 1 0 5.6M16.6 18.4c0-2 .3-3.2-1-4.2"/></svg></span> Open your rate card</button></div><div class="app-body" data-screen="team" hidden>
+  <div class="app-head">
+    <div style="display:flex;align-items:center;gap:10px">
+      <button class="app-back" data-go="home" aria-label="Back"><svg viewBox="0 0 22 22" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.4 4.6 7 11l6.4 6.4"/></svg></button>
+      <div><div class="app-hi" style="font-size:15px">Invite a manager</div><div class="app-date">You choose what they see</div></div>
+    </div>
+  </div>
+  <div class="ui-row" style="grid-template-columns:1fr auto;padding:11px 12px">
+    <span class="ui-label">Deals and deadlines</span><span class="chip chip-green">Visible</span>
+  </div><div class="ui-row" style="grid-template-columns:1fr auto;padding:11px 12px">
+    <span class="ui-label">Brands and contacts</span><span class="chip chip-green">Visible</span>
+  </div><div class="ui-row" style="grid-template-columns:1fr auto;padding:11px 12px">
+    <span class="ui-label">Invoices</span><span class="chip chip-green">Visible</span>
+  </div><div class="ui-row" style="grid-template-columns:1fr auto;padding:11px 12px">
+    <span class="ui-label">Rates</span><span class="chip ">Hidden</span>
+  </div><div class="ui-row" style="grid-template-columns:1fr auto;padding:11px 12px">
+    <span class="ui-label">Bank details</span><span class="chip ">Hidden</span>
+  </div>
+  <div class="ui-row" style="grid-template-columns:auto 1fr;background:var(--rose-soft)">
+    <svg viewBox="0 0 22 22" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 3 4.6 5.6v5.2c0 4 2.6 7 6.4 8.2 3.8-1.2 6.4-4.2 6.4-8.2V5.6L11 3Z"/></svg>
+    <span class="ui-label" style="color:var(--rose)">Nobody but you can delete anything</span>
+  </div></div><div class="app-body" data-screen="ratecard" hidden>
+  <div class="app-head">
+    <div style="display:flex;align-items:center;gap:10px">
+      <button class="app-back" data-go="home" aria-label="Back"><svg viewBox="0 0 22 22" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.4 4.6 7 11l6.4 6.4"/></svg></button>
+      <div><div class="app-hi" style="font-size:15px">Rate card</div><div class="app-date">Ready to send</div></div>
+    </div>
+  </div>
+  <div class="ratecard" style="max-width:340px">
+    <div class="rc-top">
+      <div class="rc-face" style="display:grid;place-items:center;font-weight:600;font-size:15px">PN</div>
+      <div>
+        <div style="font-size:16px;font-weight:600;letter-spacing:-.02em">Preeti Nainwal</div>
+        <div style="font-size:12px;opacity:.78">Lifestyle and travel · 1.8L followers</div>
+      </div>
+    </div>
+    <div>
+      <div class="rc-row"><span>Reel</span><span style="display:flex;align-items:center;gap:10px"><span class="rc-bar"><i style="width:84%"></i></span><b style="font-variant-numeric:tabular-nums">₹45,000</b></span></div><div class="rc-row"><span>Story set</span><span style="display:flex;align-items:center;gap:10px"><span class="rc-bar"><i style="width:32%"></i></span><b style="font-variant-numeric:tabular-nums">₹14,000</b></span></div><div class="rc-row"><span>Carousel</span><span style="display:flex;align-items:center;gap:10px"><span class="rc-bar"><i style="width:56%"></i></span><b style="font-variant-numeric:tabular-nums">₹29,000</b></span></div><div class="rc-row"><span>YouTube Short</span><span style="display:flex;align-items:center;gap:10px"><span class="rc-bar"><i style="width:66%"></i></span><b style="font-variant-numeric:tabular-nums">₹36,500</b></span></div><div class="rc-row"><span>YouTube integration</span><span style="display:flex;align-items:center;gap:10px"><span class="rc-bar"><i style="width:96%"></i></span><b style="font-variant-numeric:tabular-nums">₹78,000</b></span></div>
+    </div>
+    <div style="font-size:11px;opacity:.78">Every rate is the median of what you have actually charged</div>
+  </div></div></div>
+    <div class="demo-hint">Have a click around. Nothing here leaves the page.</div>
+  </div></div>
+    </div>
+  </div>
+</section>
+
+<section class="band band-alt">
+  <div class="container">
+    <div class="split">
+      <div class="reveal"><h2 style="max-width:14ch">Why it works this way</h2></div>
+      <div class="reveal"><p class="lede">A deal that never gets written down is a deal that never gets invoiced. So getting one in has to take about as long as replying to the message it arrived in.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="container">
+    <div class="reveal" style="max-width:640px;margin:0 auto;text-align:center">
+    
+    <h2>How it goes</h2>
+    
+  </div>
+    <div class="steps reveal" style="margin-top:40px">
+      <div class="step"><h4>Screenshot the DM</h4><p>The brand, the deliverables, the rate and the dates are read out of the picture.</p></div><div class="step"><h4>Check what it read</h4><p>It fills the form and waits. Nothing is saved on a machine’s say so.</p></div><div class="step"><h4>Done</h4><p>The payment schedule, the stages and the reminders are created with it.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band band-alt">
+  <div class="container">
+    <div class="split">
+      <div class="reveal">
+        <div class="icon-badge"><svg viewBox="0 0 22 22" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 3 4.6 5.6v5.2c0 4 2.6 7 6.4 8.2 3.8-1.2 6.4-4.2 6.4-8.2V5.6L11 3Z"/></svg></div>
+        <h2 style="max-width:16ch">Nothing on the form is required except the brand</h2>
+      </div>
+      <div class="reveal"><p class="lede">And no field is ever labelled optional. If it can be left blank, leaving it blank is simply allowed, which is the difference between a form you finish and a form you abandon.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="container">
+    <div class="reveal" style="max-width:640px;margin:0 auto;text-align:center">
+    
+    <h2>Questions</h2>
+    
+  </div>
+    <div style="max-width:780px;margin:36px auto 0"><div class="faq reveal"><details><summary>What if it reads something wrong?</summary><div class="answer">You correct it before saving. The model proposes and you decide, on every path.</div></details><details><summary>Can I bring deals I already have?</summary><div class="answer">Yes. Point the importer at a spreadsheet or a photo of your notes and they come across together.</div></details><details><summary>Does it work in Hindi?</summary><div class="answer">Voice notes and screenshots in Hinglish are read correctly. Fully Devanagari text is less reliable today.</div></details></div></div>
+  </div>
+</section>
+
+<section class="band band-alt">
+  <div class="container">
+    <div class="reveal" style="max-width:640px;margin:0 auto;text-align:center">
+    
+    <h2>The rest of it</h2>
+    
+  </div>
+    <div class="grid g-3 reveal" style="margin-top:36px">
+      <a class="card tool-card" href="/product/deadlines">
+        <h4>Deadlines</h4><p>Every stage carries a date, and your phone tells you before it passes.</p>
+        <span class="link-arrow" style="margin-top:12px">Open</span>
+      </a><a class="card tool-card" href="/product/payments">
+        <h4>Payments and chasing</h4><p>The follow up is already written, and gets firmer the longer it goes.</p>
+        <span class="link-arrow" style="margin-top:12px">Open</span>
+      </a><a class="card tool-card" href="/product/invoices">
+        <h4>Invoices</h4><p>Correct tax, your payment code on the document, and one tap to send it.</p>
+        <span class="link-arrow" style="margin-top:12px">Open</span>
+      </a>
+    </div>
+    <div style="max-width:420px;margin:36px auto 0">
+      <div class="plan-cta">
+    <a class="btn " href="https://platform.blubanana.in/plans">Subscribe</a>
+    <a class="btn btn-ghost " href="/pricing#included">What is included</a>
+    <a class="btn btn-trial " href="https://platform.blubanana.in/sign-up">14 day trial</a>
+  </div>
+    </div>
+  </div>
+</section>
+<section class="close-cta">
+    <div class="container reveal">
+      <h2 style="max-width:16ch;margin:0 auto">Try it on the deals you already have</h2>
+      <p class="lede" style="margin:18px auto 0;max-width:52ch">The importer brings them across in minutes.</p>
+      <div class="btn-row">
+        <a class="btn btn-lg" href="https://platform.blubanana.in/plans">Subscribe</a>
+        <a class="btn btn-lg btn-ghost" href="https://platform.blubanana.in/sign-up">14 day trial</a>
+      </div>
+    </div>
+  </section>
+</main>
+<footer class="footer">
+  <div class="container">
+    <div class="footer-cols">
+      <div>
+        <a class="logo" href="/" style="margin-bottom:16px"><span class="wm"><span class="wm-a">blu</span>banana</span></a>
+        <p class="fine" style="margin-bottom:10px">The business side of being a creator. Built in India, for Indian creators.</p>
+        <p class="fine">TODO: registered address, city, state, PIN</p>
+        <p class="fine"><a href="mailto:hello@blubanana.in">hello@blubanana.in</a> · TODO: a number that is answered</p>
+      </div>
+      <div>
+      <h5>Product</h5>
+      <ul><li><a href="/product/deals">Logging a deal</a></li><li><a href="/product/deadlines">Deadlines</a></li><li><a href="/product/payments">Payments and chasing</a></li><li><a href="/product/invoices">Invoices</a></li><li><a href="/product/tax">Tax and year end</a></li><li><a href="/product/rate-card">Your rate card</a></li><li><a href="/product/team">Managers and team</a></li><li><a href="/product/offline">Working offline</a></li></ul>
+    </div><div>
+      <h5>Free tools</h5>
+      <ul><li><a href="/tools/advance-tax-calculator">Advance tax</a></li><li><a href="/tools/tds-calculator">TDS</a></li><li><a href="/tools/gst-calculator">GST</a></li><li><a href="/tools/rate-calculator">Rate</a></li><li><a href="/tools/engagement-rate-calculator">Engagement rate</a></li></ul>
+    </div><div>
+      <h5>Company</h5>
+      <ul><li><a href="/pricing">Pricing</a></li><li><a href="/compare">Compare</a></li><li><a href="/contact">Contact</a></li></ul>
+    </div><div>
+      <h5>Legal</h5>
+      <ul><li><a href="/terms">Terms</a></li><li><a href="/privacy">Privacy</a></li><li><a href="/refunds">Cancellation and refunds</a></li></ul>
+    </div>
+    </div>
+    <div class="footer-base">
+      <span>© 2026 TODO: the registered legal entity name. All rights reserved.</span>
+      <span>Payments by Razorpay · Brands pay you directly, never through us.</span>
+    </div>
+  </div>
+</footer>
+<script src="/app.b8f5a169.js" defer></script>
+
+</body>
+</html>

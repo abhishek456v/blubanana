@@ -239,7 +239,7 @@ p:last-child { margin-bottom: 0; }
   padding: 9px 44px 9px 24px;
 }
 .announce b { font-weight: 600; }
-.announce-close { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: color-mix(in srgb, var(--on-accent) 82%, transparent); padding: 4px 8px; line-height: 1; }
+.announce-close { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--on-accent); padding: 4px 8px; line-height: 1; }
 .announce-close:hover { color: var(--on-accent); }
 
 .header {
@@ -568,7 +568,7 @@ button.chip.chip-blue:hover { background: var(--accent-soft); color: var(--accen
 .stat .v { font-size: 22px; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; margin-top: 3px; }
 .stat .s { font-size: 11px; color: var(--text-3); margin-top: 2px; }
 .stat-hero { background: var(--accent); color: var(--on-accent); }
-.stat-hero .k, .stat-hero .s { color: color-mix(in srgb, var(--on-accent) 90%, transparent); }
+.stat-hero .k, .stat-hero .s { color: var(--on-accent); }
 .stat-hero .v { font-size: 27px; }
 
 .act-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
@@ -600,6 +600,18 @@ button.chip.chip-blue:hover { background: var(--accent-soft); color: var(--accen
    column narrow enough to wrap "All deals" onto two lines. */
 .app [data-go] { cursor: pointer; text-align: inherit; font: inherit; color: inherit; border: none; transition: transform 120ms ease, background 140ms ease; }
 .app [data-go]:not(.app-back) { width: 100%; }
+
+/*
+ * `color: inherit` on the line above takes the page's text colour, which
+ * outranks the rules giving a filled tile its own foreground. In dark mode the
+ * page text is white so it looked right and the fault hid; in light mode the
+ * number on the blue tile and the active rail icon were drawn in near black on
+ * blue.
+ *
+ * Anything sitting on the accent is white. Hierarchy comes from size and
+ * weight, never from fading a label towards its background.
+ */
+.app .stat-hero, .app .stat-hero *, .app .rail-btn.on, .app .rail-btn.on * { color: var(--on-accent); }
 .app button.stat, .app button.list-row { display: grid; }
 .app button.act { display: flex; }
 .app [data-go]:hover { background: var(--border); }
@@ -643,10 +655,10 @@ button.chip.chip-blue:hover { background: var(--accent-soft); color: var(--accen
 .preset:hover { border-color: var(--border-strong); color: var(--text); }
 
 .tool-out { background: var(--accent); color: var(--on-accent); border-radius: var(--r-xl); padding: 28px; display: grid; gap: 14px; position: sticky; top: 92px; box-shadow: var(--shadow-md); }
-.tool-out .fine, .tool-out .out-row span { color: color-mix(in srgb, var(--on-accent) 88%, transparent); }
+.tool-out .fine, .tool-out .out-row span { color: var(--on-accent); }
 .tool-out .out-row { border-bottom-color: color-mix(in srgb, var(--on-accent) 20%, transparent); }
 .tool-out .out-row b { color: var(--on-accent); }
-.tool-out .tool-note { color: color-mix(in srgb, var(--on-accent) 86%, transparent); }
+.tool-out .tool-note { color: var(--on-accent); }
 .tool-out .out-big { color: var(--on-accent); }
 
 .tool-card { display: block; }

@@ -1,5 +1,8 @@
 # Blubanana
 
+> **Not sure what to do next?** `WHAT-IS-LEFT.md` has it in plain English:
+> what needs you, and what needs building.
+
 A mobile CRM for content creators — never miss a deal, a deadline, or a payment.
 Built with Expo (React Native) + Supabase + OpenAI.
 

@@ -6,6 +6,7 @@
 // version kept its header in six copies.
 
 import { COMPANY, FOOTER, NAV, PRICING, SITE, SUPABASE } from './site.mjs'
+import { PRODUCT_NAV } from './content/product.mjs'
 
 /**
  * The wordmark.
@@ -22,12 +23,16 @@ const BURGER = `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d=
 
 const THEME_ICONS = `<svg class="sun" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="4"/><path d="M11 2v2M11 18v2M2 11h2M18 11h2M4.6 4.6l1.4 1.4M16 16l1.4 1.4M17.4 4.6 16 6M6 16l-1.4 1.4"/></svg><svg class="moon" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13.4A7.6 7.6 0 0 1 8.6 4 7.6 7.6 0 1 0 18 13.4Z"/></svg>`
 
+/** `'product'` stands in for the feature pages, which describe themselves. */
+const resolve = (items) => (items === 'product' ? PRODUCT_NAV : items)
+
 function header() {
   const items = NAV.map((entry) => {
-    if (!entry.items) {
+    const menu_items = resolve(entry.items)
+    if (!menu_items) {
       return `<div class="nav-item"><a class="nav-link" href="${entry.href}">${entry.label}</a></div>`
     }
-    const menu = entry.items
+    const menu = menu_items
       .map(([href, title, note]) => `<a href="${href}"><span class="mt">${title}</span><span class="md">${note}</span></a>`)
       .join('')
     // The parent is a real link as well as a menu. Making a visitor open a
@@ -59,7 +64,7 @@ function header() {
   </div>
   ${NAV.map((entry) =>
     entry.items
-      ? `<h5><a href="${entry.href}" style="padding:0;border:none;font:inherit;color:inherit">${entry.label}</a></h5>${entry.items.map(([href, title]) => `<a href="${href}">${title}</a>`).join('')}`
+      ? `<h5><a href="${entry.href}" style="padding:0;border:none;font:inherit;color:inherit">${entry.label}</a></h5>${resolve(entry.items).map(([href, title]) => `<a href="${href}">${title}</a>`).join('')}`
       : `<a href="${entry.href}">${entry.label}</a>`
   ).join('')}
   <a class="btn" href="${SITE.signup}">Start free</a>
@@ -71,7 +76,7 @@ function footer() {
   const columns = FOOTER.map(
     (col) => `<div>
       <h5>${col.title}</h5>
-      <ul>${col.links.map(([href, label]) => `<li><a href="${href}">${label}</a></li>`).join('')}</ul>
+      <ul>${resolve(col.links).map(([href, label]) => `<li><a href="${href}">${label}</a></li>`).join('')}</ul>
     </div>`
   ).join('')
 

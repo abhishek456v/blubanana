@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cancellation and refunds | Blubanana</title>
-<meta name="description" content="Cancel any time, and get a full refund within 30 days of a payment. How cancellation works, what happens to your data afterwards, and how long a refund takes to reach you.">
-<link rel="canonical" href="https://blubanana.in/refunds">
+<title>Working offline | Blubanana</title>
+<meta name="description" content="Create deals, add brands and tick off stages with no connection. Blubanana saves them on the phone and syncs when signal returns, without losing anything.">
+<link rel="canonical" href="https://blubanana.in/product/offline">
 <meta name="theme-color" content="#08080C">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Blubanana">
-<meta property="og:title" content="Cancellation and refunds | Blubanana">
-<meta property="og:description" content="Cancel any time, and get a full refund within 30 days of a payment. How cancellation works, what happens to your data afterwards, and how long a refund takes to reach you.">
-<meta property="og:url" content="https://blubanana.in/refunds">
+<meta property="og:title" content="Working offline | Blubanana">
+<meta property="og:description" content="Create deals, add brands and tick off stages with no connection. Blubanana saves them on the phone and syncs when signal returns, without losing anything.">
+<meta property="og:url" content="https://blubanana.in/product/offline">
 <meta property="og:image" content="https://blubanana.in/assets/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
@@ -28,7 +28,7 @@
     if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t)
   } catch (e) {}
 </script>
-
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Does everything work offline?","acceptedAnswer":{"@type":"Answer","text":"No, and deliberately. Capture does. Dashboards, invoices and reports need a connection, because those are things you sit down to do."}},{"@type":"Question","name":"Could I lose something?","acceptedAnswer":{"@type":"Answer","text":"It stays on the phone until the server confirms it. If something is rejected it stays visible with the reason rather than disappearing."}},{"@type":"Question","name":"Does this work on the web?","acceptedAnswer":{"@type":"Answer","text":"This one is the phone apps only. A browser tab has no basement studio moment."}}]}</script>
 </head>
 <body>
 <div class="announce" id="announce" hidden>
@@ -64,77 +64,116 @@
   <a class="btn btn-ghost" href="https://platform.blubanana.in/sign-in" style="display:flex;margin-top:10px">Log in</a>
 </div>
 <main>
-<section class="legal">
-  <div class="container prose">
-    <h1 style="font-size:clamp(32px,5vw,48px)">Cancellation and refunds</h1>
-    <p class="updated" style="margin-top:14px">Last updated 19 August 2026</p>
 
-    <h2>The trial comes first</h2>
-    <p>
-      Every account starts with 14 days free and no card. The trial exists so
-      that nobody has to pay to find out whether Blubanana suits them. You can create
-      10 deals in that time; everything else is unlimited.
-    </p>
+<section class="hero" style="padding-bottom:56px">
+  <div class="container">
+    <div class="hero-grid">
+      <div>
+        <div class="eyebrow reveal">On a shoot, with one bar</div>
+        <h1 class="reveal" style="max-width:15ch;font-size:clamp(32px,4.2vw,48px)">Log a deal with no signal at all</h1>
+        <p class="lede reveal" style="max-width:44ch;margin-top:18px">It saves to your phone and syncs itself when you are back.</p>
+        <div class="btn-row reveal" style="margin-top:28px">
+          <a class="btn btn-lg" href="https://platform.blubanana.in/sign-up">Start free for 14 days</a>
+          <a class="btn btn-lg btn-ghost" href="/pricing">See pricing</a>
+        </div>
+      </div>
+      <div class="reveal"><div style="display:grid;gap:12px;max-width:100%"><div class="note">
+      <div class="n-icon" style="background:var(--accent)"><svg viewBox="0 0 22 22" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a5 5 0 0 1 10 0c0 4 1.6 5.4 1.6 5.4H4.4S6 13 6 9Z"/><path d="M9.2 17.6a2 2 0 0 0 3.6 0"/></svg></div>
+      <div><div class="n-title">Shoot is due tomorrow</div><div class="n-body">Sugar Cosmetics</div></div>
+    </div><div class="note">
+      <div class="n-icon" style="background:var(--rose)"><svg viewBox="0 0 22 22" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="16" height="11" rx="2.4"/><path d="M3 10h16M15 13.5h1.6"/></svg></div>
+      <div><div class="n-title">A payment is overdue</div><div class="n-body">Tap to send a follow up</div></div>
+    </div><div class="note">
+      <div class="n-icon" style="background:var(--green)"><svg viewBox="0 0 22 22" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.4" y="5.4" width="15.2" height="13.2" rx="2.2"/><path d="M3.4 9.6h15.2M7.6 3.4v3.4M14.4 3.4v3.4"/></svg></div>
+      <div><div class="n-title">Advance tax due 15 September</div><div class="n-body">Set aside before the date</div></div>
+    </div><div class="note">
+      <div class="n-icon" style="background:var(--accent)"><svg viewBox="0 0 22 22" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6.4V11h-4.6"/><path d="M17.4 11a6.6 6.6 0 1 1-1.8-4.6L18 8.8"/></svg></div>
+      <div><div class="n-title">Saved without signal</div><div class="n-body">It will sync on its own</div></div>
+    </div></div></div>
+    </div>
+  </div>
+</section>
 
-    <h2>Cancelling</h2>
-    <p>
-      Cancel at any time from Settings → Plan and billing, or by writing to
-      <a href="mailto:hello@blubanana.in">hello@blubanana.in</a>. There is no retention call and no
-      form to argue with.
-    </p>
-    <p>
-      Cancelling stops the next renewal. You keep full access until the end of the term you have
-      already paid for.
-    </p>
+<section class="band band-alt">
+  <div class="container">
+    <div class="split">
+      <div class="reveal"><h2 style="max-width:14ch">Why it works this way</h2></div>
+      <div class="reveal"><p class="lede">The promise is that a deal takes thirty seconds, and the moment that matters most is not at a desk. It is on a shoot, in a basement studio, with a brand asking whether you can add two Stories.</p></div>
+    </div>
+  </div>
+</section>
 
-    <h2>Refunds. 30 days, money back</h2>
-    <p>
-      <strong>If you cancel within 30 days of a payment, we refund that payment in full.</strong>
-      We will not ask how much you used it, and there is no condition about “meaningful use”.
-    </p>
-    <p>
-      After 30 days, payments for the current term are not refunded, because the term has been
-      provided. We do not pro-rate a part-used term.
-    </p>
-    <p>
-      Two things sit outside that window entirely. If we charged you in error, or the service was
-      unavailable for a prolonged period through our fault, write to us and we will put it right,
-      whenever it happened.
-    </p>
+<section class="band">
+  <div class="container">
+    <div class="reveal" style="max-width:640px;margin:0 auto;text-align:center">
+    
+    <h2>How it goes</h2>
+    
+  </div>
+    <div class="steps reveal" style="margin-top:40px">
+      <div class="step"><h4>Log it anyway</h4><p>Creating a deal, adding a brand and marking a stage done all work with no connection.</p></div><div class="step"><h4>It says so plainly</h4><p>"Saved on this phone, it will sync when you have signal." It is not an error, so it is not phrased as one.</p></div><div class="step"><h4>It lands by itself</h4><p>In the order you made things, so a deal never arrives before the brand it belongs to.</p></div>
+    </div>
+  </div>
+</section>
 
-    <h2>How a refund reaches you</h2>
-    <p>
-      Approved refunds go back to the original payment method within 5 to 7 working days of
-      approval. How long it then takes to appear depends on your bank or card issuer, which is
-      outside our control.
-    </p>
-    <p>
-      GST charged on a refunded payment is refunded with it.
-    </p>
+<section class="band band-alt">
+  <div class="container">
+    <div class="split">
+      <div class="reveal">
+        <div class="icon-badge"><svg viewBox="0 0 22 22" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 3 4.6 5.6v5.2c0 4 2.6 7 6.4 8.2 3.8-1.2 6.4-4.2 6.4-8.2V5.6L11 3Z"/></svg></div>
+        <h2 style="max-width:16ch">A screenshot taken offline is still read</h2>
+      </div>
+      <div class="reveal"><p class="lede">The picture waits on the phone and the reading happens on sync. It saves rather than asking you to check it, because offline the alternative to saving is losing the capture, and it marks itself for review so you know to look.</p></div>
+    </div>
+  </div>
+</section>
 
-    <h2>After your plan ends</h2>
-    <p>
-      Your workspace becomes read only. Everything you entered stays visible and exportable for as
-      long as your account exists. We do not delete your records or lock you out of them because a
-      plan lapsed. Deadline and payment reminders continue for a further 30 days before they stop.
-    </p>
-    <p>
-      Subscribing again restores everything exactly as it was.
-    </p>
-
+<section class="band">
+  <div class="container">
+    <div class="reveal" style="max-width:640px;margin:0 auto;text-align:center">
+    
     <h2>Questions</h2>
-    <p>
-      <a href="mailto:hello@blubanana.in">hello@blubanana.in</a> · TODO: a number that is answered · Monday to Friday, 10am to 7pm IST
-    </p>
+    
+  </div>
+    <div style="max-width:780px;margin:36px auto 0"><div class="faq reveal"><details><summary>Does everything work offline?</summary><div class="answer">No, and deliberately. Capture does. Dashboards, invoices and reports need a connection, because those are things you sit down to do.</div></details><details><summary>Could I lose something?</summary><div class="answer">It stays on the phone until the server confirms it. If something is rejected it stays visible with the reason rather than disappearing.</div></details><details><summary>Does this work on the web?</summary><div class="answer">This one is the phone apps only. A browser tab has no basement studio moment.</div></details></div></div>
+  </div>
+</section>
+
+<section class="band band-alt">
+  <div class="container">
+    <div class="reveal" style="max-width:640px;margin:0 auto;text-align:center">
+    
+    <h2>The rest of it</h2>
+    
+  </div>
+    <div class="grid g-3 reveal" style="margin-top:36px">
+      <a class="card tool-card" href="/product/deals">
+        <h4>Logging a deal</h4><p>Screenshot the message, say it out loud, or type it. You check it before it saves.</p>
+        <span class="link-arrow" style="margin-top:12px">Open</span>
+      </a><a class="card tool-card" href="/product/deadlines">
+        <h4>Deadlines</h4><p>Every stage carries a date, and your phone tells you before it passes.</p>
+        <span class="link-arrow" style="margin-top:12px">Open</span>
+      </a><a class="card tool-card" href="/product/payments">
+        <h4>Payments and chasing</h4><p>The follow up is already written, and gets firmer the longer it goes.</p>
+        <span class="link-arrow" style="margin-top:12px">Open</span>
+      </a>
+    </div>
+    <div style="max-width:420px;margin:36px auto 0">
+      <div class="plan-cta">
+    <a class="btn " href="https://platform.blubanana.in/plans">Subscribe</a>
+    <a class="btn btn-ghost " href="/pricing#included">What is included</a>
+    <a class="btn btn-trial " href="https://platform.blubanana.in/sign-up">14 day trial</a>
+  </div>
+    </div>
   </div>
 </section>
 <section class="close-cta">
     <div class="container reveal">
-      <h2 style="max-width:16ch;margin:0 auto">Fourteen days free, first.</h2>
-      <p class="lede" style="margin:18px auto 0;max-width:52ch">No card, so there is nothing to refund.</p>
+      <h2 style="max-width:16ch;margin:0 auto">Try it on the deals you already have</h2>
+      <p class="lede" style="margin:18px auto 0;max-width:52ch">The importer brings them across in minutes.</p>
       <div class="btn-row">
-        <a class="btn btn-lg" href="https://platform.blubanana.in/sign-up">Start free</a>
-        
+        <a class="btn btn-lg" href="https://platform.blubanana.in/plans">Subscribe</a>
+        <a class="btn btn-lg btn-ghost" href="https://platform.blubanana.in/sign-up">14 day trial</a>
       </div>
     </div>
   </section>

@@ -952,8 +952,14 @@ software written for a country where brands pay on time and the year starts in
 January. Nobody switches over a GST field; they switch because nothing else
 reminds them before a deadline or writes the follow up.
 
-Still to build: the eight product pages and the audience pages. The contact
-details are still placeholders, and the build fails on them by design.
+**Twenty two pages now**, including the eight product pages, an overview, the
+five free tools and a tools index. The Product menu builds itself from the
+product pages, so a new one appears in the navigation and the footer by
+existing rather than by being remembered.
+
+Still to build: three audience pages, About, Security, and a blog. The contact
+details are still placeholders, and the build fails on them by design. See
+`WHAT-IS-LEFT.md`, which is the same list in plain English.
 
 ---
 
