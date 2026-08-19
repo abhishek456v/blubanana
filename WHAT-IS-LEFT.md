@@ -23,17 +23,7 @@ fake phone number is exactly what fails a Razorpay check.
 
 Send me those four and the site builds clean the same day.
 
-### 2. An email address that exists
-
-The site publishes `hello@blubanana.in` on the contact page, in the terms, and in
-the privacy policy as the address for data protection complaints. **There is no
-mailbox behind it yet.** A complaint that bounces is a legal problem rather than
-an inconvenience.
-
-You need email hosting for `blubanana.in` (Google Workspace and Zoho Mail are the
-usual choices) and then that address created.
-
-### 3. Put the two sites online
+### 2. Put the two sites online
 
 They are two separate things and go to two separate addresses.
 
@@ -44,39 +34,41 @@ The steps are in `README.md` under "Putting the platform on
 platform.blubanana.in". The part nobody can do for you is the last one: adding a
 DNS record needs the login for wherever you bought the domain.
 
-### 4. Razorpay
+### 3. Razorpay
 
 Apply for a merchant account once the website is live with the real contact
 details. When it is approved you get two keys and a webhook secret. The payment
 code is already written and waiting for them.
 
-### 5. Meta, for Instagram figures
+### 4. Meta, for Instagram figures
 
 A Meta developer account and an app, which gives an App ID and secret. The
 Instagram integration is already built and switched off; those credentials are
 the switch. Follower counts and cost per view start filling in on the first
 night after that.
 
-### 6. Apple, for the iPhone app
+### 5. Apple, for the iPhone app
 
 An Apple Developer account, which costs about ₹8,900 a year. Needed before the
 iPhone app can be tested on a real device or submitted. Android does not need
 anything equivalent to start.
 
-### 7. One decision left
+### 6. One decision left
 
 **Do you want analytics?** Plausible is about ₹800 a month and needs no cookie
 banner. Google Analytics is free and does need one. Or nothing for now.
 
-### 8. Settled
+### 7. Settled
 
 - **Who built it.** You are not a creator; a creator is helping you find the
   real problems. The About page says exactly that, because it is true and it
   reads better than the version everyone else writes. No names are on the site.
 - **The repository** is renamed to `blubanana` and this copy points at it.
-- **The brand colour** is `#023C85`. The dark theme uses a lightened cut of the
-  same hue for filled buttons, because the original against a black page is
-  1.99:1 and the button disappears.
+- **The brand colours** are `#0A3557` in light and `#86C2F0` in dark. What sits
+  on them flips with them: white on the dark navy, near black on the light blue,
+  because white on `#86C2F0` measures 1.91:1 and cannot be read.
+- **`hello@blubanana.in` is live.**
+- **About is removed** until you have the words you want for it.
 
 ---
 

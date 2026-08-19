@@ -7,14 +7,12 @@
 // which is the honest failure case for a product bought in advance.
 
 import { COMPANY, PRICING, SITE } from '../site.mjs'
-import { closingCta } from '../ui.mjs'
+import { closingCta, legalPage } from '../ui.mjs'
 
-const body = `<section class="legal">
-  <div class="container prose">
-    <h1 style="font-size:clamp(32px,5vw,48px)">Cancellation and refunds</h1>
-    <p class="updated" style="margin-top:14px">Last updated 19 August 2026</p>
-
-    <h2>The trial comes first</h2>
+const body = legalPage({
+  title: 'Cancellation and refunds',
+  updated: 'Last updated 19 August 2026',
+  body: `<h2>The trial comes first</h2>
     <p>
       Every account starts with ${PRICING.trialDays} days free and no card. The trial exists so
       that nobody has to pay to find out whether Blubanana suits them. You can create
@@ -70,9 +68,8 @@ const body = `<section class="legal">
     <h2>Questions</h2>
     <p>
       <a href="mailto:${COMPANY.email}">${COMPANY.email}</a> · ${COMPANY.phone} · ${COMPANY.hours}
-    </p>
-  </div>
-</section>`
+    </p>`,
+})
 
 export default {
   path: '/refunds',

@@ -94,7 +94,7 @@ export default {
   path: '/compare',
   title: 'Blubanana compared with a spreadsheet and foreign tools',
   description:
-    'How Blubanana compares with a spreadsheet, a notes app and business tools built for other countries, on the work that actually costs an Indian creator money.',
+    'How Blubanana compares with a spreadsheet, a notes app and business tools built for other countries, on the work that actually costs a digital content creator money.',
   body: [
     hero,
     three,

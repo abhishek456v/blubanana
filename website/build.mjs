@@ -29,14 +29,13 @@ import refunds from './src/content/refunds.mjs'
 import compare from './src/content/compare.mjs'
 import tools from './src/content/tools.mjs'
 import product from './src/content/product.mjs'
-import audience from './src/content/audience.mjs'
 import company from './src/content/company.mjs'
 
 const DRAFT = process.argv.includes('--draft')
 const ROOT = dirname(fileURLToPath(import.meta.url))
 const DIST = join(ROOT, 'dist')
 
-const PAGES = [home, pricing, compare, contact, terms, privacy, refunds, ...product, ...audience, ...company, ...tools]
+const PAGES = [home, pricing, compare, contact, terms, privacy, refunds, ...product, ...company, ...tools]
 
 rmSync(DIST, { recursive: true, force: true })
 mkdirSync(DIST, { recursive: true })

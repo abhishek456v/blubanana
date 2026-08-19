@@ -82,26 +82,40 @@ for (const [name, path, width, height, fullPage] of SHOTS) {
     if (small.length) problems.push(`${name}: tap targets under 32px: ${[...new Set(small)].join(', ')}`)
   }
 
-  // Text on a filled accent surface has to be white. This is checked rather
-  // than trusted because the fault only ever showed in one theme: in dark mode
-  // the inherited page colour is white anyway, so a near black number on a blue
-  // tile looked correct until someone opened the light theme.
+  // Text on a filled accent surface has to be whatever --on-accent says, which
+  // is white in one theme and near black in the other. Checked rather than
+  // trusted, because this fault only ever shows in one theme at a time: an
+  // inherited page colour that happens to match hides it in the other.
   const onAccent = await page.evaluate(() => {
+    const root = getComputedStyle(document.documentElement)
+    const accent = root.getPropertyValue('--accent').trim()
+    const expected = root.getPropertyValue('--on-accent').trim()
+    // Resolve both through the browser so hex and rgb() compare equal.
+    const probe = document.createElement('span')
+    document.body.append(probe)
+    const asRgb = (value) => {
+      probe.style.color = value
+      return getComputedStyle(probe).color
+    }
+    const accentRgb = asRgb(accent)
+    const expectedRgb = asRgb(expected)
+    probe.remove()
+
     const out = []
     document.querySelectorAll('body *').forEach((el) => {
-      const bg = getComputedStyle(el).backgroundColor
-      if (bg !== 'rgb(2, 60, 133)' && bg !== 'rgb(59, 121, 214)') return
+      if (getComputedStyle(el).backgroundColor !== accentRgb) return
       if (!el.getBoundingClientRect().width) return
       ;[el, ...el.querySelectorAll('*')].forEach((kid) => {
         const c = getComputedStyle(kid).color
-        if (c !== 'rgb(255, 255, 255)' && !c.startsWith('rgba(255, 255, 255')) {
-          out.push(`${String(el.className).split(' ')[0] || el.tagName} > ${kid.tagName} = ${c}`)
+        if (c !== expectedRgb && !c.startsWith(expectedRgb.replace(')', ''))) {
+          out.push(`${String(el.className).split(' ')[0] || el.tagName} > ${kid.TagName || kid.tagName} = ${c}`)
         }
       })
     })
     return [...new Set(out)].slice(0, 4)
   })
-  if (onAccent.length) problems.push(`${name}: not white on the accent: ${onAccent.join(', ')}`)
+
+  if (onAccent.length) problems.push(`${name}: wrong foreground on the accent: ${onAccent.join(', ')}`)
 
   await page.screenshot({ path: `${OUT}/${name}.png`, fullPage })
   console.log(`  ${OUT}/${name}.png`)

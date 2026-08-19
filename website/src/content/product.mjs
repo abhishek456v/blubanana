@@ -316,7 +316,7 @@ const overview = {
   path: '/features',
   title: 'Features | Blubanana',
   description:
-    'Everything Blubanana does for an Indian creator: logging deals, deadlines, payments, GST invoices, tax, your rate card, managers, and working with no signal.',
+    'Everything Blubanana does for a digital content creator in India: logging deals, deadlines, payments, GST invoices, tax, your rate card, managers, and working with no signal.',
   body: `
 <section class="hero" style="padding-bottom:24px">
   <div class="container">

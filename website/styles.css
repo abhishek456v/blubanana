@@ -20,7 +20,7 @@
 :root {
   --bg: #FFFFFF;
   --bg-alt: #F6F7F9;
-  --bg-tint: #F1F5FC;
+  --bg-tint: #F0F4F7;
   --surface: #FFFFFF;
   --border: rgba(11, 11, 18, 0.09);
   --border-strong: rgba(11, 11, 18, 0.16);
@@ -29,16 +29,17 @@
   --text-3: #85858F;
 
   /*
-   * #023C85. Deep enough that white sits on it at 10.6:1, so a button label, a
-   * filled tile and a link on the page ground can all be the same colour with
-   * no darkened cut needed. The dark theme is where it needs help; see below.
+   * #0A3557 in light, #86C2F0 in dark. Not one colour at two brightnesses:
+   * they are opposite ends, and what sits on them flips with them. White on
+   * #0A3557 is 12.65:1; on #86C2F0 it is 1.91:1 and unreadable. See the dark
+   * block for the pairing.
    */
-  --accent: #023C85;
-  --accent-hover: #0B4EA3;
-  --accent-text: #023C85;
-  --accent-soft: #E7EDF8;
+  --accent: #0A3557;
+  --accent-hover: #12476F;
+  --accent-text: #0A3557;
+  --accent-soft: #E7EDEF;
   --on-accent: #FFFFFF;
-  --grad-card: linear-gradient(142deg, #1E5CB8 0%, #023C85 52%, #011E45 100%);
+  --grad-card: linear-gradient(142deg, #1C5581 0%, #0A3557 52%, #041B2D 100%);
 
   --green: #0F7A4A;
   --green-soft: #E4F5EC;
@@ -70,7 +71,7 @@
   :root:not([data-theme='light']) {
     --bg: #000000;
     --bg-alt: #0B0B0E;
-    --bg-tint: #060D1A;
+    --bg-tint: #071620;
     --surface: #131317;
     --border: rgba(255, 255, 255, 0.10);
     --border-strong: rgba(255, 255, 255, 0.20);
@@ -78,18 +79,19 @@
     --text-2: rgba(255, 255, 255, 0.66);
     --text-3: rgba(255, 255, 255, 0.44);
 
+    --accent: #86C2F0;
+    --accent-hover: #A2D2F6;
+    --accent-text: #86C2F0;
+    --accent-soft: rgba(134, 194, 240, 0.18);
     /*
-     * Lightened, and not by preference. #023C85 against a black page measures
-     * 1.99:1, so a filled control and the page behind it are nearly the same
-     * shade and the button's edge disappears. This cut of the same hue reaches
-     * 4.89:1 against the page, and still holds white text at 4.29:1.
+     * Dark text on the accent, and this is the whole reason the pairing is a
+     * token. White on #86C2F0 measures 1.91:1 and is unreadable; this reaches
+     * 8.75:1. The light theme's accent is dark and takes white, the dark
+     * theme's is light and takes near black, and every filled surface reads
+     * `--on-accent` rather than assuming one of them.
      */
-    --accent: #3B79D6;
-    --accent-hover: #5A92E4;
-    --accent-text: #8FB4EE;
-    --accent-soft: rgba(59, 121, 214, 0.20);
-    --on-accent: #FFFFFF;
-    --grad-card: linear-gradient(142deg, #5A92E4 0%, #3B79D6 52%, #10305E 100%);
+    --on-accent: #06202F;
+    --grad-card: linear-gradient(142deg, #A2D2F6 0%, #86C2F0 46%, #2E6C99 100%);
 
     --green: #46D68F;
     --green-soft: rgba(70, 214, 143, 0.14);
@@ -107,7 +109,7 @@
 :root[data-theme='dark'] {
   --bg: #000000;
   --bg-alt: #0B0B0E;
-  --bg-tint: #060D1A;
+  --bg-tint: #071620;
   --surface: #131317;
   --border: rgba(255, 255, 255, 0.10);
   --border-strong: rgba(255, 255, 255, 0.20);
@@ -115,18 +117,19 @@
   --text-2: rgba(255, 255, 255, 0.66);
   --text-3: rgba(255, 255, 255, 0.44);
 
+  --accent: #86C2F0;
+  --accent-hover: #A2D2F6;
+  --accent-text: #86C2F0;
+  --accent-soft: rgba(134, 194, 240, 0.18);
   /*
-   * Lightened, and not by preference. #023C85 against a black page measures
-   * 1.99:1, so a filled control and the page behind it are nearly the same
-   * shade and the button's edge disappears. This cut of the same hue reaches
-   * 4.89:1 against the page, and still holds white text at 4.29:1.
+   * Dark text on the accent, and this is the whole reason the pairing is a
+   * token. White on #86C2F0 measures 1.91:1 and is unreadable; this reaches
+   * 8.75:1. The light theme's accent is dark and takes white, the dark
+   * theme's is light and takes near black, and every filled surface reads
+   * `--on-accent` rather than assuming one of them.
    */
-  --accent: #3B79D6;
-  --accent-hover: #5A92E4;
-  --accent-text: #8FB4EE;
-  --accent-soft: rgba(59, 121, 214, 0.20);
-  --on-accent: #FFFFFF;
-  --grad-card: linear-gradient(142deg, #5A92E4 0%, #3B79D6 52%, #10305E 100%);
+  --on-accent: #06202F;
+  --grad-card: linear-gradient(142deg, #A2D2F6 0%, #86C2F0 46%, #2E6C99 100%);
 
   --green: #46D68F;
   --green-soft: rgba(70, 214, 143, 0.14);
@@ -811,6 +814,24 @@ tr:last-child td { border-bottom: none; }
      not break, so the row grew past the screen on a narrow phone. */
   .reach-row > * { min-width: 0; }
   .reach-value { grid-column: 2; white-space: normal; overflow-wrap: anywhere; }
+}
+
+.legal-grid { display: grid; grid-template-columns: minmax(200px, 260px) minmax(0, 1fr); gap: 64px; align-items: start; }
+.legal-body { max-width: 72ch; }
+.legal-body h1 { font-size: clamp(32px, 4vw, 46px); }
+.legal-nav-inner { position: sticky; top: calc(var(--header-h) + 32px); }
+.legal-nav h5 { font-size: 12px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-3); margin: 0 0 14px; font-weight: 600; }
+.legal-nav ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.legal-nav a { display: block; padding: 7px 0; font-size: 14.5px; color: var(--text-2); line-height: 1.4; }
+.legal-nav a:hover { color: var(--accent-text); }
+@media (max-width: 940px) {
+  .legal-grid { grid-template-columns: 1fr; gap: 32px; }
+  .legal-nav-inner { position: static; }
+  .legal-nav ul { grid-template-columns: 1fr 1fr; }
+  .legal-body { max-width: none; }
+}
+@media (max-width: 560px) {
+  .legal-nav ul { grid-template-columns: 1fr; }
 }
 
 /* ── legal ───────────────────────────────────────────────────────────────── */

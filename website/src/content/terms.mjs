@@ -4,14 +4,12 @@
 // waiting to happen if it is only implied.
 
 import { COMPANY, PRICING, SITE } from '../site.mjs'
-import { closingCta } from '../ui.mjs'
+import { closingCta, legalPage } from '../ui.mjs'
 
-const body = `<section class="legal">
-  <div class="container prose">
-    <h1 style="font-size:clamp(32px,5vw,48px)">Terms and conditions</h1>
-    <p class="updated" style="margin-top:14px">Last updated 19 August 2026</p>
-
-    <p style="margin-top:26px">
+const body = legalPage({
+  title: 'Terms and conditions',
+  updated: 'Last updated 19 August 2026',
+  body: `<p style="margin-top:26px">
       These terms govern your use of Blubanana, provided by ${COMPANY.legalName}. By creating an
       account you agree to them.
     </p>
@@ -85,9 +83,8 @@ const body = `<section class="legal">
     </p>
 
     <h2>Contact</h2>
-    <p><a href="mailto:${COMPANY.email}">${COMPANY.email}</a> · ${COMPANY.phone}</p>
-  </div>
-</section>`
+    <p><a href="mailto:${COMPANY.email}">${COMPANY.email}</a> · ${COMPANY.phone}</p>`,
+})
 
 export default {
   path: '/terms',

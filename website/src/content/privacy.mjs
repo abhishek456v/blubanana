@@ -11,14 +11,12 @@
 // product is not a smaller problem than no policy.
 
 import { COMPANY, PRICING, SITE } from '../site.mjs'
-import { closingCta } from '../ui.mjs'
+import { closingCta, legalPage } from '../ui.mjs'
 
-const body = `<section class="legal">
-  <div class="container prose">
-    <h1 style="font-size:clamp(32px,5vw,48px)">Privacy policy</h1>
-    <p class="updated" style="margin-top:14px">Last updated 19 August 2026</p>
-
-    <p style="margin-top:26px">
+const body = legalPage({
+  title: 'Privacy policy',
+  updated: 'Last updated 19 August 2026',
+  body: `<p style="margin-top:26px">
       Blubanana provides software that helps content creators manage brand collaborations. This
       policy explains what we collect, why, who it goes to, and what you can require of us. It is
       written to India’s Digital Personal Data Protection Act, 2023.
@@ -102,9 +100,8 @@ const body = `<section class="legal">
     <p>
       ${COMPANY.legalName} · ${COMPANY.address}<br>
       <a href="mailto:${COMPANY.email}">${COMPANY.email}</a> · ${COMPANY.phone}
-    </p>
-  </div>
-</section>`
+    </p>`,
+})
 
 export default {
   path: '/privacy',

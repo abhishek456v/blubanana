@@ -169,7 +169,7 @@ const india = section({
       <div class="reveal">
         <div class="eyebrow">Made in India</div>
         <h2>For how creators here actually get paid</h2>
-        <p class="lede" style="margin-top:16px">Four things are true of almost every brand deal here, and each one is where money goes missing.</p>
+        <p class="lede" style="margin-top:16px">Four things are true of almost every brand deal a digital content creator signs here, and each one is where money goes missing.</p>
       </div>
       <div class="reveal">
         <div class="grid g-2">
@@ -231,7 +231,7 @@ export default {
   path: '/',
   title: 'Blubanana, the business app for Indian creators',
   description:
-    'Track every brand deal, hit every deadline and get paid on time. Invoices, reminders, payments and tax in one app, made for creators in India.',
+    'Track every brand deal, hit every deadline and get paid on time. Invoices, reminders, payments and tax in one app, made for digital content creators in India.',
   schema: [
     {
       '@context': 'https://schema.org',
@@ -239,7 +239,7 @@ export default {
       name: 'Blubanana',
       applicationCategory: 'BusinessApplication',
       operatingSystem: 'Web, iOS, Android',
-      description: 'Business management for Indian content creators: brand deals, deadlines, invoices, payments and tax.',
+      description: 'Business management for Indian digital content creators: brand deals, deadlines, invoices, payments and tax.',
       offers: { '@type': 'Offer', price: String(PRICING.introMonthly), priceCurrency: 'INR' },
     },
     faqSchema(QUESTIONS),

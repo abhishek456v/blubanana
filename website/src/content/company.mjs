@@ -1,90 +1,15 @@
-// About and Security.
+// Security.
 //
-// The About page is deliberately careful about one thing: it does not claim the
-// product was built by a creator, because it was not. A business person built
-// it with a creator's help, and saying that plainly is both true and more
-// credible than the version everyone writes.
+// It matters more than it sounds. It is what a manager reads before accepting
+// an invitation, and what a brand's finance team reads after receiving an
+// invoice with our name on it.
 //
-// The Security page matters more than it sounds. It is what a manager reads
-// before accepting an invitation, and what a brand's finance team reads after
-// receiving an invoice with our name on it.
+// The list of processors that used to sit here has been removed at the client's
+// request. It still appears in the privacy policy, which is where the law
+// requires it and where someone looking for it will go.
 
-import { COMPANY, PRICING, SITE } from '../site.mjs'
-import { closingCta, head, icon, section } from '../ui.mjs'
-
-const about = {
-  path: '/about',
-  title: 'About Blubanana',
-  description:
-    'Why Blubanana exists: built in India for Indian creators, by someone who runs businesses, with a creator working out where the money actually goes missing.',
-  body: `
-<section class="hero" style="padding-bottom:20px">
-  <div class="container">
-    <div class="eyebrow reveal">About</div>
-    <h1 class="reveal" style="max-width:16ch">Built with a creator, not guessed at</h1>
-    <p class="lede reveal" style="max-width:54ch;margin-top:18px">
-      This was not built by a creator. It was built by someone who runs businesses, with a creator working out where the money actually goes missing.
-    </p>
-  </div>
-</section>
-
-<section class="band">
-  <div class="container">
-    <div class="split">
-      <div class="reveal">
-        <h2 style="max-width:12ch">Why it exists</h2>
-      </div>
-      <div class="reveal">
-        <p class="lede">A creator running eight collaborations is running a business, with invoices, deadlines, receivables and a tax year, and almost none of them are given the tools a business gets.</p>
-        <p class="lede" style="margin-top:18px">The work goes into a notes app, a chat thread and memory. Then a payment is forgotten, a deadline arrives from the brand instead of the calendar, and March turns up with no idea what is owed.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="band band-alt">
-  <div class="container">
-    ${head({ title: 'What we decided early', align: 'center' })}
-    <div class="grid g-3 reveal" style="margin-top:40px">
-      <div class="card">
-        <div class="icon-badge">${icon('wallet')}</div>
-        <h4>Never touch the money</h4>
-        <p>Brands pay creators directly. Standing in the middle would mean a payments licence, a cut of every deal, and a different company.</p>
-      </div>
-      <div class="card">
-        <div class="icon-badge">${icon('shield')}</div>
-        <h4>Rates are private by default</h4>
-        <p>What a creator charges is the most sensitive thing here. No notification shows an amount, and a hidden rate is never sent.</p>
-      </div>
-      <div class="card">
-        <div class="icon-badge">${icon('globe')}</div>
-        <h4>Built for one country properly</h4>
-        <p>GST, TDS, UPI, April to March. Doing that well for India was worth more than doing it vaguely for everywhere.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="band">
-  <div class="container">
-    <div class="split">
-      <div class="reveal"><h2 style="max-width:12ch">Where it is</h2></div>
-      <div class="reveal">
-        <p class="lede">Early, and honest about it. The product is built and being used by its first creators. There is no customer count on this site because there is not yet a number worth printing, and inventing one would be the first thing we did wrong.</p>
-        <p class="lede" style="margin-top:18px">The launch price is half, capped at the first ${PRICING.introSeats} creators, which is what makes the crossed out figure a fact rather than a decoration.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-${closingCta({
-  title: 'Come in early',
-  sub: `${PRICING.trialDays} days free, no card, and a price that holds for the term you buy.`,
-  href: SITE.subscribe,
-  primary: 'Subscribe',
-  secondary: [`${PRICING.trialDays} day trial`, SITE.signup],
-})}`,
-}
+import { COMPANY } from '../site.mjs'
+import { icon } from '../ui.mjs'
 
 const security = {
   path: '/security',
@@ -139,26 +64,6 @@ const security = {
   </div>
 </section>
 
-<section class="band band-alt">
-  <div class="container">
-    <div class="split">
-      <div class="reveal"><h2 style="max-width:14ch">Who else touches it</h2></div>
-      <div class="reveal">
-        <p class="lede">Named in full, because a list of processors is the part of a privacy policy that actually tells you something.</p>
-        <ul class="includes" style="margin-top:22px">
-          <li><span class="tick">${icon('check', { size: 15, stroke: 2.4 })}</span> <b>Supabase</b> for the database, sign in and files</li>
-          <li><span class="tick">${icon('check', { size: 15, stroke: 2.4 })}</span> <b>OpenAI</b> only for a screenshot or voice note you choose to submit</li>
-          <li><span class="tick">${icon('check', { size: 15, stroke: 2.4 })}</span> <b>Razorpay</b> only for your subscription payment</li>
-          <li><span class="tick">${icon('check', { size: 15, stroke: 2.4 })}</span> <b>Expo</b> to deliver notifications to your device</li>
-          <li><span class="tick">${icon('check', { size: 15, stroke: 2.4 })}</span> <b>Meta</b> only if you connect Instagram, and only to read your own figures</li>
-        </ul>
-        <p class="lede" style="margin-top:22px">Your deals, rates and contacts are never used to train models, and never sold.</p>
-        <a class="link-arrow" href="/privacy" style="margin-top:18px">Read the privacy policy</a>
-      </div>
-    </div>
-  </div>
-</section>
-
 <section class="band">
   <div class="container prose">
     <h2>Reporting something</h2>
@@ -171,4 +76,4 @@ const security = {
 </section>`,
 }
 
-export default [about, security]
+export default [security]

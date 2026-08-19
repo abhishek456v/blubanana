@@ -173,6 +173,46 @@ export function planCard({ pricing, inr, subscribe, trial, compact = false }) {
   </div>`
 }
 
+/**
+ * A legal page: contents on the left, the document on the right.
+ *
+ * The measure stays around 70 characters because that is what makes long prose
+ * readable, which on a wide screen leaves a column of text stranded in the
+ * middle of an empty page. The answer is not to stretch the line, it is to give
+ * the space a job: a list of the sections, which is what anybody opening terms
+ * or a privacy policy is actually looking for.
+ *
+ * The list is built from the document's own headings, so it can never fall out
+ * of step with them.
+ */
+export function legalPage({ title, updated, body }) {
+  const headings = [...body.matchAll(/<h2>([^<]+)<\/h2>/g)].map((m) => m[1])
+  const slug = (text) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+
+  let numbered = body
+  for (const heading of headings) {
+    numbered = numbered.replace(`<h2>${heading}</h2>`, `<h2 id="${slug(heading)}">${heading}</h2>`)
+  }
+
+  return `<section class="legal">
+    <div class="container">
+      <div class="legal-grid">
+        <aside class="legal-nav">
+          <div class="legal-nav-inner">
+            <h5>On this page</h5>
+            <ul>${headings.map((h) => `<li><a href="#${slug(h)}">${h}</a></li>`).join('')}</ul>
+          </div>
+        </aside>
+        <div class="legal-body">
+          <h1>${title}</h1>
+          <p class="updated">${updated}</p>
+          ${numbered}
+        </div>
+      </div>
+    </div>
+  </section>`
+}
+
 export function closingCta({ title, sub, primary = 'Start free', href, secondary }) {
   return `<section class="close-cta">
     <div class="container reveal">

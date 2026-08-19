@@ -97,7 +97,7 @@ const questions = `<section class="band band-alt">
 export default {
   path: '/pricing',
   title: 'Pricing | Blubanana',
-  description: `One plan with every feature, from ${inr(PRICING.introMonthly)} a month plus GST. ${PRICING.trialDays}-day free trial, no card required, and a 30-day money-back guarantee.`,
+  description: `One plan with every feature for digital content creators, from ${inr(PRICING.introMonthly)} a month plus GST. ${PRICING.trialDays} day free trial, no card required, and 30 days money back.`,
   schema: [faqSchema(QUESTIONS)],
   body: [
     hero,
