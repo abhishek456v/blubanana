@@ -145,7 +145,28 @@
       frame.dispatchEvent(new CustomEvent('demo:go', { detail: name }))
     }
 
+    // The four ways of starting a deal. They were decoration; a visitor clicked
+    // Voice and nothing happened, which says the opposite of what the section
+    // is claiming. Each one now switches the screen to that mode.
+    const SOURCES = {
+      screenshot: ['Read from the screenshot', 'Found'],
+      voice: ['Heard in your voice note', 'Transcribed'],
+      type: ['Typed in by you', 'Yours'],
+      repeat: ['Copied from your last deal with them', 'Reused'],
+    }
+
     frame.addEventListener('click', (event) => {
+      const mode = event.target.closest('[data-mode]')
+      if (mode && frame.contains(mode)) {
+        const group = mode.parentElement
+        group.querySelectorAll('[data-mode]').forEach((chip) => chip.classList.toggle('chip-blue', chip === mode))
+        const [line, found] = SOURCES[mode.dataset.mode] ?? []
+        const screen = mode.closest('[data-screen]')
+        if (line) screen.querySelector('[data-source]').textContent = line
+        if (found) screen.querySelector('[data-found]').textContent = found
+        return
+      }
+
       const hit = event.target.closest('[data-go]')
       if (!hit || !frame.contains(hit)) return
       event.preventDefault()

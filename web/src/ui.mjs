@@ -298,15 +298,22 @@ const screenNewDeal = () => {
   return `
   ${backBar('New deal', 'about 30 seconds')}
   <div class="chip-row">
-    <span class="chip chip-blue">${icon('camera', { size: 13 })} Screenshot</span>
-    <span class="chip">${icon('mic', { size: 13 })} Voice</span>
-    <span class="chip">${icon('keyboard', { size: 13 })} Type</span>
-    <span class="chip">${icon('refresh', { size: 13 })} Repeat</span>
+    ${[
+      ['screenshot', 'camera', 'Screenshot'],
+      ['voice', 'mic', 'Voice'],
+      ['type', 'keyboard', 'Type'],
+      ['repeat', 'refresh', 'Repeat'],
+    ]
+      .map(
+        ([mode, glyph, label], i) =>
+          `<button class="chip${i === 0 ? ' chip-blue' : ''}" data-mode="${mode}">${icon(glyph, { size: 13 })} ${label}</button>`
+      )
+      .join('')}
   </div>
   <div class="ui-row">
     ${bavatar(d)}
-    <div><div class="ui-label">${d.name}</div><div class="ui-meta">Read from the screenshot</div></div>
-    <span class="chip chip-green">Found</span>
+    <div><div class="ui-label">${d.name}</div><div class="ui-meta" data-source>Read from the screenshot</div></div>
+    <span class="chip chip-green" data-found>Found</span>
   </div>
   <div class="ui-row" style="grid-template-columns:1fr">
     <div><div class="ui-meta">Deliverables</div><div class="chip-row" style="margin-top:8px"><span class="chip chip-blue">1 Feed post</span><span class="chip chip-blue">2 Stories</span></div></div>

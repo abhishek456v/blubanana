@@ -23,14 +23,14 @@ const html = `<!DOCTYPE html><html><head>
     width: 1200px; height: 630px; background: #FFFFFF; color: #0B0B12;
     font-family: 'Google Sans Flex', system-ui, sans-serif;
     padding: 78px; display: flex; flex-direction: column; justify-content: space-between;
-    background-image: radial-gradient(620px 420px at 88% 8%, #E9EDF7, transparent 68%);
+    background-image: radial-gradient(620px 420px at 88% 8%, #E1F3FB, transparent 68%);
   }
   .mark { font-size: 34px; font-weight: 700; letter-spacing: -.035em; }
-  .mark b { color: #0E2E6E; font-weight: 700; }
+  .mark b { color: #008ECC; font-weight: 700; }
   h1 { font-size: 68px; line-height: 1.06; letter-spacing: -.035em; font-weight: 700; max-width: 17ch; }
   p { font-size: 27px; color: #55555F; margin-top: 24px; }
   .foot { display: flex; gap: 12px; }
-  .chip { padding: 11px 20px; border-radius: 999px; background: #F2F5FB; color: #0E2E6E; font-size: 20px; font-weight: 500; }
+  .chip { padding: 11px 20px; border-radius: 999px; background: #EFF8FC; color: #008ECC; font-size: 20px; font-weight: 500; }
 </style></head><body>
   <div class="mark"><b>blu</b>banana</div>
   <div>

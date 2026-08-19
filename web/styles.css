@@ -20,7 +20,7 @@
 :root {
   --bg: #FFFFFF;
   --bg-alt: #F6F7F9;
-  --bg-tint: #F2F5FB;
+  --bg-tint: #EFF8FC;
   --surface: #FFFFFF;
   --border: rgba(11, 11, 18, 0.09);
   --border-strong: rgba(11, 11, 18, 0.16);
@@ -29,17 +29,20 @@
   --text-3: #85858F;
 
   /*
-   * Navy on white in light, and a light sky blue on black in dark. Those are
-   * two different relationships, not one colour in two brightnesses: navy holds
-   * white text, #68C1E5 does not hold it at any size. So the foreground that
-   * sits on the accent is a token of its own, and every filled surface uses it.
+   * Olympic blue, the same #008ECC in both themes.
+   *
+   * Two tokens rather than one, because a colour that works as a fill does not
+   * automatically work as text. White on #008ECC is about 3.4:1, which is fine
+   * for a button label or a filled tile and short of the 4.5:1 that body text
+   * needs. So `--accent` fills things and `--accent-text` is a darkened cut of
+   * the same hue for links and small type on the page ground.
    */
-  --accent: #0E2E6E;
-  --accent-hover: #17408F;
-  --accent-text: #0E2E6E;
-  --accent-soft: #E9EDF7;
+  --accent: #008ECC;
+  --accent-hover: #0079AF;
+  --accent-text: #00658F;
+  --accent-soft: #E1F3FB;
   --on-accent: #FFFFFF;
-  --grad-card: linear-gradient(142deg, #1B4BA8 0%, #0E2E6E 52%, #071C46 100%);
+  --grad-card: linear-gradient(142deg, #35B4E8 0%, #008ECC 50%, #005E88 100%);
 
   --green: #0F7A4A;
   --green-soft: #E4F5EC;
@@ -71,7 +74,7 @@
   :root:not([data-theme='light']) {
     --bg: #000000;
     --bg-alt: #0B0B0E;
-    --bg-tint: #071118;
+    --bg-tint: #04161F;
     --surface: #131317;
     --border: rgba(255, 255, 255, 0.10);
     --border-strong: rgba(255, 255, 255, 0.20);
@@ -79,12 +82,14 @@
     --text-2: rgba(255, 255, 255, 0.66);
     --text-3: rgba(255, 255, 255, 0.44);
 
-    --accent: #68C1E5;
-    --accent-hover: #8AD3F0;
-    --accent-text: #8FD4EF;
-    --accent-soft: rgba(104, 193, 229, 0.16);
-    --on-accent: #06121B;
-    --grad-card: linear-gradient(142deg, #68C1E5 0%, #2E86AF 54%, #123449 100%);
+    --accent: #008ECC;
+    --accent-hover: #21A3DC;
+    /* Lifted off the fill colour, because #008ECC as text on black is a
+       squint. The fill stays exactly the brand blue. */
+    --accent-text: #55BCE8;
+    --accent-soft: rgba(0, 142, 204, 0.20);
+    --on-accent: #FFFFFF;
+    --grad-card: linear-gradient(142deg, #21A3DC 0%, #008ECC 52%, #00435F 100%);
 
     --green: #46D68F;
     --green-soft: rgba(70, 214, 143, 0.14);
@@ -102,7 +107,7 @@
 :root[data-theme='dark'] {
   --bg: #000000;
   --bg-alt: #0B0B0E;
-  --bg-tint: #071118;
+  --bg-tint: #04161F;
   --surface: #131317;
   --border: rgba(255, 255, 255, 0.10);
   --border-strong: rgba(255, 255, 255, 0.20);
@@ -110,12 +115,14 @@
   --text-2: rgba(255, 255, 255, 0.66);
   --text-3: rgba(255, 255, 255, 0.44);
 
-  --accent: #68C1E5;
-  --accent-hover: #8AD3F0;
-  --accent-text: #8FD4EF;
-  --accent-soft: rgba(104, 193, 229, 0.16);
-  --on-accent: #06121B;
-  --grad-card: linear-gradient(142deg, #68C1E5 0%, #2E86AF 54%, #123449 100%);
+  --accent: #008ECC;
+  --accent-hover: #21A3DC;
+  /* Lifted off the fill colour, because #008ECC as text on black is a
+     squint. The fill stays exactly the brand blue. */
+  --accent-text: #55BCE8;
+  --accent-soft: rgba(0, 142, 204, 0.20);
+  --on-accent: #FFFFFF;
+  --grad-card: linear-gradient(142deg, #21A3DC 0%, #008ECC 52%, #00435F 100%);
 
   --green: #46D68F;
   --green-soft: rgba(70, 214, 143, 0.14);
@@ -164,8 +171,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 /* ── layout ──────────────────────────────────────────────────────────────── */
 .container { width: 100%; max-width: var(--container); margin: 0 auto; padding: 0 24px; }
 .prose { max-width: var(--prose); }
-.band { padding: 104px 0; }
-.band-sm { padding: 68px 0; }
+.band { padding: 84px 0; }
+.band-sm { padding: 56px 0; }
 .band-alt { background: var(--bg-alt); }
 .center { text-align: center; margin-left: auto; margin-right: auto; }
 
@@ -232,7 +239,7 @@ p:last-child { margin-bottom: 0; }
   padding: 9px 44px 9px 24px;
 }
 .announce b { font-weight: 600; }
-.announce-close { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: color-mix(in srgb, var(--on-accent) 70%, transparent); padding: 4px 8px; line-height: 1; }
+.announce-close { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: color-mix(in srgb, var(--on-accent) 82%, transparent); padding: 4px 8px; line-height: 1; }
 .announce-close:hover { color: var(--on-accent); }
 
 .header {
@@ -437,6 +444,9 @@ p:last-child { margin-bottom: 0; }
 .chip-amber { background: var(--amber-soft); color: var(--amber); }
 .chip-rose { background: var(--rose-soft); color: var(--rose); }
 .chip-row { display: flex; gap: 6px; flex-wrap: wrap; }
+button.chip { cursor: pointer; transition: background 140ms ease, color 140ms ease; }
+button.chip:hover { background: var(--border); color: var(--text); }
+button.chip.chip-blue:hover { background: var(--accent-soft); color: var(--accent-text); }
 
 /* A deal's stages, as a track rather than a list. */
 .track { display: flex; align-items: center; gap: 0; }
@@ -558,7 +568,7 @@ p:last-child { margin-bottom: 0; }
 .stat .v { font-size: 22px; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; margin-top: 3px; }
 .stat .s { font-size: 11px; color: var(--text-3); margin-top: 2px; }
 .stat-hero { background: var(--accent); color: var(--on-accent); }
-.stat-hero .k, .stat-hero .s { color: color-mix(in srgb, var(--on-accent) 74%, transparent); }
+.stat-hero .k, .stat-hero .s { color: color-mix(in srgb, var(--on-accent) 90%, transparent); }
 .stat-hero .v { font-size: 27px; }
 
 .act-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
@@ -593,6 +603,10 @@ p:last-child { margin-bottom: 0; }
 .app button.stat, .app button.list-row { display: grid; }
 .app button.act { display: flex; }
 .app [data-go]:hover { background: var(--border); }
+/* The generic hover is more specific than the active state, so hovering the rail
+   item you are already on made it look switched off. */
+.app .rail-btn.on:hover { background: var(--accent-hover); color: var(--on-accent); }
+.app .chip.chip-blue:hover { background: var(--accent-soft); }
 .app button.stat-hero:hover { background: var(--accent-hover); }
 .app [data-go]:active { transform: scale(0.995); }
 .demo-hint { grid-column: 1 / -1; padding: 9px 18px; border-top: 1px solid var(--border); font-size: 11.5px; color: var(--text-3); background: var(--bg-alt); }
@@ -629,18 +643,18 @@ p:last-child { margin-bottom: 0; }
 .preset:hover { border-color: var(--border-strong); color: var(--text); }
 
 .tool-out { background: var(--accent); color: var(--on-accent); border-radius: var(--r-xl); padding: 28px; display: grid; gap: 14px; position: sticky; top: 92px; box-shadow: var(--shadow-md); }
-.tool-out .fine, .tool-out .out-row span { color: color-mix(in srgb, var(--on-accent) 70%, transparent); }
+.tool-out .fine, .tool-out .out-row span { color: color-mix(in srgb, var(--on-accent) 88%, transparent); }
 .tool-out .out-row { border-bottom-color: color-mix(in srgb, var(--on-accent) 20%, transparent); }
 .tool-out .out-row b { color: var(--on-accent); }
-.tool-out .tool-note { color: color-mix(in srgb, var(--on-accent) 70%, transparent); }
+.tool-out .tool-note { color: color-mix(in srgb, var(--on-accent) 86%, transparent); }
 .tool-out .out-big { color: var(--on-accent); }
 
 .tool-card { display: block; }
 .tool-card:hover { border-color: var(--border-strong); }
 
 /* ── tabs ───────────────────────────────────────────────────────────────── */
-.tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 36px 0 30px; }
-.tab { padding: 10px 18px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-2); font-size: 15px; background: var(--surface); transition: all 150ms ease; }
+.tabs { display: flex; gap: 7px; flex-wrap: wrap; margin: 28px 0 24px; }
+.tab { padding: 7px 14px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-2); font-size: 13.5px; background: var(--surface); transition: all 150ms ease; }
 .tab:hover { color: var(--text); border-color: var(--border-strong); }
 .tab[aria-selected='true'] { background: var(--accent); border-color: transparent; color: var(--on-accent); }
 .panel { display: none; }
@@ -768,7 +782,7 @@ tr:last-child td { border-bottom: none; }
 .legal a { color: var(--accent-text); }
 
 /* ── closing ─────────────────────────────────────────────────────────────── */
-.close-cta { text-align: center; padding: 108px 0; background: var(--bg-tint); }
+.close-cta { text-align: center; padding: 88px 0; background: var(--bg-tint); }
 .close-cta .btn-row { justify-content: center; margin-top: 28px; }
 
 /* ── footer ──────────────────────────────────────────────────────────────── */
@@ -822,12 +836,12 @@ tr:last-child td { border-bottom: none; }
 @media (max-width: 680px) {
   body { font-size: 16px; }
   .stat-row, .act-row { grid-template-columns: 1fr; }
-  .band { padding: 66px 0; }
-  .band-sm { padding: 46px 0; }
+  .band { padding: 58px 0; }
+  .band-sm { padding: 42px 0; }
   .hero { padding-top: 52px; }
   .g-2, .g-3, .g-4, .steps { grid-template-columns: 1fr; }
   .card, .price-card, .tool-form, .tool-out { padding: 22px; }
-  .close-cta { padding: 76px 0; }
+  .close-cta { padding: 68px 0; }
   .footer-cols { grid-template-columns: 1fr 1fr; }
   .footer-cols > :first-child { grid-column: span 2; }
   .cal { grid-template-columns: 1fr 1fr; }
