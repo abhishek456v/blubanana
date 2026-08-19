@@ -4,7 +4,6 @@
   "trailingSlash": false,
   "headers": [
     {
-      "comment": "Every stylesheet, script and image on this site carries a hash of its contents in its filename, so a change produces a different name. That makes them safe to keep forever, and the pages that reference them are never cached, so a deploy still reaches people immediately.",
       "source": "/(.*)\\.(css|js|webp|png|jpg|jpeg|svg|woff2|ico)",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
     }

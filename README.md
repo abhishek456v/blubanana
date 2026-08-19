@@ -7,6 +7,30 @@ A mobile CRM for content creators — never miss a deal, a deadline, or a paymen
 Built with Expo (React Native) + Supabase + OpenAI.
 
 
+
+### The two vercel.json files
+
+They carry no comments, because Vercel validates the file against a schema and
+rejects any property it does not recognise, including a `comment` key. So the
+reasoning is here instead.
+
+`website/vercel.json` sets `cleanUrls`, and caches anything with a file
+extension forever. Every stylesheet, script and image on the site carries a hash
+of its contents in its filename, so a change produces a new name and the old one
+can never be stale. The pages that reference them are not cached at all, which
+is what makes a deploy reach people immediately.
+
+`platform/vercel.json` sends every unmatched path to `index.html`. Every route
+in the app is resolved by JavaScript, so without this a refresh on an inner
+screen returns 404 while the home page works. Vercel checks the filesystem
+first, so real files are still served as themselves.
+
+**The two projects need different Root Directory settings, and this is why.**
+The website's is empty, because its calculators import the tax code from
+`platform/` and the build has to see the whole repository. The app's is
+`platform`, because Vercel reads `vercel.json` from a project's root directory
+and the app's rewrite lives there.
+
 ## What is in here
 
 Three folders, and they do not overlap.
