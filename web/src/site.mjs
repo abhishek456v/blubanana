@@ -16,13 +16,13 @@ import { readFileSync } from 'node:fs'
  */
 export const COMPANY = {
   entity: 'CreatorDesk',
-  legalName: 'TODO — the registered legal entity name',
-  address: 'TODO — registered address, city, state, PIN',
-  phone: 'TODO — a number that is answered',
+  legalName: 'TODO: the registered legal entity name',
+  address: 'TODO: registered address, city, state, PIN',
+  phone: 'TODO: a number that is answered',
   email: 'hello@creatordesk.in',
   support: 'support@creatordesk.in',
   gstin: null,
-  hours: 'Monday to Friday, 10am – 7pm IST',
+  hours: 'Monday to Friday, 10am to 7pm IST',
   /** Digits only, for the wa.me link. */
   whatsapp: 'TODO',
 }
@@ -89,27 +89,38 @@ export const PRICING = {
 /** Indian digit grouping. ₹1,00,000 — never ₹100,000. */
 export const inr = (n) => `₹${Number(n).toLocaleString('en-IN')}`
 
+/** The free tools. Each is a real calculator, and each is a page. */
+export const TOOLS = [
+  ['/tools/advance-tax-calculator', 'Advance tax calculator', 'What to set aside, and by which of the four dates'],
+  ['/tools/tds-calculator', 'TDS calculator', 'They deducted 10%. What actually reaches your bank'],
+  ['/tools/gst-calculator', 'GST calculator', 'CGST and SGST, or IGST, worked out from the two states'],
+  ['/tools/rate-calculator', 'Rate calculator', 'What your reach is worth, per format'],
+  ['/tools/engagement-rate-calculator', 'Engagement rate calculator', 'The number every brand asks for first'],
+]
+
 /**
  * The navigation.
  *
- * Product currently points at sections of the homepage. Those become real
- * pages in the next phase, at which point only the hrefs here change — which
- * is the reason the menu is data rather than markup. The build fails on any
- * internal link with no page behind it, so this cannot quietly rot.
+ * Product currently points at sections of the homepage. Those become pages of
+ * their own in the next phase, at which point only the hrefs here change, which
+ * is why the menu is data rather than markup. The build fails on any internal
+ * link with no page behind it, so this cannot quietly rot.
  */
 export const NAV = [
   {
     label: 'Product',
     items: [
-      ['/#capture', 'Log a deal in 30 seconds', 'Screenshot, voice note, or type'],
+      ['/#capture', 'Log a deal in 30 seconds', 'A screenshot, your voice, or typing'],
       ['/#deadlines', 'Deadlines that reach you', 'Sent from a server, not your phone'],
-      ['/#money', 'Payments and chasing', 'Advances, TDS, and the follow-up written for you'],
-      ['/#invoices', 'GST invoices', 'Rule 46, place of supply, UPI QR'],
-      ['/#tax', 'Tax and year-end', 'Advance tax, expenses, April to March'],
+      ['/#money', 'Payments and chasing', 'Advances, balances, and the follow up written for you'],
+      ['/#invoices', 'Invoices brands accept', 'Correct tax, and a UPI code they can scan'],
+      ['/#tax', 'Tax without the March panic', 'Advance tax, expenses, April to March'],
       ['/#ratecard', 'Your rate card', 'Built from what you have actually charged'],
     ],
   },
+  { label: 'Free tools', items: TOOLS.map(([href, title, note]) => [href, title, note]) },
   { label: 'Pricing', href: '/pricing' },
+  { label: 'Compare', href: '/compare' },
   { label: 'Contact', href: '/contact' },
 ]
 
@@ -120,32 +131,26 @@ export const FOOTER = [
       ['/#capture', 'Logging deals'],
       ['/#deadlines', 'Deadlines'],
       ['/#money', 'Payments'],
-      ['/#invoices', 'GST invoices'],
+      ['/#invoices', 'Invoices'],
       ['/#tax', 'Tax'],
       ['/#ratecard', 'Rate card'],
     ],
   },
+  { title: 'Free tools', links: TOOLS.map(([href, title]) => [href, title.replace(' calculator', '')]) },
   {
     title: 'Company',
     links: [
       ['/pricing', 'Pricing'],
+      ['/compare', 'Compare'],
       ['/contact', 'Contact'],
-      ['/#faq', 'Questions'],
     ],
   },
   {
     title: 'Legal',
     links: [
-      ['/terms', 'Terms of service'],
-      ['/privacy', 'Privacy policy'],
-      ['/refunds', 'Cancellation & refunds'],
-    ],
-  },
-  {
-    title: 'Get started',
-    links: [
-      [SITE.signup, 'Start free'],
-      [SITE.login, 'Log in'],
+      ['/terms', 'Terms'],
+      ['/privacy', 'Privacy'],
+      ['/refunds', 'Cancellation and refunds'],
     ],
   },
 ]

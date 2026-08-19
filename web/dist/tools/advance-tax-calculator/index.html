@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Privacy policy | CreatorDesk</title>
-<meta name="description" content="What CreatorDesk collects, why, who processes it, how long it is kept, and how to export or delete everything. Written to India’s DPDP Act, 2023.">
-<link rel="canonical" href="https://creatordesk.in/privacy">
+<title>Advance tax calculator for Indian creators | CreatorDesk</title>
+<meta name="description" content="Work out what to set aside for advance tax by 15 June, 15 September, 15 December and 15 March. Free, no sign up, built for Indian content creators.">
+<link rel="canonical" href="https://creatordesk.in/tools/advance-tax-calculator">
 <meta name="theme-color" content="#08080C">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="CreatorDesk">
-<meta property="og:title" content="Privacy policy | CreatorDesk">
-<meta property="og:description" content="What CreatorDesk collects, why, who processes it, how long it is kept, and how to export or delete everything. Written to India’s DPDP Act, 2023.">
-<meta property="og:url" content="https://creatordesk.in/privacy">
+<meta property="og:title" content="Advance tax calculator for Indian creators | CreatorDesk">
+<meta property="og:description" content="Work out what to set aside for advance tax by 15 June, 15 September, 15 December and 15 March. Free, no sign up, built for Indian content creators.">
+<meta property="og:url" content="https://creatordesk.in/tools/advance-tax-calculator">
 <meta property="og:image" content="https://creatordesk.in/assets/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
@@ -64,102 +64,54 @@
   <a class="btn btn-ghost" href="https://platform.creatordesk.in/sign-in" style="display:flex;margin-top:10px">Log in</a>
 </div>
 <main>
-<section class="legal">
-  <div class="container prose">
-    <h1 style="font-size:clamp(32px,5vw,48px)">Privacy policy</h1>
-    <p class="updated" style="margin-top:14px">Last updated 19 August 2026</p>
 
-    <p style="margin-top:26px">
-      CreatorDesk provides software that helps content creators manage brand collaborations. This
-      policy explains what we collect, why, who it goes to, and what you can require of us. It is
-      written to India’s Digital Personal Data Protection Act, 2023.
-    </p>
+<section class="hero" style="padding-bottom:0">
+  <div class="container">
+    <div class="eyebrow reveal">Free tool</div>
+    <h1 class="reveal" style="max-width:18ch;font-size:clamp(32px,4.4vw,50px)">Advance tax calculator for creators</h1>
+    <p class="lede reveal" style="max-width:52ch;margin-top:18px">Four dates, and what is due by each. Miss them and the interest under sections 234B and 234C is charged whether or not anyone reminded you.</p>
+  </div>
+</section>
 
-    <h2>Who is responsible</h2>
-    <p>
-      TODO: the registered legal entity name is the Data Fiduciary for the personal data described here. Questions,
-      requests and complaints: <a href="mailto:hello@creatordesk.in">hello@creatordesk.in</a>.
-    </p>
+<section class="band">
+  <div class="container">
+    <div class="tool reveal">
+      <div class="tool-form">
+    <div class="field"><label for="income">Expected income this year</label><input id="income" type="number" inputmode="decimal" value="1200000" min="0" step="10000"><span class="hint">After your expenses. Everything you earn, not only what came through brand deals.</span></div>
+    <div class="field"><label for="rate">Your effective tax rate</label><input id="rate" type="number" inputmode="decimal" value="30" min="0" max="60" step="1"><span class="hint">Ask your CA. Rates change most budgets, so this tool will not guess one for you.</span></div>
+    <div class="field"><label for="paid">Already paid or deducted</label><input id="paid" type="number" inputmode="decimal" value="0" min="0" step="5000"><span class="hint">TDS the brands withheld counts here.</span></div></div>
+      <div class="tool-out" id="out">
+    <div><span class="fine">Tax expected for the year</span><div class="out-big figure" id="total">-</div></div>
+    <div id="rows"></div>
+    <p class="tool-note" id="note"></p></div>
+    </div>
+    <p class="tool-note reveal" style="margin-top:22px;max-width:640px">Section 211 sets the four dates and the cumulative percentages: 15% by 15 June, 45% by 15 September, 75% by 15 December and the balance by 15 March. This applies your own effective rate to your own figure, which is the only honest way to do it without knowing the rest of your income.</p>
+  </div>
+</section>
 
-    <h2>What we collect, and why</h2>
-    <ul>
-      <li><strong>Your account</strong>: name, email address, phone number. To create your workspace, sign you in, and contact you about your account.</li>
-      <li><strong>Your business details</strong>: niche, follower count, GSTIN, address, UPI ID and bank account details. Used to produce your invoices and your tax figures. We never initiate a payment to or from these.</li>
-      <li><strong>Your work</strong>: brand deals, rates, deadlines, payments, invoices, expenses and the notes you write.</li>
-      <li><strong>Contacts at brands you work with</strong>: names, phone numbers and email addresses you record. This is personal data about other people, and we process it only to provide the service to you.</li>
-      <li><strong>Files you upload</strong>: contracts, briefs, screenshots and profile photographs.</li>
-      <li><strong>Device tokens</strong>: so reminders can reach your phone.</li>
-      <li><strong>Social account data</strong>: only if you connect Instagram: your handle, your follower and engagement figures, and view counts on posts you have linked to a deal.</li>
-    </ul>
-
-    <h2>What we do not do</h2>
-    <ul>
-      <li>We do not sell your data, and we do not share it for anyone else’s advertising.</li>
-      <li>We do not use your deals, rates or contacts to train AI models.</li>
-      <li>We never touch money moving between you and a brand. An invoice and its UPI QR are documents; the payment goes directly into your account.</li>
-      <li>We cannot see your card or UPI credentials when you pay us. Those go to our payment gateway and never reach our servers.</li>
-    </ul>
-
-    <h2>Who processes it for us</h2>
-    <ul>
-      <li><strong>Supabase</strong>: database, authentication and file storage.</li>
-      <li><strong>OpenAI</strong>: reading a screenshot or voice note you choose to submit, and suggesting a rate for a format you have never sold. Only the content of that specific request is sent.</li>
-      <li><strong>Razorpay</strong>: collecting your subscription payment.</li>
-      <li><strong>Expo</strong>: delivering push notifications to your device.</li>
-      <li><strong>Meta</strong>: only if you connect Instagram, and only to read your own figures.</li>
-    </ul>
-
-    <h2>How long we keep it</h2>
-    <p>
-      For as long as your account exists. When you delete your account, your workspace and
-      everything in it is permanently deleted, including uploaded files. This is a real deletion
-      path rather than a deactivation flag.
-    </p>
-    <p>
-      One exception: the tax invoices we issue <em>to you</em> for your subscription are retained
-      for six years, as Indian GST law requires. Those carry your name and GSTIN and nothing else
-      about your work.
-    </p>
-
-    <h2>Your rights</h2>
-    <ul>
-      <li><strong>Access and portability</strong>: Settings → Export my data gives you everything as CSV and JSON, at any time. This works even after a plan has ended.</li>
-      <li><strong>Correction</strong>: every field is editable in the app.</li>
-      <li><strong>Erasure</strong>: Settings → Delete my account. Or write to us and we will do it.</li>
-      <li><strong>Grievance</strong>: write to <a href="mailto:hello@creatordesk.in">hello@creatordesk.in</a> with “Grievance” in the subject.</li>
-    </ul>
-
-    <h2>Children</h2>
-    <p>
-      CreatorDesk is not intended for anyone under 18, and we do not knowingly create accounts for
-      children.
-    </p>
-
-    <h2>Security</h2>
-    <p>
-      Every workspace is isolated at the database level, not by application code: one creator’s
-      deals, rates and contacts are unreachable from another account even through a direct API
-      call. Where you invite a manager, the limits you set on what they can see are enforced the
-      same way. A withheld rate is not hidden on screen, it is never sent.
-    </p>
-
-    <h2>Changes</h2>
-    <p>
-      If this policy changes in a way that affects you, we will tell you by email before it takes
-      effect. The date at the top always reflects the current version.
-    </p>
-
-    <h2>Contact</h2>
-    <p>
-      TODO: the registered legal entity name · TODO: registered address, city, state, PIN<br>
-      <a href="mailto:hello@creatordesk.in">hello@creatordesk.in</a> · TODO: a number that is answered
-    </p>
+<section class="band band-alt">
+  <div class="container">
+    <div class="split">
+      <div class="reveal">
+        <h2>It does this from your real deals</h2>
+        <p class="lede" style="margin-top:16px">Inside CreatorDesk the figures come from the work you have already logged, and it reminds you before the date rather than after.</p>
+        <div class="btn-row" style="margin-top:24px">
+          <a class="btn" href="https://platform.creatordesk.in/sign-up">Start free for 14 days</a>
+        </div>
+      </div>
+      <div class="reveal">
+        <h4 style="margin-bottom:14px">Other free tools</h4>
+        <div class="grid" style="gap:12px">
+          <a class="card" href="/tools/tds-calculator"><h4>TDS calculator</h4><p>They deducted 10%. What actually reaches your bank</p></a><a class="card" href="/tools/gst-calculator"><h4>GST calculator</h4><p>CGST and SGST, or IGST, worked out from the two states</p></a><a class="card" href="/tools/rate-calculator"><h4>Rate calculator</h4><p>What your reach is worth, per format</p></a>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 <section class="close-cta">
     <div class="container reveal">
-      <h2 style="max-width:16ch;margin:0 auto">Your data stays yours.</h2>
-      <p class="lede" style="margin:18px auto 0;max-width:52ch">Export all of it whenever you like, on every plan and after one ends.</p>
+      <h2 style="max-width:16ch;margin:0 auto">Stop working this out by hand</h2>
+      <p class="lede" style="margin:18px auto 0;max-width:52ch">CreatorDesk keeps it up to date from the deals you log. 14 days free, no card.</p>
       <div class="btn-row">
         <a class="btn btn-lg" href="https://platform.creatordesk.in/sign-up">Start free</a>
         
@@ -197,6 +149,26 @@
   </div>
 </footer>
 <script src="/app.js" defer></script>
-
+<script src="/tools.js"></script>
+<script>
+    const $ = (id) => document.getElementById(id)
+    function run() {
+      const income = Number($('income').value) || 0
+      const rate = Number($('rate').value) || 0
+      const paid = Number($('paid').value) || 0
+      const expected = CD.estimateTax(income, rate)
+      const remaining = Math.max(expected - paid, 0)
+      $('total').textContent = CD.inr(expected)
+      const fy = CD.financialYearStart()
+      const rows = CD.advanceTaxSchedule(remaining, fy)
+      $('rows').innerHTML = rows.map((r) =>
+        '<div class="out-row"><span>' + r.label + (r.isPast ? ' (passed)' : '') + '</span><b>' + CD.inr(r.thisInstalment) + '</b></div>'
+      ).join('')
+      $('note').textContent = paid > 0
+        ? CD.inr(paid) + ' already paid has been taken off before splitting the rest.'
+        : 'TDS the brands have already withheld counts towards this. Enter it above and the instalments come down.'
+    }
+    document.querySelectorAll('.tool-form input').forEach((i) => i.addEventListener('input', run))
+    run()</script>
 </body>
 </html>

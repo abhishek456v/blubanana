@@ -1,0 +1,271 @@
+// The free tools.
+//
+// Five calculators, no sign up, no email wall. They exist for two reasons: a
+// creator searching "advance tax for content creator" in the week before
+// 15 September has a real problem and no good answer, and a page that solves it
+// in ten seconds earns more trust than any paragraph about trust.
+//
+// The arithmetic is imported from the app's own modules through
+// web/browser/tools.ts, so the advance tax split here and the one inside
+// CreatorDesk are the same function rather than two copies waiting to disagree.
+
+import { PRICING, SITE, TOOLS } from '../site.mjs'
+import { closingCta, head, icon, section } from '../ui.mjs'
+
+/** Every tool page has the same bones, so a fix to one shape fixes five pages. */
+function toolPage({ path, name, h1, line, description, form, out, how, related = 3, script }) {
+  const others = TOOLS.filter(([href]) => href !== path).slice(0, related)
+
+  const body = `
+<section class="hero" style="padding-bottom:0">
+  <div class="container">
+    <div class="eyebrow reveal">Free tool</div>
+    <h1 class="reveal" style="max-width:18ch;font-size:clamp(32px,4.4vw,50px)">${h1}</h1>
+    <p class="lede reveal" style="max-width:52ch;margin-top:18px">${line}</p>
+  </div>
+</section>
+
+<section class="band">
+  <div class="container">
+    <div class="tool reveal">
+      <div class="tool-form">${form}</div>
+      <div class="tool-out" id="out">${out}</div>
+    </div>
+    <p class="tool-note reveal" style="margin-top:22px;max-width:640px">${how}</p>
+  </div>
+</section>
+
+<section class="band band-alt">
+  <div class="container">
+    <div class="split">
+      <div class="reveal">
+        <h2>It does this from your real deals</h2>
+        <p class="lede" style="margin-top:16px">Inside CreatorDesk the figures come from the work you have already logged, and it reminds you before the date rather than after.</p>
+        <div class="btn-row" style="margin-top:24px">
+          <a class="btn" href="${SITE.signup}">Start free for ${PRICING.trialDays} days</a>
+        </div>
+      </div>
+      <div class="reveal">
+        <h4 style="margin-bottom:14px">Other free tools</h4>
+        <div class="grid" style="gap:12px">
+          ${others.map(([href, title, note]) => `<a class="card" href="${href}"><h4>${title}</h4><p>${note}</p></a>`).join('')}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>`
+
+  return {
+    path,
+    title: `${name} for Indian creators | CreatorDesk`,
+    description,
+    script,
+    body: [
+      body,
+      closingCta({
+        title: 'Stop working this out by hand',
+        sub: `CreatorDesk keeps it up to date from the deals you log. ${PRICING.trialDays} days free, no card.`,
+        href: SITE.signup,
+      }),
+    ].join('\n'),
+  }
+}
+
+const field = (id, label, hint, input) =>
+  `<div class="field"><label for="${id}">${label}</label>${input}${hint ? `<span class="hint">${hint}</span>` : ''}</div>`
+
+const number = (id, value, extra = '') =>
+  `<input id="${id}" type="number" inputmode="decimal" value="${value}" ${extra}>`
+
+/* ── 1. advance tax ──────────────────────────────────────────────────────── */
+const advanceTax = toolPage({
+  path: '/tools/advance-tax-calculator',
+  name: 'Advance tax calculator',
+  h1: 'Advance tax calculator for creators',
+  line: 'Four dates, and what is due by each. Miss them and the interest under sections 234B and 234C is charged whether or not anyone reminded you.',
+  description:
+    'Work out what to set aside for advance tax by 15 June, 15 September, 15 December and 15 March. Free, no sign up, built for Indian content creators.',
+  form: `
+    ${field('income', 'Expected income this year', 'After your expenses. Everything you earn, not only what came through brand deals.', number('income', 1200000, 'min="0" step="10000"'))}
+    ${field('rate', 'Your effective tax rate', 'Ask your CA. Rates change most budgets, so this tool will not guess one for you.', number('rate', 30, 'min="0" max="60" step="1"'))}
+    ${field('paid', 'Already paid or deducted', 'TDS the brands withheld counts here.', number('paid', 0, 'min="0" step="5000"'))}`,
+  out: `
+    <div><span class="fine">Tax expected for the year</span><div class="out-big figure" id="total">-</div></div>
+    <div id="rows"></div>
+    <p class="tool-note" id="note"></p>`,
+  how: 'Section 211 sets the four dates and the cumulative percentages: 15% by 15 June, 45% by 15 September, 75% by 15 December and the balance by 15 March. This applies your own effective rate to your own figure, which is the only honest way to do it without knowing the rest of your income.',
+  script: `
+    const $ = (id) => document.getElementById(id)
+    function run() {
+      const income = Number($('income').value) || 0
+      const rate = Number($('rate').value) || 0
+      const paid = Number($('paid').value) || 0
+      const expected = CD.estimateTax(income, rate)
+      const remaining = Math.max(expected - paid, 0)
+      $('total').textContent = CD.inr(expected)
+      const fy = CD.financialYearStart()
+      const rows = CD.advanceTaxSchedule(remaining, fy)
+      $('rows').innerHTML = rows.map((r) =>
+        '<div class="out-row"><span>' + r.label + (r.isPast ? ' (passed)' : '') + '</span><b>' + CD.inr(r.thisInstalment) + '</b></div>'
+      ).join('')
+      $('note').textContent = paid > 0
+        ? CD.inr(paid) + ' already paid has been taken off before splitting the rest.'
+        : 'TDS the brands have already withheld counts towards this. Enter it above and the instalments come down.'
+    }
+    document.querySelectorAll('.tool-form input').forEach((i) => i.addEventListener('input', run))
+    run()`,
+})
+
+/* ── 2. TDS ──────────────────────────────────────────────────────────────── */
+const tdsTool = toolPage({
+  path: '/tools/tds-calculator',
+  name: 'TDS calculator',
+  h1: 'They deducted TDS. What actually reaches your bank?',
+  line: 'Four numbers matter on every brand deal and only one of them is what you get. This shows all four.',
+  description:
+    'Work out GST, invoice total, TDS withheld and what actually lands in your account on a brand deal. Free TDS calculator for Indian content creators.',
+  form: `
+    ${field('base', 'Deal amount', 'What you agreed with the brand, before any tax.', number('base', 100000, 'min="0" step="1000"'))}
+    ${field('gst', 'GST you charge', 'Zero if you are not registered for GST.', `<select id="gst"><option value="18">18%</option><option value="0">Not registered</option></select>`)}
+    ${field('tdsrate', 'TDS rate the brand deducts', 'Usually 10% for professional services under section 194J. Ask the brand which section they are deducting under.', `<select id="tdsrate"><option value="10">10%, section 194J</option><option value="2">2%, section 194C</option><option value="5">5%, section 194H</option><option value="1">1%</option></select>`)}`,
+  out: `
+    <div><span class="fine">Lands in your bank</span><div class="out-big figure" id="net">-</div></div>
+    <div class="out-row"><span>Deal amount</span><b id="r-base">-</b></div>
+    <div class="out-row"><span>GST added</span><b id="r-gst">-</b></div>
+    <div class="out-row"><span>Invoice total</span><b id="r-total">-</b></div>
+    <div class="out-row"><span>TDS withheld</span><b id="r-tds">-</b></div>
+    <p class="tool-note">TDS is not lost. It sits against your PAN and you claim it when you file.</p>`,
+  how: 'TDS is deducted on the value of the service, never on the GST charged on top of it. Getting that the wrong way round is the usual reason a creator’s arithmetic disagrees with the brand’s remittance advice, by exactly the tax on the tax.',
+  script: `
+    const $ = (id) => document.getElementById(id)
+    function run() {
+      const base = Number($('base').value) || 0
+      const gst = Number($('gst').value) || 0
+      const rate = Number($('tdsrate').value) || 0
+      const r = CD.tds(base, rate, gst)
+      $('net').textContent = CD.inr(r.received)
+      $('r-base').textContent = CD.inr(base)
+      $('r-gst').textContent = CD.inr(r.gst)
+      $('r-total').textContent = CD.inr(r.invoiceTotal)
+      $('r-tds').textContent = CD.inr(r.withheld)
+    }
+    document.querySelectorAll('.tool-form input, .tool-form select').forEach((i) => i.addEventListener('input', run))
+    run()`,
+})
+
+/* ── 3. GST ──────────────────────────────────────────────────────────────── */
+const gstTool = toolPage({
+  path: '/tools/gst-calculator',
+  name: 'GST calculator',
+  h1: 'CGST and SGST, or IGST?',
+  line: 'It depends on two states, and getting it wrong is why a finance team sends the invoice back.',
+  description:
+    'Work out whether your invoice carries CGST and SGST or IGST, and how much of each. Free GST calculator for Indian creators and freelancers.',
+  form: `
+    ${field('amount', 'Invoice amount', 'Before tax.', number('amount', 100000, 'min="0" step="1000"'))}
+    ${field('rate2', 'GST rate', 'Creator and influencer services are usually 18%.', `<select id="rate2"><option value="18">18%</option><option value="5">5%</option><option value="12">12%</option><option value="28">28%</option></select>`)}
+    ${field('mine', 'Your state', 'Where you are registered.', `<select id="mine"></select>`)}
+    ${field('theirs', 'The brand’s state', 'The place of supply for a registered recipient is their registered address.', `<select id="theirs"></select>`)}`,
+  out: `
+    <div><span class="fine">Invoice total</span><div class="out-big figure" id="g-total">-</div></div>
+    <div id="g-rows"></div>
+    <p class="tool-note" id="g-note"></p>`,
+  how: 'Under the IGST Act a supply is inter State when the supplier’s state and the place of supply differ, and intra State when they match. That single comparison decides whether the invoice carries IGST at the full rate or CGST and SGST at half each.',
+  script: `
+    const $ = (id) => document.getElementById(id)
+    const options = CD.GST_STATE_OPTIONS.map((o) => '<option value="' + o.code + '">' + o.name + '</option>').join('')
+    $('mine').innerHTML = options
+    $('theirs').innerHTML = options
+    $('mine').value = '29'
+    $('theirs').value = '27'
+    function run() {
+      const amount = Number($('amount').value) || 0
+      const rate = Number($('rate2').value) || 0
+      const tax = Math.round((amount * rate) / 100)
+      const split = CD.splitGst(tax, $('mine').value, $('theirs').value)
+      $('g-total').textContent = CD.inr(amount + tax)
+      $('g-rows').innerHTML = split.interState
+        ? '<div class="out-row"><span>Taxable value</span><b>' + CD.inr(amount) + '</b></div>' +
+          '<div class="out-row"><span>IGST at ' + rate + '%</span><b>' + CD.inr(split.igst) + '</b></div>'
+        : '<div class="out-row"><span>Taxable value</span><b>' + CD.inr(amount) + '</b></div>' +
+          '<div class="out-row"><span>CGST at ' + (rate / 2) + '%</span><b>' + CD.inr(split.cgst) + '</b></div>' +
+          '<div class="out-row"><span>SGST at ' + (rate / 2) + '%</span><b>' + CD.inr(split.sgst) + '</b></div>'
+      $('g-note').textContent = split.interState
+        ? 'Different states, so this is an inter State supply and carries IGST on one line.'
+        : 'Same state, so the tax splits equally across CGST and SGST.'
+    }
+    document.querySelectorAll('.tool-form input, .tool-form select').forEach((i) => i.addEventListener('input', run))
+    run()`,
+})
+
+/* ── 4. rate ─────────────────────────────────────────────────────────────── */
+const rateTool = toolPage({
+  path: '/tools/rate-calculator',
+  name: 'Rate calculator',
+  h1: 'What is a post of yours worth?',
+  line: 'Brands buy attention by the thousand views. This turns your reach into a range you can quote.',
+  description:
+    'Turn your average views into a rate range you can quote to a brand, using cost per thousand views. Free rate calculator for Indian creators.',
+  form: `
+    ${field('views', 'Average views on a post', 'Take the last five of the same format and average them.', number('views', 120000, 'min="0" step="1000"'))}
+    ${field('cpmlow', 'Lower end of your band', 'Rupees per thousand views.', number('cpmlow', 200, 'min="0" step="10"'))}
+    ${field('cpmhigh', 'Upper end of your band', 'Where you land depends on the category, the usage and how much work it is.', number('cpmhigh', 500, 'min="0" step="10"'))}`,
+  out: `
+    <div><span class="fine">A range you can quote</span><div class="out-big figure" id="range">-</div></div>
+    <div class="out-row"><span>At the lower end</span><b id="rlow">-</b></div>
+    <div class="out-row"><span>At the upper end</span><b id="rhigh">-</b></div>
+    <p class="tool-note">Add for exclusivity, for usage rights, and for anything that takes a second shoot day. Those are separate line items, not goodwill.</p>`,
+  how: 'This is arithmetic on your own numbers, not a market benchmark. Nobody can honestly publish a going rate for every category, and a page that tried would be guessing with your livelihood. Inside CreatorDesk the range comes from what you have actually been paid, with the sample size stated.',
+  script: `
+    const $ = (id) => document.getElementById(id)
+    function run() {
+      const views = Number($('views').value) || 0
+      const low = Number($('cpmlow').value) || 0
+      const high = Number($('cpmhigh').value) || 0
+      const r = CD.rateFromReach(views, Math.min(low, high), Math.max(low, high))
+      $('range').textContent = CD.inr(r.low) + ' to ' + CD.inr(r.high)
+      $('rlow').textContent = CD.inr(r.low)
+      $('rhigh').textContent = CD.inr(r.high)
+    }
+    document.querySelectorAll('.tool-form input').forEach((i) => i.addEventListener('input', run))
+    run()`,
+})
+
+/* ── 5. engagement ───────────────────────────────────────────────────────── */
+const engagementTool = toolPage({
+  path: '/tools/engagement-rate-calculator',
+  name: 'Engagement rate calculator',
+  h1: 'Engagement rate calculator',
+  line: 'The first number a brand asks for, worked out both ways they mean it.',
+  description:
+    'Work out your engagement rate on followers and on reach, the two ways brands ask for it. Free calculator for Instagram and YouTube creators.',
+  form: `
+    ${field('followers', 'Followers', '', number('followers', 184000, 'min="0" step="100"'))}
+    ${field('reach', 'Reach on the post', 'Leave at zero if you only want the follower figure.', number('reach', 96000, 'min="0" step="100"'))}
+    ${field('likes', 'Likes', '', number('likes', 8400, 'min="0" step="10"'))}
+    ${field('comments', 'Comments', '', number('comments', 320, 'min="0" step="1"'))}
+    ${field('saves', 'Saves and shares', '', number('saves', 1100, 'min="0" step="10"'))}`,
+  out: `
+    <div><span class="fine">On followers</span><div class="out-big figure" id="erf">-</div></div>
+    <div class="out-row"><span>On reach</span><b id="err">-</b></div>
+    <div class="out-row"><span>Total interactions</span><b id="eri">-</b></div>
+    <p class="tool-note">On followers is the media kit number. On reach describes how one post actually did, and is the more useful of the two.</p>`,
+  how: 'Interactions divided by the denominator, times one hundred. Saves and shares are counted because on Reels they carry more weight with the algorithm than a like does, and brands increasingly ask for them separately.',
+  script: `
+    const $ = (id) => document.getElementById(id)
+    const pct = (n) => n.toFixed(2) + '%'
+    function run() {
+      const f = Number($('followers').value) || 0
+      const r = Number($('reach').value) || 0
+      const l = Number($('likes').value) || 0
+      const c = Number($('comments').value) || 0
+      const s = Number($('saves').value) || 0
+      $('erf').textContent = f ? pct(CD.engagement(l, c, s, f)) : '-'
+      $('err').textContent = r ? pct(CD.engagement(l, c, s, r)) : 'add reach above'
+      $('eri').textContent = (l + c + s).toLocaleString('en-IN')
+    }
+    document.querySelectorAll('.tool-form input').forEach((i) => i.addEventListener('input', run))
+    run()`,
+})
+
+export default [advanceTax, tdsTool, gstTool, rateTool, engagementTool]

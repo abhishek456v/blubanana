@@ -15,7 +15,7 @@ const QUESTIONS = [
   ],
   [
     'What happens to my price at renewal?',
-    'The price you start on holds for the entire term you bought. A yearly subscriber keeps their price for twelve months. At renewal, whatever the price is then applies — and if the amount changes, your bank will ask you to approve the new mandate. Nobody gets silently charged more.',
+    'The price you start on holds for the entire term you bought. A yearly subscriber keeps their price for twelve months. At renewal, whatever the price is then applies, and if the amount changes your bank will ask you to approve the new mandate. Nobody gets silently charged more.',
   ],
   [
     'Why are 3, 6 and 9 months not cheaper per month?',
@@ -23,11 +23,11 @@ const QUESTIONS = [
   ],
   [
     'Do I need a card to start?',
-    `No. The ${PRICING.trialDays}-day trial takes an email address. You can create ${PRICING.trialDeals} deals in that time, and everything else is unlimited — reaching ${PRICING.trialDeals} does not end the trial early.`,
+    `No. The ${PRICING.trialDays} day trial takes an email address. You can create ${PRICING.trialDeals} deals in that time, and everything else is unlimited. Reaching ${PRICING.trialDeals} does not end the trial early.`,
   ],
   [
     'What if I stop paying?',
-    'Your workspace becomes read-only. Everything stays visible and exportable, for as long as the account exists. We do not lock you out of your own records because a plan lapsed — and deadline and payment reminders keep arriving for another 30 days.',
+    'Your workspace becomes read only. Everything stays visible and exportable for as long as the account exists. We do not lock you out of your own records because a plan lapsed, and deadline and payment reminders keep arriving for another 30 days.',
   ],
   [
     'Is GST included in these prices?',
@@ -35,11 +35,11 @@ const QUESTIONS = [
   ],
   [
     'Can I get a refund?',
-    'Within 30 days of a payment, yes — in full, and we will not ask how much you used it. After that the term has been provided and is not refunded. The full terms are on the refunds page.',
+    'Within 30 days of a payment, yes, in full, and we will not ask how much you used it. After that the term has been provided and is not refunded. The full terms are on the refunds page.',
   ],
   [
     'How many people can use one workspace?',
-    `Up to ${PRICING.seats}, included. You choose what each of them can see, area by area — and no invited manager can delete anything, ever.`,
+    `Up to ${PRICING.seats}, included. You choose what each of them can see, area by area, and no invited manager can delete anything, ever.`,
   ],
 ]
 
@@ -51,7 +51,7 @@ const INCLUDED = [
   ['TDS, expenses and the advance-tax calculator', 'Plus an April-to-March report you can hand to a CA.'],
   ['Your rate card, and rate benchmarking', 'Built from what you have actually charged, with the sample size stated.'],
   [`Up to ${PRICING.seats} people in your workspace`, 'With seven separate permission switches, enforced in the database.'],
-  ['Export everything, at any time', 'CSV and JSON, including while your account is read-only.'],
+  ['Export everything, at any time', 'CSV and JSON, including while your account is read only.'],
 ]
 
 const table = `<div class="table-wrap reveal" style="margin-top:40px">
@@ -78,7 +78,7 @@ const table = `<div class="table-wrap reveal" style="margin-top:40px">
 const hero = `<section class="hero" style="padding-bottom:0">
   <div class="container">
     <div class="offer-chip reveal" data-intro-chip hidden>
-      ✦ Launch offer · ${PRICING.introPercent}% off · <span data-seats-left>—</span> of ${PRICING.introSeats} places left
+      Launch offer, ${PRICING.introPercent}% off
     </div>
     <h1 class="reveal" style="max-width:14ch">One plan. Everything in it.</h1>
     <p class="lede reveal" style="max-width:60ch;margin-top:22px">
@@ -91,7 +91,7 @@ const hero = `<section class="hero" style="padding-bottom:0">
       <span class="dim" style="font-size:18px">per month + GST</span>
     </div>
     <div class="btn-row reveal" style="margin-top:30px">
-      <a class="btn btn-lg" href="${SITE.signup}">Start free — ${PRICING.trialDays} days</a>
+      <a class="btn btn-lg" href="${SITE.signup}">Start free for ${PRICING.trialDays} days</a>
       <a class="btn btn-lg btn-ghost" href="#included">What is included</a>
     </div>
     <p class="fine reveal">No card needed · Cancel any time · 30-day money-back guarantee</p>
@@ -123,10 +123,10 @@ const straight = section({
       </div>
       <div class="card">
         <h4>Your price is fixed for your term</h4>
-        <p class="dim">Renewal takes whatever the price is then. If the amount changes, your bank asks you to approve the new mandate first — RBI’s e-mandate rules require it, and we would do it anyway.</p>
+        <p class="dim">Renewal takes whatever the price is then. If the amount changes, your bank asks you to approve the new mandate first. RBI’s rules require it, and we would do it anyway.</p>
       </div>
       <div class="card">
-        <h4>A lapsed plan is read-only, not locked</h4>
+        <h4>A lapsed plan is read only, not locked</h4>
         <p class="dim">Everything stays visible and exportable. Reminders keep arriving for another 30 days, because a missed deadline is not a fair punishment for a card that failed.</p>
       </div>
       <div class="card">
@@ -153,7 +153,7 @@ const questions = `<section class="band band-line">
 
 export default {
   path: '/pricing',
-  title: 'Pricing — CreatorDesk',
+  title: 'Pricing | CreatorDesk',
   description: `One plan with every feature, from ${inr(PRICING.introMonthly)} a month plus GST. ${PRICING.trialDays}-day free trial, no card required, and a 30-day money-back guarantee.`,
   schema: [faqSchema(QUESTIONS)],
   body: [

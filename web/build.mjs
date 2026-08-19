@@ -18,18 +18,21 @@ import { fileURLToPath } from 'node:url'
 import { page } from './src/layout.mjs'
 import { SITE } from './src/site.mjs'
 
+import { build as esbuild } from 'esbuild'
 import home from './src/content/home.mjs'
 import pricing from './src/content/pricing.mjs'
 import contact from './src/content/contact.mjs'
 import terms from './src/content/terms.mjs'
 import privacy from './src/content/privacy.mjs'
 import refunds from './src/content/refunds.mjs'
+import compare from './src/content/compare.mjs'
+import tools from './src/content/tools.mjs'
 
 const DRAFT = process.argv.includes('--draft')
 const ROOT = dirname(fileURLToPath(import.meta.url))
 const DIST = join(ROOT, 'dist')
 
-const PAGES = [home, pricing, contact, terms, privacy, refunds]
+const PAGES = [home, pricing, compare, contact, terms, privacy, refunds, ...tools]
 
 rmSync(DIST, { recursive: true, force: true })
 mkdirSync(DIST, { recursive: true })
@@ -50,6 +53,21 @@ for (const spec of PAGES) {
 cpSync(join(ROOT, 'styles.css'), join(DIST, 'styles.css'))
 cpSync(join(ROOT, 'app.js'), join(DIST, 'app.js'))
 cpSync(join(ROOT, 'assets'), join(DIST, 'assets'), { recursive: true })
+
+// The calculators, compiled from the app's own modules rather than rewritten.
+// `lib/tax.ts` and `constants/gst.ts` are pure arithmetic with no imports, so
+// they cross into a browser bundle untouched, and the advance tax split on the
+// website is then literally the same function as the one in the app.
+await esbuild({
+  entryPoints: [join(ROOT, 'browser', 'tools.ts')],
+  bundle: true,
+  format: 'iife',
+  globalName: 'CD',
+  minify: true,
+  target: 'es2019',
+  outfile: join(DIST, 'tools.js'),
+  logLevel: 'warning',
+})
 
 writeFileSync(
   join(DIST, 'assets', 'favicon.svg'),
@@ -93,6 +111,20 @@ for (const p of written) {
   if ((p.html.match(/<h1[ >]/g) ?? []).length > 1) warn(`${p.path} → more than one <h1>`)
   if (!p.description || p.description.length < 60) warn(`${p.path} → description too short for search results`)
   if (p.title.length > 65) warn(`${p.path} → title over 65 characters, search will truncate it`)
+
+  /*
+   * No dashes in the copy.
+   *
+   * A house rule, and a defensible one: an em dash reads as a writing tic, and
+   * on a page whose whole argument is "we understand your business" it is the
+   * fastest way to sound like generated text. Enforced here rather than trusted
+   * to a proofread, because it only takes one edit to reintroduce.
+   */
+  const text = p.html.replace(/<script[\s\S]*?<\/script>/g, '').replace(/<style[\s\S]*?<\/style>/g, '')
+  for (const [, dash] of text.matchAll(/([\u2014\u2013])/g)) {
+    warn(`${p.path} → ${dash === '\u2014' ? 'em dash' : 'en dash'} in the copy`)
+    break
+  }
 
   // The blocker. Razorpay's reviewers call the number on the contact page.
   const todos = [...p.html.matchAll(/TODO[^<"]*/g)].map((m) => m[0].trim())

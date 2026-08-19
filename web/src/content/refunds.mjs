@@ -32,7 +32,7 @@ const body = `<section class="legal">
       already paid for.
     </p>
 
-    <h2>Refunds — 30 days, money back</h2>
+    <h2>Refunds. 30 days, money back</h2>
     <p>
       <strong>If you cancel within 30 days of a payment, we refund that payment in full.</strong>
       We will not ask how much you used it, and there is no condition about “meaningful use”.
@@ -43,7 +43,7 @@ const body = `<section class="legal">
     </p>
     <p>
       Two things sit outside that window entirely. If we charged you in error, or the service was
-      unavailable for a prolonged period through our fault, write to us and we will put it right —
+      unavailable for a prolonged period through our fault, write to us and we will put it right,
       whenever it happened.
     </p>
 
@@ -59,8 +59,8 @@ const body = `<section class="legal">
 
     <h2>After your plan ends</h2>
     <p>
-      Your workspace becomes read-only. Everything you entered stays visible and exportable for as
-      long as your account exists — we do not delete your records or lock you out of them because a
+      Your workspace becomes read only. Everything you entered stays visible and exportable for as
+      long as your account exists. We do not delete your records or lock you out of them because a
       plan lapsed. Deadline and payment reminders continue for a further 30 days before they stop.
     </p>
     <p>
@@ -76,7 +76,7 @@ const body = `<section class="legal">
 
 export default {
   path: '/refunds',
-  title: 'Cancellation and refunds — CreatorDesk',
+  title: 'Cancellation and refunds | CreatorDesk',
   description:
     'Cancel any time, and get a full refund within 30 days of a payment. How cancellation works, what happens to your data afterwards, and how long a refund takes to reach you.',
   body: [body, closingCta({ title: 'Fourteen days free, first.', sub: 'No card, so there is nothing to refund.', href: SITE.signup })].join('\n'),

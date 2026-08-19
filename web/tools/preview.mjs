@@ -19,11 +19,13 @@ mkdirSync(OUT, { recursive: true })
 const SHOTS = [
   ['home', '/', 1440, 1000, true],
   ['home-phone', '/', 390, 900, true],
+  ['home-dark', '/?theme=dark', 1440, 1000, true],
   ['pricing', '/pricing', 1440, 1000, true],
-  ['pricing-phone', '/pricing', 390, 900, true],
+  ['compare', '/compare', 1440, 1000, true],
+  ['tool-tax', '/tools/advance-tax-calculator', 1440, 1000, false],
+  ['tool-gst', '/tools/gst-calculator', 1440, 1000, false],
+  ['tool-tds-phone', '/tools/tds-calculator', 390, 900, false],
   ['contact', '/contact', 1440, 1000, false],
-  ['terms', '/terms', 1440, 1000, false],
-  ['privacy', '/privacy', 1440, 1000, false],
   ['refunds', '/refunds', 1440, 1000, false],
 ]
 
@@ -38,7 +40,14 @@ for (const [name, path, width, height, fullPage] of SHOTS) {
     if (response.status() >= 400) problems.push(`${name}: HTTP ${response.status()} ${response.url().slice(0, 120)}`)
   })
 
-  await page.goto(BASE + path, { waitUntil: 'networkidle', timeout: 60_000 })
+  // ?theme=dark is a preview affordance only; the real page follows the system
+  // or a stored choice. Set before navigation so nothing renders light first.
+  if (path.includes('theme=dark')) {
+    await page.addInitScript(() => {
+      try { localStorage.setItem('cd-theme', 'dark') } catch (e) {}
+    })
+  }
+  await page.goto(BASE + path.replace('?theme=dark', ''), { waitUntil: 'networkidle', timeout: 60_000 })
   // Scroll the whole page so every `.reveal` has fired, then return to the top.
   // Without this a full-page screenshot catches most sections at opacity 0.
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))

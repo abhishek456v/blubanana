@@ -12,6 +12,23 @@
 ;(() => {
   'use strict'
 
+  /* ── theme ─────────────────────────────────────────────────────────────── */
+  // Three states, not two. No stored preference means "follow the operating
+  // system", and the toggle has to be able to return to whichever of light or
+  // dark the system is not currently showing.
+  const root = document.documentElement
+  document.querySelectorAll('.theme-toggle').forEach((button) => {
+    button.addEventListener('click', () => {
+      const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+      const current = root.getAttribute('data-theme') || (systemDark ? 'dark' : 'light')
+      const next = current === 'dark' ? 'light' : 'dark'
+      root.setAttribute('data-theme', next)
+      try {
+        localStorage.setItem('cd-theme', next)
+      } catch (e) {}
+    })
+  })
+
   /* ── menus ─────────────────────────────────────────────────────────────── */
   // Hover opens them on a mouse (CSS). A touch device has no hover, so the
   // trigger is also a real button that toggles a class.
@@ -105,7 +122,6 @@
    * on a bad connection sees the build-time price, which is right; nobody ever
    * sees a blank where a price should be.
    */
-  const root = document.documentElement
   const SUPABASE_URL = root.dataset.supabaseUrl
   const SUPABASE_KEY = root.dataset.supabaseKey
   const announce = document.getElementById('announce')
@@ -146,8 +162,15 @@
     const left = sold === null ? null : Math.max(0, limit - sold)
     const introLive = left === null ? null : left > 0
 
-    if (left !== null) {
+    // Say how many places are left only once that number persuades rather than
+    // deters. "500 of 500 left" is a true sentence that tells a visitor nobody
+    // has signed up; below a fifth remaining it is the scarcity it was meant to
+    // be. The offer itself is stated either way, so nothing is hidden, and the
+    // cap in the database is what keeps the struck through price honest.
+    const revealAt = Math.round(limit * 0.2)
+    if (left !== null && left <= revealAt) {
       document.querySelectorAll('[data-seats-left]').forEach((el) => (el.textContent = String(left)))
+      document.querySelectorAll('[data-seats-line]').forEach((el) => (el.hidden = false))
     }
 
     if (pricing) {

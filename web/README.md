@@ -10,7 +10,8 @@ node web/build.mjs
 ```
 
 Writes `web/dist`. The build **fails** if it finds a dead internal link, a
-missing image, a page without a description, or a `TODO` placeholder — the last
+missing image, a page without a description, an em or en dash in the copy, or a
+`TODO` placeholder — the last
 of these because a marketing site with a fake phone number is the specific thing
 that fails a Razorpay merchant activation. Pass `--draft` to build anyway while
 those details are still outstanding.
@@ -28,22 +29,32 @@ scrolls sideways.
 
 ## Images
 
-```
-node web/tools/images.mjs
-```
+**The site ships no screenshots.** Everything that looks like the product is
+drawn in HTML and CSS by `src/ui.mjs`. Two reasons, and both matter: the app's
+interface is not final, so a screenshot would date the site every time a screen
+moves, and a real workspace carries a creator's brands, rates and bank details,
+which do not belong on a public page. The drawings carry no names, no brands, no
+account numbers and no rupee figures.
 
-Reads the app screenshots in `/screenshots`, crops and resizes them, and writes
-WebP at two widths into `web/assets` along with `manifest.json`, which is where
-the `<img>` width and height come from. Chromium does the encoding — it is
-already here for Playwright, and there is no other WebP encoder on this machine.
-
-The screenshots themselves come from a **demo workspace**, never a real one:
+The only image the site ships is `assets/og.png`, the social preview:
 
 ```
-node scripts/seed-demo.mjs                          # invented brands, deterministic figures
-npx expo start --web --port 8081                    # in another terminal
-node scripts/drive.mjs --email demo@creatordesk.in --password '…' --all --dark --width 1440 --prefix demo-wide-
+node web/tools/og.mjs
 ```
+
+`web/tools/images.mjs` and `scripts/seed-demo.mjs` remain for QA work on the app
+itself, not for this site.
+
+## Free tools
+
+```
+node web/build.mjs      # bundles web/browser/tools.ts into dist/tools.js with esbuild
+```
+
+The five calculators import `lib/tax.ts` and `constants/gst.ts` directly. Both
+are pure arithmetic with no imports, so they cross into a browser bundle
+untouched, and the advance tax split on the website is the same function as the
+one inside the app rather than a second copy waiting to disagree.
 
 ## What lives where
 

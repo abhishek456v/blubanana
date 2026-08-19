@@ -63,7 +63,7 @@ const self = section({
     <div class="grid g-3 reveal" style="margin-top:36px">
       <div class="card">
         <h4>Export everything</h4>
-        <p class="dim">Settings → Export my data. CSV and JSON, all of it, at any time — including while your account is read-only.</p>
+        <p class="dim">Settings → Export my data. CSV and JSON, all of it, at any time, including while your account is read only.</p>
       </div>
       <div class="card">
         <h4>Delete your account</h4>

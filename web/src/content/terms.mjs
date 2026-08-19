@@ -75,7 +75,7 @@ const body = `<section class="legal">
     <p>
       To the extent the law allows, our total liability is limited to what you paid us in the
       twelve months before the claim. We are not liable for missed deadlines, unpaid invoices or
-      tax positions taken on the basis of figures in the app — those remain your decisions.
+      tax positions taken on the basis of figures in the app. Those remain your decisions.
     </p>
 
     <h2>Governing law</h2>
@@ -91,7 +91,7 @@ const body = `<section class="legal">
 
 export default {
   path: '/terms',
-  title: 'Terms and conditions — CreatorDesk',
+  title: 'Terms and conditions | CreatorDesk',
   description:
     'The terms of using CreatorDesk: what the service provides, what it deliberately is not, how billing works, and where liability sits.',
   body: [body, closingCta({ title: 'Start when you are ready.', sub: 'Fourteen days free, and no card to cancel.', href: SITE.signup })].join('\n'),

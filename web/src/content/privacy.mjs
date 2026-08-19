@@ -32,13 +32,13 @@ const body = `<section class="legal">
 
     <h2>What we collect, and why</h2>
     <ul>
-      <li><strong>Your account</strong> — name, email address, phone number. To create your workspace, sign you in, and contact you about your account.</li>
-      <li><strong>Your business details</strong> — niche, follower count, GSTIN, address, UPI ID and bank account details. Used to produce your invoices and your tax figures. We never initiate a payment to or from these.</li>
-      <li><strong>Your work</strong> — brand deals, rates, deadlines, payments, invoices, expenses and the notes you write.</li>
-      <li><strong>Contacts at brands you work with</strong> — names, phone numbers and email addresses you record. This is personal data about other people, and we process it only to provide the service to you.</li>
-      <li><strong>Files you upload</strong> — contracts, briefs, screenshots and profile photographs.</li>
-      <li><strong>Device tokens</strong> — so reminders can reach your phone.</li>
-      <li><strong>Social account data</strong> — only if you connect Instagram: your handle, your follower and engagement figures, and view counts on posts you have linked to a deal.</li>
+      <li><strong>Your account</strong>: name, email address, phone number. To create your workspace, sign you in, and contact you about your account.</li>
+      <li><strong>Your business details</strong>: niche, follower count, GSTIN, address, UPI ID and bank account details. Used to produce your invoices and your tax figures. We never initiate a payment to or from these.</li>
+      <li><strong>Your work</strong>: brand deals, rates, deadlines, payments, invoices, expenses and the notes you write.</li>
+      <li><strong>Contacts at brands you work with</strong>: names, phone numbers and email addresses you record. This is personal data about other people, and we process it only to provide the service to you.</li>
+      <li><strong>Files you upload</strong>: contracts, briefs, screenshots and profile photographs.</li>
+      <li><strong>Device tokens</strong>: so reminders can reach your phone.</li>
+      <li><strong>Social account data</strong>: only if you connect Instagram: your handle, your follower and engagement figures, and view counts on posts you have linked to a deal.</li>
     </ul>
 
     <h2>What we do not do</h2>
@@ -51,11 +51,11 @@ const body = `<section class="legal">
 
     <h2>Who processes it for us</h2>
     <ul>
-      <li><strong>Supabase</strong> — database, authentication and file storage.</li>
-      <li><strong>OpenAI</strong> — reading a screenshot or voice note you choose to submit, and suggesting a rate for a format you have never sold. Only the content of that specific request is sent.</li>
-      <li><strong>Razorpay</strong> — collecting your subscription payment.</li>
-      <li><strong>Expo</strong> — delivering push notifications to your device.</li>
-      <li><strong>Meta</strong> — only if you connect Instagram, and only to read your own figures.</li>
+      <li><strong>Supabase</strong>: database, authentication and file storage.</li>
+      <li><strong>OpenAI</strong>: reading a screenshot or voice note you choose to submit, and suggesting a rate for a format you have never sold. Only the content of that specific request is sent.</li>
+      <li><strong>Razorpay</strong>: collecting your subscription payment.</li>
+      <li><strong>Expo</strong>: delivering push notifications to your device.</li>
+      <li><strong>Meta</strong>: only if you connect Instagram, and only to read your own figures.</li>
     </ul>
 
     <h2>How long we keep it</h2>
@@ -72,10 +72,10 @@ const body = `<section class="legal">
 
     <h2>Your rights</h2>
     <ul>
-      <li><strong>Access and portability</strong> — Settings → Export my data gives you everything as CSV and JSON, at any time. This works even after a plan has ended.</li>
-      <li><strong>Correction</strong> — every field is editable in the app.</li>
-      <li><strong>Erasure</strong> — Settings → Delete my account. Or write to us and we will do it.</li>
-      <li><strong>Grievance</strong> — write to <a href="mailto:${COMPANY.email}">${COMPANY.email}</a> with “Grievance” in the subject.</li>
+      <li><strong>Access and portability</strong>: Settings → Export my data gives you everything as CSV and JSON, at any time. This works even after a plan has ended.</li>
+      <li><strong>Correction</strong>: every field is editable in the app.</li>
+      <li><strong>Erasure</strong>: Settings → Delete my account. Or write to us and we will do it.</li>
+      <li><strong>Grievance</strong>: write to <a href="mailto:${COMPANY.email}">${COMPANY.email}</a> with “Grievance” in the subject.</li>
     </ul>
 
     <h2>Children</h2>
@@ -89,7 +89,7 @@ const body = `<section class="legal">
       Every workspace is isolated at the database level, not by application code: one creator’s
       deals, rates and contacts are unreachable from another account even through a direct API
       call. Where you invite a manager, the limits you set on what they can see are enforced the
-      same way — a withheld rate is not hidden on screen, it is never sent.
+      same way. A withheld rate is not hidden on screen, it is never sent.
     </p>
 
     <h2>Changes</h2>
@@ -108,7 +108,7 @@ const body = `<section class="legal">
 
 export default {
   path: '/privacy',
-  title: 'Privacy policy — CreatorDesk',
+  title: 'Privacy policy | CreatorDesk',
   description:
     'What CreatorDesk collects, why, who processes it, how long it is kept, and how to export or delete everything. Written to India’s DPDP Act, 2023.',
   body: [

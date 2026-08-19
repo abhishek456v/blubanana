@@ -14,6 +14,8 @@ const CHEV = `<svg class="chev" viewBox="0 0 12 12" fill="none" aria-hidden="tru
 
 const BURGER = `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 7h18M3 12h18M3 17h18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`
 
+const THEME_ICONS = `<svg class="sun" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="4"/><path d="M11 2v2M11 18v2M2 11h2M18 11h2M4.6 4.6l1.4 1.4M16 16l1.4 1.4M17.4 4.6 16 6M6 16l-1.4 1.4"/></svg><svg class="moon" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13.4A7.6 7.6 0 0 1 8.6 4 7.6 7.6 0 1 0 18 13.4Z"/></svg>`
+
 function header() {
   const items = NAV.map((entry) => {
     if (!entry.items) {
@@ -33,6 +35,7 @@ function header() {
     <a class="logo" href="/">${LOGO} ${SITE.name}</a>
     <nav class="nav">${items}</nav>
     <div class="nav-actions">
+      <button class="theme-toggle" aria-label="Switch between light and dark">${THEME_ICONS}</button>
       <a class="login" href="${SITE.login}">Log in</a>
       <a class="btn btn-sm" href="${SITE.signup}">Start free</a>
       <button class="burger" aria-label="Open menu" aria-expanded="false">${BURGER}</button>
@@ -91,7 +94,7 @@ function footer() {
  * build-time figure stands — a number slightly out of date is honest; a
  * counter that renders blank looks broken.
  */
-export function page({ title, description, path, body, schema = [], announce = true }) {
+export function page({ title, description, path, body, schema = [], announce = true, script = '' }) {
   const canonical = `${SITE.origin}${path === '/' ? '' : path}`
   const structured = schema.length
     ? `<script type="application/ld+json">${JSON.stringify(schema.length === 1 ? schema[0] : schema)}</script>`
@@ -130,6 +133,14 @@ export function page({ title, description, path, body, schema = [], announce = t
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@400..700&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@400..700&display=swap">
 <link rel="stylesheet" href="/styles.css">
+<script>
+  /* Applied before the first paint. A stored preference arriving a frame late
+     is a white flash on a dark page, which is worse than no toggle at all. */
+  try {
+    var t = localStorage.getItem('cd-theme')
+    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t)
+  } catch (e) {}
+</script>
 ${structured}
 </head>
 <body>
@@ -140,13 +151,24 @@ ${body}
 </main>
 ${footer()}
 <script src="/app.js" defer></script>
+${script ? `<script src="/tools.js"></script>\n<script>${script}</script>` : ''}
 </body>
 </html>`
 }
 
+/**
+ * The launch offer, without a running total.
+ *
+ * The 500 cap is what makes the struck through price honest, and it stays in
+ * the database. Publishing how many places are *left* is a different claim:
+ * early on it reads as "nobody has joined", which is true and unhelpful, and it
+ * invites a visitor to count the customers rather than read the offer. The
+ * counter turns itself on only once the number flatters rather than deters, and
+ * app.js owns that threshold.
+ */
 function announceBar() {
   return `<div class="announce" id="announce" hidden>
-  <span>✦ Launch offer · <b>50% off</b> for the first 500 creators · <b><span data-seats-left>—</span> places left</b></span>
+  <span><b>Launch offer.</b> 50% off for the first 500 creators<span data-seats-line hidden>, and <b><span data-seats-left></span> places are left</span></span>
   <button class="announce-close" aria-label="Dismiss">✕</button>
 </div>`
 }
