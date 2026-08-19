@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Advance tax calculator for Indian creators | Blubanana</title>
-<meta name="description" content="Work out what to set aside for advance tax by 15 June, 15 September, 15 December and 15 March. Free, no sign up, built for Indian content creators.">
-<link rel="canonical" href="https://blubanana.in/tools/advance-tax-calculator">
+<title>Engagement rate calculator for Indian creators | Blubanana</title>
+<meta name="description" content="Work out your engagement rate on followers and on reach, the two ways brands ask for it. Free calculator for Instagram and YouTube creators.">
+<link rel="canonical" href="https://blubanana.in/tools/engagement-rate-calculator">
 <meta name="theme-color" content="#08080C">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Blubanana">
-<meta property="og:title" content="Advance tax calculator for Indian creators | Blubanana">
-<meta property="og:description" content="Work out what to set aside for advance tax by 15 June, 15 September, 15 December and 15 March. Free, no sign up, built for Indian content creators.">
-<meta property="og:url" content="https://blubanana.in/tools/advance-tax-calculator">
+<meta property="og:title" content="Engagement rate calculator for Indian creators | Blubanana">
+<meta property="og:description" content="Work out your engagement rate on followers and on reach, the two ways brands ask for it. Free calculator for Instagram and YouTube creators.">
+<meta property="og:url" content="https://blubanana.in/tools/engagement-rate-calculator">
 <meta property="og:image" content="https://blubanana.in/assets/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
@@ -68,9 +68,9 @@
 <section class="hero" style="padding-bottom:0">
   <div class="container">
     <div class="eyebrow reveal">Free tool, no sign up</div>
-    <h1 class="reveal" style="max-width:18ch;font-size:clamp(30px,4vw,46px)">Advance tax calculator for creators</h1>
-    <p class="lede reveal" style="max-width:52ch;margin-top:18px">Four dates, and what is due by each. Miss them and the interest under sections 234B and 234C is charged whether or not anyone reminded you.</p>
-    <nav class="tool-nav reveal"><a href="/tools/advance-tax-calculator" aria-current="page">Advance tax</a><a href="/tools/tds-calculator">TDS</a><a href="/tools/gst-calculator">GST</a><a href="/tools/rate-calculator">Rate</a><a href="/tools/engagement-rate-calculator">Engagement rate</a></nav>
+    <h1 class="reveal" style="max-width:18ch;font-size:clamp(30px,4vw,46px)">Engagement rate calculator</h1>
+    <p class="lede reveal" style="max-width:52ch;margin-top:18px">The first number a brand asks for, worked out both ways they mean it.</p>
+    <nav class="tool-nav reveal"><a href="/tools/advance-tax-calculator">Advance tax</a><a href="/tools/tds-calculator">TDS</a><a href="/tools/gst-calculator">GST</a><a href="/tools/rate-calculator">Rate</a><a href="/tools/engagement-rate-calculator" aria-current="page">Engagement rate</a></nav>
   </div>
 </section>
 
@@ -79,29 +79,42 @@
     <div class="tool reveal">
       <div class="tool-form">
     <div class="field">
-    <label for="income">Expected income this year</label>
-    <div class="money-input"><span>₹</span><input id="income" type="number" inputmode="decimal" value="1200000" min="0" step="10000"></div>
-    <div class="preset-row"><button type="button" class="preset" data-for="income" data-value="500000">5L</button><button type="button" class="preset" data-for="income" data-value="1200000">12L</button><button type="button" class="preset" data-for="income" data-value="2500000">25L</button><button type="button" class="preset" data-for="income" data-value="5000000">50L</button></div>
-    <span class="hint">After your expenses. Everything you earn, not only what came through brand deals.</span>
+    <label for="followers">Followers</label>
+    <input id="followers" type="number" inputmode="decimal" value="184000" min="0" step="100">
+    
+    
   </div>
     <div class="field">
-    <label for="rate">Your effective tax rate</label>
-    <input id="rate" type="number" inputmode="decimal" value="30" min="0" max="60" step="1">
+    <label for="reach">Reach on the post</label>
+    <input id="reach" type="number" inputmode="decimal" value="96000" min="0" step="100">
     
-    <span class="hint">Ask your CA. Rates change most budgets, so this tool will not guess one for you.</span>
+    <span class="hint">Leave at zero if you only want the follower figure.</span>
   </div>
     <div class="field">
-    <label for="paid">Already paid or deducted</label>
-    <div class="money-input"><span>₹</span><input id="paid" type="number" inputmode="decimal" value="0" min="0" step="5000"></div>
+    <label for="likes">Likes</label>
+    <input id="likes" type="number" inputmode="decimal" value="8400" min="0" step="10">
     
-    <span class="hint">TDS the brands withheld counts here.</span>
+    
+  </div>
+    <div class="field">
+    <label for="comments">Comments</label>
+    <input id="comments" type="number" inputmode="decimal" value="320" min="0" step="1">
+    
+    
+  </div>
+    <div class="field">
+    <label for="saves">Saves and shares</label>
+    <input id="saves" type="number" inputmode="decimal" value="1100" min="0" step="10">
+    
+    
   </div></div>
       <div class="tool-out" id="out">
-    <div><span class="fine">Tax expected for the year</span><div class="out-big figure" id="total">-</div></div>
-    <div id="rows"></div>
-    <p class="tool-note" id="note"></p></div>
+    <div><span class="fine">On followers</span><div class="out-big figure" id="erf">-</div></div>
+    <div class="out-row"><span>On reach</span><b id="err">-</b></div>
+    <div class="out-row"><span>Total interactions</span><b id="eri">-</b></div>
+    <p class="tool-note">On followers is the media kit number. On reach describes how one post actually did, and is the more useful of the two.</p></div>
     </div>
-    <p class="tool-note reveal" style="margin-top:22px;max-width:640px">Section 211 sets the dates and the percentages: 15% by 15 June, 45% by 15 September, 75% by 15 December, the balance by 15 March.</p>
+    <p class="tool-note reveal" style="margin-top:22px;max-width:640px">Interactions divided by the denominator, times one hundred. Saves and shares count, because on Reels they carry more weight than a like.</p>
   </div>
 </section>
 
@@ -118,7 +131,7 @@
       <div class="reveal">
         <h4 style="margin-bottom:14px">Other free tools</h4>
         <div class="grid" style="gap:12px">
-          <a class="card" href="/tools/tds-calculator"><h4>TDS calculator</h4><p>They deducted 10%. What actually reaches your bank</p></a><a class="card" href="/tools/gst-calculator"><h4>GST calculator</h4><p>CGST and SGST, or IGST, worked out from the two states</p></a><a class="card" href="/tools/rate-calculator"><h4>Rate calculator</h4><p>What your reach is worth, per format</p></a>
+          <a class="card" href="/tools/advance-tax-calculator"><h4>Advance tax calculator</h4><p>What to set aside, and by which of the four dates</p></a><a class="card" href="/tools/tds-calculator"><h4>TDS calculator</h4><p>They deducted 10%. What actually reaches your bank</p></a><a class="card" href="/tools/gst-calculator"><h4>GST calculator</h4><p>CGST and SGST, or IGST, worked out from the two states</p></a>
         </div>
       </div>
     </div>
@@ -165,7 +178,7 @@
   </div>
 </footer>
 <script src="/app.b8f5a169.js" defer></script>
-<script src="/tools.4a0c122e.js"></script>
+<script src="/tools.8c2ad030.js"></script>
 <script>
     const $ = (id) => document.getElementById(id)
     document.querySelectorAll('.preset').forEach((b) => b.addEventListener('click', () => {
@@ -173,21 +186,16 @@
       target.value = b.dataset.value
       target.dispatchEvent(new Event('input', { bubbles: true }))
     }))
+    const pct = (n) => n.toFixed(2) + '%'
     function run() {
-      const income = Number($('income').value) || 0
-      const rate = Number($('rate').value) || 0
-      const paid = Number($('paid').value) || 0
-      const expected = CD.estimateTax(income, rate)
-      const remaining = Math.max(expected - paid, 0)
-      $('total').textContent = CD.inr(expected)
-      const fy = CD.financialYearStart()
-      const rows = CD.advanceTaxSchedule(remaining, fy)
-      $('rows').innerHTML = rows.map((r) =>
-        '<div class="out-row"><span>' + r.label + (r.isPast ? ' (passed)' : '') + '</span><b>' + CD.inr(r.thisInstalment) + '</b></div>'
-      ).join('')
-      $('note').textContent = paid > 0
-        ? CD.inr(paid) + ' already paid has been taken off before splitting the rest.'
-        : 'TDS the brands have already withheld counts towards this. Enter it above and the instalments come down.'
+      const f = Number($('followers').value) || 0
+      const r = Number($('reach').value) || 0
+      const l = Number($('likes').value) || 0
+      const c = Number($('comments').value) || 0
+      const s = Number($('saves').value) || 0
+      $('erf').textContent = f ? pct(CD.engagement(l, c, s, f)) : '-'
+      $('err').textContent = r ? pct(CD.engagement(l, c, s, r)) : 'add reach above'
+      $('eri').textContent = (l + c + s).toLocaleString('en-IN')
     }
     document.querySelectorAll('.tool-form input').forEach((i) => i.addEventListener('input', run))
     run()</script>

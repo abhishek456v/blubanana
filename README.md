@@ -6,6 +6,41 @@
 A mobile CRM for content creators — never miss a deal, a deadline, or a payment.
 Built with Expo (React Native) + Supabase + OpenAI.
 
+
+## What is in here
+
+Three folders, and they do not overlap.
+
+| Folder | What it is | Where it ends up |
+|---|---|---|
+| `platform/` | The product itself. One codebase that becomes the iPhone app, the Android app **and** the web app. | App Store, Play Store, `platform.blubanana.in` |
+| `website/` | The marketing site. Plain HTML, nothing shared with the product at runtime. | `blubanana.in` |
+| `supabase/` | The database and the server side jobs, used by the product. | Supabase |
+
+**Why the app and the web platform are one folder:** they are one codebase. Expo
+compiles the same source to a phone app and to a browser. Keeping them apart
+would mean maintaining the same product twice, and the two copies would drift.
+
+**The one deliberate link between the folders:** the free calculators on the
+website import `platform/lib/tax.ts` and `platform/constants/gst.ts` directly, so
+the advance tax split on the website is the same code as the one inside the
+product rather than a second copy that goes wrong quietly.
+
+### Running each one
+
+```bash
+# the product
+cd platform && npm install && npx expo start
+
+# the website
+cd website && npm install && npm run draft && npm run serve
+```
+
+Each folder has its own `package.json`, so the website's build tools stay out of
+the app and the other way round. The secrets live in one file, `platform/.env`,
+because that is where Expo requires it; the website reads the two public values
+out of the same file.
+
 ---
 
 ## Quick start
@@ -446,11 +481,11 @@ They are two separate deployments of two separate folders.
 npm run build:web
 ```
 
-This writes `dist/`. It has to run here rather than on the host, because the
+This writes `platform/dist/`. It has to run here rather than on the host, because the
 Supabase URL and anon key are read from `.env` at build time and `.env` is not
 in the repository.
 
-**2. Put `dist/` on a host.** Netlify is the least fiddly: sign in, choose "Add
+**2. Put `platform/dist/` on a host.** Netlify is the least fiddly: sign in, choose "Add
 new site", then "Deploy manually", and drag the `dist` folder onto the page.
 Cloudflare Pages and Vercel work the same way. The rewrite file the build writes
 is what makes a refresh on any screen work instead of 404ing.
@@ -461,7 +496,7 @@ CNAME called `platform` pointing at something like `your-site.netlify.app`. Add
 that record wherever `blubanana.in` is registered. It usually resolves within
 the hour, and the certificate is issued automatically once it does.
 
-**4. Do the same for the site**, with `web/dist` and the bare domain
+**4. Do the same for the site**, with `website/dist` and the bare domain
 `blubanana.in`.
 
 Nobody can do step 3 for you: it needs the login for the registrar that holds

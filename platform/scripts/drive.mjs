@@ -14,7 +14,8 @@
 // browser console ever sees.
 
 import { mkdir, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
 
 const args = process.argv.slice(2)
@@ -24,7 +25,9 @@ const flag = (name, fallback = null) => {
 }
 
 const BASE = flag('url', 'http://localhost:8081')
-const OUT = join(process.cwd(), 'screenshots')
+// Relative to this file rather than to the shell's directory, so it lands in
+// the repo's screenshots folder whether it is run from platform/ or the root.
+const OUT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'screenshots')
 const EMAIL = flag('email')
 const PASSWORD = flag('password')
 const DRIVE_ALL = args.includes('--all')

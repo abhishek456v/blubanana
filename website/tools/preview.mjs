@@ -11,9 +11,14 @@
 
 import { chromium } from 'playwright'
 import { mkdirSync } from 'node:fs'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const BASE = process.env.PREVIEW_URL ?? 'http://localhost:4173'
-const OUT = process.env.PREVIEW_OUT ?? 'web/.preview'
+// Relative to this file, not to the shell's directory. Resolving from the cwd
+// created a website/web/.preview the first time it was run from inside
+// website/, which is the kind of stray folder that ends up committed.
+const OUT = process.env.PREVIEW_OUT ?? join(dirname(fileURLToPath(import.meta.url)), '..', '.preview')
 mkdirSync(OUT, { recursive: true })
 
 const SHOTS = [

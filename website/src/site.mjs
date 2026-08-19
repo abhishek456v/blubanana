@@ -37,7 +37,10 @@ export const COMPANY = {
  */
 export const SUPABASE = (() => {
   try {
-    const env = readFileSync(new URL('../../.env', import.meta.url), 'utf8')
+    // Expo requires .env at its own project root, so the one file lives in
+    // platform/ and the website reads across to it. Only the two EXPO_PUBLIC_
+    // values are used here, and both are public by design.
+    const env = readFileSync(new URL('../../platform/.env', import.meta.url), 'utf8')
     const read = (key) => env.match(new RegExp(`^${key}=(.+)$`, 'm'))?.[1]?.trim() ?? null
     return { url: read('EXPO_PUBLIC_SUPABASE_URL'), anonKey: read('EXPO_PUBLIC_SUPABASE_ANON_KEY') }
   } catch {

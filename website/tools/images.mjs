@@ -21,7 +21,7 @@ import { chromium } from 'playwright'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const SHOTS = join(ROOT, 'screenshots')
-const OUT = join(ROOT, 'web', 'assets')
+const OUT = join(ROOT, 'website', 'assets')
 
 /**
  * What the site actually uses.

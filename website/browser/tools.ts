@@ -9,8 +9,8 @@
 // Both modules are pure arithmetic with no imports of their own, which is why
 // they can cross into a browser bundle untouched.
 
-export { ADVANCE_TAX_INSTALMENTS, advanceTaxSchedule, financialYearStart, estimateTax } from '../../lib/tax'
-export { GST_STATE_OPTIONS, splitGst, stateName } from '../../constants/gst'
+export { ADVANCE_TAX_INSTALMENTS, advanceTaxSchedule, financialYearStart, estimateTax } from '../../platform/lib/tax'
+export { GST_STATE_OPTIONS, splitGst, stateName } from '../../platform/constants/gst'
 
 /** Indian digit grouping. The rest of the site formats money the same way. */
 export function inr(amount: number): string {

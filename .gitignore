@@ -10,8 +10,8 @@ dist/
 # …except the website's output, which is what gets deployed. It is built here
 # rather than on the host because the build reads the Supabase URL and anon key
 # out of .env to wire up the live price, and .env is not on the host.
-!web/dist/
-web/.preview/
+!website/dist/
+website/.preview/
 build/
 *.jks
 *.p8
@@ -39,5 +39,5 @@ supabase/.temp/
 
 expo-env.d.ts
 # @end expo-cli
-# Screenshots from scripts/drive.mjs — regenerate, do not commit
+# Screenshots from platform/scripts/drive.mjs. Regenerate, do not commit.
 screenshots/

@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TDS calculator for Indian creators | Blubanana</title>
-<meta name="description" content="Work out GST, invoice total, TDS withheld and what actually lands in your account on a brand deal. Free TDS calculator for Indian content creators.">
-<link rel="canonical" href="https://blubanana.in/tools/tds-calculator">
+<title>GST calculator for Indian creators | Blubanana</title>
+<meta name="description" content="Work out whether your invoice carries CGST and SGST or IGST, and how much of each. Free GST calculator for Indian creators and freelancers.">
+<link rel="canonical" href="https://blubanana.in/tools/gst-calculator">
 <meta name="theme-color" content="#08080C">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Blubanana">
-<meta property="og:title" content="TDS calculator for Indian creators | Blubanana">
-<meta property="og:description" content="Work out GST, invoice total, TDS withheld and what actually lands in your account on a brand deal. Free TDS calculator for Indian content creators.">
-<meta property="og:url" content="https://blubanana.in/tools/tds-calculator">
+<meta property="og:title" content="GST calculator for Indian creators | Blubanana">
+<meta property="og:description" content="Work out whether your invoice carries CGST and SGST or IGST, and how much of each. Free GST calculator for Indian creators and freelancers.">
+<meta property="og:url" content="https://blubanana.in/tools/gst-calculator">
 <meta property="og:image" content="https://blubanana.in/assets/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
@@ -68,9 +68,9 @@
 <section class="hero" style="padding-bottom:0">
   <div class="container">
     <div class="eyebrow reveal">Free tool, no sign up</div>
-    <h1 class="reveal" style="max-width:18ch;font-size:clamp(30px,4vw,46px)">They deducted TDS. What actually reaches your bank?</h1>
-    <p class="lede reveal" style="max-width:52ch;margin-top:18px">Four numbers matter on every brand deal and only one of them is what you get. This shows all four.</p>
-    <nav class="tool-nav reveal"><a href="/tools/advance-tax-calculator">Advance tax</a><a href="/tools/tds-calculator" aria-current="page">TDS</a><a href="/tools/gst-calculator">GST</a><a href="/tools/rate-calculator">Rate</a><a href="/tools/engagement-rate-calculator">Engagement rate</a></nav>
+    <h1 class="reveal" style="max-width:18ch;font-size:clamp(30px,4vw,46px)">CGST and SGST, or IGST?</h1>
+    <p class="lede reveal" style="max-width:52ch;margin-top:18px">It depends on two states, and getting it wrong is why a finance team sends the invoice back.</p>
+    <nav class="tool-nav reveal"><a href="/tools/advance-tax-calculator">Advance tax</a><a href="/tools/tds-calculator">TDS</a><a href="/tools/gst-calculator" aria-current="page">GST</a><a href="/tools/rate-calculator">Rate</a><a href="/tools/engagement-rate-calculator">Engagement rate</a></nav>
   </div>
 </section>
 
@@ -79,32 +79,35 @@
     <div class="tool reveal">
       <div class="tool-form">
     <div class="field">
-    <label for="base">Deal amount</label>
-    <div class="money-input"><span>₹</span><input id="base" type="number" inputmode="decimal" value="100000" min="0" step="1000"></div>
-    <div class="preset-row"><button type="button" class="preset" data-for="base" data-value="25000">25K</button><button type="button" class="preset" data-for="base" data-value="50000">50K</button><button type="button" class="preset" data-for="base" data-value="100000">1L</button><button type="button" class="preset" data-for="base" data-value="300000">3L</button></div>
-    <span class="hint">What you agreed with the brand, before any tax.</span>
+    <label for="amount">Invoice amount</label>
+    <div class="money-input"><span>₹</span><input id="amount" type="number" inputmode="decimal" value="100000" min="0" step="1000"></div>
+    <div class="preset-row"><button type="button" class="preset" data-for="amount" data-value="25000">25K</button><button type="button" class="preset" data-for="amount" data-value="50000">50K</button><button type="button" class="preset" data-for="amount" data-value="100000">1L</button><button type="button" class="preset" data-for="amount" data-value="300000">3L</button></div>
+    <span class="hint">Before tax.</span>
   </div>
     <div class="field">
-    <label for="gst">GST you charge</label>
-    <select id="gst"><option value="18">18%</option><option value="0">Not registered</option></select>
+    <label for="rate2">GST rate</label>
+    <select id="rate2"><option value="18">18%</option><option value="5">5%</option><option value="12">12%</option><option value="28">28%</option></select>
     
-    <span class="hint">Zero if you are not registered for GST.</span>
+    <span class="hint">Creator and influencer services are usually 18%.</span>
   </div>
     <div class="field">
-    <label for="tdsrate">TDS rate the brand deducts</label>
-    <select id="tdsrate"><option value="10">10%, section 194J</option><option value="2">2%, section 194C</option><option value="5">5%, section 194H</option><option value="1">1%</option></select>
+    <label for="mine">Your state</label>
+    <select id="mine"></select>
     
-    <span class="hint">Usually 10% for professional services under section 194J. Ask the brand which section they are deducting under.</span>
+    <span class="hint">Where you are registered.</span>
+  </div>
+    <div class="field">
+    <label for="theirs">The brand’s state</label>
+    <select id="theirs"></select>
+    
+    <span class="hint">The place of supply for a registered recipient is their registered address.</span>
   </div></div>
       <div class="tool-out" id="out">
-    <div><span class="fine">Lands in your bank</span><div class="out-big figure" id="net">-</div></div>
-    <div class="out-row"><span>Deal amount</span><b id="r-base">-</b></div>
-    <div class="out-row"><span>GST added</span><b id="r-gst">-</b></div>
-    <div class="out-row"><span>Invoice total</span><b id="r-total">-</b></div>
-    <div class="out-row"><span>TDS withheld</span><b id="r-tds">-</b></div>
-    <p class="tool-note">TDS is not lost. It sits against your PAN and you claim it when you file.</p></div>
+    <div><span class="fine">Invoice total</span><div class="out-big figure" id="g-total">-</div></div>
+    <div id="g-rows"></div>
+    <p class="tool-note" id="g-note"></p></div>
     </div>
-    <p class="tool-note reveal" style="margin-top:22px;max-width:640px">TDS comes off the value of the service, never the GST on top of it. That is the usual reason your figure and the brand’s disagree.</p>
+    <p class="tool-note reveal" style="margin-top:22px;max-width:640px">A supply is inter State when your state and the place of supply differ. That one comparison decides IGST, or CGST and SGST at half each.</p>
   </div>
 </section>
 
@@ -121,7 +124,7 @@
       <div class="reveal">
         <h4 style="margin-bottom:14px">Other free tools</h4>
         <div class="grid" style="gap:12px">
-          <a class="card" href="/tools/advance-tax-calculator"><h4>Advance tax calculator</h4><p>What to set aside, and by which of the four dates</p></a><a class="card" href="/tools/gst-calculator"><h4>GST calculator</h4><p>CGST and SGST, or IGST, worked out from the two states</p></a><a class="card" href="/tools/rate-calculator"><h4>Rate calculator</h4><p>What your reach is worth, per format</p></a>
+          <a class="card" href="/tools/advance-tax-calculator"><h4>Advance tax calculator</h4><p>What to set aside, and by which of the four dates</p></a><a class="card" href="/tools/tds-calculator"><h4>TDS calculator</h4><p>They deducted 10%. What actually reaches your bank</p></a><a class="card" href="/tools/rate-calculator"><h4>Rate calculator</h4><p>What your reach is worth, per format</p></a>
         </div>
       </div>
     </div>
@@ -168,7 +171,7 @@
   </div>
 </footer>
 <script src="/app.b8f5a169.js" defer></script>
-<script src="/tools.4a0c122e.js"></script>
+<script src="/tools.8c2ad030.js"></script>
 <script>
     const $ = (id) => document.getElementById(id)
     document.querySelectorAll('.preset').forEach((b) => b.addEventListener('click', () => {
@@ -176,16 +179,26 @@
       target.value = b.dataset.value
       target.dispatchEvent(new Event('input', { bubbles: true }))
     }))
+    const options = CD.GST_STATE_OPTIONS.map((o) => '<option value="' + o.code + '">' + o.name + '</option>').join('')
+    $('mine').innerHTML = options
+    $('theirs').innerHTML = options
+    $('mine').value = '29'
+    $('theirs').value = '27'
     function run() {
-      const base = Number($('base').value) || 0
-      const gst = Number($('gst').value) || 0
-      const rate = Number($('tdsrate').value) || 0
-      const r = CD.tds(base, rate, gst)
-      $('net').textContent = CD.inr(r.received)
-      $('r-base').textContent = CD.inr(base)
-      $('r-gst').textContent = CD.inr(r.gst)
-      $('r-total').textContent = CD.inr(r.invoiceTotal)
-      $('r-tds').textContent = CD.inr(r.withheld)
+      const amount = Number($('amount').value) || 0
+      const rate = Number($('rate2').value) || 0
+      const tax = Math.round((amount * rate) / 100)
+      const split = CD.splitGst(tax, $('mine').value, $('theirs').value)
+      $('g-total').textContent = CD.inr(amount + tax)
+      $('g-rows').innerHTML = split.interState
+        ? '<div class="out-row"><span>Taxable value</span><b>' + CD.inr(amount) + '</b></div>' +
+          '<div class="out-row"><span>IGST at ' + rate + '%</span><b>' + CD.inr(split.igst) + '</b></div>'
+        : '<div class="out-row"><span>Taxable value</span><b>' + CD.inr(amount) + '</b></div>' +
+          '<div class="out-row"><span>CGST at ' + (rate / 2) + '%</span><b>' + CD.inr(split.cgst) + '</b></div>' +
+          '<div class="out-row"><span>SGST at ' + (rate / 2) + '%</span><b>' + CD.inr(split.sgst) + '</b></div>'
+      $('g-note').textContent = split.interState
+        ? 'Different states, so this is an inter State supply and carries IGST on one line.'
+        : 'Same state, so the tax splits equally across CGST and SGST.'
     }
     document.querySelectorAll('.tool-form input, .tool-form select').forEach((i) => i.addEventListener('input', run))
     run()</script>

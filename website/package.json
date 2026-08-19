@@ -1,0 +1,17 @@
+{
+  "name": "blubanana-website",
+  "private": true,
+  "type": "module",
+  "description": "The marketing site at blubanana.in. Static HTML, built by build.mjs.",
+  "scripts": {
+    "build": "node build.mjs",
+    "draft": "node build.mjs --draft",
+    "serve": "cd dist && python3 -m http.server 4173",
+    "preview": "node tools/preview.mjs",
+    "og": "node tools/og.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "playwright": "^1.56.1"
+  }
+}

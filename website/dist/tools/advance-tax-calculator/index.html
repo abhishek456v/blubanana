@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Rate calculator for Indian creators | Blubanana</title>
-<meta name="description" content="Work out what to charge for a Reel, a Short or a video, from a deal you have already done. Free rate calculator for Indian creators.">
-<link rel="canonical" href="https://blubanana.in/tools/rate-calculator">
+<title>Advance tax calculator for Indian creators | Blubanana</title>
+<meta name="description" content="Work out what to set aside for advance tax by 15 June, 15 September, 15 December and 15 March. Free, no sign up, built for Indian content creators.">
+<link rel="canonical" href="https://blubanana.in/tools/advance-tax-calculator">
 <meta name="theme-color" content="#08080C">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Blubanana">
-<meta property="og:title" content="Rate calculator for Indian creators | Blubanana">
-<meta property="og:description" content="Work out what to charge for a Reel, a Short or a video, from a deal you have already done. Free rate calculator for Indian creators.">
-<meta property="og:url" content="https://blubanana.in/tools/rate-calculator">
+<meta property="og:title" content="Advance tax calculator for Indian creators | Blubanana">
+<meta property="og:description" content="Work out what to set aside for advance tax by 15 June, 15 September, 15 December and 15 March. Free, no sign up, built for Indian content creators.">
+<meta property="og:url" content="https://blubanana.in/tools/advance-tax-calculator">
 <meta property="og:image" content="https://blubanana.in/assets/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
@@ -68,9 +68,9 @@
 <section class="hero" style="padding-bottom:0">
   <div class="container">
     <div class="eyebrow reveal">Free tool, no sign up</div>
-    <h1 class="reveal" style="max-width:18ch;font-size:clamp(30px,4vw,46px)">What should you charge for a post?</h1>
-    <p class="lede reveal" style="max-width:52ch;margin-top:18px">Brands buy attention by the thousand views. Tell it what one past deal paid, and it prices the next one at the same rate.</p>
-    <nav class="tool-nav reveal"><a href="/tools/advance-tax-calculator">Advance tax</a><a href="/tools/tds-calculator">TDS</a><a href="/tools/gst-calculator">GST</a><a href="/tools/rate-calculator" aria-current="page">Rate</a><a href="/tools/engagement-rate-calculator">Engagement rate</a></nav>
+    <h1 class="reveal" style="max-width:18ch;font-size:clamp(30px,4vw,46px)">Advance tax calculator for creators</h1>
+    <p class="lede reveal" style="max-width:52ch;margin-top:18px">Four dates, and what is due by each. Miss them and the interest under sections 234B and 234C is charged whether or not anyone reminded you.</p>
+    <nav class="tool-nav reveal"><a href="/tools/advance-tax-calculator" aria-current="page">Advance tax</a><a href="/tools/tds-calculator">TDS</a><a href="/tools/gst-calculator">GST</a><a href="/tools/rate-calculator">Rate</a><a href="/tools/engagement-rate-calculator">Engagement rate</a></nav>
   </div>
 </section>
 
@@ -78,58 +78,30 @@
   <div class="container">
     <div class="tool reveal">
       <div class="tool-form">
-    <p class="hint" style="margin:0 0 4px">
-      <b style="color:var(--text)">Start from a deal you have done.</b>
-      Most creators have no idea what their cost per view is, and they do not need to:
-      one past fee and the views that post got contains it already.
-    </p>
     <div class="field">
-    <label for="fee">What a brand last paid you for one post</label>
-    <div class="money-input"><span>₹</span><input id="fee" type="number" inputmode="decimal" value="45000" min="0" step="1000"></div>
-    <div class="preset-row"><button type="button" class="preset" data-for="fee" data-value="25000">25K</button><button type="button" class="preset" data-for="fee" data-value="45000">45K</button><button type="button" class="preset" data-for="fee" data-value="80000">80K</button></div>
-    
+    <label for="income">Expected income this year</label>
+    <div class="money-input"><span>₹</span><input id="income" type="number" inputmode="decimal" value="1200000" min="0" step="10000"></div>
+    <div class="preset-row"><button type="button" class="preset" data-for="income" data-value="500000">5L</button><button type="button" class="preset" data-for="income" data-value="1200000">12L</button><button type="button" class="preset" data-for="income" data-value="2500000">25L</button><button type="button" class="preset" data-for="income" data-value="5000000">50L</button></div>
+    <span class="hint">After your expenses. Everything you earn, not only what came through brand deals.</span>
   </div>
     <div class="field">
-    <label for="pastviews">Views that post got</label>
-    <input id="pastviews" type="number" inputmode="decimal" value="150000" min="0" step="1000">
+    <label for="rate">Your effective tax rate</label>
+    <input id="rate" type="number" inputmode="decimal" value="30" min="0" max="60" step="1">
     
-    
+    <span class="hint">Ask your CA. Rates change most budgets, so this tool will not guess one for you.</span>
   </div>
-    <div class="rule"></div>
     <div class="field">
-    <label for="views">Expected views on the new post</label>
-    <input id="views" type="number" inputmode="decimal" value="220000" min="0" step="1000">
+    <label for="paid">Already paid or deducted</label>
+    <div class="money-input"><span>₹</span><input id="paid" type="number" inputmode="decimal" value="0" min="0" step="5000"></div>
     
-    <span class="hint">Average the last five of the same format.</span>
-  </div>
-    <details class="advanced">
-      <summary>I have never been paid for a post</summary>
-      <div style="padding-top:14px;display:grid;gap:16px">
-        <p class="hint" style="margin:0">
-          Then set the band yourself and treat the answer as an opening position rather than a market rate.
-          Nobody can honestly publish a going rate for every category.
-        </p>
-        <div class="field">
-    <label for="cpmlow">Lower end, per thousand views</label>
-    <div class="money-input"><span>₹</span><input id="cpmlow" type="number" inputmode="decimal" value="200" min="0" step="10"></div>
-    
-    
-  </div>
-        <div class="field">
-    <label for="cpmhigh">Upper end, per thousand views</label>
-    <div class="money-input"><span>₹</span><input id="cpmhigh" type="number" inputmode="decimal" value="500" min="0" step="10"></div>
-    
-    
-  </div>
-      </div>
-    </details></div>
+    <span class="hint">TDS the brands withheld counts here.</span>
+  </div></div>
       <div class="tool-out" id="out">
-    <div><span class="fine">Quote somewhere in here</span><div class="out-big figure" id="range">-</div></div>
-    <div class="out-row"><span>Your rate per thousand views</span><b id="cpm">-</b></div>
-    <div class="out-row"><span>Straight multiple of the last deal</span><b id="mid">-</b></div>
-    <p class="tool-note">Then add for exclusivity, for usage rights, and for anything needing a second shoot day. Those are separate line items, not goodwill.</p></div>
+    <div><span class="fine">Tax expected for the year</span><div class="out-big figure" id="total">-</div></div>
+    <div id="rows"></div>
+    <p class="tool-note" id="note"></p></div>
     </div>
-    <p class="tool-note reveal" style="margin-top:22px;max-width:640px">Cost per thousand views is the unit a brand is actually buying, and the one number that lets you compare a Reel with a fourteen minute video. Working it backwards out of a deal you have already closed gives you your own figure rather than somebody else's average, which is the only defensible one in a negotiation.</p>
+    <p class="tool-note reveal" style="margin-top:22px;max-width:640px">Section 211 sets the dates and the percentages: 15% by 15 June, 45% by 15 September, 75% by 15 December, the balance by 15 March.</p>
   </div>
 </section>
 
@@ -146,7 +118,7 @@
       <div class="reveal">
         <h4 style="margin-bottom:14px">Other free tools</h4>
         <div class="grid" style="gap:12px">
-          <a class="card" href="/tools/advance-tax-calculator"><h4>Advance tax calculator</h4><p>What to set aside, and by which of the four dates</p></a><a class="card" href="/tools/tds-calculator"><h4>TDS calculator</h4><p>They deducted 10%. What actually reaches your bank</p></a><a class="card" href="/tools/gst-calculator"><h4>GST calculator</h4><p>CGST and SGST, or IGST, worked out from the two states</p></a>
+          <a class="card" href="/tools/tds-calculator"><h4>TDS calculator</h4><p>They deducted 10%. What actually reaches your bank</p></a><a class="card" href="/tools/gst-calculator"><h4>GST calculator</h4><p>CGST and SGST, or IGST, worked out from the two states</p></a><a class="card" href="/tools/rate-calculator"><h4>Rate calculator</h4><p>What your reach is worth, per format</p></a>
         </div>
       </div>
     </div>
@@ -193,7 +165,7 @@
   </div>
 </footer>
 <script src="/app.b8f5a169.js" defer></script>
-<script src="/tools.4a0c122e.js"></script>
+<script src="/tools.8c2ad030.js"></script>
 <script>
     const $ = (id) => document.getElementById(id)
     document.querySelectorAll('.preset').forEach((b) => b.addEventListener('click', () => {
@@ -202,17 +174,20 @@
       target.dispatchEvent(new Event('input', { bubbles: true }))
     }))
     function run() {
-      const fee = Number($('fee').value) || 0
-      const past = Number($('pastviews').value) || 0
-      const views = Number($('views').value) || 0
-      const own = CD.cpmFromDeal(fee, past)
-      // Her own rate when there is one, and the band she set when there is not.
-      const low = own > 0 ? own * 0.85 : Number($('cpmlow').value) || 0
-      const high = own > 0 ? own * 1.25 : Number($('cpmhigh').value) || 0
-      const r = CD.rateFromReach(views, Math.min(low, high), Math.max(low, high))
-      $('range').textContent = CD.inr(r.low) + ' to ' + CD.inr(r.high)
-      $('cpm').textContent = own > 0 ? CD.inr(own) : 'set your band'
-      $('mid').textContent = own > 0 ? CD.inr((own / 1000) * views) : '-'
+      const income = Number($('income').value) || 0
+      const rate = Number($('rate').value) || 0
+      const paid = Number($('paid').value) || 0
+      const expected = CD.estimateTax(income, rate)
+      const remaining = Math.max(expected - paid, 0)
+      $('total').textContent = CD.inr(expected)
+      const fy = CD.financialYearStart()
+      const rows = CD.advanceTaxSchedule(remaining, fy)
+      $('rows').innerHTML = rows.map((r) =>
+        '<div class="out-row"><span>' + r.label + (r.isPast ? ' (passed)' : '') + '</span><b>' + CD.inr(r.thisInstalment) + '</b></div>'
+      ).join('')
+      $('note').textContent = paid > 0
+        ? CD.inr(paid) + ' already paid has been taken off before splitting the rest.'
+        : 'TDS the brands have already withheld counts towards this. Enter it above and the instalments come down.'
     }
     document.querySelectorAll('.tool-form input').forEach((i) => i.addEventListener('input', run))
     run()</script>

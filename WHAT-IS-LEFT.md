@@ -63,7 +63,19 @@ An Apple Developer account, which costs about ₹8,900 a year. Needed before the
 iPhone app can be tested on a real device or submitted. Android does not need
 anything equivalent to start.
 
-### 7. Two decisions
+### 7. Rename the repository on GitHub
+
+The code now lives in three clear folders, but the repository is still called
+`crm-app`. Renaming it needs your GitHub login:
+
+1. Open the repository on GitHub, then **Settings**
+2. Change **Repository name** to `blubanana`, and press Rename
+
+GitHub forwards the old address automatically, so nothing breaks while you get
+round to it. Tell me once it is done and I will point this copy at the new name
+in one command.
+
+### 8. Two decisions
 
 - **Are you a creator yourself?** If so the site can say "built by a creator",
   which is worth a great deal and which I will not write unless it is true.
