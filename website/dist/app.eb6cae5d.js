@@ -132,7 +132,7 @@
    */
   document.querySelectorAll('[data-demo]').forEach((frame) => {
     const screens = [...frame.querySelectorAll('[data-screen]')]
-    const rail = [...frame.querySelectorAll('.rail-btn')]
+    const rail = [...frame.querySelectorAll(".side-btn")]
 
     const go = (name) => {
       const target = screens.find((s) => s.dataset.screen === name)

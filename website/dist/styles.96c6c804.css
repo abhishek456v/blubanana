@@ -562,13 +562,27 @@ button.chip.chip-blue:hover { background: var(--accent-soft); color: var(--accen
  * business is on it. See src/demo.mjs.
  */
 .app {
+  /*
+   * Royal blue, scoped to this frame.
+   *
+   * The site has its own accent. This is a picture of the product, and the
+   * product has been royal blue since the 20 August redesign. Overriding the
+   * tokens here rather than recolouring twenty rules means the hero stat, the
+   * avatar, the chips and the active nav item all follow on their own, and
+   * nothing outside the frame changes.
+   */
+  --accent: #4169E1;
+  --accent-hover: #2E4CC7;
+  --accent-text: #2E4CC7;
+  --accent-soft: rgba(65, 105, 225, 0.10);
+  --on-accent: #FFFFFF;
   border-radius: var(--r-xl);
   border: 1px solid var(--border);
   background: var(--surface);
   box-shadow: var(--shadow-lg);
   overflow: hidden;
   display: grid;
-  grid-template-columns: 62px 1fr;
+  grid-template-columns: 142px 1fr;
   grid-template-rows: 1fr auto;
   font-size: 13px;
   /*
@@ -581,20 +595,32 @@ button.chip.chip-blue:hover { background: var(--accent-soft); color: var(--accen
    */
   height: 548px;
 }
-.app-rail { grid-row: 1; background: var(--bg-alt); border-right: 1px solid var(--border); padding: 14px 0; display: grid; gap: 6px; align-content: start; justify-items: center; }
-.app-rail i { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; color: var(--text-3); }
-.app-rail i.on { background: var(--accent); color: var(--on-accent); }
+/* The labelled sidebar the app has had since the 20 August redesign. */
+.app-side { grid-row: 1; background: var(--bg-alt); padding: 12px 8px; display: grid; gap: 12px; align-content: start; min-width: 0; }
+.app-brand { display: flex; align-items: center; gap: 8px; padding: 2px 4px 0; }
+.app-mark { color: var(--accent); display: grid; place-items: center; }
+.app-wm { display: block; font-size: 13px; font-weight: 600; letter-spacing: -0.02em; }
+.app-wm b { color: var(--accent-text); font-weight: 600; }
+.app-desk { display: block; font-size: 10px; color: var(--text-3); margin-top: -1px; }
+.side-nav { display: grid; gap: 1px; align-content: start; min-width: 0; }
+.side-group { font-size: 9.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); padding: 10px 8px 4px; }
+.side-btn { display: flex; align-items: center; gap: 8px; padding: 6px 7px; border-radius: 8px; font-size: 11.5px; color: var(--text-2); min-width: 0; transition: background 140ms ease, color 140ms ease; }
+.side-btn span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.side-btn svg { flex: none; }
+.side-btn:hover { background: var(--border); color: var(--text); }
+/* Fill, never an outline. The same rule the app follows. */
+.side-btn.on { background: var(--accent); color: var(--on-accent); font-weight: 500; }
 .app-body { padding: 18px; display: grid; gap: 14px; min-width: 0; align-content: start; }
 .app-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .app-hi { font-size: 17px; font-weight: 600; letter-spacing: -0.02em; }
 .app-date { font-size: 11.5px; color: var(--text-3); }
 .app-avatar { width: 30px; height: 30px; border-radius: 999px; background: var(--accent); color: var(--on-accent); display: grid; place-items: center; font-size: 11.5px; font-weight: 600; }
 
-.stat-row { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 10px; }
-.stat { border-radius: var(--r-md); padding: 14px; background: var(--bg-alt); }
-.stat .k { font-size: 11.5px; color: var(--text-3); }
+.stat-row { display: grid; grid-template-columns: 1.35fr 1fr 1fr; gap: 8px; }
+.stat { border-radius: var(--r-md); padding: 12px; background: var(--bg-alt); }
+.stat .k { font-size: 11px; color: var(--text-3); white-space: nowrap; }
 .stat .v { font-size: 22px; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; margin-top: 3px; }
-.stat .s { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+.stat .s { font-size: 10.5px; color: var(--text-3); margin-top: 2px; white-space: nowrap; }
 .stat-hero { background: var(--accent); color: var(--on-accent); }
 .stat-hero .k, .stat-hero .s { color: var(--on-accent); }
 .stat-hero .v { font-size: 27px; }
@@ -603,9 +629,9 @@ button.chip.chip-blue:hover { background: var(--accent-soft); color: var(--accen
 .act { display: flex; align-items: center; gap: 7px; padding: 10px 11px; border-radius: var(--r-md); background: var(--bg-alt); font-size: 12px; font-weight: 500; }
 .act span { color: var(--accent-text); display: grid; place-items: center; }
 
-.list { border-radius: var(--r-md); overflow: hidden; border: 1px solid var(--border); }
+.list { border-radius: var(--r-md); overflow: hidden; background: var(--bg-alt); }
 .list-head { padding: 10px 14px; background: var(--bg-alt); font-size: 11.5px; font-weight: 600; color: var(--text-3); letter-spacing: 0.05em; text-transform: uppercase; }
-.list-row { display: grid; grid-template-columns: 30px 1fr auto; gap: 11px; align-items: center; padding: 11px 14px; border-top: 1px solid var(--border); }
+.list-row { display: grid; grid-template-columns: 30px 1fr auto; gap: 11px; align-items: center; padding: 11px 14px; }
 .list-row:first-of-type { border-top: none; }
 .bavatar { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; color: #fff; font-size: 11px; font-weight: 600; letter-spacing: -0.01em; }
 .list-row .t { font-size: 13px; font-weight: 500; }
@@ -616,9 +642,6 @@ button.chip.chip-blue:hover { background: var(--accent-soft); color: var(--accen
 .app-screens { min-width: 0; overflow-y: auto; overscroll-behavior: contain; }
 .app-screens::-webkit-scrollbar { width: 6px; }
 .app-screens::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
-.rail-btn { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; color: var(--text-3); transition: background 140ms ease, color 140ms ease; }
-.rail-btn:hover { background: var(--border); color: var(--text); }
-.rail-btn.on { background: var(--accent); color: var(--on-accent); }
 .app .app-back { width: 28px; height: 28px; flex: none; border-radius: 8px; display: grid; place-items: center; background: var(--bg-alt); color: var(--text-2); flex: none; }
 .app-back:hover { background: var(--border-strong); color: var(--text); }
 
@@ -628,6 +651,7 @@ button.chip.chip-blue:hover { background: var(--accent-soft); color: var(--accen
    column narrow enough to wrap "All deals" onto two lines. */
 .app [data-go] { cursor: pointer; text-align: inherit; font: inherit; color: inherit; border: none; transition: transform 120ms ease, background 140ms ease; }
 .app [data-go]:not(.app-back) { width: 100%; }
+.app .side-btn { justify-content: flex-start; text-align: left; }
 
 /*
  * `color: inherit` on the line above takes the page's text colour, which
@@ -639,13 +663,13 @@ button.chip.chip-blue:hover { background: var(--accent-soft); color: var(--accen
  * Anything sitting on the accent is white. Hierarchy comes from size and
  * weight, never from fading a label towards its background.
  */
-.app .stat-hero, .app .stat-hero *, .app .rail-btn.on, .app .rail-btn.on * { color: var(--on-accent); }
+.app .stat-hero, .app .stat-hero *, .app .side-btn.on, .app .side-btn.on * { color: var(--on-accent); }
 .app button.stat, .app button.list-row { display: grid; }
 .app button.act { display: flex; }
 .app [data-go]:hover { background: var(--border); }
 /* The generic hover is more specific than the active state, so hovering the rail
    item you are already on made it look switched off. */
-.app .rail-btn.on:hover { background: var(--accent-hover); color: var(--on-accent); }
+.app .side-btn.on:hover { background: var(--accent-hover); color: var(--on-accent); }
 .app .chip.chip-blue:hover { background: var(--accent-soft); }
 .app button.stat-hero:hover { background: var(--accent-hover); }
 .app [data-go]:active { transform: scale(0.995); }
@@ -904,25 +928,17 @@ tr:last-child td { border-bottom: none; }
 
 @media (max-width: 560px) {
   /*
-   * The rail becomes a bottom bar.
-   *
-   * A 52px vertical rail costs a seventh of a phone screen, and it is not what
-   * a phone app looks like anyway: navigation lives along the bottom, within
-   * reach of a thumb. Same buttons, same behaviour, more room for the thing
-   * being demonstrated.
+   * The sidebar becomes the bottom tab bar, which is what the app itself does
+   * at this width. A 172px sidebar eats a third of a phone screen, and phone
+   * navigation belongs along the bottom within reach of a thumb. Labelled,
+   * five destinations, flush with the edge: the bar the product ships.
    */
   .app { grid-template-columns: 1fr; grid-template-rows: 1fr auto auto; font-size: 12.5px; height: 520px; }
-  .app-rail {
-    grid-row: 2;
-    display: flex;
-    flex-direction: row;
-    justify-content: space-around;
-    align-items: center;
-    border-right: none;
-    border-top: 1px solid var(--border);
-    padding: 7px 4px;
-  }
-  .rail-btn { width: 40px; height: 34px; }
+  .app-side { grid-row: 2; padding: 6px 2px; gap: 0; border-top: 1px solid var(--border); }
+  .app-brand, .side-group { display: none; }
+  .side-nav { grid-auto-flow: column; justify-content: space-around; gap: 2px; }
+  .side-btn:not([data-bar]) { display: none; }
+  .side-btn { flex-direction: column; gap: 3px; padding: 5px 4px; font-size: 9.5px; border-radius: 8px; }
   .app-body { padding: 14px; }
   .demo-hint { grid-row: 3; }
 }
@@ -946,7 +962,14 @@ tr:last-child td { border-bottom: none; }
   .menu a, .sheet a { padding-top: 13px; padding-bottom: 13px; }
   button.chip { padding: 8px 12px; }
   .app .app-back { width: 34px; height: 34px; }
-  .stat-row, .act-row { grid-template-columns: 1fr; }
+  /*
+   * The hero across the top, the two plain tiles paired beneath it. That is
+   * what the app's own phone Home does, and stacking all three made a visitor
+   * scroll past two thirds of a screen of figures to reach anything else.
+   */
+  .stat-row { grid-template-columns: 1fr 1fr; }
+  .stat-row .stat-hero { grid-column: 1 / -1; }
+  .act-row { grid-template-columns: 1fr; }
   .band { padding: 58px 0; }
   .band-sm { padding: 42px 0; }
   .hero { padding-top: 52px; }

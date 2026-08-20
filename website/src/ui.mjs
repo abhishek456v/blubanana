@@ -14,6 +14,8 @@ export const esc = (s) =>
 
 /* ── icons ─────────────────────────────────────────────────────────────── */
 const PATHS = {
+  home: '<path d="M3.4 9.6 11 3.6l7.6 6v8a1.6 1.6 0 0 1-1.6 1.6H5a1.6 1.6 0 0 1-1.6-1.6Z"/><path d="M8.6 19.2v-6h4.8v6"/>',
+  card: '<rect x="2.6" y="5" width="16.8" height="12" rx="2.4"/><path d="M2.6 9.4h16.8M6 13.4h3.4"/>',
   camera: '<path d="M3 8a2 2 0 0 1 2-2h2l1.2-2h5.6L15 6h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8Z"/><circle cx="11" cy="12" r="3.2"/>',
   mic: '<rect x="8.4" y="3" width="5.2" height="10" rx="2.6"/><path d="M5.5 11a5.5 5.5 0 0 0 11 0M11 16.5V19"/>',
   keyboard: '<rect x="2.6" y="6" width="16.8" height="12" rx="2.4"/><path d="M6 10h.01M9 10h.01M12 10h.01M15 10h.01M7 14h8"/>',
@@ -247,18 +249,79 @@ function bavatar(d) {
  * public page.
  */
 
-const railItems = [
-  ['home', 'chart', 'Home'],
-  ['deals', 'bolt', 'Deals'],
-  ['money', 'wallet', 'Money'],
-  ['team', 'users', 'Team'],
-  ['invoice', 'doc', 'Invoices'],
+/**
+ * The sidebar, labelled, matching the product.
+ *
+ * This was an icon-only rail, which is what the app looked like before the
+ * 20 August redesign. A marketing page drawing an interface the product no
+ * longer has is worse than drawing none: the first thing a new creator meets
+ * after signing up is a screen she has not been shown.
+ *
+ * Grouped the way the real sidebar groups: the four places money moves
+ * through, then the workspace tools. Every item here opens a screen that
+ * exists in this demo, because a label that does nothing when clicked is the
+ * one thing a walkable demo must not contain.
+ */
+const navGroups = [
+  [null, [
+    ['home', 'home', 'Home', true],
+    ['deals', 'bolt', 'Deals', true],
+    ['money', 'wallet', 'Money', true],
+    ['invoice', 'doc', 'Invoices', true],
+  ]],
+  ['Workspace', [
+    ['team', 'users', 'Team', true],
+    ['ratecard', 'card', 'Rate card', false],
+    ['tax', 'calendar', 'Year report', false],
+  ]],
 ]
 
-const backBar = (title, note = '') =>
+/**
+ * The Blubanana mark. Same two arcs as platform/components/ui/Mark.tsx, with
+ * the tilt already in the endpoints; the comment there explains the numbers.
+ */
+const MARK = `<svg viewBox="21.54 28.2 76.3 69.7" width="15" height="15" aria-hidden="true"><path d="M 25.54 86.19 A 43.56 43.56 0 0 0 89.89 32.20 A 63.13 63.13 0 0 1 25.54 86.19 Z" fill="currentColor" stroke="currentColor" stroke-width="8" stroke-linejoin="round"/></svg>`
+
+/** The sidebar's own head: the mark, the wordmark, and whose desk this is. */
+const sideHead = `<div class="app-brand">
+  <span class="app-mark">${MARK}</span>
+  <span><span class="app-wm"><b>blu</b>banana</span><span class="app-desk">${CREATOR.name.split(' ')[0]}'s desk</span></span>
+</div>`
+
+function sidebar(start, interactive = true) {
+  // `inBar` marks the five that survive on a phone, where the sidebar becomes
+  // the app's labelled bottom tab bar. Chosen in the markup rather than by
+  // counting children in CSS, because the group headings are children too and
+  // an nth-child rule counting past them is a puzzle nobody should have to
+  // re-solve later.
+  const item = ([screen, glyph, label, inBar]) => {
+    const on = screen === start ? ' on' : ''
+    const bar = inBar ? ' data-bar' : ''
+    return interactive
+      ? `<button class="side-btn${on}"${bar} data-go="${screen}">${icon(glyph, { size: 15 })}<span>${label}</span></button>`
+      : `<i class="side-btn${on}"${bar}>${icon(glyph, { size: 15 })}<span>${label}</span></i>`
+  }
+  const groups = navGroups
+    .map(([title, items]) =>
+      `${title ? `<div class="side-group">${title}</div>` : ''}${items.map(item).join('')}`
+    )
+    .join('')
+  return `<div class="app-side">${sideHead}<div class="side-nav">${groups}</div></div>`
+}
+
+/**
+ * A screen's heading.
+ *
+ * `back` is false for anywhere the sidebar goes directly. Those are
+ * destinations, not pushes: the app itself puts no back arrow on Money or
+ * Deals, because the thing you would go back to is one click away in the nav
+ * that is already on screen. It stays on the screens you can only arrive at
+ * from somewhere else, which is where it means something.
+ */
+const backBar = (title, note = '', back = true) =>
   `<div class="app-head">
     <div style="display:flex;align-items:center;gap:10px">
-      <button class="app-back" data-go="home" aria-label="Back">${icon('back', { size: 15 })}</button>
+      ${back ? `<button class="app-back" data-go="home" aria-label="Back">${icon('back', { size: 15 })}</button>` : ''}
       <div><div class="app-hi" style="font-size:15px">${title}</div>${note ? `<div class="app-date">${note}</div>` : ''}</div>
     </div>
   </div>`
@@ -290,7 +353,7 @@ const screenHome = () => `
   </div>`
 
 const screenDeals = () => `
-  ${backBar('All deals', `${DEALS.length} of ${MONEY.live}`)}
+  ${backBar('All deals', `${DEALS.length} of ${MONEY.live}`, false)}
   <div class="chip-row"><span class="chip chip-blue">All</span><span class="chip">Live</span><span class="chip">Unpaid</span><span class="chip">Paid</span></div>
   <div class="list">${DEALS.map(dealRow).join('')}</div>`
 
@@ -325,7 +388,7 @@ const screenDeal = () => `
 const screenMoney = () => {
   const bars = [38, 62, 44, 78, 56, 92]
   return `
-  ${backBar('Money', 'Last six months')}
+  ${backBar('Money', 'Last six months', false)}
   <div class="stat-row" style="grid-template-columns:1fr 1fr">
     <div class="stat stat-hero"><div class="k">Still out</div><div class="v">${MONEY.owed}</div><div class="s">${MONEY.owedNote}</div></div>
     <div class="stat"><div class="k">Collected</div><div class="v">${MONEY.collection}</div><div class="s">Of everything invoiced</div></div>
@@ -367,7 +430,7 @@ const screenNewDeal = () => {
 }
 
 const screenInvoice = () => `
-  ${backBar('Invoice', INVOICE.number)}
+  ${backBar('Invoice', INVOICE.number, false)}
   <div style="display:grid;gap:10px">
     ${uiInvoice()}
     <button class="act" data-go="money" style="justify-content:center"><span>${icon('phone', { size: 15 })}</span> Send on WhatsApp</button>
@@ -376,7 +439,7 @@ const screenInvoice = () => `
 const screenTax = () => {
   const dates = [['15 Jun', '₹54,000'], ['15 Sep', '₹1,08,000'], ['15 Dec', '₹1,08,000'], ['15 Mar', '₹90,000']]
   return `
-  ${backBar('Year report', 'April to March')}
+  ${backBar('Year report', 'April to March', false)}
   <div class="stat stat-hero"><div class="k">Advance tax expected</div><div class="v">₹3,60,000</div><div class="s">From your income, less your expenses</div></div>
   <div class="cal">${dates.map(([d, amt], i) => `<div class="${i === 1 ? 'soon' : ''}"><b>${d}</b><span>${amt}</span></div>`).join('')}</div>
   <button class="act" data-go="ratecard" style="justify-content:center"><span>${icon('users', { size: 15 })}</span> Open your rate card</button>`
@@ -385,7 +448,7 @@ const screenTax = () => {
 const screenTeam = () => {
   const areas = [['Deals and deadlines', true], ['Brands and contacts', true], ['Invoices', true], ['Rates', false], ['Bank details', false]]
   return `
-  ${backBar('Invite a manager', 'You choose what they see')}
+  ${backBar('Invite a manager', 'You choose what they see', false)}
   ${areas.map(([label, on]) => `<div class="ui-row" style="grid-template-columns:1fr auto;padding:11px 12px">
     <span class="ui-label">${label}</span><span class="chip ${on ? 'chip-green' : ''}">${on ? 'Visible' : 'Hidden'}</span>
   </div>`).join('')}
@@ -396,7 +459,7 @@ const screenTeam = () => {
 }
 
 const screenRateCard = () => `
-  ${backBar('Rate card', 'Ready to send')}
+  ${backBar('Rate card', 'Ready to send', false)}
   ${uiRateCard()}`
 
 const screenOffline = () => `
@@ -437,19 +500,12 @@ const SCREENS = {
 
 /** The whole thing, walkable. `id` scopes it so two can sit on one page. */
 export function demoApp({ id = 'demo', start = 'home' } = {}) {
-  const rail = railItems
-    .map(
-      ([screen, glyph, label]) =>
-        `<button class="rail-btn${screen === start ? ' on' : ''}" data-go="${screen}" aria-label="${label}" title="${label}">${icon(glyph, { size: 17 })}</button>`
-    )
-    .join('')
-
   const screens = Object.entries(SCREENS)
     .map(([name, render]) => `<div class="app-body" data-screen="${name}"${name === start ? '' : ' hidden'}>${render()}</div>`)
     .join('')
 
   return `<div class="app" data-demo="${id}">
-    <div class="app-rail">${rail}</div>
+    ${sidebar(start)}
     <div class="app-screens">${screens}</div>
     <div class="demo-hint">Have a click around. Nothing here leaves the page.</div>
   </div>`
@@ -458,13 +514,7 @@ export function demoApp({ id = 'demo', start = 'home' } = {}) {
 /** The dashboard, static, for places that only need to show it. */
 export function uiDashboard() {
   return `<div class="app">
-    <div class="app-rail">
-      <i class="on">${icon('chart', { size: 17 })}</i>
-      <i>${icon('bolt', { size: 17 })}</i>
-      <i>${icon('wallet', { size: 17 })}</i>
-      <i>${icon('users', { size: 17 })}</i>
-      <i>${icon('doc', { size: 17 })}</i>
-    </div>
+    ${sidebar('home', false)}
     <div class="app-body">
       <div class="app-head">
         <div>
