@@ -29,10 +29,51 @@
   } catch (e) {}
 </script>
 <script type="application/ld+json">[{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Blubanana","applicationCategory":"BusinessApplication","operatingSystem":"Web, iOS, Android","description":"Business management for Indian digital content creators: brand deals, deadlines, invoices, payments and tax.","offers":{"@type":"Offer","price":"999","priceCurrency":"INR"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Does Blubanana take a cut of my deals?","acceptedAnswer":{"@type":"Answer","text":"No. Brands pay you directly, bank to bank. We charge a subscription and nothing else."}},{"@type":"Question","name":"Do I need to be registered for GST?","acceptedAnswer":{"@type":"Answer","text":"No. If you are not registered you get a clean invoice with no tax fields on it at all."}},{"@type":"Question","name":"I use a spreadsheet already. Why change?","acceptedAnswer":{"@type":"Answer","text":"A spreadsheet will never remind you of anything, and it cannot chase a payment. Point the importer at it and everything comes across in a few minutes."}},{"@type":"Question","name":"Can my manager use it without seeing my rates?","acceptedAnswer":{"@type":"Answer","text":"Yes. You choose what they see, area by area, and with rates switched off the figures never reach their device."}},{"@type":"Question","name":"What happens after the 14 days?","acceptedAnswer":{"@type":"Answer","text":"Your workspace becomes read only. Everything stays visible and exportable until you subscribe."}},{"@type":"Question","name":"Is my data mine?","acceptedAnswer":{"@type":"Answer","text":"Yes. Export all of it whenever you like, and deleting your account genuinely deletes it."}}]}]</script>
-
+<script>
+  window.__gaId = "G-ZN5MHYGQ8S";
+  window.__gaLoad = function () {
+    if (window.__gaLoaded) return;
+    window.__gaLoaded = true;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://www.googletagmanager.com/gtag/js?id=' + window.__gaId;
+    document.head.appendChild(s);
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function () { window.dataLayer.push(arguments); };
+    window.gtag('js', new Date());
+    /* IP anonymisation is the default in GA4 and cannot be switched off,
+       so there is nothing to set here beyond the property itself. */
+    window.gtag('config', window.__gaId);
+  };
+  try {
+    if (localStorage.getItem('bb-consent') === 'yes') window.__gaLoad();
+  } catch (e) {}
+</script>
 </head>
 <body>
-
+<div class="consent" id="consent" hidden>
+  <p class="consent-text">We use Google Analytics to see which pages are read. No advertising, and nothing is shared with anyone else. <a href="/privacy">How we handle data</a>.</p>
+  <div class="consent-actions">
+    <button type="button" class="btn btn-ghost btn-sm" data-consent="no">Decline</button>
+    <button type="button" class="btn btn-primary btn-sm" data-consent="yes">Accept</button>
+  </div>
+</div>
+<script>
+  (function () {
+    var el = document.getElementById('consent');
+    if (!el) return;
+    var stored;
+    try { stored = localStorage.getItem('bb-consent'); } catch (e) {}
+    if (!stored) el.hidden = false;
+    el.addEventListener('click', function (event) {
+      var answer = event.target && event.target.getAttribute('data-consent');
+      if (!answer) return;
+      try { localStorage.setItem('bb-consent', answer); } catch (e) {}
+      el.hidden = true;
+      if (answer === 'yes' && window.__gaLoad) window.__gaLoad();
+    });
+  })();
+</script>
 <div class="announce" id="announce" hidden>
   <span><b>Launch offer.</b> 50% off for the first 500 creators<span data-seats-line hidden>, and <b data-seats-left></b> places are left</span></span>
   <button class="announce-close" aria-label="Dismiss">✕</button>

@@ -75,14 +75,18 @@ export const SITE = {
 /**
  * Google Analytics 4.
  *
- * Empty until a Measurement ID exists, and the build treats empty as "no
- * analytics at all": no script, no banner, no cookies. So the site is
- * shippable today and becomes measured the moment the ID is filled in, with
- * nothing else to change.
+ * The Measurement ID sits here in the file rather than in an environment
+ * variable, because it is public by definition: it identifies the property and
+ * Google's own install instructions put it in the page source. Hiding it in a
+ * dashboard would only mean a local build and a deployed one behave
+ * differently, which is how a tracking bug survives a fortnight.
  *
- * The ID is public by design; it identifies the property, and Google's own
- * install instructions put it in the page source. It is not a secret and does
- * not belong in an environment variable.
+ * Empty is a supported value and means no analytics at all: no script, no
+ * banner, no cookies.
+ *
+ * Preview deployments get nothing. Every branch push would otherwise land in
+ * the same property as real visitors, and the first week of data would be
+ * mostly me.
  *
  * GA sets cookies, which under the DPDP Act 2023 needs consent taken *before*
  * they are set. Hence the gate in `layout.mjs`: nothing loads until someone
@@ -90,7 +94,10 @@ export const SITE = {
  * rather than on every page.
  */
 export const ANALYTICS = {
-  measurementId: process.env.GA_MEASUREMENT_ID ?? '',
+  measurementId:
+    process.env.VERCEL_ENV === 'preview'
+      ? ''
+      : (process.env.GA_MEASUREMENT_ID ?? 'G-ZN5MHYGQ8S'),
 }
 
 /**
