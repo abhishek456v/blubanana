@@ -88,6 +88,12 @@ export default function AppLayout() {
       <Stack.Screen name="invoice/new" options={{ title: 'Create invoice', ...modalScreenOptions }} />
       <Stack.Screen name="invoice/[id]" options={{ title: 'Invoice', ...modalScreenOptions }} />
       <Stack.Screen name="invoices" options={{ title: 'Invoices', ...modalScreenOptions }} />
+      {/* Undeclared until the sidebar started linking to them, which meant
+          expo-router fell back to the raw route name: the native header read
+          "tax" and "expenses" in lower case, and neither presented as a sheet,
+          so both opened onto a grey void with the app nowhere behind them. */}
+      <Stack.Screen name="tax" options={{ title: 'Advance tax', ...modalScreenOptions }} />
+      <Stack.Screen name="expenses" options={{ title: 'Expenses', ...modalScreenOptions }} />
       {/* Not a modal on wide screens: it's a full working surface with its own
           header and two tabs, not a focused form to fill in and dismiss. */}
       <Stack.Screen name="reminders" options={{ title: 'Reminders', headerShown: false }} />
