@@ -26,8 +26,9 @@ import {
 import { getProfile, updateProfile } from '@/lib/profile'
 import { sharePdf } from '@/lib/sharePdf'
 import { CARD_THEMES, resolveTheme, type CardTheme } from '@/constants/cardThemes'
-import { ContentMaxWidth, FontFamily, HitSlop, Radius, Spacing, Typography } from '@/constants/design'
+import { FontFamily, HitSlop, Radius, Spacing, Typography } from '@/constants/design'
 import { useTheme } from '@/hooks/useTheme'
+import { useBreakpoint } from '@/hooks/useBreakpoint'
 import { ModalSheet } from '@/components/ModalSheet'
 import { CardEditorSheet } from '@/components/profile/CardEditorSheet'
 import {
@@ -65,6 +66,7 @@ function monogram(name: string): string {
  */
 export default function ProfileCardScreen() {
   const { c } = useTheme()
+  const { isDesktop } = useBreakpoint()
   const toast = useToast()
   const confirm = useConfirm()
 
@@ -210,7 +212,7 @@ export default function ProfileCardScreen() {
 
   if (loading) {
     return (
-      <ModalSheet title="Rate card">
+      <ModalSheet title="Rate card" wide>
         <SafeAreaView style={styles.safe} edges={['bottom']}>
           <View style={styles.content}>
             <Skeleton height={280} radius={Radius.lg} />
@@ -222,7 +224,7 @@ export default function ProfileCardScreen() {
 
   if (!content || thin) {
     return (
-      <ModalSheet title="Rate card">
+      <ModalSheet title="Rate card" wide>
         <SafeAreaView style={styles.safe} edges={['bottom']}>
           <View style={styles.content}>
             <EmptyState
@@ -236,133 +238,160 @@ export default function ProfileCardScreen() {
     )
   }
 
-  return (
-    <ModalSheet title="Rate card">
-      <SafeAreaView style={styles.safe} edges={['bottom']}>
-        <RevealScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          {/* Front */}
-          <LinearGradient
-            colors={theme.front.colors as [string, string, ...string[]]}
-            locations={theme.front.locations as [number, number, ...number[]]}
-            start={{ x: 0.1, y: 0 }}
-            end={{ x: 0.9, y: 1 }}
-            style={styles.panel}
-          >
-            <View style={[styles.portrait, { borderColor: 'rgba(255,255,255,0.42)' }]}>
-              {photoUri ? (
-                <Image source={{ uri: photoUri }} style={styles.portraitImage} />
-              ) : (
-                <Text style={[styles.monogram, { color: theme.ink }]}>
-                  {monogram(content.name)}
-                </Text>
-              )}
-            </View>
+  // The front face.
+  const front = (
+  <LinearGradient
+    colors={theme.front.colors as [string, string, ...string[]]}
+    locations={theme.front.locations as [number, number, ...number[]]}
+    start={{ x: 0.1, y: 0 }}
+    end={{ x: 0.9, y: 1 }}
+    style={styles.panel}
+  >
+    <View style={[styles.portrait, { borderColor: 'rgba(255,255,255,0.42)' }]}>
+      {photoUri ? (
+        <Image source={{ uri: photoUri }} style={styles.portraitImage} />
+      ) : (
+        <Text style={[styles.monogram, { color: theme.ink }]}>
+          {monogram(content.name)}
+        </Text>
+      )}
+    </View>
 
-            <Text style={[styles.name, { color: theme.ink }]}>{content.name}</Text>
-            {content.tagline ? (
-              <Text style={[styles.tagline, { color: theme.inkSoft }]}>{content.tagline}</Text>
-            ) : null}
-            {content.handles ? (
-              <Text style={[styles.handles, { color: theme.ink }]}>{content.handles}</Text>
-            ) : null}
+    <Text style={[styles.name, { color: theme.ink }]}>{content.name}</Text>
+    {content.tagline ? (
+      <Text style={[styles.tagline, { color: theme.inkSoft }]}>{content.tagline}</Text>
+    ) : null}
+    {content.handles ? (
+      <Text style={[styles.handles, { color: theme.ink }]}>{content.handles}</Text>
+    ) : null}
 
-            <View style={styles.stats}>
-              {content.stats
-                .filter((s) => s.value.trim())
-                .map((stat, i) => (
-                  <View key={i}>
-                    <Text style={[styles.statValue, { color: theme.ink }]}>{stat.value}</Text>
-                    <Text style={[styles.statLabel, { color: theme.inkSoft }]}>{stat.label}</Text>
-                  </View>
-                ))}
-            </View>
-          </LinearGradient>
-
-          {/* Back */}
-          <LinearGradient
-            colors={theme.back.colors as [string, string, ...string[]]}
-            locations={theme.back.locations as [number, number, ...number[]]}
-            start={{ x: 0.1, y: 0 }}
-            end={{ x: 0.9, y: 1 }}
-            style={styles.panel}
-          >
-            {content.rates.length > 0 ? (
-              <>
-                <Text style={[styles.sectionLabel, { color: theme.inkSoft }]}>
-                  {content.ratesHeading}
-                </Text>
-                {content.rates.map((rate, i) => (
-                  <View key={i} style={styles.rateRow}>
-                    <Text style={[styles.rateLabel, { color: theme.ink }]}>{rate.label}</Text>
-                    <Text style={[styles.rateValue, { color: theme.ink }]}>{rate.value}</Text>
-                  </View>
-                ))}
-              </>
-            ) : null}
-
-            {content.about ? (
-              <Text style={[styles.about, { color: theme.inkSoft }]}>{content.about}</Text>
-            ) : null}
-
-            {content.contact ? (
-              <>
-                <Text style={[styles.sectionLabel, { color: theme.inkSoft, marginTop: Spacing.md }]}>
-                  {content.contactHeading}
-                </Text>
-                <Text style={[styles.contact, { color: theme.ink }]}>{content.contact}</Text>
-              </>
-            ) : null}
-          </LinearGradient>
-
-          {/* Photo */}
-          <Text style={[styles.controlLabel, { color: c.textSecondary }]}>Photo</Text>
-          <View style={styles.photoRow}>
-            {photos.map((photo) => (
-              <PhotoThumb
-                key={photo.id}
-                photo={photo}
-                selected={photo.id === cardPhotoId}
-                onPress={() => handleChoosePhoto(photo)}
-                onRemove={() => handleRemovePhoto(photo)}
-              />
-            ))}
-            {photos.length < MAX_PROFILE_PHOTOS ? (
-              <PressableScale
-                onPress={handleAddPhoto}
-                accessibilityRole="button"
-                accessibilityLabel="Add a photo"
-                style={[styles.addPhoto, { borderColor: c.borderStrong }]}
-              >
-                <Ionicons name="add" size={20} color={c.accent} />
-              </PressableScale>
-            ) : null}
+    <View style={styles.stats}>
+      {content.stats
+        .filter((s) => s.value.trim())
+        .map((stat, i) => (
+          <View key={i}>
+            <Text style={[styles.statValue, { color: theme.ink }]}>{stat.value}</Text>
+            <Text style={[styles.statLabel, { color: theme.inkSoft }]}>{stat.label}</Text>
           </View>
+        ))}
+    </View>
+  </LinearGradient>
+  )
 
-          {/* Theme */}
-          <Text style={[styles.controlLabel, { color: c.textSecondary }]}>Theme</Text>
-          <View style={styles.themeRow}>
-            {CARD_THEMES.map((option) => (
-              <Chip
-                key={option.key}
-                label={option.label}
-                selected={option.key === theme.key}
-                onPress={() => handlePickTheme(option)}
-              />
-            ))}
+  // The back face: rates, about, contact.
+  const back = (
+  <LinearGradient
+    colors={theme.back.colors as [string, string, ...string[]]}
+    locations={theme.back.locations as [number, number, ...number[]]}
+    start={{ x: 0.1, y: 0 }}
+    end={{ x: 0.9, y: 1 }}
+    style={styles.panel}
+  >
+    {content.rates.length > 0 ? (
+      <>
+        <Text style={[styles.sectionLabel, { color: theme.inkSoft }]}>
+          {content.ratesHeading}
+        </Text>
+        {content.rates.map((rate, i) => (
+          <View key={i} style={styles.rateRow}>
+            <Text style={[styles.rateLabel, { color: theme.ink }]}>{rate.label}</Text>
+            <Text style={[styles.rateValue, { color: theme.ink }]}>{rate.value}</Text>
           </View>
+        ))}
+      </>
+    ) : null}
 
-          <Text style={[styles.note, { color: c.textMuted }]}>
-            Rates are the median of what you have actually charged, so the card stays
-            current on its own. Edits below apply to this send only.
-          </Text>
+    {content.about ? (
+      <Text style={[styles.about, { color: theme.inkSoft }]}>{content.about}</Text>
+    ) : null}
 
-          <Button label="Edit card" variant="secondary" onPress={() => setEditing(true)} fullWidth />
-          <Button
-            label={busy ? 'Preparing…' : 'Share card'}
-            onPress={handleShare}
-            disabled={busy}
-            fullWidth
+    {content.contact ? (
+      <>
+        <Text style={[styles.sectionLabel, { color: theme.inkSoft, marginTop: Spacing.md }]}>
+          {content.contactHeading}
+        </Text>
+        <Text style={[styles.contact, { color: theme.ink }]}>{content.contact}</Text>
+      </>
+    ) : null}
+  </LinearGradient>
+  )
+
+  const controls = (
+    <>
+      {/* Photo */}
+      <Text style={[styles.controlLabel, { color: c.textSecondary }]}>Photo</Text>
+      <View style={styles.photoRow}>
+        {photos.map((photo) => (
+          <PhotoThumb
+            key={photo.id}
+            photo={photo}
+            selected={photo.id === cardPhotoId}
+            onPress={() => handleChoosePhoto(photo)}
+            onRemove={() => handleRemovePhoto(photo)}
           />
+        ))}
+        {photos.length < MAX_PROFILE_PHOTOS ? (
+          <PressableScale
+            onPress={handleAddPhoto}
+            accessibilityRole="button"
+            accessibilityLabel="Add a photo"
+            style={[styles.addPhoto, { backgroundColor: c.accentLight }]}
+          >
+            <Ionicons name="add" size={20} color={c.accent} />
+          </PressableScale>
+        ) : null}
+      </View>
+
+      {/* Theme */}
+      <Text style={[styles.controlLabel, { color: c.textSecondary }]}>Theme</Text>
+      <View style={styles.themeRow}>
+        {CARD_THEMES.map((option) => (
+          <Chip
+            key={option.key}
+            label={option.label}
+            selected={option.key === theme.key}
+            onPress={() => handlePickTheme(option)}
+          />
+        ))}
+      </View>
+
+      <Text style={[styles.note, { color: c.textMuted }]}>
+        Rates are the median of what you have actually charged, so the card stays
+        current on its own. Edits below apply to this send only.
+      </Text>
+
+      <Button label="Edit card" variant="secondary" onPress={() => setEditing(true)} fullWidth />
+      <Button
+        label={busy ? 'Preparing…' : 'Share card'}
+        onPress={handleShare}
+        disabled={busy}
+        fullWidth
+      />
+    </>
+  )
+
+  return (
+    <ModalSheet title="Rate card" wide>
+      <SafeAreaView style={styles.safe} edges={['bottom']}>
+        <RevealScrollView
+          contentContainerStyle={[styles.content, isDesktop && styles.contentWide]}
+          showsVerticalScrollIndicator={false}
+        >
+          {isDesktop ? (
+            <>
+              <View style={styles.faces}>
+                <View style={styles.face}>{front}</View>
+                <View style={styles.face}>{back}</View>
+              </View>
+              {controls}
+            </>
+          ) : (
+            <>
+              {front}
+              {back}
+              {controls}
+            </>
+          )}
         </RevealScrollView>
 
         <CardEditorSheet
@@ -415,7 +444,7 @@ function PhotoThumb({
         accessibilityLabel={selected ? 'Photo used on the card' : 'Use this photo on the card'}
         style={[
           styles.thumb,
-          { borderColor: selected ? c.accent : c.border, borderWidth: selected ? 2 : 1 },
+          selected ? { borderColor: c.accent, borderWidth: 2 } : null,
         ]}
       >
         {uri ? <Image source={{ uri }} style={styles.thumbImage} /> : null}
@@ -439,9 +468,30 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     paddingBottom: Spacing.xl,
     gap: Spacing.md,
-    maxWidth: ContentMaxWidth,
     width: '100%',
     alignSelf: 'center',
+  },
+  contentWide: {
+    padding: Spacing.lg,
+  },
+  // The two faces of one card, shown the way it prints rather than as two
+  // things to scroll between.
+  faces: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    alignItems: 'stretch',
+  },
+  face: {
+    flex: 1,
+  },
+  controlsRow: {
+    flexDirection: 'row',
+    gap: Spacing.lg,
+    alignItems: 'flex-start',
+  },
+  controlsCol: {
+    flex: 1,
+    gap: Spacing.sm,
   },
   panel: {
     borderRadius: Radius.lg,
@@ -556,8 +606,6 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: Radius.md,
-    borderWidth: 1,
-    borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
   },

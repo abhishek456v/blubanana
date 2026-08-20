@@ -19,9 +19,10 @@ import {
   type Permissions,
   type TeamMember,
 } from '@/lib/team'
-import { ContentMaxWidth, FontFamily, HitSlop, Radius, Spacing, Typography } from '@/constants/design'
+import { FontFamily, HitSlop, Radius, Spacing, Typography } from '@/constants/design'
 import { Duration } from '@/constants/motion'
 import { useTheme } from '@/hooks/useTheme'
+import { useBreakpoint } from '@/hooks/useBreakpoint'
 import { ModalSheet } from '@/components/ModalSheet'
 import {
   Button,
@@ -106,6 +107,7 @@ function PermissionSwitches({
  */
 export default function TeamScreen() {
   const { c } = useTheme()
+  const { isDesktop } = useBreakpoint()
   const toast = useToast()
   const confirm = useConfirm()
 
@@ -228,7 +230,7 @@ export default function TeamScreen() {
 
   if (loading) {
     return (
-      <ModalSheet title="Team">
+      <ModalSheet title="Team" wide>
         <SafeAreaView style={styles.safe} edges={['bottom']}>
           <View style={styles.content}>
             <Skeleton height={120} radius={Radius.lg} />
@@ -240,7 +242,7 @@ export default function TeamScreen() {
 
   if (!isOwner) {
     return (
-      <ModalSheet title="Team">
+      <ModalSheet title="Team" wide>
         <SafeAreaView style={styles.safe} edges={['bottom']}>
           <View style={styles.content}>
             <EmptyState
@@ -254,169 +256,196 @@ export default function TeamScreen() {
     )
   }
 
-  return (
-    <ModalSheet title="Team">
-      <SafeAreaView style={styles.safe} edges={['bottom']}>
-        <RevealScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <Text style={[styles.intro, { color: c.textMuted }]}>
-            Invite a manager and choose, area by area, what they can see. Nobody but you
-            can delete a deal, payment, invoice or brand. That holds even if you switch
-            everything on.
-          </Text>
+  const intro = (
+  <Text style={[styles.intro, { color: c.textMuted }]}>
+    Invite a manager and choose, area by area, what they can see. Nobody but you
+    can delete a deal, payment, invoice or brand. That holds even if you switch
+    everything on.
+  </Text>
+  )
 
-          <View style={styles.list}>
-            {members.map((member) => (
-              <Animated.View
-                key={member.id}
-                entering={FadeIn.duration(Duration.fast)}
-                exiting={FadeOut.duration(Duration.fast)}
-                layout={Layout.duration(Duration.base)}
-                style={[styles.card, { backgroundColor: c.bgSurface }]}
-              >
-                <View style={styles.cardHead}>
-                  <View style={styles.cardText}>
-                    <Text style={[styles.cardTitle, { color: c.textPrimary }]} numberOfLines={1}>
-                      {member.email ?? 'Unknown account'}
-                    </Text>
-                    <Text style={[styles.cardMeta, { color: c.textMuted }]} numberOfLines={2}>
-                      {member.role === 'owner'
-                        ? 'Creator · everything, including deleting'
-                        : describeAccess(pickPermissions(member))}
-                    </Text>
-                  </View>
-
-                  {member.role === 'owner' ? (
-                    <Chip label="You" />
-                  ) : (
-                    <PressableScale
-                      onPress={() => handleRemove(member)}
-                      hitSlop={HitSlop}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Remove ${member.email ?? 'this manager'}`}
-                    >
-                      <Ionicons name="close" size={17} color={c.textMuted} />
-                    </PressableScale>
-                  )}
-                </View>
-
-                {member.role !== 'owner' ? (
-                  editingId === member.id ? (
-                    <Animated.View entering={FadeIn.duration(Duration.fast)} style={styles.panel}>
-                      <PermissionSwitches
-                        value={editDraft}
-                        onChange={setEditDraft}
-                        disabled={savingEdit}
-                      />
-                      <Button
-                        label={savingEdit ? 'Saving…' : 'Save access'}
-                        onPress={() => handleSaveAccess(member)}
-                        disabled={savingEdit}
-                        fullWidth
-                      />
-                      <Button
-                        label="Cancel"
-                        variant="ghost"
-                        onPress={() => setEditingId(null)}
-                        fullWidth
-                      />
-                    </Animated.View>
-                  ) : (
-                    <Button
-                      label="Change access"
-                      variant="ghost"
-                      onPress={() => startEditing(member)}
-                      fullWidth
-                    />
-                  )
-                ) : null}
-              </Animated.View>
-            ))}
-
-            {invites.map((invite) => (
-              <Animated.View
-                key={invite.id}
-                entering={FadeIn.duration(Duration.fast)}
-                exiting={FadeOut.duration(Duration.fast)}
-                layout={Layout.duration(Duration.base)}
-                style={[styles.card, { backgroundColor: c.bgSurface }]}
-              >
-                <View style={styles.cardHead}>
-                  <View style={styles.cardText}>
-                    <Text style={[styles.cardTitle, { color: c.textPrimary }]} numberOfLines={1}>
-                      {invite.email}
-                    </Text>
-                    <Text style={[styles.cardMeta, { color: c.textMuted }]} numberOfLines={2}>
-                      Invited · joins with {countGranted(pickPermissions(invite))} of{' '}
-                      {PERMISSION_AREAS.length} areas
-                    </Text>
-                  </View>
-                  <PressableScale
-                    onPress={() => handleRevoke(invite)}
-                    hitSlop={HitSlop}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Withdraw the invite to ${invite.email}`}
-                  >
-                    <Ionicons name="close" size={17} color={c.textMuted} />
-                  </PressableScale>
-                </View>
-                <Text style={[styles.pendingHint, { color: c.textMuted }]}>
-                  They get in by signing up with this address. There is no link to
-                  forward.
-                </Text>
-              </Animated.View>
-            ))}
+  const people = (
+  <View style={styles.list}>
+    {members.map((member) => (
+      <Animated.View
+        key={member.id}
+        entering={FadeIn.duration(Duration.fast)}
+        exiting={FadeOut.duration(Duration.fast)}
+        layout={Layout.duration(Duration.base)}
+        style={[styles.card, { backgroundColor: c.bgSurface }]}
+      >
+        <View style={styles.cardHead}>
+          <View style={styles.cardText}>
+            <Text style={[styles.cardTitle, { color: c.textPrimary }]} numberOfLines={1}>
+              {member.email ?? 'Unknown account'}
+            </Text>
+            <Text style={[styles.cardMeta, { color: c.textMuted }]} numberOfLines={2}>
+              {member.role === 'owner'
+                ? 'Creator · everything, including deleting'
+                : describeAccess(pickPermissions(member))}
+            </Text>
           </View>
 
-          {inviting ? (
-            <Animated.View
-              entering={FadeIn.duration(Duration.fast)}
-              style={[styles.form, { backgroundColor: c.bgSurface }]}
-            >
-              <TextField
-                label="Their email"
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                placeholder="manager@example.com"
-              />
-
-              <View style={styles.presets}>
-                <Chip
-                  label="Full access"
-                  selected={countGranted(draft) === PERMISSION_AREAS.length}
-                  onPress={() => setDraft(FULL_PERMISSIONS)}
-                />
-                <Chip
-                  label="Assistant"
-                  selected={
-                    countGranted(draft) === countGranted(DEFAULT_PERMISSIONS) &&
-                    PERMISSION_AREAS.every((a) => draft[a.key] === DEFAULT_PERMISSIONS[a.key])
-                  }
-                  onPress={() => setDraft(DEFAULT_PERMISSIONS)}
-                />
-              </View>
-
-              <PermissionSwitches value={draft} onChange={setDraft} disabled={sending} />
-
-              <Button
-                label={sending ? 'Inviting…' : 'Send invite'}
-                onPress={handleInvite}
-                disabled={sending}
-                fullWidth
-              />
-              <Button label="Cancel" variant="ghost" onPress={resetInvite} fullWidth />
-            </Animated.View>
+          {member.role === 'owner' ? (
+            <Chip label="You" />
           ) : (
             <PressableScale
-              onPress={() => setInviting(true)}
+              onPress={() => handleRemove(member)}
+              hitSlop={HitSlop}
               accessibilityRole="button"
-              accessibilityLabel="Invite a manager"
-              style={[styles.add, { borderColor: c.borderStrong }]}
+              accessibilityLabel={`Remove ${member.email ?? 'this manager'}`}
             >
-              <Ionicons name="add" size={17} color={c.accent} />
-              <Text style={[styles.addText, { color: c.accentText }]}>Invite a manager</Text>
+              <Ionicons name="close" size={17} color={c.textMuted} />
             </PressableScale>
+          )}
+        </View>
+
+        {member.role !== 'owner' ? (
+          editingId === member.id ? (
+            <Animated.View entering={FadeIn.duration(Duration.fast)} style={styles.panel}>
+              <PermissionSwitches
+                value={editDraft}
+                onChange={setEditDraft}
+                disabled={savingEdit}
+              />
+              <Button
+                label={savingEdit ? 'Saving…' : 'Save access'}
+                onPress={() => handleSaveAccess(member)}
+                disabled={savingEdit}
+                fullWidth
+              />
+              <Button
+                label="Cancel"
+                variant="ghost"
+                onPress={() => setEditingId(null)}
+                fullWidth
+              />
+            </Animated.View>
+          ) : (
+            <Button
+              label="Change access"
+              variant="ghost"
+              onPress={() => startEditing(member)}
+              fullWidth
+            />
+          )
+        ) : null}
+      </Animated.View>
+    ))}
+
+    {invites.map((invite) => (
+      <Animated.View
+        key={invite.id}
+        entering={FadeIn.duration(Duration.fast)}
+        exiting={FadeOut.duration(Duration.fast)}
+        layout={Layout.duration(Duration.base)}
+        style={[styles.card, { backgroundColor: c.bgSurface }]}
+      >
+        <View style={styles.cardHead}>
+          <View style={styles.cardText}>
+            <Text style={[styles.cardTitle, { color: c.textPrimary }]} numberOfLines={1}>
+              {invite.email}
+            </Text>
+            <Text style={[styles.cardMeta, { color: c.textMuted }]} numberOfLines={2}>
+              Invited · joins with {countGranted(pickPermissions(invite))} of{' '}
+              {PERMISSION_AREAS.length} areas
+            </Text>
+          </View>
+          <PressableScale
+            onPress={() => handleRevoke(invite)}
+            hitSlop={HitSlop}
+            accessibilityRole="button"
+            accessibilityLabel={`Withdraw the invite to ${invite.email}`}
+          >
+            <Ionicons name="close" size={17} color={c.textMuted} />
+          </PressableScale>
+        </View>
+        <Text style={[styles.pendingHint, { color: c.textMuted }]}>
+          They get in by signing up with this address. There is no link to
+          forward.
+        </Text>
+      </Animated.View>
+    ))}
+  </View>
+  )
+
+  const inviteBlock = inviting ? (
+    <Animated.View
+      entering={FadeIn.duration(Duration.fast)}
+      style={[styles.form, { backgroundColor: c.bgSurface }]}
+    >
+      <TextField
+        label="Their email"
+        value={email}
+        onChangeText={setEmail}
+        autoCapitalize="none"
+        keyboardType="email-address"
+        placeholder="manager@example.com"
+      />
+
+      <View style={styles.presets}>
+        <Chip
+          label="Full access"
+          selected={countGranted(draft) === PERMISSION_AREAS.length}
+          onPress={() => setDraft(FULL_PERMISSIONS)}
+        />
+        <Chip
+          label="Assistant"
+          selected={
+            countGranted(draft) === countGranted(DEFAULT_PERMISSIONS) &&
+            PERMISSION_AREAS.every((a) => draft[a.key] === DEFAULT_PERMISSIONS[a.key])
+          }
+          onPress={() => setDraft(DEFAULT_PERMISSIONS)}
+        />
+      </View>
+
+      <PermissionSwitches value={draft} onChange={setDraft} disabled={sending} />
+
+      <Button
+        label={sending ? 'Inviting…' : 'Send invite'}
+        onPress={handleInvite}
+        disabled={sending}
+        fullWidth
+      />
+      <Button label="Cancel" variant="ghost" onPress={resetInvite} fullWidth />
+    </Animated.View>
+  ) : (
+    <PressableScale
+      onPress={() => setInviting(true)}
+      accessibilityRole="button"
+      accessibilityLabel="Invite a manager"
+      style={[styles.add, { backgroundColor: c.accentLight }]}
+    >
+      <Ionicons name="add" size={17} color={c.accent} />
+      <Text style={[styles.addText, { color: c.accentText }]}>Invite a manager</Text>
+    </PressableScale>
+  )
+
+  return (
+    <ModalSheet title="Team" wide>
+      <SafeAreaView style={styles.safe} edges={['bottom']}>
+        <RevealScrollView
+          contentContainerStyle={[styles.content, isDesktop && styles.contentWide]}
+          showsVerticalScrollIndicator={false}
+        >
+          {isDesktop ? (
+            <View style={styles.columns}>
+              <View style={styles.columnPeople}>
+                <Text style={[styles.columnTitle, { color: c.textPrimary }]}>Who has access</Text>
+                {people}
+              </View>
+              <View style={styles.columnInvite}>
+                <Text style={[styles.columnTitle, { color: c.textPrimary }]}>Invite someone</Text>
+                {intro}
+                {inviteBlock}
+              </View>
+            </View>
+          ) : (
+            <>
+              {intro}
+              {people}
+              {inviteBlock}
+            </>
           )}
         </RevealScrollView>
       </SafeAreaView>
@@ -430,9 +459,30 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     paddingBottom: Spacing.xl,
     gap: Spacing.md,
-    maxWidth: ContentMaxWidth,
     width: '100%',
     alignSelf: 'center',
+  },
+  contentWide: {
+    padding: Spacing.lg,
+  },
+  columns: {
+    flexDirection: 'row',
+    gap: Spacing.lg,
+    alignItems: 'flex-start',
+  },
+  // Who is here takes the wider half; inviting somebody is the narrower
+  // action beside it, not a form the list has to be scrolled past to reach.
+  columnPeople: {
+    flex: 1.5,
+    gap: Spacing.md,
+  },
+  columnInvite: {
+    flex: 1,
+    gap: Spacing.md,
+  },
+  columnTitle: {
+    ...Typography.heading,
+    fontFamily: FontFamily.semiBold,
   },
   intro: {
     ...Typography.caption,
@@ -498,13 +548,13 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.regular,
     flex: 1,
   },
+  // Filled, not dashed. Controls separate by fill and shadow, never by
+  // outline (20 Aug redesign, round three).
   add: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.sm,
-    borderWidth: 1,
-    borderStyle: 'dashed',
     borderRadius: Radius.md,
     paddingVertical: Spacing.base,
   },

@@ -13,9 +13,10 @@ import {
   type Expense,
 } from '@/lib/expenses'
 import { formatCurrency, formatDate, toDateString } from '@/lib/format'
-import { ContentMaxWidth, FontFamily, HitSlop, Radius, Spacing, Typography } from '@/constants/design'
+import { FontFamily, HitSlop, Radius, Spacing, Typography } from '@/constants/design'
 import { Duration } from '@/constants/motion'
 import { useTheme } from '@/hooks/useTheme'
+import { useBreakpoint } from '@/hooks/useBreakpoint'
 import { ModalSheet } from '@/components/ModalSheet'
 import {
   Button,
@@ -45,6 +46,7 @@ import {
  */
 export default function ExpensesScreen() {
   const { c } = useTheme()
+  const { isDesktop } = useBreakpoint()
   const toast = useToast()
   const confirm = useConfirm()
 
@@ -139,139 +141,155 @@ export default function ExpensesScreen() {
     }
   }
 
+  const totalCard = (
+    <View style={[styles.totalCard, { backgroundColor: c.bgSurface }]}>
+      <Text style={[styles.totalLabel, { color: c.textSecondary }]}>Spent in {fy.label}</Text>
+      <Figure value={formatCurrency(summary.total)} size="hero" color={c.textPrimary} bold />
+      <Text style={[styles.totalHint, { color: c.textMuted }]}>
+        Deducted from your income in the Year report, so the figure there is what you are
+        actually taxed on.
+      </Text>
+    </View>
+  )
+
+  const breakdown =
+    summary.byCategory.length > 0 ? (
+      <View style={styles.breakdown}>
+        {summary.byCategory.map((row) => (
+          <View key={row.category} style={styles.breakdownRow}>
+            <Text style={[styles.breakdownLabel, { color: c.textSecondary }]}>{row.category}</Text>
+            <Figure value={formatCurrency(row.total)} size="sm" color={c.textPrimary} />
+          </View>
+        ))}
+      </View>
+    ) : null
+
+  const addBlock = adding ? (
+    <Animated.View
+      entering={FadeIn.duration(Duration.fast)}
+      style={[styles.form, { backgroundColor: c.bgSurface }]}
+    >
+      <TextField
+        label="Amount"
+        value={amount}
+        onChangeText={setAmount}
+        keyboardType="number-pad"
+        placeholder="0"
+      />
+
+      <Text style={[styles.fieldLabel, { color: c.textSecondary }]}>Category</Text>
+      <View style={styles.categoryRow}>
+        {EXPENSE_CATEGORIES.map((option) => (
+          <Chip
+            key={option}
+            label={option}
+            selected={category === option}
+            onPress={() => setCategory(option)}
+          />
+        ))}
+      </View>
+
+      <DateField label="When" value={spentOn} onChange={setSpentOn} />
+      <TextField
+        label="Note"
+        value={note}
+        onChangeText={setNote}
+        placeholder="What it was for"
+      />
+
+      <Button
+        label={saving ? 'Saving…' : 'Add expense'}
+        onPress={handleAdd}
+        disabled={saving}
+        fullWidth
+      />
+      <Button label="Cancel" variant="ghost" onPress={reset} fullWidth />
+    </Animated.View>
+  ) : (
+    <PressableScale
+      onPress={() => setAdding(true)}
+      accessibilityRole="button"
+      accessibilityLabel="Add an expense"
+      style={[styles.add, { backgroundColor: c.accentLight }]}
+    >
+      <Ionicons name="add" size={17} color={c.accent} />
+      <Text style={[styles.addText, { color: c.accentText }]}>Add expense</Text>
+    </PressableScale>
+  )
+
+  const list =
+    expenses.length === 0 ? (
+      <EmptyState
+        icon="receipt-outline"
+        title="Nothing logged yet"
+        message="Editor fees, gear, travel, software. Anything you spend to make the work is deductible, and it is the difference between what you billed and what you are taxed on."
+      />
+    ) : (
+      <View style={styles.list}>
+        {expenses.map((expense) => (
+          <Animated.View
+            key={expense.id}
+            entering={FadeIn.duration(Duration.fast)}
+            exiting={FadeOut.duration(Duration.fast)}
+            layout={Layout.duration(Duration.base)}
+            style={[styles.row, { backgroundColor: c.bgSurface }]}
+          >
+            <View style={styles.rowText}>
+              <Text style={[styles.rowCategory, { color: c.textPrimary }]}>
+                {expense.category}
+              </Text>
+              <Text style={[styles.rowMeta, { color: c.textMuted }]} numberOfLines={1}>
+                {[formatDate(expense.spent_on), expense.note].filter(Boolean).join(' · ')}
+              </Text>
+            </View>
+
+            <Figure value={formatCurrency(expense.amount)} size="sm" color={c.textPrimary} />
+
+            <PressableScale
+              onPress={() => handleDelete(expense)}
+              hitSlop={HitSlop}
+              accessibilityRole="button"
+              accessibilityLabel={`Delete ${expense.category} expense`}
+            >
+              <Ionicons name="close" size={17} color={c.textMuted} />
+            </PressableScale>
+          </Animated.View>
+        ))}
+      </View>
+    )
+
   return (
-    <ModalSheet title="Expenses">
+    <ModalSheet title="Expenses" wide>
       <SafeAreaView style={styles.safe} edges={['bottom']}>
-        <RevealScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <RevealScrollView
+          contentContainerStyle={[styles.content, isDesktop && styles.contentWide]}
+          showsVerticalScrollIndicator={false}
+        >
           {loading ? (
             <Skeleton height={120} radius={Radius.lg} />
+          ) : isDesktop ? (
+            // The total and the breakdown answer "how much"; the list answers
+            // "on what". Side by side, adding a receipt no longer scrolls the
+            // year total off the screen.
+            <View style={styles.columns}>
+              <View style={styles.column}>
+                {totalCard}
+                {breakdown}
+                {addBlock}
+              </View>
+              <View style={styles.column}>
+                <Text style={[styles.listTitle, { color: c.textPrimary }]}>
+                  Everything logged
+                </Text>
+                {list}
+              </View>
+            </View>
           ) : (
             <>
-              <View style={[styles.totalCard, { backgroundColor: c.bgSurface }]}>
-                <Text style={[styles.totalLabel, { color: c.textSecondary }]}>
-                  Spent in {fy.label}
-                </Text>
-                <Figure
-                  value={formatCurrency(summary.total)}
-                  size="hero"
-                  color={c.textPrimary}
-                  bold
-                />
-                <Text style={[styles.totalHint, { color: c.textMuted }]}>
-                  Deducted from your income in the Year report, so the figure there is
-                  what you are actually taxed on.
-                </Text>
-              </View>
-
-              {summary.byCategory.length > 0 ? (
-                <View style={styles.breakdown}>
-                  {summary.byCategory.map((row) => (
-                    <View key={row.category} style={styles.breakdownRow}>
-                      <Text style={[styles.breakdownLabel, { color: c.textSecondary }]}>
-                        {row.category}
-                      </Text>
-                      <Figure value={formatCurrency(row.total)} size="sm" color={c.textPrimary} />
-                    </View>
-                  ))}
-                </View>
-              ) : null}
-
-              {adding ? (
-                <Animated.View
-                  entering={FadeIn.duration(Duration.fast)}
-                  style={[styles.form, { backgroundColor: c.bgSurface }]}
-                >
-                  <TextField
-                    label="Amount"
-                    value={amount}
-                    onChangeText={setAmount}
-                    keyboardType="number-pad"
-                    placeholder="0"
-                  />
-
-                  <Text style={[styles.fieldLabel, { color: c.textSecondary }]}>Category</Text>
-                  <View style={styles.categoryRow}>
-                    {EXPENSE_CATEGORIES.map((option) => (
-                      <Chip
-                        key={option}
-                        label={option}
-                        selected={category === option}
-                        onPress={() => setCategory(option)}
-                      />
-                    ))}
-                  </View>
-
-                  <DateField label="When" value={spentOn} onChange={setSpentOn} />
-                  <TextField
-                    label="Note"
-                    value={note}
-                    onChangeText={setNote}
-                    placeholder="What it was for"
-                  />
-
-                  <Button
-                    label={saving ? 'Saving…' : 'Add expense'}
-                    onPress={handleAdd}
-                    disabled={saving}
-                    fullWidth
-                  />
-                  <Button label="Cancel" variant="ghost" onPress={reset} fullWidth />
-                </Animated.View>
-              ) : (
-                <PressableScale
-                  onPress={() => setAdding(true)}
-                  accessibilityRole="button"
-                  accessibilityLabel="Add an expense"
-                  style={[styles.add, { borderColor: c.borderStrong }]}
-                >
-                  <Ionicons name="add" size={17} color={c.accent} />
-                  <Text style={[styles.addText, { color: c.accentText }]}>Add expense</Text>
-                </PressableScale>
-              )}
-
-              {expenses.length === 0 ? (
-                <EmptyState
-                  icon="receipt-outline"
-                  title="Nothing logged yet"
-                  message="Editor fees, gear, travel, software. Anything you spend to make the work is deductible, and it is the difference between what you billed and what you are taxed on."
-                />
-              ) : (
-                <View style={styles.list}>
-                  {expenses.map((expense) => (
-                    <Animated.View
-                      key={expense.id}
-                      entering={FadeIn.duration(Duration.fast)}
-                      exiting={FadeOut.duration(Duration.fast)}
-                      layout={Layout.duration(Duration.base)}
-                      style={[styles.row, { borderColor: c.border }]}
-                    >
-                      <View style={styles.rowText}>
-                        <Text style={[styles.rowCategory, { color: c.textPrimary }]}>
-                          {expense.category}
-                        </Text>
-                        <Text style={[styles.rowMeta, { color: c.textMuted }]} numberOfLines={1}>
-                          {[formatDate(expense.spent_on), expense.note].filter(Boolean).join(' · ')}
-                        </Text>
-                      </View>
-
-                      <Figure
-                        value={formatCurrency(expense.amount)}
-                        size="sm"
-                        color={c.textPrimary}
-                      />
-
-                      <PressableScale
-                        onPress={() => handleDelete(expense)}
-                        hitSlop={HitSlop}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Delete ${expense.category} expense`}
-                      >
-                        <Ionicons name="close" size={17} color={c.textMuted} />
-                      </PressableScale>
-                    </Animated.View>
-                  ))}
-                </View>
-              )}
+              {totalCard}
+              {breakdown}
+              {addBlock}
+              {list}
             </>
           )}
         </RevealScrollView>
@@ -286,9 +304,24 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     paddingBottom: Spacing.xl,
     gap: Spacing.md,
-    maxWidth: ContentMaxWidth,
     width: '100%',
     alignSelf: 'center',
+  },
+  contentWide: {
+    padding: Spacing.lg,
+  },
+  columns: {
+    flexDirection: 'row',
+    gap: Spacing.lg,
+    alignItems: 'flex-start',
+  },
+  column: {
+    flex: 1,
+    gap: Spacing.md,
+  },
+  listTitle: {
+    ...Typography.heading,
+    fontFamily: FontFamily.semiBold,
   },
   totalCard: {
     borderRadius: Radius.lg,
@@ -331,13 +364,13 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: Spacing.sm,
   },
+  // A royal blue tint, not a dashed rectangle. Controls separate by fill,
+  // never by outline (20 Aug redesign, round three).
   add: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.sm,
-    borderWidth: 1,
-    borderStyle: 'dashed',
     borderRadius: Radius.md,
     paddingVertical: Spacing.base,
   },
@@ -352,8 +385,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
-    borderTopWidth: 1,
-    paddingTop: Spacing.base,
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.base,
   },
   rowText: {
     flex: 1,

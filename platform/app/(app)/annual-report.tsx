@@ -18,7 +18,7 @@ import {
 import { AnnualAdjustmentsSheet } from '@/components/AnnualAdjustmentsSheet'
 import { formatCurrency } from '@/lib/format'
 import type { BrandRating, Invoice } from '@/types'
-import { ContentMaxWidth, FontFamily, HitSlop, Radius, Spacing, Typography } from '@/constants/design'
+import { FontFamily, HitSlop, Radius, Spacing, Typography } from '@/constants/design'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 import { useTheme } from '@/hooks/useTheme'
 import { ModalSheet } from '@/components/ModalSheet'
@@ -108,10 +108,138 @@ export default function AnnualReportScreen() {
   const atCurrentYear = fyStartYear >= currentFinancialYearStart()
   const isEmpty = report.totalRevenue === 0 && report.dealsClosed === 0
 
-  // Not a `wide` sheet: this is a column of figures read top to bottom, and a
-  // wide card would leave the content stranded in the middle of it.
+  // The hero and the hand-added corrections are one thought; the six figures
+  // are a grid, not three stacked pairs; and the two client cards are a pair.
+  // Stacked in one column on a desktop, the year's headline sat alone with a
+  // 900px void beside it and everything worth reading started below the fold.
+  const hero = (
+    <Card style={[styles.hero, { backgroundColor: c.accentLight }]}>
+      <Text style={[styles.heroLabel, { color: c.textSecondary }]}>You earned</Text>
+      <Figure
+        value={formatCurrency(report.totalRevenue)}
+        count
+        format={formatCurrency}
+        size={38}
+        color={c.accentText}
+        bold
+      />
+      <Text style={[styles.heroCaption, { color: c.textSecondary }]}>
+        across {report.dealsClosed} closed {report.dealsClosed === 1 ? 'deal' : 'deals'} in{' '}
+        {report.fyLabel}
+      </Text>
+    </Card>
+  )
+
+  // Both sides, never merged. The app's figure stays visible next to what she
+  // added, so she and her accountant can always see which is which. §8.13.
+  const adjusted = hasAdjustments(report.adjustments) ? (
+    <Card style={styles.adjusted}>
+      <Text style={[styles.adjustedLabel, { color: c.textSecondary }]}>
+        With what you added by hand
+      </Text>
+      <View style={styles.adjustedRow}>
+        <Text style={[styles.adjustedKey, { color: c.textSecondary }]}>Earned</Text>
+        <Text style={[styles.adjustedValue, { color: c.textPrimary }]}>
+          {formatCurrency(report.adjustedRevenue)}
+        </Text>
+      </View>
+      <View style={styles.adjustedRow}>
+        <Text style={[styles.adjustedKey, { color: c.textSecondary }]}>Expenses</Text>
+        <Text style={[styles.adjustedValue, { color: c.textPrimary }]}>
+          {formatCurrency(report.adjustedExpenses)}
+        </Text>
+      </View>
+      <View style={styles.adjustedRow}>
+        <Text style={[styles.adjustedKey, { color: c.textSecondary }]}>Taxable income</Text>
+        <Text style={[styles.adjustedValue, { color: c.accentText }]}>
+          {formatCurrency(report.adjustedNetIncome)}
+        </Text>
+      </View>
+      <View style={styles.adjustedRow}>
+        <Text style={[styles.adjustedKey, { color: c.textSecondary }]}>TDS</Text>
+        <Text style={[styles.adjustedValue, { color: c.textPrimary }]}>
+          {formatCurrency(report.adjustedTdsDeducted)}
+        </Text>
+      </View>
+      {report.adjustments.note ? (
+        <Text style={[styles.adjustedNote, { color: c.textMuted }]}>
+          {report.adjustments.note}
+        </Text>
+      ) : null}
+    </Card>
+  ) : null
+
+  // One list, so the desktop grid and the phone's pairs are the same figures
+  // in the same order rather than two hand-kept copies.
+  const metrics = [
+    ...(report.totalExpenses > 0
+      ? [
+          { label: 'Expenses', value: report.totalExpenses, format: formatCurrency, caption: 'what the work cost' },
+          { label: 'Taxable income', value: report.netIncome, format: formatCurrency, tone: 'accent' as const, caption: 'earned minus expenses' },
+        ]
+      : []),
+    { label: 'GST collected', value: report.gstCollected, format: formatCurrency },
+    { label: 'TDS deducted', value: report.tdsDeducted, format: formatCurrency, caption: 'claim against 26AS' },
+    { label: 'Payments settled', value: report.paymentsResolved },
+    { label: 'Deals closed', value: report.dealsClosed },
+  ]
+
+  // Wrapped in a cell rather than styled through MetricCard's own `style`.
+  // Its wrapper carries `flex: 1`, which react-native-web emits as the CSS
+  // shorthand, and a shorthand beats the `flexBasis` longhand no matter which
+  // order the style array is in. Six tiles stayed six tiles across and every
+  // lakh-scale figure truncated to "₹1,03,…".
+  const metricCards = metrics.map((metric, index) => (
+    <View key={metric.label} style={isWide ? styles.metricCell : styles.metricCellPhone}>
+      <MetricCard {...metric} index={index} />
+    </View>
+  ))
+
+  // Placed under the figures, not above them: the app's own numbers are the
+  // starting point, and this is the correction to them. §8.13.
+  const correctButton = (
+    <Button
+      label={
+        hasAdjustments(report.adjustments)
+          ? 'Edit what you added'
+          : 'Add income or costs this missed'
+      }
+      variant="secondary"
+      onPress={() => setCorrecting(true)}
+      fullWidth
+    />
+  )
+
+  const clientCards = [
+    report.bestClient ? (
+      <Card key="best" style={isWide ? styles.clientCell : undefined}>
+        <Text style={[styles.cardLabel, { color: c.textSecondary }]}>Best client</Text>
+        <Text style={[styles.cardValue, { color: c.textPrimary }]}>{report.bestClient.name}</Text>
+        <Text style={[styles.cardHint, { color: c.textMuted }]}>
+          {formatCurrency(report.bestClient.total)} paid to you this year
+        </Text>
+      </Card>
+    ) : null,
+    report.worstClient ? (
+      <Card key="worst" style={isWide ? styles.clientCell : undefined}>
+        <Text style={[styles.cardLabel, { color: c.textSecondary }]}>Toughest to work with</Text>
+        <Text style={[styles.cardValue, { color: c.textPrimary }]}>{report.worstClient.name}</Text>
+        <Text style={[styles.cardHint, { color: c.textMuted }]}>
+          You rated them {report.worstClient.averageRating.toFixed(1)} out of 5
+        </Text>
+      </Card>
+    ) : null,
+  ].filter(Boolean)
+
+  const footnote = (
+    <Text style={[styles.footnote, { color: c.textMuted }]}>
+      Indian financial year, April to March. Figures come from payments marked received and
+      invoices raised inside {report.fyLabel}.
+    </Text>
+  )
+
   return (
-    <ModalSheet title="Year report">
+    <ModalSheet title="Year report" wide>
       <SafeAreaView style={[styles.safe, { backgroundColor: c.bgPage }]} edges={['bottom']}>
         <ScrollView
           contentContainerStyle={[styles.content, isWide && styles.contentWide]}
@@ -156,159 +284,27 @@ export default function AnnualReportScreen() {
               title="Nothing this year"
               message="Once payments land inside this financial year, your income, TDS and GST all show up here."
             />
+          ) : isWide ? (
+            <View style={styles.section}>
+              <View style={styles.topRow}>
+                <View style={styles.heroCell}>{hero}</View>
+                {adjusted ? <View style={styles.adjustedCell}>{adjusted}</View> : null}
+              </View>
+              <View style={styles.metricGrid}>{metricCards}</View>
+              {clientCards.length > 0 ? (
+                <View style={styles.clientRow}>{clientCards}</View>
+              ) : null}
+              {correctButton}
+              {footnote}
+            </View>
           ) : (
             <View style={styles.section}>
-              <Card style={[styles.hero, { backgroundColor: c.accentLight }]}>
-                <Text style={[styles.heroLabel, { color: c.textSecondary }]}>You earned</Text>
-                <Figure
-                  value={formatCurrency(report.totalRevenue)}
-                  count
-                  format={formatCurrency}
-                  size={38}
-                  color={c.accentText}
-                  bold
-                />
-                <Text style={[styles.heroCaption, { color: c.textSecondary }]}>
-                  across {report.dealsClosed} closed{' '}
-                  {report.dealsClosed === 1 ? 'deal' : 'deals'} in {report.fyLabel}
-                </Text>
-              </Card>
-
-              {/* Both sides, never merged. The app's figure stays visible next
-                  to what she added, so she and her accountant can always see
-                  which is which — §8.13. */}
-              {hasAdjustments(report.adjustments) ? (
-                <Card style={styles.adjusted}>
-                  <Text style={[styles.adjustedLabel, { color: c.textSecondary }]}>
-                    With what you added by hand
-                  </Text>
-                  <View style={styles.adjustedRow}>
-                    <Text style={[styles.adjustedKey, { color: c.textSecondary }]}>Earned</Text>
-                    <Text style={[styles.adjustedValue, { color: c.textPrimary }]}>
-                      {formatCurrency(report.adjustedRevenue)}
-                    </Text>
-                  </View>
-                  <View style={styles.adjustedRow}>
-                    <Text style={[styles.adjustedKey, { color: c.textSecondary }]}>Expenses</Text>
-                    <Text style={[styles.adjustedValue, { color: c.textPrimary }]}>
-                      {formatCurrency(report.adjustedExpenses)}
-                    </Text>
-                  </View>
-                  <View style={styles.adjustedRow}>
-                    <Text style={[styles.adjustedKey, { color: c.textSecondary }]}>
-                      Taxable income
-                    </Text>
-                    <Text style={[styles.adjustedValue, { color: c.accentText }]}>
-                      {formatCurrency(report.adjustedNetIncome)}
-                    </Text>
-                  </View>
-                  <View style={styles.adjustedRow}>
-                    <Text style={[styles.adjustedKey, { color: c.textSecondary }]}>TDS</Text>
-                    <Text style={[styles.adjustedValue, { color: c.textPrimary }]}>
-                      {formatCurrency(report.adjustedTdsDeducted)}
-                    </Text>
-                  </View>
-                  {report.adjustments.note ? (
-                    <Text style={[styles.adjustedNote, { color: c.textMuted }]}>
-                      {report.adjustments.note}
-                    </Text>
-                  ) : null}
-                </Card>
-              ) : null}
-
-              {report.totalExpenses > 0 ? (
-                <View style={styles.metrics}>
-                  <MetricCard
-                    label="Expenses"
-                    value={report.totalExpenses}
-                    format={formatCurrency}
-                    caption="what the work cost"
-                    index={0}
-                  />
-                  <MetricCard
-                    label="Taxable income"
-                    value={report.netIncome}
-                    format={formatCurrency}
-                    tone="accent"
-                    caption="earned minus expenses"
-                    index={1}
-                  />
-                </View>
-              ) : null}
-
-              <View style={styles.metrics}>
-                <MetricCard
-                  label="GST collected"
-                  value={report.gstCollected}
-                  format={formatCurrency}
-                  index={0}
-                />
-                <MetricCard
-                  label="TDS deducted"
-                  value={report.tdsDeducted}
-                  format={formatCurrency}
-                  caption="claim against 26AS"
-                  index={1}
-                />
-              </View>
-
-              <View style={styles.metrics}>
-                <MetricCard
-                  label="Payments settled"
-                  value={report.paymentsResolved}
-                  index={2}
-                />
-                <MetricCard
-                  label="Deals closed"
-                  value={report.dealsClosed}
-                  index={3}
-                />
-              </View>
-
-              {/* Placed under the figures, not above them: the app's own
-                  numbers are the starting point, and this is the correction to
-                  them. §8.13 — she has income and costs this never saw. */}
-              <Button
-                label={
-                  hasAdjustments(report.adjustments)
-                    ? 'Edit what you added'
-                    : 'Add income or costs this missed'
-                }
-                variant="secondary"
-                onPress={() => setCorrecting(true)}
-                fullWidth
-              />
-
-              {report.bestClient ? (
-                <Card>
-                  <Text style={[styles.cardLabel, { color: c.textSecondary }]}>Best client</Text>
-                  <Text style={[styles.cardValue, { color: c.textPrimary }]}>
-                    {report.bestClient.name}
-                  </Text>
-                  <Text style={[styles.cardHint, { color: c.textMuted }]}>
-                    {formatCurrency(report.bestClient.total)} paid to you this year
-                  </Text>
-                </Card>
-              ) : null}
-
-              {report.worstClient ? (
-                <Card>
-                  <Text style={[styles.cardLabel, { color: c.textSecondary }]}>
-                    Toughest to work with
-                  </Text>
-                  <Text style={[styles.cardValue, { color: c.textPrimary }]}>
-                    {report.worstClient.name}
-                  </Text>
-                  <Text style={[styles.cardHint, { color: c.textMuted }]}>
-                    You rated them {report.worstClient.averageRating.toFixed(1)} out of 5
-                  </Text>
-                </Card>
-              ) : null}
-
-              <Text style={[styles.footnote, { color: c.textMuted }]}>
-                Indian financial year, April to March. Figures come from payments marked received
-                and invoices raised inside {report.fyLabel}.
-              </Text>
+              {hero}
+              {adjusted}
+              <View style={styles.metrics}>{metricCards}</View>
+              {correctButton}
+              {clientCards}
+              {footnote}
             </View>
           )}
         </ScrollView>
@@ -358,7 +354,7 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.xl,
   },
   contentWide: {
-    maxWidth: ContentMaxWidth,
+    padding: Spacing.lg,
     width: '100%',
     alignSelf: 'center',
   },
@@ -388,9 +384,53 @@ const styles = StyleSheet.create({
     ...Typography.caption,
     fontFamily: FontFamily.regular,
   },
+  // Six figures on a phone, two to a line. Fixed basis rather than flex, so a
+  // list of five wraps to 2/2/1 instead of stretching the last one across.
+  // `alignItems` and `alignContent` are both pinned to the start. A wrapped
+  // flex container stretches its lines by default, and inside a ScrollView
+  // with a definite height that turned six tiles into six half-empty columns
+  // 400px tall.
   metrics: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: Spacing.sm,
+    alignItems: 'flex-start',
+    alignContent: 'flex-start',
+  },
+  topRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    alignItems: 'stretch',
+  },
+  heroCell: {
+    flex: 1.2,
+  },
+  adjustedCell: {
+    flex: 1,
+  },
+  metricGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    alignItems: 'flex-start',
+    alignContent: 'flex-start',
+  },
+  // Three to a row at the sheet's width.
+  metricCell: {
+    flexGrow: 1,
+    flexBasis: 290,
+  },
+  // Two to a row on a phone.
+  metricCellPhone: {
+    flexGrow: 1,
+    flexBasis: '46%',
+  },
+  clientRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  clientCell: {
+    flex: 1,
   },
   cardLabel: {
     ...Typography.caption,

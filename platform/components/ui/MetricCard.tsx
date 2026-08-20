@@ -52,6 +52,24 @@ export function MetricCard({
     accent: c.accent,
   }
 
+  const text = (format ?? String)(value)
+
+  /**
+   * Step the figure down when the number is long.
+   *
+   * These tiles go two to a row on a phone, which leaves each about 160px of
+   * inner width, and `Figure` clips to one line. At the full display size that
+   * fits roughly eight characters, so "₹1,03,000" rendered as "₹1,03,0…" on
+   * the Year report. A truncated figure is not a smaller figure, it is a wrong
+   * one, so the type gives way instead.
+   */
+  const figureSize =
+    text.length > 11
+      ? Typography.display.fontSize * 0.68
+      : text.length > 8
+        ? Typography.display.fontSize * 0.8
+        : Typography.display.fontSize
+
   const hasTrend = trend != null && Number.isFinite(trend) && trend !== 0
   const trendUp = (trend ?? 0) > 0
   const trendColor = trendUp ? c.success : c.danger
@@ -63,10 +81,10 @@ export function MetricCard({
       </Text>
 
       <Figure
-        value={(format ?? String)(value)}
+        value={text}
         count
         format={format ?? String}
-        size={Typography.display.fontSize}
+        size={figureSize}
         color={valueColor[tone]}
         bold
         style={styles.value}

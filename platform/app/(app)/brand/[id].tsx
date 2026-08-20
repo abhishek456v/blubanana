@@ -9,7 +9,7 @@ import { getDealsForBrand, paymentsInOrder, type DealWithPaymentSummary } from '
 import { getRatingsForBrand, summarizeRatings } from '@/lib/reputation'
 import { formatCurrency } from '@/lib/format'
 import type { Brand, BrandRating } from '@/types'
-import { ContentMaxWidth, FontFamily, Spacing, Typography } from '@/constants/design'
+import { FontFamily, Spacing, Typography } from '@/constants/design'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 import { useTheme } from '@/hooks/useTheme'
 import { ModalSheet } from '@/components/ModalSheet'
@@ -138,8 +138,106 @@ export default function BrandDetailScreen() {
     )
   }
 
+  // Track record first. Before editing a phone number, the useful thing is
+  // whether this brand is worth working with again.
+  const headerCard = (
+  <Card style={styles.headerCard}>
+    <BrandAvatar name={brand?.name ?? '?'} size={48} />
+    <View style={styles.headerText}>
+      <Text style={[styles.headerName, { color: c.textPrimary }]} numberOfLines={1}>
+        {brand?.name}
+      </Text>
+      <Text style={[styles.headerMeta, { color: c.textSecondary }]}>
+        {deals.length} {deals.length === 1 ? 'deal' : 'deals'}
+        {earned > 0 ? ` · ${formatCurrency(earned)} paid` : ''}
+      </Text>
+    </View>
+  </Card>
+  )
+
+  const reputation = summary ? (
+    <Card>
+      <View style={styles.repRow}>
+        <View style={styles.repText}>
+          <Text style={[styles.repScore, { color: c.textPrimary }]}>
+            {summary.averageRating.toFixed(1)}
+            <Text style={[styles.repOutOf, { color: c.textMuted }]}> / 5</Text>
+          </Text>
+          <Text style={[styles.headerMeta, { color: c.textSecondary }]}>
+            From {summary.reviewCount}{' '}
+            {summary.reviewCount === 1 ? 'review' : 'reviews'}
+          </Text>
+        </View>
+        <StarRating value={Math.round(summary.averageRating)} size={18} readonly />
+      </View>
+
+      {summary.lastPaidOnTime === false ? (
+        <View style={[styles.flag, { backgroundColor: c.dangerLight }]}>
+          <Text style={[styles.flagText, { color: c.danger }]}>
+            Their last payment was late. Consider asking for an advance.
+          </Text>
+        </View>
+      ) : null}
+    </Card>
+  ) : null
+
+  const form = (
+    <>
+    <TextField
+      label="Brand"
+      value={name}
+      onChangeText={(value) => {
+        setName(value)
+        if (nameError) setNameError(undefined)
+      }}
+      error={nameError}
+      autoCapitalize="words"
+    />
+
+    {/* Several contacts, one of them primary (migration 019). A brand
+        used to hold exactly one name, phone and email, and agency
+        contacts change often enough that chasing the old one is how a
+        payment quietly stops arriving. */}
+    <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Contacts</Text>
+    <ContactsEditor contacts={contactDrafts} onChange={setContactDrafts} />
+
+    <TextField
+      label="Notes"
+      placeholder="Fussy about hook style. Two revision rounds expected."
+      value={notes}
+      onChangeText={setNotes}
+      multiline
+    />
+
+    <Button
+      label="Save"
+      onPress={handleSave}
+      loading={saving}
+      fullWidth
+      size="lg"
+      style={styles.submit}
+    />
+    </>
+  )
+
+  const dealsBlock = deals.length > 0 ? (
+    <View style={styles.dealsBlock}>
+      <Text style={[styles.sectionTitle, { color: c.textPrimary }]}>Deals</Text>
+      <View style={styles.dealsList}>
+        {deals.map((deal, index) => (
+          <DealRow
+            key={deal.id}
+            deal={deal}
+            index={index}
+            onPress={() => router.push(`/(app)/deal/${deal.id}` as never)}
+          />
+        ))}
+      </View>
+    </View>
+  ) : null
+
   return (
-    <ModalSheet title={brand?.name ?? 'Brand'}>
+    <ModalSheet title={brand?.name ?? 'Brand'} wide>
       <Stack.Screen options={{ title: brand?.name ?? 'Brand' }} />
       <SafeAreaView style={[styles.safe, { backgroundColor: c.bgPage }]} edges={['bottom']}>
         <KeyboardAvoidingView
@@ -151,97 +249,25 @@ export default function BrandDetailScreen() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            {/* Track record first. Before editing a phone number, the useful
-                thing is whether this brand is worth working with again. */}
-            <Card style={styles.headerCard}>
-              <BrandAvatar name={brand?.name ?? '?'} size={48} />
-              <View style={styles.headerText}>
-                <Text style={[styles.headerName, { color: c.textPrimary }]} numberOfLines={1}>
-                  {brand?.name}
-                </Text>
-                <Text style={[styles.headerMeta, { color: c.textSecondary }]}>
-                  {deals.length} {deals.length === 1 ? 'deal' : 'deals'}
-                  {earned > 0 ? ` · ${formatCurrency(earned)} paid` : ''}
-                </Text>
-              </View>
-            </Card>
-
-            {summary ? (
-              <Card>
-                <View style={styles.repRow}>
-                  <View style={styles.repText}>
-                    <Text style={[styles.repScore, { color: c.textPrimary }]}>
-                      {summary.averageRating.toFixed(1)}
-                      <Text style={[styles.repOutOf, { color: c.textMuted }]}> / 5</Text>
-                    </Text>
-                    <Text style={[styles.headerMeta, { color: c.textSecondary }]}>
-                      From {summary.reviewCount}{' '}
-                      {summary.reviewCount === 1 ? 'review' : 'reviews'}
-                    </Text>
-                  </View>
-                  <StarRating value={Math.round(summary.averageRating)} size={18} readonly />
-                </View>
-
-                {summary.lastPaidOnTime === false ? (
-                  <View style={[styles.flag, { backgroundColor: c.dangerLight }]}>
-                    <Text style={[styles.flagText, { color: c.danger }]}>
-                      Their last payment was late. Consider asking for an advance.
-                    </Text>
-                  </View>
-                ) : null}
-              </Card>
-            ) : null}
-
-            <TextField
-              label="Brand"
-              value={name}
-              onChangeText={(value) => {
-                setName(value)
-                if (nameError) setNameError(undefined)
-              }}
-              error={nameError}
-              autoCapitalize="words"
-            />
-
-            {/* Several contacts, one of them primary (migration 019). A brand
-                used to hold exactly one name, phone and email, and agency
-                contacts change often enough that chasing the old one is how a
-                payment quietly stops arriving. */}
-            <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Contacts</Text>
-            <ContactsEditor contacts={contactDrafts} onChange={setContactDrafts} />
-
-            <TextField
-              label="Notes"
-              placeholder="Fussy about hook style. Two revision rounds expected."
-              value={notes}
-              onChangeText={setNotes}
-              multiline
-            />
-
-            <Button
-              label="Save"
-              onPress={handleSave}
-              loading={saving}
-              fullWidth
-              size="lg"
-              style={styles.submit}
-            />
-
-            {deals.length > 0 ? (
-              <View style={styles.dealsBlock}>
-                <Text style={[styles.sectionTitle, { color: c.textPrimary }]}>Deals</Text>
-                <View style={styles.dealsList}>
-                  {deals.map((deal, index) => (
-                    <DealRow
-                      key={deal.id}
-                      deal={deal}
-                      index={index}
-                      onPress={() => router.push(`/(app)/deal/${deal.id}` as never)}
-                    />
-                  ))}
+            {headerCard}
+            {isWide ? (
+              // Editing the brand and reading its history are two jobs. Side by
+              // side, changing a contact no longer scrolls the payment record
+              // and the late-payment flag off the screen.
+              <View style={styles.columns}>
+                <View style={styles.column}>{form}</View>
+                <View style={styles.column}>
+                  {reputation}
+                  {dealsBlock}
                 </View>
               </View>
-            ) : null}
+            ) : (
+              <>
+                {reputation}
+                {form}
+                {dealsBlock}
+              </>
+            )}
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -262,9 +288,18 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   contentWide: {
-    maxWidth: ContentMaxWidth,
+    padding: Spacing.lg,
     width: '100%',
     alignSelf: 'center',
+  },
+  columns: {
+    flexDirection: 'row',
+    gap: Spacing.lg,
+    alignItems: 'flex-start',
+  },
+  column: {
+    flex: 1,
+    gap: Spacing.md,
   },
   headerCard: {
     flexDirection: 'row',

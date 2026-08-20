@@ -6,8 +6,9 @@ import { getDeals, paymentsInOrder, type DealWithPaymentSummary } from '@/lib/de
 import { getExpenses, type Expense } from '@/lib/expenses'
 import { advanceTaxSchedule, estimateTax, financialYearStart } from '@/lib/tax'
 import { formatCurrency, formatDate, toDateString } from '@/lib/format'
-import { ContentMaxWidth, FontFamily, Radius, Spacing, Typography } from '@/constants/design'
+import { Elevation, FontFamily, Radius, Spacing, Typography } from '@/constants/design'
 import { useTheme } from '@/hooks/useTheme'
+import { useBreakpoint } from '@/hooks/useBreakpoint'
 import { ModalSheet } from '@/components/ModalSheet'
 import { Figure, RevealScrollView, Skeleton, TextField, useToast } from '@/components/ui'
 
@@ -17,7 +18,7 @@ import { Figure, RevealScrollView, Skeleton, TextField, useToast } from '@/compo
  * Indian freelancers pay advance tax in four instalments and most find out
  * from their CA in March, by which point sections 234B and 234C have already
  * added interest. The app knows what she earned and what she spent, so it can
- * do the arithmetic — but it deliberately does not guess her rate.
+ * do the arithmetic. It deliberately does not guess her rate.
  *
  * Two reasons for that, and the second is the important one. Slab rates change
  * most budgets, so a hardcoded table goes stale and produces a confident wrong
@@ -25,9 +26,15 @@ import { Figure, RevealScrollView, Skeleton, TextField, useToast } from '@/compo
  * interest, or another business it never saw would all be missing. A figure
  * she supplies is honest about whose number it is; one the app invented would
  * not be.
+ *
+ * Laid out in two columns on a desktop: what she earned and what she tells the
+ * app on the left, the four dates on the right. Those are two different
+ * questions, and stacking them meant the schedule, which is the entire reason
+ * to open this screen, started below the fold.
  */
 export default function TaxScreen() {
-  const { c } = useTheme()
+  const { c, isDark } = useTheme()
+  const { isDesktop } = useBreakpoint()
   const toast = useToast()
 
   const [deals, setDeals] = useState<DealWithPaymentSummary[]>([])
@@ -87,111 +94,138 @@ export default function TaxScreen() {
     [expectedTax, fyStart]
   )
 
+  // The first instalment still ahead of her. It is the only row that carries a
+  // question, so it is the only one that gets lifted off the panel.
+  const nextIndex = schedule.findIndex((instalment) => !instalment.isPast)
+
+  const incomeCard = (
+    <View style={[styles.card, { backgroundColor: c.bgSurface }]}>
+      <Text style={[styles.label, { color: c.textSecondary }]}>
+        Taxable income · FY {fyStart}-{String(fyStart + 1).slice(2)}
+      </Text>
+      <Figure value={formatCurrency(figures.net)} size="hero" color={c.textPrimary} bold />
+      <View style={styles.breakdown}>
+        <Row label="Received through Blubanana" value={figures.received} c={c} />
+        {figures.other > 0 ? (
+          <Row label="Other income you added" value={figures.other} c={c} />
+        ) : null}
+        <Row label="Expenses" value={-figures.spent} c={c} />
+      </View>
+    </View>
+  )
+
+  const inputs = (
+    <>
+      <TextField
+        label="Other income this year"
+        value={otherIncome}
+        onChangeText={setOtherIncome}
+        keyboardType="number-pad"
+        placeholder="0"
+        hint="Salary, interest, anything Blubanana never saw"
+      />
+      <TextField
+        label="Your effective tax rate (%)"
+        value={rate}
+        onChangeText={setRate}
+        keyboardType="decimal-pad"
+        placeholder="30"
+        hint="Ask your CA. Rates change every budget, so this app will not guess one for you."
+      />
+    </>
+  )
+
+  const expectedCard = (
+    <View style={[styles.card, styles.expected, { backgroundColor: c.accentLight }]}>
+      <Text style={[styles.label, { color: c.accentText }]}>Expected tax</Text>
+      <Figure value={formatCurrency(expectedTax)} size="lg" color={c.accentText} bold />
+    </View>
+  )
+
+  const scheduleBlock = (
+    <>
+      <Text style={[styles.sectionTitle, { color: c.textPrimary }]}>
+        What to set aside, and by when
+      </Text>
+      <View style={styles.schedule}>
+        {schedule.map((instalment, index) => {
+          const isNext = index === nextIndex
+          return (
+            <View
+              key={instalment.label}
+              style={[
+                styles.instalment,
+                { backgroundColor: isNext ? c.bgSurfaceRaised : c.bgSurface },
+                // Fill and shadow, never an outline (20 Aug redesign, round
+                // three). The one row that still needs an answer lifts; the
+                // rest sit flat on the panel.
+                isNext && (isDark ? Elevation.dark : Elevation.light).sm,
+              ]}
+            >
+              {isNext ? <View style={[styles.marker, { backgroundColor: c.accent }]} /> : null}
+              <View style={styles.instalmentText}>
+                <Text
+                  style={[
+                    styles.instalmentDate,
+                    { color: instalment.isPast ? c.textMuted : c.textPrimary },
+                  ]}
+                >
+                  {instalment.label}
+                </Text>
+                <Text style={[styles.instalmentMeta, { color: c.textMuted }]}>
+                  {/* toDateString, not toISOString: the latter converts to
+                      UTC, and midnight IST is 18:30 UTC the previous day, so
+                      every instalment displayed a date one day early. On a
+                      statutory deadline that is not cosmetic. */}
+                  {instalment.isPast
+                    ? 'Passed'
+                    : `Due ${formatDate(toDateString(instalment.dueOn))}`}
+                  {' · '}
+                  {Math.round((instalment.cumulative / Math.max(expectedTax, 1)) * 100)}%
+                  cumulative
+                </Text>
+              </View>
+              <Figure
+                value={formatCurrency(instalment.thisInstalment)}
+                size="sm"
+                color={instalment.isPast ? c.textMuted : c.textPrimary}
+              />
+            </View>
+          )
+        })}
+      </View>
+      <Text style={[styles.footnote, { color: c.textMuted }]}>
+        Instalment percentages are set by section 211 and do not change. Missing one attracts
+        interest under sections 234B and 234C. This is an estimate to set money aside against,
+        not a filing.
+      </Text>
+    </>
+  )
+
   return (
-    <ModalSheet title="Advance tax">
+    <ModalSheet title="Advance tax" wide>
       <SafeAreaView style={styles.safe} edges={['bottom']}>
-        <RevealScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <RevealScrollView
+          contentContainerStyle={[styles.content, isDesktop && styles.contentWide]}
+          showsVerticalScrollIndicator={false}
+        >
           {loading ? (
             <Skeleton height={160} radius={Radius.lg} />
+          ) : isDesktop ? (
+            <View style={styles.columns}>
+              <View style={styles.column}>
+                {incomeCard}
+                {inputs}
+                {expectedCard}
+              </View>
+              <View style={styles.column}>{scheduleBlock}</View>
+            </View>
           ) : (
             <>
-              <View style={[styles.card, { backgroundColor: c.bgSurface }]}>
-                <Text style={[styles.label, { color: c.textSecondary }]}>
-                  Taxable income · FY {fyStart}-{String(fyStart + 1).slice(2)}
-                </Text>
-                <Figure
-                  value={formatCurrency(figures.net)}
-                  size="hero"
-                  color={c.textPrimary}
-                  bold
-                />
-                <View style={styles.breakdown}>
-                  <Row label="Received through Blubanana" value={figures.received} c={c} />
-                  {figures.other > 0 ? (
-                    <Row label="Other income you added" value={figures.other} c={c} />
-                  ) : null}
-                  <Row label="Expenses" value={-figures.spent} c={c} />
-                </View>
-              </View>
-
-              <TextField
-                label="Other income this year"
-                value={otherIncome}
-                onChangeText={setOtherIncome}
-                keyboardType="number-pad"
-                placeholder="0"
-                hint="Salary, interest, anything Blubanana never saw"
-              />
-
-              <TextField
-                label="Your effective tax rate (%)"
-                value={rate}
-                onChangeText={setRate}
-                keyboardType="decimal-pad"
-                placeholder="30"
-                hint="Ask your CA. Rates change every budget, so this app will not guess one for you."
-              />
-
-              <View style={[styles.card, { backgroundColor: c.bgSurface }]}>
-                <Text style={[styles.label, { color: c.textSecondary }]}>Expected tax</Text>
-                <Figure
-                  value={formatCurrency(expectedTax)}
-                  size="lg"
-                  color={c.textPrimary}
-                  bold
-                />
-              </View>
-
-              <Text style={[styles.sectionTitle, { color: c.textPrimary }]}>
-                What to set aside, and by when
-              </Text>
-
-              <View style={styles.schedule}>
-                {schedule.map((instalment) => (
-                  <View
-                    key={instalment.label}
-                    style={[
-                      styles.instalment,
-                      { borderColor: instalment.isPast ? c.border : c.borderStrong },
-                    ]}
-                  >
-                    <View style={styles.instalmentText}>
-                      <Text
-                        style={[
-                          styles.instalmentDate,
-                          { color: instalment.isPast ? c.textMuted : c.textPrimary },
-                        ]}
-                      >
-                        {instalment.label}
-                      </Text>
-                      <Text style={[styles.instalmentMeta, { color: c.textMuted }]}>
-                        {/* toDateString, not toISOString: the latter converts
-                            to UTC, and midnight IST is 18:30 UTC the previous
-                            day, so every instalment displayed a date one day
-                            early. On a statutory deadline that is not cosmetic. */}
-                        {instalment.isPast
-                          ? 'Passed'
-                          : `Due ${formatDate(toDateString(instalment.dueOn))}`}
-                        {' · '}
-                        {Math.round(
-                          (instalment.cumulative / Math.max(expectedTax, 1)) * 100
-                        )}% cumulative
-                      </Text>
-                    </View>
-                    <Figure
-                      value={formatCurrency(instalment.thisInstalment)}
-                      size="sm"
-                      color={instalment.isPast ? c.textMuted : c.textPrimary}
-                    />
-                  </View>
-                ))}
-              </View>
-
-              <Text style={[styles.footnote, { color: c.textMuted }]}>
-                Instalment percentages are set by section 211 and do not change. Missing one
-                attracts interest under sections 234B and 234C. This is an estimate to set money
-                aside against, not a filing.
-              </Text>
+              {incomeCard}
+              {inputs}
+              {expectedCard}
+              {scheduleBlock}
             </>
           )}
         </RevealScrollView>
@@ -226,14 +260,33 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     paddingBottom: Spacing.xl,
     gap: Spacing.md,
-    maxWidth: ContentMaxWidth,
     width: '100%',
     alignSelf: 'center',
+  },
+  // The sheet already caps the width, so the content fills it rather than
+  // adding a second, narrower cap inside the first.
+  contentWide: {
+    padding: Spacing.lg,
+  },
+  columns: {
+    flexDirection: 'row',
+    gap: Spacing.lg,
+    alignItems: 'flex-start',
+  },
+  column: {
+    flex: 1,
+    gap: Spacing.md,
   },
   card: {
     borderRadius: Radius.lg,
     padding: Spacing.md,
     gap: Spacing.xs,
+  },
+  expected: {
+    // Royal blue tint rather than another grey panel: this is the number the
+    // whole screen exists to produce, and on a two-column layout it otherwise
+    // reads as the third identical box in the left stack.
+    gap: Spacing.xxs,
   },
   label: {
     ...Typography.label,
@@ -260,7 +313,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     ...Typography.heading,
     fontFamily: FontFamily.semiBold,
-    marginTop: Spacing.sm,
   },
   schedule: {
     gap: Spacing.sm,
@@ -270,10 +322,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: Spacing.md,
-    borderWidth: 1,
     borderRadius: Radius.md,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.base,
+    overflow: 'hidden',
+  },
+  // A three-pixel royal blue edge, inside the radius. Says "this one" without
+  // drawing a rectangle around it.
+  marker: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
   },
   instalmentText: {
     flex: 1,

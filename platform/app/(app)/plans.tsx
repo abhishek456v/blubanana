@@ -17,8 +17,9 @@ import {
 } from '@/lib/subscription'
 import { PaymentsNotConfigured, startCheckout } from '@/lib/billing'
 import { useEntitlement } from '@/hooks/useEntitlement'
-import { ContentMaxWidth, FontFamily, Radius, Spacing, Typography } from '@/constants/design'
+import { Elevation, FontFamily, Radius, Spacing, Typography } from '@/constants/design'
 import { useTheme } from '@/hooks/useTheme'
+import { useBreakpoint } from '@/hooks/useBreakpoint'
 import { ModalSheet } from '@/components/ModalSheet'
 import {
   Button,
@@ -51,7 +52,8 @@ function inr(amount: number): string {
  * struck-through figure cannot drift from the one that gets charged.
  */
 export default function PlansScreen() {
-  const { c } = useTheme()
+  const { c, isDark } = useTheme()
+  const { isDesktop } = useBreakpoint()
   const toast = useToast()
   const entitlement = useEntitlement()
 
@@ -83,7 +85,7 @@ export default function PlansScreen() {
 
   if (loading || !pricing) {
     return (
-      <ModalSheet title="Plans">
+      <ModalSheet title="Plans" wide>
         <SafeAreaView style={styles.safe} edges={['bottom']}>
           <View style={styles.content}>
             <Skeleton height={200} radius={Radius.lg} />
@@ -126,122 +128,162 @@ export default function PlansScreen() {
     }
   }
 
-  return (
-    <ModalSheet title="Plans">
-      <SafeAreaView style={styles.safe} edges={['bottom']}>
-        <RevealScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          {introLive ? (
-            <View style={[styles.offer, { backgroundColor: c.accentLight }]}>
-              <Ionicons name="sparkles" size={15} color={c.accent} />
-              <Text style={[styles.offerText, { color: c.accentText }]}>
-                Launch offer · {pricing.introDiscountPercent}% off ·{' '}
-                {placesLeft} of {pricing.introCustomerLimit} places left
-              </Text>
-            </View>
-          ) : null}
-
-          {entitlement.isTrialing ? (
-            <Text style={[styles.trialLine, { color: c.textSecondary }]}>
-              {entitlement.trialDaysLeft}{' '}
-              {entitlement.trialDaysLeft === 1 ? 'day' : 'days'} left in your trial.
-            </Text>
-          ) : null}
-
-          <View style={styles.terms}>
-            {terms.map((option) => {
-              const isOn = option.key === selected
-              const perMonth = effectiveMonthlyRupees(pricing, option, introLive)
-              return (
-                <PressableScale
-                  key={option.key}
-                  onPress={() => setSelected(option.key)}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: isOn }}
-                  accessibilityLabel={`${option.label}, ${inr(perMonth)} a month`}
-                  style={[
-                    styles.term,
-                    {
-                      backgroundColor: isOn ? c.accentLight : c.bgSurface,
-                      borderColor: isOn ? c.accent : 'transparent',
-                    },
-                  ]}
-                >
-                  <View style={styles.termText}>
-                    <Text style={[styles.termLabel, { color: c.textPrimary }]}>
-                      {option.label}
-                    </Text>
-                    <Text style={[styles.termMeta, { color: c.textMuted }]}>
-                      {inr(perMonth)} a month
-                      {option.months > 1 && option.termMultiplier < option.months
-                        ? ` · saves ${Math.round(((option.months - option.termMultiplier) / option.months) * 100)}%`
-                        : ''}
-                    </Text>
-                  </View>
-                  <View style={styles.termPrices}>
-                    {introLive ? (
-                      <Text style={[styles.strike, { color: c.textMuted }]}>
-                        {inr(rupeesOf(termPricePaise(pricing, option, false)))}
-                      </Text>
-                    ) : null}
-                    <Text style={[styles.termPrice, { color: c.textPrimary }]}>
-                      {inr(rupeesOf(termPricePaise(pricing, option, introLive)))}
-                    </Text>
-                  </View>
-                </PressableScale>
-              )
-            })}
-          </View>
-
-          {term ? (
-            <Card style={styles.summary}>
-              <View style={styles.summaryRow}>
-                <Text style={[styles.summaryKey, { color: c.textSecondary }]}>
-                  {term.label}
-                </Text>
-                <Text style={[styles.summaryValue, { color: c.textPrimary }]}>
-                  {inr(rupeesOf(termPricePaise(pricing, term, introLive)))}
-                </Text>
-              </View>
-              <View style={styles.summaryRow}>
-                <Text style={[styles.summaryKey, { color: c.textSecondary }]}>
-                  GST at {GST_PERCENT}%
-                </Text>
-                <Text style={[styles.summaryValue, { color: c.textPrimary }]}>
-                  {inr(
-                    withGst(rupeesOf(termPricePaise(pricing, term, introLive))) -
-                      rupeesOf(termPricePaise(pricing, term, introLive))
-                  )}
-                </Text>
-              </View>
-              <View style={[styles.summaryRow, styles.summaryTotal, { borderTopColor: c.border }]}>
-                <Text style={[styles.summaryKey, { color: c.textPrimary }]}>Total today</Text>
-                <Text style={[styles.summaryTotalValue, { color: c.textPrimary }]}>
-                  {inr(withGst(rupeesOf(termPricePaise(pricing, term, introLive))))}
-                </Text>
-              </View>
-            </Card>
-          ) : null}
-
-          <Card style={styles.included}>
-            <Text style={[styles.includedLabel, { color: c.textSecondary }]}>What you get</Text>
-            {INCLUDED.map((line) => (
-              <View key={line} style={styles.includedRow}>
-                <Ionicons name="checkmark" size={15} color={c.accent} />
-                <Text style={[styles.includedText, { color: c.textPrimary }]}>{line}</Text>
-              </View>
-            ))}
-          </Card>
-
-          <Button
-            label={starting ? 'Opening…' : 'Subscribe'}
-            onPress={handleSubscribe}
-            disabled={starting || !term}
-            fullWidth
-          />
-          <Text style={[styles.note, { color: c.textMuted }]}>
-            Card, UPI and netbanking through Razorpay. Your price holds for the whole
-            term you buy; renewal is at whatever the price is then.
+  const banner = (
+    <>
+      {introLive ? (
+        <View style={[styles.offer, { backgroundColor: c.accentLight }]}>
+          <Ionicons name="sparkles" size={15} color={c.accent} />
+          <Text style={[styles.offerText, { color: c.accentText }]}>
+            Launch offer · {pricing.introDiscountPercent}% off ·{' '}
+            {placesLeft} of {pricing.introCustomerLimit} places left
           </Text>
+        </View>
+      ) : null}
+
+      {entitlement.isTrialing ? (
+        <Text style={[styles.trialLine, { color: c.textSecondary }]}>
+          {entitlement.trialDaysLeft}{' '}
+          {entitlement.trialDaysLeft === 1 ? 'day' : 'days'} left in your trial.
+        </Text>
+      ) : null}
+    </>
+  )
+
+  const termList = (
+  <View style={styles.terms}>
+    {terms.map((option) => {
+      const isOn = option.key === selected
+      const perMonth = effectiveMonthlyRupees(pricing, option, introLive)
+      return (
+        <PressableScale
+          key={option.key}
+          onPress={() => setSelected(option.key)}
+          accessibilityRole="radio"
+          accessibilityState={{ selected: isOn }}
+          accessibilityLabel={`${option.label}, ${inr(perMonth)} a month`}
+          style={[
+            styles.term,
+            { backgroundColor: isOn ? c.accentLight : c.bgSurface },
+            isOn && (isDark ? Elevation.dark : Elevation.light).sm,
+          ]}
+        >
+          <View
+            style={[
+              styles.radio,
+              { backgroundColor: isOn ? c.accent : c.borderStrong },
+            ]}
+          >
+            {isOn ? <Ionicons name="checkmark" size={12} color={c.onFillPrimary} /> : null}
+          </View>
+          <View style={styles.termText}>
+            <Text style={[styles.termLabel, { color: c.textPrimary }]}>
+              {option.label}
+            </Text>
+            <Text style={[styles.termMeta, { color: c.textMuted }]}>
+              {inr(perMonth)} a month
+              {option.months > 1 && option.termMultiplier < option.months
+                ? ` · saves ${Math.round(((option.months - option.termMultiplier) / option.months) * 100)}%`
+                : ''}
+            </Text>
+          </View>
+          <View style={styles.termPrices}>
+            {introLive ? (
+              <Text style={[styles.strike, { color: c.textMuted }]}>
+                {inr(rupeesOf(termPricePaise(pricing, option, false)))}
+              </Text>
+            ) : null}
+            <Text style={[styles.termPrice, { color: c.textPrimary }]}>
+              {inr(rupeesOf(termPricePaise(pricing, option, introLive)))}
+            </Text>
+          </View>
+        </PressableScale>
+      )
+    })}
+  </View>
+  )
+
+  const checkout = (
+    <>
+      {term ? (
+        <Card style={styles.summary}>
+          <View style={styles.summaryRow}>
+            <Text style={[styles.summaryKey, { color: c.textSecondary }]}>
+              {term.label}
+            </Text>
+            <Text style={[styles.summaryValue, { color: c.textPrimary }]}>
+              {inr(rupeesOf(termPricePaise(pricing, term, introLive)))}
+            </Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={[styles.summaryKey, { color: c.textSecondary }]}>
+              GST at {GST_PERCENT}%
+            </Text>
+            <Text style={[styles.summaryValue, { color: c.textPrimary }]}>
+              {inr(
+                withGst(rupeesOf(termPricePaise(pricing, term, introLive))) -
+                  rupeesOf(termPricePaise(pricing, term, introLive))
+              )}
+            </Text>
+          </View>
+          <View style={[styles.summaryRow, styles.summaryTotal, { borderTopColor: c.border }]}>
+            <Text style={[styles.summaryKey, { color: c.textPrimary }]}>Total today</Text>
+            <Text style={[styles.summaryTotalValue, { color: c.textPrimary }]}>
+              {inr(withGst(rupeesOf(termPricePaise(pricing, term, introLive))))}
+            </Text>
+          </View>
+        </Card>
+      ) : null}
+
+      <Card style={styles.included}>
+        <Text style={[styles.includedLabel, { color: c.textSecondary }]}>What you get</Text>
+        {INCLUDED.map((line) => (
+          <View key={line} style={styles.includedRow}>
+            <Ionicons name="checkmark" size={15} color={c.accent} />
+            <Text style={[styles.includedText, { color: c.textPrimary }]}>{line}</Text>
+          </View>
+        ))}
+      </Card>
+
+      <Button
+        label={starting ? 'Opening…' : 'Subscribe'}
+        onPress={handleSubscribe}
+        disabled={starting || !term}
+        fullWidth
+      />
+      <Text style={[styles.note, { color: c.textMuted }]}>
+        Card, UPI and netbanking through Razorpay. Your price holds for the whole
+        term you buy; renewal is at whatever the price is then.
+      </Text>
+    </>
+  )
+
+  return (
+    <ModalSheet title="Plans" wide>
+      <SafeAreaView style={styles.safe} edges={['bottom']}>
+        <RevealScrollView
+          contentContainerStyle={[styles.content, isDesktop && styles.contentWide]}
+          showsVerticalScrollIndicator={false}
+        >
+          {banner}
+          {isDesktop ? (
+            // Choosing a term and seeing what it costs are one decision. Stacked,
+            // picking "12 months" scrolled the total out of view, which is the
+            // one number the choice is being made against.
+            <View style={styles.columns}>
+              <View style={styles.column}>
+                <Text style={[styles.columnTitle, { color: c.textPrimary }]}>
+                  How long you want to pay for
+                </Text>
+                {termList}
+              </View>
+              <View style={styles.column}>{checkout}</View>
+            </View>
+          ) : (
+            <>
+              {termList}
+              {checkout}
+            </>
+          )}
         </RevealScrollView>
       </SafeAreaView>
     </ModalSheet>
@@ -254,9 +296,24 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     paddingBottom: Spacing.xl,
     gap: Spacing.md,
-    maxWidth: ContentMaxWidth,
     width: '100%',
     alignSelf: 'center',
+  },
+  contentWide: {
+    padding: Spacing.lg,
+  },
+  columns: {
+    flexDirection: 'row',
+    gap: Spacing.lg,
+    alignItems: 'flex-start',
+  },
+  column: {
+    flex: 1,
+    gap: Spacing.md,
+  },
+  columnTitle: {
+    ...Typography.heading,
+    fontFamily: FontFamily.semiBold,
   },
   offer: {
     flexDirection: 'row',
@@ -281,8 +338,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.md,
     borderRadius: Radius.lg,
-    borderWidth: 1.5,
     padding: Spacing.md,
+  },
+  // The selection indicator, since the outline is gone: a filled disc that
+  // takes a tick when chosen.
+  radio: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   termText: { flex: 1, gap: 2 },
   termLabel: {
