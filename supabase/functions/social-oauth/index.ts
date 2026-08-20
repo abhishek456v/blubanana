@@ -15,7 +15,10 @@
 // issue, or which has already been used, is refused — otherwise anyone could
 // hand us a code and have the resulting account land in someone's workspace.
 //
-// Requires META_APP_ID and META_APP_SECRET as function secrets.
+// Requires META_APP_ID / META_APP_SECRET for Instagram, and GOOGLE_CLIENT_ID /
+// GOOGLE_CLIENT_SECRET for YouTube, as function secrets. Either pair is enough
+// on its own: the two networks are reviewed by two companies on two timetables,
+// so each path checks only its own credentials.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -149,13 +152,6 @@ Deno.serve(async (req) => {
     return page('Something is missing', 'That link did not carry an authorisation code.', false)
   }
 
-  const appId = Deno.env.get('META_APP_ID')
-  const appSecret = Deno.env.get('META_APP_SECRET')
-  if (!appId || !appSecret) {
-    console.error('social-oauth: META_APP_ID / META_APP_SECRET not set')
-    return page('Not configured yet', 'Instagram is not set up on this server.', false)
-  }
-
   const admin = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -190,6 +186,21 @@ Deno.serve(async (req) => {
     // exactly the kind of thing that stops being true after an API update.
     if (stateRow.platform === 'youtube') {
       return await connectYouTube(admin, stateRow.workspace_id, code, redirectUri)
+    }
+
+    // Checked here rather than at the top of the handler.
+    //
+    // It used to run before the state was even read, which meant a *YouTube*
+    // callback on a server with no Meta credentials was turned away with
+    // "Instagram is not set up on this server" and never reached the branch
+    // above. The two networks go live independently by design, so neither may
+    // gate the other: this is the Instagram path, so this is where Instagram's
+    // credentials are required.
+    const appId = Deno.env.get('META_APP_ID')
+    const appSecret = Deno.env.get('META_APP_SECRET')
+    if (!appId || !appSecret) {
+      console.error('social-oauth: META_APP_ID / META_APP_SECRET not set')
+      return page('Not configured yet', 'Instagram is not set up on this server.', false)
     }
 
     // ── 2. Code → short-lived token → long-lived token ───────────────────────
