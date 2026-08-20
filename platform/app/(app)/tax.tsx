@@ -97,7 +97,7 @@ export default function TaxScreen() {
             <>
               <View style={[styles.card, { backgroundColor: c.bgSurface }]}>
                 <Text style={[styles.label, { color: c.textSecondary }]}>
-                  Taxable income · FY {fyStart}–{String(fyStart + 1).slice(2)}
+                  Taxable income · FY {fyStart}-{String(fyStart + 1).slice(2)}
                 </Text>
                 <Figure
                   value={formatCurrency(figures.net)}

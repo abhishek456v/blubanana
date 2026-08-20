@@ -281,7 +281,7 @@ export default function YouScreen() {
           />
           <ListRow
             title="Expenses"
-            subtitle="What the work cost, so Year in review reports what you are taxed on"
+            subtitle="What the work cost, so the Year report shows what you are taxed on"
             leading={
               <View style={[styles.linkIcon, { backgroundColor: c.accentLight }]}>
                 <Ionicons name="receipt" size={18} color={c.accent} />
@@ -317,7 +317,7 @@ export default function YouScreen() {
           />
           <ListRow
             title="Rate card"
-            subtitle="What you charge, built from your own deals — to send when a brand asks"
+            subtitle="What you charge, built from your own deals, ready to send when a brand asks"
             leading={
               <View style={[styles.linkIcon, { backgroundColor: c.accentLight }]}>
                 <Ionicons name="id-card" size={18} color={c.accent} />

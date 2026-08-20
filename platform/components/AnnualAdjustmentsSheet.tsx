@@ -58,7 +58,7 @@ export function AnnualAdjustmentsSheet({
     <Sheet visible={visible} onClose={onClose} title={`Add to ${fyLabel}`}>
       <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
         <Text style={[styles.intro, { color: c.textSecondary }]}>
-          Anything this app never saw — AdSense, affiliate income, a deal paid outside
+          Anything this app never saw: AdSense, affiliate income, a deal paid outside
           Blubanana, an expense paid in cash, or TDS showing in your 26AS from a brand
           that never invoiced here.
         </Text>

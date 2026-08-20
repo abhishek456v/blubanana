@@ -82,7 +82,7 @@ export default function ExpensesScreen() {
     return {
       from: `${startYear}-04-01`,
       to: `${startYear + 1}-03-31`,
-      label: `FY ${startYear}–${String(startYear + 1).slice(2)}`,
+      label: `FY ${startYear}-${String(startYear + 1).slice(2)}`,
     }
   }, [])
 
@@ -158,7 +158,7 @@ export default function ExpensesScreen() {
                   bold
                 />
                 <Text style={[styles.totalHint, { color: c.textMuted }]}>
-                  Deducted from your income in Year in review, so the figure there is
+                  Deducted from your income in the Year report, so the figure there is
                   what you are actually taxed on.
                 </Text>
               </View>

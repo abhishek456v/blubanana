@@ -260,7 +260,7 @@ export default function TeamScreen() {
         <RevealScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Text style={[styles.intro, { color: c.textMuted }]}>
             Invite a manager and choose, area by area, what they can see. Nobody but you
-            can delete a deal, payment, invoice or brand — that holds even if you switch
+            can delete a deal, payment, invoice or brand. That holds even if you switch
             everything on.
           </Text>
 
@@ -360,7 +360,7 @@ export default function TeamScreen() {
                   </PressableScale>
                 </View>
                 <Text style={[styles.pendingHint, { color: c.textMuted }]}>
-                  They get in by signing up with this address — there is no link to
+                  They get in by signing up with this address. There is no link to
                   forward.
                 </Text>
               </Animated.View>

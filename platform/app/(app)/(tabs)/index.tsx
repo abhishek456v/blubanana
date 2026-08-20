@@ -253,7 +253,7 @@ export default function HomeScreen() {
       },
       {
         icon: 'bar-chart' as const,
-        label: 'Year in review',
+        label: 'Year report',
         caption: 'Tax-ready summary',
         onPress: () => router.push('/(app)/annual-report' as never),
       },

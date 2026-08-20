@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { ModalSheet } from '@/components/ModalSheet'
 import { Stack, useRouter } from 'expo-router'
 import { useFocusEffect } from '@react-navigation/core'
 import { Ionicons } from '@expo/vector-icons'
@@ -75,7 +76,7 @@ const RESPONSES: {
  */
 export default function RemindersScreen() {
   const { c } = useTheme()
-  const { isDesktop } = useBreakpoint()
+  const { isDesktop, isWide } = useBreakpoint()
   const router = useRouter()
   const toast = useToast()
 
@@ -140,6 +141,7 @@ export default function RemindersScreen() {
   const list: Alert[] = tab === 'today' ? feed.today : feed.upcoming
 
   return (
+    <ModalSheet title="Reminders" wide>
     <SafeAreaView style={[styles.container, { backgroundColor: c.bgPage }]} edges={['top']}>
       <Stack.Screen options={{ title: 'Reminders' }} />
       <RevealScrollView
@@ -156,9 +158,18 @@ export default function RemindersScreen() {
       >
         <ScreenHeader
           style={styles.headerFlush}
-          title="Reminders"
+          title={isWide ? '' : 'Reminders'}
           subtitle="What is asking for you, and what is coming."
-          onBack={() => (router.canGoBack() ? router.back() : router.replace('/(app)/(tabs)' as never))}
+          // The sheet carries its own close control on wide screens, so a
+          // back link here would be a second way out sitting inside it.
+          onBack={
+            isWide
+              ? undefined
+              : () =>
+                  router.canGoBack()
+                    ? router.back()
+                    : router.replace('/(app)/(tabs)' as never)
+          }
           backLabel="Home"
           // No bell here: it is the control that opens this screen.
           leadingAction={<HeaderUtilities showBell={false} />}
@@ -221,6 +232,7 @@ export default function RemindersScreen() {
         )}
       </RevealScrollView>
     </SafeAreaView>
+    </ModalSheet>
   )
 
   function AlertCard({ alert, index }: { alert: Alert; index: number }) {

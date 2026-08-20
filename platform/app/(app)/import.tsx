@@ -140,7 +140,7 @@ export default function ImportScreen() {
             <>
               <Text style={[styles.intro, { color: c.textSecondary }]}>
                 Already tracking your deals somewhere? Point this at it and they come
-                across — a spreadsheet export, or a photo of your notes. You review
+                across: a spreadsheet export, or a photo of your notes. You review
                 everything before anything is saved.
               </Text>
 
@@ -260,7 +260,7 @@ export default function ImportScreen() {
               title={`${result.imported} ${result.imported === 1 ? 'deal' : 'deals'} imported`}
               message={
                 result.hitTrialLimit
-                  ? `Your trial covers ${TRIAL_DEAL_LIMIT} deals, so ${result.failed} could not come across yet. Subscribe and import the rest — nothing is lost.`
+                  ? `Your trial covers ${TRIAL_DEAL_LIMIT} deals, so ${result.failed} could not come across yet. Subscribe and import the rest; nothing is lost.`
                   : result.failed > 0
                     ? `${result.failed} could not be saved and were left out. Everything else is on your dashboard, with its deadlines and reminders already set.`
                     : 'They are on your dashboard now, with their deadlines and reminders already set.'

@@ -94,14 +94,12 @@ export default function AppLayout() {
           so both opened onto a grey void with the app nowhere behind them. */}
       <Stack.Screen name="tax" options={{ title: 'Advance tax', ...modalScreenOptions }} />
       <Stack.Screen name="expenses" options={{ title: 'Expenses', ...modalScreenOptions }} />
-      {/* Not a modal on wide screens: it's a full working surface with its own
-          header and two tabs, not a focused form to fill in and dismiss. */}
-      <Stack.Screen name="reminders" options={{ title: 'Reminders', headerShown: false }} />
+      <Stack.Screen name="reminders" options={{ title: 'Reminders', ...modalScreenOptions }} />
       {/* Full-screen, chromeless: it draws its own progress dots and Skip. */}
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="import" options={{ title: 'Import deals', ...modalScreenOptions }} />
       <Stack.Screen name="plans" options={{ title: 'Plans', ...modalScreenOptions }} />
-      <Stack.Screen name="annual-report" options={{ title: 'Annual report', ...modalScreenOptions }} />
+      <Stack.Screen name="annual-report" options={{ title: 'Year report', ...modalScreenOptions }} />
       <Stack.Screen name="team" options={{ title: 'Team', ...modalScreenOptions }} />
     </Stack>
   )

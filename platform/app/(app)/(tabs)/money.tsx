@@ -395,7 +395,7 @@ export default function MoneyScreen() {
         index={0}
       />
       <ListRow
-        title="Year in review"
+        title="Year report"
         subtitle="Income, TDS and GST for the financial year"
         leading={
           <View style={[styles.linkIcon, { backgroundColor: c.accentLight }]}>

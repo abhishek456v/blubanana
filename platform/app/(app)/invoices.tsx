@@ -78,7 +78,7 @@ export default function InvoicesScreen() {
   ]
 
   return (
-    <ModalSheet title="Invoices">
+    <ModalSheet title="Invoices" wide>
       <SafeAreaView style={[styles.container, { backgroundColor: c.bgPage }]} edges={['bottom']}>
         {loading ? (
           <View style={[styles.list, isWide && styles.listWide]}>
@@ -92,12 +92,21 @@ export default function InvoicesScreen() {
             data={[0]}
             keyExtractor={() => 'table'}
             renderItem={() => (
-              <DataTable
-                columns={columns}
-                rows={invoices}
-                keyOf={(row) => row.id}
-                onRowPress={(row) => router.push(`/(app)/invoice/${row.id}` as never)}
-              />
+              <>
+                {/* Named, because the figure above counts only this financial
+                    year while this lists every invoice ever raised. Unlabelled,
+                    the table read as the breakdown of that figure, so "across 2
+                    invoices" sat directly above three rows. */}
+                <Text style={[styles.tableHeading, { color: c.textPrimary }]}>
+                  Every invoice <Text style={{ color: c.textMuted }}>({invoices.length})</Text>
+                </Text>
+                <DataTable
+                  columns={columns}
+                  rows={invoices}
+                  keyOf={(row) => row.id}
+                  onRowPress={(row) => router.push(`/(app)/invoice/${row.id}` as never)}
+                />
+              </>
             )}
             ListHeaderComponent={
               summary.count > 0 ? (
@@ -222,6 +231,12 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     marginBottom: Spacing.md,
     gap: 1,
+  },
+  tableHeading: {
+    ...Typography.heading,
+    fontFamily: FontFamily.display,
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.sm,
   },
   summaryLabel: {
     ...Typography.caption,
