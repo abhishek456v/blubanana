@@ -20,9 +20,15 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const GRAPH = 'https://graph.facebook.com/v21.0'
+const YT = 'https://www.googleapis.com/youtube/v3'
+const GOOGLE_TOKEN = 'https://oauth2.googleapis.com/token'
+
+type Platform = 'instagram' | 'youtube'
 
 interface Body {
   action?: 'stats' | 'post' | 'cron'
+  /** Defaults to instagram, which is what every caller sent before YouTube existed. */
+  platform?: Platform
   accountId?: string
   postUrl?: string
 }
@@ -41,6 +47,166 @@ const json = (body: unknown, status = 200) =>
       'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-cron-secret',
     },
   })
+
+// ── YouTube ─────────────────────────────────────────────────────────────────
+//
+// Google's access tokens last an hour, unlike the Page tokens Instagram hands
+// back, which do not expire. So every YouTube call refreshes first rather than
+// trusting what is stored. The refresh token is the durable credential and is
+// what the OAuth callback saves.
+
+/**
+ * Trade the stored refresh token for a fresh access token.
+ *
+ * Returns null rather than throwing when Google rejects it, because the common
+ * cause is a creator revoking access in their Google account, which is not an
+ * error in this system. The caller marks the row for reconnection.
+ */
+async function refreshGoogleToken(refreshToken: string): Promise<string | null> {
+  const clientId = Deno.env.get('GOOGLE_CLIENT_ID')
+  const clientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET')
+  if (!clientId || !clientSecret || !refreshToken) return null
+
+  const res = await fetch(GOOGLE_TOKEN, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+      grant_type: 'refresh_token',
+    }),
+  })
+  const body = await res.json().catch(() => ({}))
+  if (!res.ok || !body.access_token) {
+    console.error('social-sync: google refresh failed', body?.error ?? res.status)
+    return null
+  }
+  return body.access_token as string
+}
+
+/** Reach figures for one YouTube channel. */
+async function fetchYouTubeStats(channelId: string, token: string) {
+  const res = await fetch(
+    `${YT}/channels?part=snippet,statistics&id=${channelId}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  )
+  const body = await res.json()
+  if (!res.ok) throw new Error(body?.error?.message ?? 'YouTube refused the request')
+
+  const channel = body.items?.[0]
+  if (!channel) throw new Error('That channel is not visible to this account')
+
+  const stats = channel.statistics ?? {}
+  // Every statistics field arrives as a string, and `hiddenSubscriberCount`
+  // means the number is absent rather than zero. Coercing blindly would report
+  // a creator who hides their count as having none.
+  const num = (v: unknown): number | null =>
+    typeof v === 'string' && v.length > 0 ? Number(v) : null
+
+  const followers = stats.hiddenSubscriberCount ? null : num(stats.subscriberCount)
+  const views = num(stats.viewCount)
+  const postsCount = num(stats.videoCount)
+
+  return {
+    handle: channel.snippet?.customUrl?.replace(/^@/, '') ?? channel.snippet?.title ?? '',
+    externalAccountId: channelId,
+    followers,
+    following: null, // YouTube has no public equivalent.
+    postsCount,
+    // Lifetime views over lifetime videos. A rough average, but the only one
+    // the channel resource offers without walking every upload.
+    avgViews: views != null && postsCount ? Math.round(views / postsCount) : null,
+    avgLikes: null,
+    engagementRate: null,
+  }
+}
+
+/**
+ * Recent uploads with their statistics.
+ *
+ * Two calls rather than one: the channel resource carries the uploads playlist
+ * id, the playlist carries video ids, and only the videos endpoint carries
+ * statistics. `search` would do it in one call but costs 100 quota units
+ * against a 10,000 unit daily budget, which a nightly pass over every
+ * connected channel would exhaust.
+ */
+async function fetchRecentVideos(channelId: string, token: string) {
+  const headers = { Authorization: `Bearer ${token}` }
+  const out: { id: string; views: number | null; likes: number | null; comments: number | null }[] = []
+
+  const chRes = await fetch(`${YT}/channels?part=contentDetails&id=${channelId}`, { headers })
+  const chBody = await chRes.json()
+  if (!chRes.ok) return out
+
+  const uploads = chBody.items?.[0]?.contentDetails?.relatedPlaylists?.uploads
+  if (!uploads) return out
+
+  let pageToken = ''
+  // Three pages at most, matching the Instagram pass: a creator with 900
+  // uploads should not make the nightly job walk all of them, and the ones
+  // carrying live links on active deals are recent.
+  for (let page = 0; page < 3; page++) {
+    const listRes = await fetch(
+      `${YT}/playlistItems?part=contentDetails&playlistId=${uploads}&maxResults=50` +
+        (pageToken ? `&pageToken=${pageToken}` : ''),
+      { headers }
+    )
+    const listBody = await listRes.json()
+    if (!listRes.ok) break
+
+    const ids = (listBody.items ?? [])
+      .map((i: Record<string, any>) => i.contentDetails?.videoId)
+      .filter(Boolean)
+    if (ids.length === 0) break
+
+    const statsRes = await fetch(
+      `${YT}/videos?part=statistics&id=${ids.join(',')}`,
+      { headers }
+    )
+    const statsBody = await statsRes.json()
+    if (statsRes.ok) {
+      for (const video of statsBody.items ?? []) {
+        const s = video.statistics ?? {}
+        const num = (v: unknown): number | null =>
+          typeof v === 'string' && v.length > 0 ? Number(v) : null
+        out.push({
+          id: video.id,
+          views: num(s.viewCount),
+          likes: num(s.likeCount),
+          comments: num(s.commentCount),
+        })
+      }
+    }
+
+    pageToken = listBody.nextPageToken ?? ''
+    if (!pageToken) break
+  }
+  return out
+}
+
+/**
+ * The eleven-character video id out of any YouTube URL a creator might paste.
+ *
+ * Five shapes in the wild: watch?v=, youtu.be/, /shorts/, /embed/, /live/.
+ * Matching on the id rather than comparing URLs is what makes a link with a
+ * `?si=` share parameter or a timestamp still resolve to the same video.
+ */
+function videoId(url: string): string | null {
+  if (!url) return null
+  const patterns = [
+    /[?&]v=([A-Za-z0-9_-]{11})/,
+    /youtu\.be\/([A-Za-z0-9_-]{11})/,
+    /\/shorts\/([A-Za-z0-9_-]{11})/,
+    /\/embed\/([A-Za-z0-9_-]{11})/,
+    /\/live\/([A-Za-z0-9_-]{11})/,
+  ]
+  for (const pattern of patterns) {
+    const match = url.match(pattern)
+    if (match) return match[1]
+  }
+  return null
+}
 
 /** Reach figures for one Instagram account. */
 async function fetchStats(igId: string, token: string) {
@@ -161,19 +327,82 @@ Deno.serve(async (req) => {
     const body = (await req.json().catch(() => ({}))) as Body
     const action = body.action ?? (isCron ? 'cron' : 'stats')
 
+    // Defaults to instagram: every caller predates YouTube and sends no
+    // platform, and silently syncing the wrong network would be worse than
+    // any error.
+    const platform: Platform = body.platform === 'youtube' ? 'youtube' : 'instagram'
+
     // ── One account, on demand ───────────────────────────────────────────────
     if (action === 'stats' || action === 'post') {
       let query = admin
         .from('social_accounts')
-        .select('id, workspace_id, external_account_id, access_token')
-        .eq('platform', 'instagram')
+        .select('id, workspace_id, external_account_id, access_token, refresh_token')
+        .eq('platform', platform)
         .eq('status', 'active')
 
       if (body.accountId) query = query.eq('id', body.accountId)
       if (callerWorkspaces) query = query.in('workspace_id', callerWorkspaces)
 
       const { data: account } = await query.limit(1).maybeSingle()
-      if (!account?.access_token || !account.external_account_id) {
+      if (!account?.external_account_id) {
+        return json({ error: `No connected ${platform} account` }, 404)
+      }
+
+      if (platform === 'youtube') {
+        const token = await refreshGoogleToken(account.refresh_token ?? '')
+        if (!token) {
+          await admin
+            .from('social_accounts')
+            .update({ status: 'expired', last_error: 'YouTube access was withdrawn' })
+            .eq('id', account.id)
+          return json({ error: 'Reconnect YouTube' }, 401)
+        }
+
+        if (action === 'stats') {
+          const stats = await fetchYouTubeStats(account.external_account_id, token)
+          await admin.from('creator_stat_snapshots').upsert(
+            {
+              workspace_id: account.workspace_id,
+              social_account_id: account.id,
+              platform: 'youtube',
+              captured_on: new Date().toISOString().slice(0, 10),
+              followers: stats.followers,
+              following: null,
+              posts_count: stats.postsCount,
+              avg_likes: null,
+              engagement_rate: null,
+              source: 'api',
+            },
+            { onConflict: 'workspace_id,platform,captured_on,social_account_id' }
+          )
+          await admin
+            .from('social_accounts')
+            .update({ last_synced_at: new Date().toISOString(), last_error: null })
+            .eq('id', account.id)
+          return json({ stats })
+        }
+
+        const wantedVideo = videoId(body.postUrl ?? '')
+        if (!wantedVideo) return json({ post: null })
+        const videos = await fetchRecentVideos(account.external_account_id, token)
+        const found = videos.find((v) => v.id === wantedVideo)
+        return json({
+          post: found
+            ? {
+                views: found.views,
+                likes: found.likes,
+                comments: found.comments,
+                shares: null,
+                saves: null,
+                // YouTube's Data API exposes no per-video reach; only Analytics
+                // does, which needs a separate scope and review.
+                reach: null,
+              }
+            : null,
+        })
+      }
+
+      if (!account.access_token) {
         return json({ error: 'No connected Instagram account' }, 404)
       }
 
@@ -306,6 +535,92 @@ Deno.serve(async (req) => {
             last_error: error instanceof Error ? error.message.slice(0, 300) : 'Sync failed',
           })
           .eq('id', account.id)
+      }
+    }
+
+    // ── The same pass, for YouTube ───────────────────────────────────────────
+    //
+    // Separate loop rather than a branch inside the one above: the two APIs
+    // differ at every step (a refresh before each call, video ids instead of
+    // shortcodes, no reach or saves), and interleaving them would leave a
+    // function where neither path is readable.
+    const { data: channels } = await admin
+      .from('social_accounts')
+      .select('id, workspace_id, external_account_id, refresh_token')
+      .eq('platform', 'youtube')
+      .eq('status', 'active')
+
+    for (const channel of channels ?? []) {
+      if (!channel.external_account_id) continue
+
+      try {
+        const token = await refreshGoogleToken(channel.refresh_token ?? '')
+        if (!token) {
+          await admin
+            .from('social_accounts')
+            .update({ status: 'expired', last_error: 'YouTube access was withdrawn' })
+            .eq('id', channel.id)
+          continue
+        }
+
+        const stats = await fetchYouTubeStats(channel.external_account_id, token)
+        await admin.from('creator_stat_snapshots').upsert(
+          {
+            workspace_id: channel.workspace_id,
+            social_account_id: channel.id,
+            platform: 'youtube',
+            captured_on: new Date().toISOString().slice(0, 10),
+            followers: stats.followers,
+            following: null,
+            posts_count: stats.postsCount,
+            avg_likes: null,
+            engagement_rate: null,
+            source: 'api',
+          },
+          { onConflict: 'workspace_id,platform,captured_on,social_account_id' }
+        )
+        snapshots++
+
+        const videos = await fetchRecentVideos(channel.external_account_id, token)
+        const byId = new Map(videos.map((v) => [v.id, v]))
+
+        const { data: deliverables } = await admin
+          .from('deal_deliverables')
+          .select('id, live_link')
+          .eq('workspace_id', channel.workspace_id)
+          .not('live_link', 'is', null)
+
+        for (const deliverable of deliverables ?? []) {
+          const key = videoId(deliverable.live_link as string)
+          const found = key ? byId.get(key) : undefined
+          if (!found) continue
+
+          await admin
+            .from('deal_deliverables')
+            .update({
+              views: found.views,
+              likes: found.likes,
+              comments: found.comments,
+              performance_updated_at: new Date().toISOString(),
+            })
+            .eq('id', deliverable.id)
+          updated++
+        }
+
+        await admin
+          .from('social_accounts')
+          .update({ last_synced_at: new Date().toISOString(), last_error: null })
+          .eq('id', channel.id)
+      } catch (error) {
+        // One creator's revoked access must not stop everyone else's sync.
+        console.error('social-sync: youtube account failed', channel.id, error)
+        await admin
+          .from('social_accounts')
+          .update({
+            status: 'error',
+            last_error: error instanceof Error ? error.message.slice(0, 300) : 'Sync failed',
+          })
+          .eq('id', channel.id)
       }
     }
 

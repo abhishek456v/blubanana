@@ -2,6 +2,7 @@ import { supabase } from '../supabase'
 import { getWorkspaceId } from '../workspace'
 import { MetaGraphProvider } from './meta'
 import { MockSocialProvider } from './mock'
+import { YouTubeProvider } from './youtube'
 import type {
   SocialAccount,
   SocialPlatform,
@@ -21,23 +22,25 @@ const ACCOUNT_COLUMNS =
 /**
  * Which implementation backs each platform.
  *
- * Instagram resolves at startup: the real Graph provider when
- * `EXPO_PUBLIC_META_APP_ID` is set, the mock when it is not. So the switch is
- * an environment variable rather than a code change — the day credentials
- * arrive, nothing in this repository needs editing.
+ * Both resolve at startup: the real provider when its public client id is set,
+ * the mock when it is not. So the switch is an environment variable rather
+ * than a code change, and the day credentials arrive nothing in this
+ * repository needs editing.
  *
  * Deliberately not a per-call check. A build that flips between real and
  * sample data depending on when a function ran would be impossible to reason
  * about, and `isUsingMockProviders()` labels the whole app at once.
  *
- * YouTube stays mocked: it is Google's API, not Meta's, and a second OAuth
- * integration is its own piece of work rather than a footnote to this one.
+ * The two resolve independently, which matters: Meta's review and Google's are
+ * separate processes that will not finish on the same day, and whichever
+ * lands first should start showing real figures without waiting for the other.
  */
 const metaProvider = new MetaGraphProvider()
+const youtubeProvider = new YouTubeProvider()
 
 const PROVIDERS: Record<SocialPlatform, SocialProvider> = {
   instagram: metaProvider.isConfigured() ? metaProvider : new MockSocialProvider('instagram'),
-  youtube: new MockSocialProvider('youtube'),
+  youtube: youtubeProvider.isConfigured() ? youtubeProvider : new MockSocialProvider('youtube'),
 }
 
 export function getProvider(platform: SocialPlatform): SocialProvider {
@@ -53,6 +56,21 @@ export function getProvider(platform: SocialPlatform): SocialProvider {
  */
 export function isUsingMockProviders(): boolean {
   return Object.values(PROVIDERS).every((p) => p instanceof MockSocialProvider)
+}
+
+/**
+ * The platforms still showing invented figures, by display name.
+ *
+ * `isUsingMockProviders()` is all-or-nothing, which was correct while both
+ * were mocked together. They resolve independently now, so the day Instagram
+ * is approved and YouTube is not, that helper turns false and YouTube's
+ * fabricated numbers would appear with nothing saying so. This names them
+ * instead.
+ */
+export function mockedPlatformNames(): string[] {
+  return Object.entries(PROVIDERS)
+    .filter(([, provider]) => provider instanceof MockSocialProvider)
+    .map(([platform]) => (platform === 'instagram' ? 'Instagram' : 'YouTube'))
 }
 
 /** True when a platform's figures are real. Used to label a card's reach. */

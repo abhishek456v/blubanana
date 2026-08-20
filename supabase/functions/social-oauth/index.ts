@@ -20,6 +20,102 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const GRAPH = 'https://graph.facebook.com/v21.0'
+const GOOGLE_TOKEN = 'https://oauth2.googleapis.com/token'
+const YT = 'https://www.googleapis.com/youtube/v3'
+
+/**
+ * The YouTube half of the callback.
+ *
+ * Differs from Instagram in the one way that matters operationally: Google's
+ * access token lasts an hour, so what gets stored is the **refresh** token.
+ * The sync function trades it for a fresh access token on every run. Meta's
+ * Page tokens do not expire, so that file stores the access token directly.
+ *
+ * `admin` is passed in rather than re-created so both paths share one client.
+ */
+async function connectYouTube(
+  admin: ReturnType<typeof createClient>,
+  workspaceId: string,
+  code: string,
+  redirectUri: string
+): Promise<Response> {
+  const clientId = Deno.env.get('GOOGLE_CLIENT_ID')
+  const clientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET')
+  if (!clientId || !clientSecret) {
+    console.error('social-oauth: GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET not set')
+    return page('Not configured yet', 'YouTube is not set up on this server.', false)
+  }
+
+  const tokenRes = await fetch(GOOGLE_TOKEN, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      code,
+      redirect_uri: redirectUri,
+      grant_type: 'authorization_code',
+    }),
+  })
+  const tokens = await tokenRes.json()
+  if (!tokenRes.ok || !tokens.access_token) {
+    console.error('social-oauth: google exchange failed', tokens?.error)
+    return page('Could not connect', 'YouTube refused the authorisation. Please try again.', false)
+  }
+
+  // No refresh token means Google treated this as a repeat consent and the
+  // daily sync would die in an hour with a row that looks connected. The
+  // provider sends prompt=consent to prevent it; failing loudly here is what
+  // stops that becoming a silent outage if the parameter is ever dropped.
+  if (!tokens.refresh_token) {
+    return page(
+      'Could not connect',
+      'Google did not return a lasting permission. Remove Blubanana from your Google account permissions, then connect again.',
+      false
+    )
+  }
+
+  const channelRes = await fetch(`${YT}/channels?part=snippet&mine=true`, {
+    headers: { Authorization: `Bearer ${tokens.access_token}` },
+  })
+  const channelBody = await channelRes.json()
+  const channel = channelBody.items?.[0]
+
+  if (!channel) {
+    return page(
+      'No channel on this account',
+      'This Google account has no YouTube channel. Sign in with the account that owns the channel.',
+      false
+    )
+  }
+
+  const handle: string =
+    channel.snippet?.customUrl?.replace(/^@/, '') ?? channel.snippet?.title ?? 'channel'
+
+  const { error } = await admin.from('social_accounts').upsert(
+    {
+      workspace_id: workspaceId,
+      platform: 'youtube',
+      handle,
+      external_account_id: channel.id,
+      access_token: tokens.access_token,
+      refresh_token: tokens.refresh_token,
+      token_expires_at: new Date(Date.now() + (tokens.expires_in ?? 3600) * 1000).toISOString(),
+      scopes: ['youtube.readonly'],
+      status: 'active',
+      last_error: null,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'workspace_id,platform,handle' }
+  )
+  if (error) throw error
+
+  return page(
+    `Connected ${handle}`,
+    'Your subscriber count and view counts will refresh daily. You can close this tab and go back to the app.',
+    true
+  )
+}
 
 /** A plain page, because a human is looking at this in a browser tab. */
 function page(title: string, detail: string, ok: boolean): Response {
@@ -74,7 +170,7 @@ Deno.serve(async (req) => {
       .delete()
       .eq('state', state)
       .gt('expires_at', new Date().toISOString())
-      .select('workspace_id')
+      .select('workspace_id, platform')
       .maybeSingle()
 
     if (stateError) throw stateError
@@ -87,6 +183,14 @@ Deno.serve(async (req) => {
     }
 
     const redirectUri = `${Deno.env.get('SUPABASE_URL')}/functions/v1/social-oauth`
+
+    // Which network this callback belongs to comes from the state row, not
+    // from sniffing the query string. Both providers redirect here, and
+    // Google's `scope` parameter happens to distinguish them today, which is
+    // exactly the kind of thing that stops being true after an API update.
+    if (stateRow.platform === 'youtube') {
+      return await connectYouTube(admin, stateRow.workspace_id, code, redirectUri)
+    }
 
     // ── 2. Code → short-lived token → long-lived token ───────────────────────
     const shortRes = await fetch(

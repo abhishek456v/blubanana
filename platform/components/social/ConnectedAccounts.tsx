@@ -10,7 +10,7 @@ import {
   disconnectAccount,
   getSocialAccounts,
   getStatHistory,
-  isUsingMockProviders,
+  mockedPlatformNames,
   summarizeReach,
   syncAccount,
   type ReachSummary,
@@ -146,6 +146,8 @@ export function ConnectedAccounts() {
     )
   }
 
+  const mocked = mockedPlatformNames()
+
   return (
     <Card>
       <Text style={[styles.title, { color: c.textPrimary }]}>Your accounts</Text>
@@ -154,13 +156,15 @@ export function ConnectedAccounts() {
         posts anything.
       </Text>
 
-      {/* Sample data must announce itself. A creator comparing these against
-          their real profile would otherwise conclude the app is broken. */}
-      {isUsingMockProviders() ? (
+      {/* Sample data must announce itself, and must name which platform it
+          applies to: the two go live independently, so "some of this is
+          invented" without saying which half is worse than useless. */}
+      {mocked.length > 0 ? (
         <View style={[styles.notice, { backgroundColor: c.warningLight }]}>
           <Ionicons name="flask-outline" size={15} color={c.warning} />
           <Text style={[styles.noticeText, { color: c.warning }]}>
-            Sample data. Real Instagram and YouTube sync switches on once app review is approved.
+            {mocked.join(' and ')} {mocked.length === 1 ? 'shows' : 'show'} sample data. Real
+            figures switch on once app review is approved.
           </Text>
         </View>
       ) : null}
