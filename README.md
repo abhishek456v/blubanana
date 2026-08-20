@@ -334,6 +334,56 @@ deliverable's `live_link` to a post permalink. The second is what makes cost
 per view exist on the rate card — it is `rate ÷ views` per line item, and no
 creator is going to type a view count in for every post she has published.
 
+### 6. YouTube (Google / YouTube Data API v3)
+
+Same shape as Instagram, and the two switch on independently: whichever set of
+credentials lands first starts showing real figures, and the rate card names
+the platform that is still on sample data rather than saying "some of this is
+invented".
+
+```bash
+# 1. Server side. The edge function does the code-for-token exchange itself,
+#    so it needs the ID as well as the secret.
+npx supabase secrets set GOOGLE_CLIENT_ID=<client id> GOOGLE_CLIENT_SECRET=<client secret>
+
+# 2. Client side, in .env.
+#    EXPO_PUBLIC_GOOGLE_CLIENT_ID=<client id>
+
+# 3. Deploy. Same two functions; both learned YouTube alongside Instagram.
+npx supabase functions deploy social-oauth
+npx supabase functions deploy social-sync
+```
+
+In Google Cloud Console, three things, none of which the OAuth wizard does for
+you:
+
+1. **APIs & Services → Library** → enable **YouTube Data API v3**.
+2. **Data Access** → add the scope `https://www.googleapis.com/auth/youtube.readonly`.
+   Read-only, and the consent screen says so, because asking a creator to
+   connect the account she earns from needs to be visibly safe.
+3. **Credentials → OAuth client ID → Web application**, with this as an
+   **Authorised redirect URI**. Google matches it character for character, so
+   a trailing slash fails:
+
+```
+https://bbdvgeavtxfxykhiafbp.supabase.co/functions/v1/social-oauth
+```
+
+`youtube.readonly` is a **sensitive** scope. While the consent screen is in
+Testing the app works immediately, but only for accounts listed under
+**Audience → Test users**. Moving to Production needs Google's verification,
+which takes days, so start it well before launch rather than on the morning of.
+
+Google's tokens are not Meta's. An access token lasts an hour, so the refresh
+token is the thing that matters, and Google only issues one on the *first*
+consent. `social-oauth` therefore sends `access_type=offline` with
+`prompt=consent` and refuses a callback that comes back without a refresh
+token, rather than storing a connection that would quietly stop syncing an
+hour later.
+
+`fetchRecentVideos` reads the uploads playlist rather than calling search,
+which costs 1 quota unit instead of 100. The default daily quota is 10,000.
+
 Both functions run with `verify_jwt = false` and authenticate themselves:
 `social-oauth` on the single-use `state` nonce, `social-sync` on either the
 CRON_SECRET or a user JWT scoped to that caller's workspaces.
@@ -490,6 +540,8 @@ types/
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Project Settings → API → anon/public key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API → service_role key |
 | `OPENAI_API_KEY` | platform.openai.com → API keys |
+| `EXPO_PUBLIC_META_APP_ID` | developers.facebook.com → your app → Settings → Basic → App ID |
+| `EXPO_PUBLIC_GOOGLE_CLIENT_ID` | console.cloud.google.com → APIs & Services → Credentials → OAuth 2.0 Client ID |
 
 `EXPO_PUBLIC_*` variables are bundled into the client. The others are server-side
 only (Edge Functions / scripts) — never reference them in app code.
