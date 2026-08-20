@@ -1,0 +1,43 @@
+{
+  "$schema": "https://raw.githubusercontent.com/expo/eas-cli/main/schema/eas.json",
+  "cli": {
+    "version": ">= 5.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal",
+      "channel": "preview",
+      "android": {
+        "buildType": "apk"
+      },
+      "ios": {
+        "simulator": true
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://bbdvgeavtxfxykhiafbp.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJiZHZnZWF2dHhmeHlraGlhZmJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjEwNjIsImV4cCI6MjA5OTE5NzA2Mn0.vXcuwVznpLbMPqY6maaumqYqqzaGaUppLmZIIxHuS54",
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "534510647888-ee0qht13sg8rigqp5as09fm61esr2v0n.apps.googleusercontent.com"
+      }
+    },
+    "production": {
+      "channel": "production",
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://bbdvgeavtxfxykhiafbp.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJiZHZnZWF2dHhmeHlraGlhZmJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjEwNjIsImV4cCI6MjA5OTE5NzA2Mn0.vXcuwVznpLbMPqY6maaumqYqqzaGaUppLmZIIxHuS54",
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "534510647888-ee0qht13sg8rigqp5as09fm61esr2v0n.apps.googleusercontent.com"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
