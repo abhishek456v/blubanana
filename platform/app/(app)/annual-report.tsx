@@ -108,9 +108,9 @@ export default function AnnualReportScreen() {
   const atCurrentYear = fyStartYear >= currentFinancialYearStart()
   const isEmpty = report.totalRevenue === 0 && report.dealsClosed === 0
 
+  // Not a `wide` sheet: this is a column of figures read top to bottom, and a
+  // wide card would leave the content stranded in the middle of it.
   return (
-    {/* Not `wide`: this is a column of figures read top to bottom, and a wide
-        card would leave the content stranded in the middle of it. */}
     <ModalSheet title="Year report">
       <SafeAreaView style={[styles.safe, { backgroundColor: c.bgPage }]} edges={['bottom']}>
         <ScrollView
