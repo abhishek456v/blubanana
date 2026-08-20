@@ -77,7 +77,20 @@ export function HeroCard({
     <Animated.View entering={FadeInDown.duration(Duration.slow)} style={styles.wrapper}>
       <GradientCard
         gradient={gradient}
-        onPress={onPress}
+        /*
+         * The whole-card press is dropped when there is an `action`.
+         *
+         * GradientCard wraps itself in a pressable when given `onPress`, and
+         * `action` renders a pressable inside it. On the web that is a
+         * <button> inside a <button>: invalid HTML, and React logs a
+         * hydration error for every render. The labelled button wins, because
+         * it is the affordance a person can actually see.
+         *
+         * Handled here rather than left to each caller, so the next screen to
+         * pass both gets a working card instead of a console full of warnings
+         * nobody reads.
+         */
+        onPress={action ? undefined : onPress}
         style={[styles.card, style]}
         accessibilityLabel={label}
         action={

@@ -249,11 +249,14 @@ export default function MoneyScreen() {
         { label: bestMonth ? `Best · ${bestMonth.label}` : 'Best month', value: bestMonth ? formatCurrencyCompact(bestMonth.total) : '—' },
       ]}
       gradient="magenta"
+      // The labelled button, and deliberately not a whole-card `onPress` as
+      // well. Both went to the same place, and a card-level press wraps the
+      // card in a button that already contains one, which is invalid HTML and
+      // logged a React hydration error on every render of this screen.
       action={{
         label: 'Year report',
         onPress: () => router.push('/(app)/annual-report' as never),
       }}
-      onPress={() => router.push('/(app)/annual-report' as never)}
       style={styles.fill}
     />
   )
