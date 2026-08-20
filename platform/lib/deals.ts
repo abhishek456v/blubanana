@@ -809,3 +809,22 @@ function calculateDueDate(
   const date = new Date(year, month - 1, day + days)
   return date.toISOString().split('T')[0]
 }
+
+
+/**
+ * Deletes a deal and everything that only existed because of it.
+ *
+ * Its payments, stages and deliverables go with it: those are parts of a
+ * deal, not records of their own. An invoice line item or an expense that
+ * pointed at it survives and simply loses the link, which is deliberate at
+ * the schema level (`on delete set null`) because a raised invoice is a
+ * financial record and must not vanish because a deal was tidied away.
+ *
+ * Only the workspace owner can do this. Migration 024 adds a restrictive
+ * "owner deletes only" policy, so a manager gets nothing deleted rather than
+ * a partial cascade.
+ */
+export async function deleteDeal(id: string): Promise<void> {
+  const { error } = await supabase.from('deals').delete().eq('id', id)
+  if (error) throw error
+}

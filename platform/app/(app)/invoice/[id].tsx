@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Platform } from 'react-native'
-import { useLocalSearchParams } from 'expo-router'
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { getInvoice, getInvoiceLineItems } from '@/lib/invoices'
+import { deleteInvoice, getInvoice, getInvoiceLineItems } from '@/lib/invoices'
 import { getProfile } from '@/lib/profile'
 import { buildInvoiceHtml } from '@/lib/invoiceHtml'
 import { sharePdf } from '@/lib/sharePdf'
@@ -16,7 +16,7 @@ import { Colors, Spacing, Radius, Typography, FontFamily, ContentMaxWidth } from
 import { useTheme } from '@/hooks/useTheme'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 import { ModalSheet } from '@/components/ModalSheet'
-import { useToast } from '@/components/ui'
+import { OverflowMenu, useConfirm, useToast } from '@/components/ui'
 
 function formatINR(amount: number): string {
   return `₹${amount.toLocaleString('en-IN')}`
@@ -29,6 +29,8 @@ function formatDate(dateStr: string): string {
 
 export default function InvoiceDetailScreen() {
   const toast = useToast()
+  const confirm = useConfirm()
+  const router = useRouter()
   const { id } = useLocalSearchParams<{ id: string }>()
   const { c } = useTheme()
   const isWide = useIsWideScreen()
@@ -156,8 +158,40 @@ export default function InvoiceDetailScreen() {
 
   const netDue = invoice.total_amount - (invoice.tds_deducted ? invoice.tds_amount ?? 0 : 0)
 
+  async function handleDelete() {
+    if (!invoice) return
+    const ok = await confirm({
+      title: `Delete ${invoice.invoice_number}?`,
+      message:
+        'The invoice and its line items go. The deal it was raised against stays, and so does any payment already recorded on it.',
+      confirmLabel: 'Delete',
+      destructive: true,
+    })
+    if (!ok) return
+
+    try {
+      await deleteInvoice(invoice.id)
+      toast(`${invoice.invoice_number} deleted`, { tone: 'neutral' })
+      router.back()
+    } catch (error) {
+      console.error('deleteInvoice failed', error)
+      toast('Could not delete that invoice', { tone: 'error' })
+    }
+  }
+
+  const menu = (
+    <OverflowMenu
+      subject={invoice.invoice_number}
+      actions={[
+        { label: 'Delete invoice', icon: 'trash-outline', onPress: handleDelete, destructive: true },
+      ]}
+    />
+  )
+
   return (
-    <ModalSheet title={invoice.invoice_number}>
+    <>
+    <Stack.Screen options={{ headerRight: () => menu }} />
+    <ModalSheet title={invoice.invoice_number} headerRight={menu}>
       <SafeAreaView style={[styles.safe, { backgroundColor: c.bgPage }]} edges={['bottom']}>
         <ScrollView
           contentContainerStyle={[styles.content, isWide && styles.contentWide]}
@@ -288,6 +322,7 @@ export default function InvoiceDetailScreen() {
         </ScrollView>
       </SafeAreaView>
     </ModalSheet>
+    </>
   )
 }
 

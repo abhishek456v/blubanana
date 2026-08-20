@@ -20,26 +20,27 @@ import * as DocumentPicker from 'expo-document-picker'
 import { Ionicons } from '@expo/vector-icons'
 import { notificationsEnabledAsync } from '@/lib/notifications'
 import {
-  getDeal,
-  updateDeal,
-  updatePaymentRecord,
-  updateAdRights,
-  updatePerformance,
-  advanceDealStatus,
-  getNextStatus,
-  respondToReminder,
-  syncPaymentStatus,
-  markPaymentReminderSent,
-  rescheduleWorkflow,
   addPayment,
+  advanceDealStatus,
+  deleteDeal,
   deletePayment,
-  settlePayment,
+  getDeal,
+  getNextStatus,
   isFullyPaid,
+  markPaymentReminderSent,
   nextDuePayment,
   paymentsInOrder,
   primaryPayment,
+  rescheduleWorkflow,
+  respondToReminder,
+  settlePayment,
   stagesInOrder,
+  syncPaymentStatus,
   type DealWithPayments,
+  updateAdRights,
+  updateDeal,
+  updatePaymentRecord,
+  updatePerformance,
 } from '@/lib/deals'
 import { brandContact } from '@/lib/brands'
 import {
@@ -86,6 +87,7 @@ import {
   GradientCard,
   StarRating,
   TextField,
+  OverflowMenu,
   useConfirm,
   useToast,
 } from '@/components/ui'
@@ -903,6 +905,39 @@ export default function DealDetailScreen() {
     </TouchableOpacity>
   )
 
+  async function handleDelete() {
+    if (!deal) return
+    const ok = await confirm({
+      title: 'Delete this deal?',
+      message:
+        'Its payments, stages and deliverables go with it. Any invoice already raised against it stays, and so does any expense you logged, but they stop being linked to it.',
+      confirmLabel: 'Delete',
+      destructive: true,
+    })
+    if (!ok) return
+
+    try {
+      await deleteDeal(deal.id)
+      toast('Deal deleted', { tone: 'neutral' })
+      router.back()
+    } catch (error) {
+      console.error('deleteDeal failed', error)
+      toast('Could not delete that deal', { tone: 'error' })
+    }
+  }
+
+  const headerActions = (
+    <View style={styles.headerActions}>
+      <OverflowMenu
+        subject={brandName || 'Deal'}
+        actions={[
+          { label: 'Delete deal', icon: 'trash-outline', onPress: handleDelete, destructive: true },
+        ]}
+      />
+      {saveButton}
+    </View>
+  )
+
   return (
     <>
       {/*
@@ -912,7 +947,7 @@ export default function DealDetailScreen() {
       <Stack.Screen
         options={{
           title: brandName || 'Deal',
-          headerRight: () => saveButton,
+          headerRight: () => headerActions,
         }}
       />
 
@@ -1649,6 +1684,11 @@ export default function DealDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
   safe: {
     flex: 1,
   },

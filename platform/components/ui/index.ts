@@ -12,6 +12,11 @@ export { SegmentedControl, type SegmentOption, type SegmentedControlProps } from
 export { StarRating, type StarRatingProps } from './StarRating'
 export { Sheet, type SheetProps } from './Sheet'
 export {
+  OverflowMenu,
+  type OverflowAction,
+  type OverflowMenuProps,
+} from './OverflowMenu'
+export {
   FeedbackProvider,
   useAlert,
   useConfirm,

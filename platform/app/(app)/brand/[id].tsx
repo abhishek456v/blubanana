@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { getBrand, updateBrand } from '@/lib/brands'
+import { BrandHasDeals, deleteBrand, getBrand, updateBrand } from '@/lib/brands'
 import { getContacts, replaceContacts, type ContactDraft } from '@/lib/brandContacts'
 import { ContactsEditor } from '@/components/brand/ContactsEditor'
 import { getDealsForBrand, paymentsInOrder, type DealWithPaymentSummary } from '@/lib/deals'
@@ -18,14 +18,17 @@ import { BrandAvatar } from '@/components/BrandAvatar'
 import {
   Button,
   Card,
+  OverflowMenu,
   Skeleton,
   StarRating,
   TextField,
+  useConfirm,
   useToast,
 } from '@/components/ui'
 
 export default function BrandDetailScreen() {
   const toast = useToast()
+  const confirm = useConfirm()
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
   const { c } = useTheme()
@@ -132,6 +135,39 @@ export default function BrandDetailScreen() {
     )
   }
 
+  async function handleDelete() {
+    if (!brand) return
+    const ok = await confirm({
+      title: `Delete ${brand.name}?`,
+      message:
+        'Their contacts go too. Deals are never touched: if any still point at this brand, the delete is refused rather than taking a year of work with it.',
+      confirmLabel: 'Delete',
+      destructive: true,
+    })
+    if (!ok) return
+
+    try {
+      await deleteBrand(brand.id)
+      toast(`${brand.name} deleted`, { tone: 'neutral' })
+      router.back()
+    } catch (error) {
+      console.error('deleteBrand failed', error)
+      toast(
+        error instanceof BrandHasDeals
+          ? 'This brand still has deals. Delete or reassign those first.'
+          : 'Could not delete that brand',
+        { tone: 'error' }
+      )
+    }
+  }
+
+  const menu = (
+    <OverflowMenu
+      subject={brand?.name || 'Brand'}
+      actions={[{ label: 'Delete brand', icon: 'trash-outline', onPress: handleDelete, destructive: true }]}
+    />
+  )
+
   // Track record first. Before editing a phone number, the useful thing is
   // whether this brand is worth working with again.
   const headerCard = (
@@ -231,8 +267,8 @@ export default function BrandDetailScreen() {
   ) : null
 
   return (
-    <ModalSheet title={brand?.name ?? 'Brand'} wide>
-      <Stack.Screen options={{ title: brand?.name ?? 'Brand' }} />
+    <ModalSheet title={brand?.name ?? 'Brand'} headerRight={menu} wide>
+      <Stack.Screen options={{ title: brand?.name ?? 'Brand', headerRight: () => menu }} />
       <SafeAreaView style={[styles.safe, { backgroundColor: c.bgPage }]} edges={['bottom']}>
         <KeyboardAvoidingView
           style={styles.flex}

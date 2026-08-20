@@ -68,3 +68,32 @@ export async function updateBrand(
   if (error) throw error
   return data as Brand
 }
+
+
+/** Thrown when a brand still has deals against it. */
+export class BrandHasDeals extends Error {
+  constructor() {
+    super('That brand still has deals')
+    this.name = 'BrandHasDeals'
+  }
+}
+
+/**
+ * Deletes a brand and its contacts.
+ *
+ * `deals.brand_id` is `on delete restrict` (migration 001), so the database
+ * refuses while any deal still points at the brand. That is the right
+ * behaviour and not something to work around: deleting the brand would
+ * otherwise take a year of paid work with it. The refusal is turned into a
+ * named error so the screen can say which of the two things went wrong.
+ *
+ * Owner only, by the same policy as deals.
+ */
+export async function deleteBrand(id: string): Promise<void> {
+  const { error } = await supabase.from('brands').delete().eq('id', id)
+  if (error) {
+    // 23503 is a foreign key violation; here it can only be the deals link.
+    if ((error as { code?: string }).code === '23503') throw new BrandHasDeals()
+    throw error
+  }
+}

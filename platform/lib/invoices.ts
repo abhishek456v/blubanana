@@ -213,3 +213,19 @@ export async function getInvoiceForDeal(dealId: string): Promise<Invoice | null>
   if (error) throw error
   return data as Invoice | null
 }
+
+
+/**
+ * Deletes an invoice and its line items.
+ *
+ * Deliberately offered even for a sent invoice: the creator may have raised
+ * it against the wrong brand, and the alternative is a permanent wrong record
+ * in her own books. The confirmation says the number out loud so it is clear
+ * which one is going.
+ *
+ * Owner only, by the same policy as deals.
+ */
+export async function deleteInvoice(id: string): Promise<void> {
+  const { error } = await supabase.from('invoices').delete().eq('id', id)
+  if (error) throw error
+}
