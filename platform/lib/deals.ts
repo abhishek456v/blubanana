@@ -128,13 +128,13 @@ const DEALS_READ = 'deals_secure'
 
 /** Every embed the detail and list screens expect, in one place. */
 const DEAL_EMBEDS =
-  '*, brand:brands(*), payments(id, due_date, status, amount, paid_date, amount_received, tds_amount, label, sort_order, payment_terms), stages:deal_stages(*)'
+  '*, brand:brands(*, brand_contacts(*)), payments(id, due_date, status, amount, paid_date, amount_received, tds_amount, label, sort_order, payment_terms), stages:deal_stages(*)'
 
 /** Re-reads a deal through the masking view after a write. */
 async function readDeal(id: string): Promise<Deal> {
   const { data, error } = await supabase
     .from(DEALS_READ)
-    .select('*, brand:brands(*)')
+    .select('*, brand:brands(*, brand_contacts(*))')
     .eq('id', id)
     .single()
 
@@ -370,7 +370,7 @@ export type DealWithPayments = Deal & { payments: Payment[]; stages: DealStage[]
 export async function getDeal(id: string): Promise<DealWithPayments> {
   const { data, error } = await supabase
     .from(DEALS_READ)
-    .select('*, brand:brands(*), payments(*), stages:deal_stages(*)')
+    .select('*, brand:brands(*, brand_contacts(*)), payments(*), stages:deal_stages(*)')
     .eq('id', id)
     .single()
 

@@ -3,7 +3,7 @@ import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/core'
 import { useRouter } from 'expo-router'
-import { getBrands } from '@/lib/brands'
+import { brandContact, getBrands } from '@/lib/brands'
 import { getDeals, paymentsInOrder, type DealWithPaymentSummary } from '@/lib/deals'
 import { getAllRatings, summarizeRatings } from '@/lib/reputation'
 import { formatCurrency, formatCurrencyCompact, formatDate } from '@/lib/format'
@@ -100,7 +100,7 @@ export default function BrandsScreen() {
     const needle = query.trim().toLowerCase()
     if (!needle) return brands
     return brands.filter((brand) =>
-      [brand.name, brand.contact_person, brand.contact_email]
+      [brand.name, brandContact(brand)?.name, brandContact(brand)?.email]
         .filter(Boolean)
         .some((field) => field!.toLowerCase().includes(needle))
     )
@@ -183,7 +183,9 @@ export default function BrandsScreen() {
       flex: 1.9,
       render: (brand) => (
         <Text style={[styles.cellMuted, { color: c.textMuted }]} numberOfLines={1}>
-          {[brand.contact_person, brand.contact_email].filter(Boolean).join(' · ') || 'No POC yet'}
+          {[brandContact(brand)?.name, brandContact(brand)?.email]
+            .filter(Boolean)
+            .join(' · ') || 'No POC yet'}
         </Text>
       ),
     },
@@ -390,7 +392,9 @@ export default function BrandsScreen() {
         renderItem={({ item, index }) => {
           const summary = summarizeRatings(ratingsByBrand.get(item.id) ?? [])
           // POC: the brand-side person the creator actually deals with.
-          const poc = [item.contact_person, item.contact_email].filter(Boolean).join(' · ')
+          const poc = [brandContact(item)?.name, brandContact(item)?.email]
+            .filter(Boolean)
+            .join(' · ')
 
           return (
             <View style={isDesktop ? styles.gridCell : undefined}>

@@ -75,7 +75,7 @@ export async function search(rawQuery: string): Promise<SearchResult[]> {
   // one filter: a top-level .or() plus a referencedTable .or() would AND
   // together, and referencedTable alone would look the deal columns up on
   // `brands`.
-  const [dealsByText, dealsByBrand, brands, invoices] = await Promise.all([
+  const [dealsByText, dealsByBrand, brandsByName, brandsByContact, invoices] = await Promise.all([
     rows(
       supabase
         .from('deals_secure')
@@ -93,12 +93,19 @@ export async function search(rawQuery: string): Promise<SearchResult[]> {
         .limit(PER_KIND_LIMIT)
     ),
     rows(
+      supabase.from('brands').select('id, name').ilike('name', pattern).limit(PER_KIND_LIMIT)
+    ),
+    // Contacts moved to their own table in migration 019 and the columns were
+    // dropped from `brands` in 022. This query kept naming them, so PostgREST
+    // rejected the whole thing with a 400 and `rows()` turned that into an
+    // empty list: searching for a brand quietly returned no brands at all.
+    // Same shape as the deals pair above, for the same reason: PostgREST
+    // cannot OR across a parent and an embedded table in one filter.
+    rows(
       supabase
-        .from('brands')
-        .select('id, name, contact_person, contact_email')
-        .or(
-          `name.ilike.${pattern},contact_person.ilike.${pattern},contact_email.ilike.${pattern}`
-        )
+        .from('brand_contacts')
+        .select('name, email, brand:brands!inner(id, name)')
+        .or(`name.ilike.${pattern},email.ilike.${pattern}`)
         .limit(PER_KIND_LIMIT)
     ),
     rows(
@@ -119,16 +126,36 @@ export async function search(rawQuery: string): Promise<SearchResult[]> {
 
   const results: SearchResult[] = []
 
-  for (const brand of brands as Pick<
-    Brand,
-    'id' | 'name' | 'contact_person' | 'contact_email'
-  >[]) {
+  // Merged by brand id: a brand whose own name and whose contact both match
+  // arrives from both queries, and the contact match carries the better
+  // subtitle, so it is the one allowed to overwrite.
+  const brandById = new Map<string, { id: string; name: string; subtitle: string }>()
+
+  for (const brand of brandsByName as Pick<Brand, 'id' | 'name'>[]) {
+    brandById.set(brand.id, { id: brand.id, name: brand.name, subtitle: 'Brand' })
+  }
+
+  // Through `unknown` for the same reason as the deals embed below: without
+  // generated types supabase-js infers a to-one embed as an array.
+  for (const row of brandsByContact as unknown as {
+    name: string | null
+    email: string | null
+    brand: { id: string; name: string } | null
+  }[]) {
+    if (!row.brand) continue
+    brandById.set(row.brand.id, {
+      id: row.brand.id,
+      name: row.brand.name,
+      subtitle: [row.name, row.email].filter(Boolean).join(' · ') || 'Brand',
+    })
+  }
+
+  for (const brand of [...brandById.values()].slice(0, PER_KIND_LIMIT)) {
     results.push({
       kind: 'brand',
       id: brand.id,
       title: brand.name,
-      subtitle:
-        [brand.contact_person, brand.contact_email].filter(Boolean).join(' · ') || 'Brand',
+      subtitle: brand.subtitle,
       rank: rankOf(brand.name, query),
     })
   }

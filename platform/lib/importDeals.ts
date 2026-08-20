@@ -111,9 +111,6 @@ export async function importDeals(candidates: ImportCandidate[]): Promise<Import
       if (!brandId) {
         const brand = await createBrand({
           name: brandName,
-          contact_person: null,
-          contact_phone: null,
-          contact_email: null,
           notes: null,
         })
         brandId = brand.id

@@ -176,9 +176,21 @@ export interface Brand {
   id: string
   workspace_id: string
   name: string
-  contact_person: string | null
-  contact_phone: string | null
-  contact_email: string | null
+  /**
+   * Contacts live in `brand_contacts` (migration 019), not here.
+   *
+   * `contact_person`, `contact_phone` and `contact_email` were columns on this
+   * table until migration 022 dropped them. They stayed on this interface
+   * afterwards, which is exactly why `tsc` kept passing while every write to a
+   * brand failed: the compiler was checking against a shape the database had
+   * stopped having.
+   *
+   * `brand_contacts` is present when the query embedded it, which `getBrands`
+   * and `getBrand` both do. Optional rather than required, because a row read
+   * some other way genuinely will not have it, and `brandContact()` handles
+   * the absence.
+   */
+  brand_contacts?: BrandContact[]
   notes: string | null
   /**
    * Tax details (migration 018). Held here so the creator types them once;

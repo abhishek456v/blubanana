@@ -111,13 +111,26 @@ export function computeRevenueSummary(deals: DealWithPaymentSummary[]): RevenueS
   const pending: MoneyBucket = { count: 0, value: 0 }
   const overdue: MoneyBucket = { count: 0, value: 0 }
 
+  /**
+   * Deals, not payment rows.
+   *
+   * `pending.count` is captioned "N unpaid deals" on Home and on Money, and
+   * the list under it is a list of deals. It was incremented once per unpaid
+   * *payment*, so a deal owed in two instalments was counted twice and the
+   * caption disagreed with the rows directly beneath it.
+   *
+   * `overdue.count` deliberately stays a payment count: it is captioned
+   * "N payments late", which is what a creator chasing money wants to know.
+   */
+  const pendingDeals = new Set<string>()
+
   for (const { deal, payment } of rows) {
     if (payment.status === 'paid') continue
     // A held deal is not expected income. Counting it keeps "still out"
     // climbing with deals that are never going to pay (§8.6).
     if (deal.on_hold) continue
 
-    pending.count += 1
+    pendingDeals.add(deal.id)
     pending.value += payment.amount
 
     if (getPaymentAlertTone(payment) === 'overdue') {
@@ -125,6 +138,8 @@ export function computeRevenueSummary(deals: DealWithPaymentSummary[]): RevenueS
       overdue.value += payment.amount
     }
   }
+
+  pending.count = pendingDeals.size
 
   const dealTotal = sumRates(deals)
   const averageDealValue =

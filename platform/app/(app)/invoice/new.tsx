@@ -11,6 +11,7 @@ import {
   type DealWithPaymentSummary,
 } from '@/lib/deals'
 import { createInvoice, type LineItemInput } from '@/lib/invoices'
+import { brandContact } from '@/lib/brands'
 import { getProfile } from '@/lib/profile'
 import { GST_STATE_OPTIONS, stateCodeFromGstin } from '@/constants/gst'
 import { formatCurrency, formatDate } from '@/lib/format'
@@ -97,8 +98,13 @@ export default function NewInvoiceScreen() {
     try {
       const deal = await getDeal(dealId)
       setBrandName(deal.brand?.name ?? '')
-      setContactPerson(deal.brand?.contact_person ?? '')
-      setContactEmail(deal.brand?.contact_email ?? '')
+      // The brand embedded on a deal carries its contacts, so the invoice
+      // header prefills from the primary one. It used to read three columns
+      // that migration 022 dropped, so every invoice raised since then went
+      // out with a blank contact.
+      const poc = deal.brand ? brandContact(deal.brand) : null
+      setContactPerson(poc?.name ?? '')
+      setContactEmail(poc?.email ?? '')
       setBrandGstin(deal.brand?.gstin ?? '')
       setBrandAddress(deal.brand?.address ?? '')
       // The place of supply for a creator's services is the recipient's

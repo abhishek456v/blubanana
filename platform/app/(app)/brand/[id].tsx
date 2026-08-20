@@ -105,12 +105,6 @@ export default function BrandDetailScreen() {
     try {
       await updateBrand(brand.id, {
         name: name.trim(),
-        // The three legacy columns are still written from the primary contact
-        // so the invoice, search and WhatsApp paths keep working until they
-        // read brand_contacts directly. They are dropped in a later migration.
-        contact_person: contactDrafts.find((x) => x.is_primary)?.name?.trim() || null,
-        contact_phone: contactDrafts.find((x) => x.is_primary)?.phone?.trim() || null,
-        contact_email: contactDrafts.find((x) => x.is_primary)?.email?.trim() || null,
         notes: notes.trim() || null,
       })
 

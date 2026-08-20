@@ -106,9 +106,6 @@ async function createDealFromExtraction(
   const brandName = fields.brand_name?.trim() || 'Unknown brand'
   const brand = await createBrand({
     name: brandName,
-    contact_person: null,
-    contact_phone: null,
-    contact_email: null,
     notes: null,
   })
 

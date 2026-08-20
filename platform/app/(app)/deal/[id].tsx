@@ -41,7 +41,13 @@ import {
   stagesInOrder,
   type DealWithPayments,
 } from '@/lib/deals'
-import { updateBrand } from '@/lib/brands'
+import { brandContact } from '@/lib/brands'
+import {
+  getContacts,
+  primaryContact,
+  replaceContacts,
+  type ContactDraft,
+} from '@/lib/brandContacts'
 import type { ReminderResponse } from '@/lib/reminderChains'
 import { buildPaymentReminderMessage, buildLiveLinkMessage } from '@/lib/whatsapp'
 import { chasedToday, nextEscalationLevel, sendNow } from '@/lib/messaging'
@@ -505,12 +511,12 @@ export default function DealDetailScreen() {
           purpose: 'delivery_notification',
           body: buildLiveLinkMessage({
             brandName: deal.brand.name,
-            contactPerson: deal.brand.contact_person,
+            contactPerson: brandContact(deal.brand)?.name ?? null,
             deliverable: deal.deliverable_description,
             liveLink: trimmedLink,
           }),
         },
-        deal.brand.contact_phone
+        brandContact(deal.brand)?.phone ?? null
       )
 
       if (!handedOff) {
@@ -670,7 +676,7 @@ export default function DealDetailScreen() {
     const tone = getPaymentAlertTone(payment)
     if (!tone) return
 
-    if (!brand.contact_phone) {
+    if (!brandContact(brand)?.phone) {
       setAddingPhone(true)
       return
     }
@@ -696,7 +702,7 @@ export default function DealDetailScreen() {
 
       const body = buildPaymentReminderMessage({
         brandName: brand.name,
-        contactPerson: brand.contact_person,
+        contactPerson: brandContact(brand)?.name ?? null,
         deliverable: deal.deliverable_description,
         amount: payment.amount,
         dueDate: payment.due_date!,
@@ -717,7 +723,7 @@ export default function DealDetailScreen() {
           body,
           escalationLevel,
         },
-        brand.contact_phone
+        brandContact(brand)?.phone ?? null
       )
 
       if (!handedOff) {
@@ -750,8 +756,27 @@ export default function DealDetailScreen() {
 
     setSavingPhone(true)
     try {
-      const updatedBrand = await updateBrand(deal.brand.id, { contact_phone: trimmed })
-      setDeal((prev) => (prev ? { ...prev, brand: updatedBrand } : prev))
+      // Onto the primary contact, not onto the brand. `brands.contact_phone`
+      // stopped existing at migration 022, so this silently failed and the
+      // creator was told to try again on a number that could never save.
+      const existing = await getContacts(deal.brand.id)
+      const primary = primaryContact(existing)
+      const drafts: ContactDraft[] = existing.length
+        ? existing.map((contact) => ({
+            id: contact.id,
+            name: contact.name,
+            phone: contact.id === primary?.id ? trimmed : contact.phone,
+            email: contact.email,
+            role: contact.role,
+            is_primary: contact.id === primary?.id,
+          }))
+        : [{ name: '', phone: trimmed, email: null, role: null, is_primary: true }]
+
+      await replaceContacts(deal.brand.id, drafts)
+      const refreshed = await getContacts(deal.brand.id)
+      setDeal((prev) =>
+        prev && prev.brand ? { ...prev, brand: { ...prev.brand, brand_contacts: refreshed } } : prev
+      )
       setAddingPhone(false)
       setPhoneInput('')
     } catch {
@@ -1352,7 +1377,7 @@ export default function DealDetailScreen() {
                     const payment = nextDuePayment(deal)
                     if (!payment) return null
                     const tone = getPaymentAlertTone(payment)
-                    const missingPhone = !deal.brand?.contact_phone
+                    const missingPhone = !(deal.brand && brandContact(deal.brand)?.phone)
 
                     // Everything inside this card is gated on `tone`, so
                     // without one it renders an empty rounded box. The missing

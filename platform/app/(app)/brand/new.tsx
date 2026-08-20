@@ -37,11 +37,12 @@ export default function NewBrandScreen() {
 
     setSaving(true)
     try {
+      // Name and notes only. The contact goes to `brand_contacts` just below;
+      // it used to be written to both, and once migration 022 dropped those
+      // three columns PostgREST rejected the whole insert, so adding a brand
+      // failed outright.
       const created = await createBrand({
         name: name.trim(),
-        contact_person: contactPerson.trim() || null,
-        contact_phone: contactPhone.trim() || null,
-        contact_email: contactEmail.trim() || null,
         notes: notes.trim() || null,
       })
 
@@ -60,7 +61,11 @@ export default function NewBrandScreen() {
       ])
       toast(`${name.trim()} added`, { tone: 'success' })
       router.back()
-    } catch {
+    } catch (error) {
+      // The creator gets the plain sentence; the console gets the reason.
+      // A bare `catch {}` here is what let a hard schema mismatch present as
+      // a vague "could not save" for as long as it did.
+      console.error('createBrand failed', error)
       toast('Could not save that brand', { tone: 'error' })
     } finally {
       setSaving(false)
