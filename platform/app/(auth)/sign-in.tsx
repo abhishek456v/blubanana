@@ -20,7 +20,19 @@ export default function SignInScreen() {
   const [loading, setLoading] = useState(false)
   // Inline, per-field, so a mistake is marked where it happened rather than in
   // a modal the user has to dismiss before they can fix anything.
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
+  const [errors, setErrors] = useState<{ email?: string; password?: string; code?: string }>({})
+
+  /**
+   * Password, or a code emailed over.
+   *
+   * A creator who signs in twice a month does not remember a password, and
+   * the honest alternative to her writing one on a sticky note is not making
+   * her invent a better one. `sent` splits the code path in two: ask for the
+   * address, then ask for the code.
+   */
+  const [mode, setMode] = useState<'password' | 'code'>('password')
+  const [sent, setSent] = useState(false)
+  const [code, setCode] = useState('')
 
   async function handleSignIn() {
     const nextErrors: typeof errors = {}
@@ -43,6 +55,59 @@ export default function SignInScreen() {
     // redirects into (app)/, with no manual navigation needed here.
   }
 
+  async function handleSendCode() {
+    if (!email.trim()) {
+      setErrors({ email: 'Enter your email' })
+      return
+    }
+    setErrors({})
+    setLoading(true)
+    const { error } = await supabase.auth.signInWithOtp({
+      email: email.trim(),
+      options: {
+        // Never sign somebody up by accident. Without this a typo in the
+        // address creates a brand new empty workspace and mails a code to it,
+        // and the creator is looking at an empty app wondering where her deals
+        // went.
+        shouldCreateUser: false,
+      },
+    })
+    setLoading(false)
+
+    if (error) {
+      toast(error.message, { tone: 'error' })
+      return
+    }
+    setSent(true)
+  }
+
+  async function handleVerifyCode() {
+    if (!code.trim()) {
+      setErrors({ code: 'Enter the code from your email' })
+      return
+    }
+    setErrors({})
+    setLoading(true)
+    const { error } = await supabase.auth.verifyOtp({
+      email: email.trim(),
+      token: code.trim(),
+      type: 'email',
+    })
+    setLoading(false)
+
+    if (error) {
+      setErrors({ code: 'That code is wrong or has expired' })
+    }
+    // Success needs no navigation here either: verifyOtp establishes the
+    // session and the root layout does the rest.
+  }
+
+  function backToStart() {
+    setSent(false)
+    setCode('')
+    setErrors({})
+  }
+
   return (
     <AuthShell>
       <KeyboardAvoidingView
@@ -51,9 +116,13 @@ export default function SignInScreen() {
       >
         <View style={[styles.inner, isWide && styles.innerWide]}>
           <Animated.View entering={FadeInDown.duration(Duration.slow)}>
-            <Text style={[styles.title, { color: c.textPrimary }]}>Welcome back</Text>
+            <Text style={[styles.title, { color: c.textPrimary }]}>
+              {sent ? 'Check your email' : 'Welcome back'}
+            </Text>
             <Text style={[styles.subtitle, { color: c.textSecondary }]}>
-              Your deals, deadlines and money are where you left them.
+              {sent
+                ? `We sent a 6 digit code to ${email.trim()}. It works once and lasts an hour.`
+                : 'Your deals, deadlines and money are where you left them.'}
             </Text>
           </Animated.View>
 
@@ -78,38 +147,101 @@ export default function SignInScreen() {
               returnKeyType="next"
             />
 
-            <TextField
-              label="Password"
-              placeholder="••••••••"
-              value={password}
-              onChangeText={(value) => {
-                setPassword(value)
-                if (errors.password) setErrors((e) => ({ ...e, password: undefined }))
-              }}
-              error={errors.password}
-              secureTextEntry
-              autoComplete="password"
-              textContentType="password"
-              returnKeyType="go"
-              onSubmitEditing={handleSignIn}
-            />
+            {mode === 'password' ? (
+              <>
+                <TextField
+                  label="Password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChangeText={(value) => {
+                    setPassword(value)
+                    if (errors.password) setErrors((e) => ({ ...e, password: undefined }))
+                  }}
+                  error={errors.password}
+                  secureTextEntry
+                  autoComplete="password"
+                  textContentType="password"
+                  returnKeyType="go"
+                  onSubmitEditing={handleSignIn}
+                />
 
-            <Link href="/(auth)/forgot-password" asChild>
-              <PressableScale style={styles.forgotRow} haptic="light">
-                <Text style={[styles.forgotText, { color: c.textSecondary }]}>
-                  Forgot password?
+                <Link href="/(auth)/forgot-password" asChild>
+                  <PressableScale style={styles.forgotRow} haptic="light">
+                    <Text style={[styles.forgotText, { color: c.textSecondary }]}>
+                      Forgot password?
+                    </Text>
+                  </PressableScale>
+                </Link>
+
+                <Button
+                  label="Sign in"
+                  onPress={handleSignIn}
+                  loading={loading}
+                  fullWidth
+                  size="lg"
+                  style={styles.submit}
+                />
+              </>
+            ) : sent ? (
+              <>
+                <TextField
+                  label="Code"
+                  placeholder="000000"
+                  value={code}
+                  onChangeText={(value) => {
+                    // Digits only: a pasted code often brings a space with it.
+                    setCode(value.replace(/[^0-9]/g, ''))
+                    if (errors.code) setErrors((e) => ({ ...e, code: undefined }))
+                  }}
+                  error={errors.code}
+                  keyboardType="number-pad"
+                  autoComplete="one-time-code"
+                  textContentType="oneTimeCode"
+                  maxLength={6}
+                  returnKeyType="go"
+                  onSubmitEditing={handleVerifyCode}
+                />
+
+                <Button
+                  label="Sign in"
+                  onPress={handleVerifyCode}
+                  loading={loading}
+                  fullWidth
+                  size="lg"
+                  style={styles.submit}
+                />
+
+                <PressableScale onPress={backToStart} haptic="light" style={styles.switchRow}>
+                  <Text style={[styles.forgotText, { color: c.textSecondary }]}>
+                    Use a different email
+                  </Text>
+                </PressableScale>
+              </>
+            ) : (
+              <Button
+                label="Email me a code"
+                onPress={handleSendCode}
+                loading={loading}
+                fullWidth
+                size="lg"
+                style={styles.submit}
+              />
+            )}
+
+            {!sent ? (
+              <PressableScale
+                onPress={() => {
+                  setMode(mode === 'password' ? 'code' : 'password')
+                  setErrors({})
+                }}
+                haptic="light"
+                style={styles.switchRow}
+              >
+                <Text style={[styles.forgotText, { color: c.accentText }]}>
+                  {mode === 'password' ? 'Sign in with a code instead' : 'Use my password instead'}
                 </Text>
               </PressableScale>
-            </Link>
-
-            <Button
-              label="Sign in"
-              onPress={handleSignIn}
-              loading={loading}
-              fullWidth
-              size="lg"
-              style={styles.submit}
-            />
+            ) : null}
           </Animated.View>
 
           <Animated.View entering={FadeInDown.duration(Duration.slow).delay(staggerDelay(2))}>
