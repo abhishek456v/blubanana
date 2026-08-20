@@ -22,9 +22,9 @@ import { Platform } from 'react-native'
 // which stops being true the moment a screen has four of them.
 export const Colors = {
   light: {
-    // Cool, not warm. The neutrals carry a slight blue bias toward the accent
-    // so they read as chosen rather than as an unconfigured grey.
-    bgPage: '#EEEEF3',
+    // Crystal white, by request (20 Aug redesign). Panels separate from the
+    // page by shadow, not by a tinted ground.
+    bgPage: '#FFFFFF',
     bgSurface: '#FFFFFF',
     bgSurfaceRaised: '#FFFFFF',
     bgContrast: '#0B0B12',
@@ -34,23 +34,26 @@ export const Colors = {
     // page's `border` token is derived from the page ground, so on an inverted
     // surface it is invisible in one theme and glaring in the other.
     onContrastFaint: 'rgba(255,255,255,0.16)',
-    border: 'rgba(11,11,18,0.08)',
-    borderStrong: 'rgba(11,11,18,0.16)',
+    // Hairlines are deliberately faint: controls separate by fill and shadow,
+    // not by outline (20 Aug redesign, round three).
+    border: 'rgba(11,11,18,0.06)',
+    borderStrong: 'rgba(11,11,18,0.12)',
     textPrimary: '#0B0B12',
     textSecondary: 'rgba(11,11,18,0.62)',
     textMuted: 'rgba(11,11,18,0.42)',
-    fillPrimary: '#2B5CF0',
+    fillPrimary: '#4169E1',
     onFillPrimary: '#FFFFFF',
-    accent: '#2B5CF0',
-    // The accent as *text*. On a light ground the fill blue is already legible,
-    // so this deepens only slightly to clear AA at caption sizes.
-    accentText: '#1E44C4',
-    accentLight: 'rgba(43,92,240,0.10)',
+    // Royal blue, locked in the 20 Aug redesign. White text on this fill
+    // clears AA at body sizes.
+    accent: '#4169E1',
+    // The accent as *text*. Deepened slightly to clear AA at caption sizes.
+    accentText: '#2E4CC7',
+    accentLight: 'rgba(65,105,225,0.10)',
     // Between `accentLight` (a tint you put text on) and `accent` (the thing
     // itself). Chart tracks need this: at 10% alpha a bar reads as a loading
     // skeleton rather than as data.
-    accentSoft: 'rgba(43,92,240,0.42)',
-    accentHover: '#1E44C4',
+    accentSoft: 'rgba(65,105,225,0.42)',
+    accentHover: '#2E4CC7',
     success: '#0F7A4A',
     successLight: 'rgba(15,122,74,0.10)',
     warning: '#8A5200',
@@ -61,33 +64,35 @@ export const Colors = {
     infoLight: 'rgba(30,68,196,0.10)',
   },
   dark: {
-    // Not pure black. A few points of blue in the ground is what lets the blue
-    // and magenta cards sit *in* the page rather than on top of it; over
-    // #000000 the same cards read as stickers.
-    bgPage: '#08080C',
-    bgSurface: '#141419',
-    bgSurfaceRaised: '#1D1D23',
+    // As close to true black as the OLED-smear rule of thumb allows. The user
+    // called the earlier blue-cast ground "AI generated" (20 Aug, round
+    // three): the dark theme sits on solid black and the colour lives in the
+    // one gradient hero per screen.
+    bgPage: '#050506',
+    bgSurface: '#131318',
+    bgSurfaceRaised: '#1C1C22',
     bgContrast: '#FFFFFF',
     onContrast: '#0B0B12',
     onContrastMuted: 'rgba(11,11,18,0.60)',
     onContrastFaint: 'rgba(11,11,18,0.10)',
-    border: 'rgba(255,255,255,0.08)',
-    borderStrong: 'rgba(255,255,255,0.16)',
+    border: 'rgba(255,255,255,0.07)',
+    borderStrong: 'rgba(255,255,255,0.14)',
     textPrimary: '#FFFFFF',
     textSecondary: 'rgba(255,255,255,0.60)',
     textMuted: 'rgba(255,255,255,0.40)',
-    fillPrimary: '#3B6EF6',
+    fillPrimary: '#4169E1',
     onFillPrimary: '#FFFFFF',
-    accent: '#3B6EF6',
+    // Royal blue, same hue in both themes (20 Aug redesign).
+    accent: '#4169E1',
     // On a near-black ground the fill blue clears AA on its own, so the text
     // variant lightens instead of darkening. The token exists so screens can
     // use one name in both themes.
-    accentText: '#7FA5FF',
-    accentLight: 'rgba(59,110,246,0.16)',
+    accentText: '#9DB4FF',
+    accentLight: 'rgba(65,105,225,0.16)',
     // Higher alpha than the light theme's: a blue at 42% over near-black reads
     // as slate, not as blue.
-    accentSoft: 'rgba(59,110,246,0.58)',
-    accentHover: '#5E88FF',
+    accentSoft: 'rgba(65,105,225,0.58)',
+    accentHover: '#6E93F5',
     success: '#3DD68C',
     successLight: 'rgba(61,214,140,0.14)',
     warning: '#F5B544',
@@ -291,9 +296,10 @@ export const Breakpoints = {
   desktop: 1180,
 } as const
 
-export const SidebarWidth = 240
+/** Width of the labelled sidebar on wide screens (20 Aug redesign). */
+export const SidebarWidth = 248
 
-/** Width of the collapsed icon rail on the dark theme's desktop layout. */
+/** Width of the sidebar when collapsed to icons. */
 export const RailWidth = 72
 
 // Caps how wide a single column of text or form inputs gets. Reading line
@@ -301,7 +307,7 @@ export const RailWidth = 72
 export const ContentMaxWidth = 720
 
 /** Cap for a desktop page that lays out in columns rather than one stack. */
-export const DesktopContentMaxWidth = 1160
+export const DesktopContentMaxWidth = 1560
 
 /** Gap between columns in a desktop two-column body. */
 export const ColumnGap = 20
@@ -464,7 +470,7 @@ export const GradientGlow: Record<GradientName, string> = {
  */
 export const accentGlow = (opacity = 0.3) =>
   Platform.select({
-    web: { boxShadow: `0px 6px 20px rgba(59,110,246,${opacity})` } as object,
+    web: { boxShadow: `0px 6px 20px rgba(65,105,225,${opacity})` } as object,
     default: {
       shadowColor: Colors.dark.accent,
       shadowOffset: { width: 0, height: 6 },

@@ -1,5 +1,6 @@
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
 import { Spacing } from '@/constants/design'
+import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 import { NotificationBell } from './NotificationBell'
 import { SearchButton } from './SearchButton'
 import { ThemeToggle } from './ThemeToggle'
@@ -28,11 +29,14 @@ export function HeaderUtilities({
   showSearch = true,
   style,
 }: HeaderUtilitiesProps) {
+  // On wide screens the sidebar's Light/Dark segment owns the theme, so the
+  // icon toggle here would be a second control for the same thing.
+  const isWide = useIsWideScreen()
   return (
     <View style={[styles.row, style]}>
       {showSearch ? <SearchButton /> : null}
       {showBell ? <NotificationBell /> : null}
-      <ThemeToggle />
+      {isWide ? null : <ThemeToggle />}
     </View>
   )
 }

@@ -27,7 +27,12 @@ import { useTheme } from '@/hooks/useTheme'
  */
 export function AuraBackground() {
   const { isDark } = useTheme()
-  const strength = isDark ? 1 : 0.35
+
+  // Dark mode gets no wash at all: the ground is solid black by decree
+  // (20 Aug redesign, round three; the wash read as "AI generated"). Light
+  // keeps a whisper so the sign-in page is not a bare white void.
+  if (isDark) return null
+  const strength = 0.18
 
   const blue = Gradients.blue.colors[1]
   const magenta = Gradients.magenta.colors[0]

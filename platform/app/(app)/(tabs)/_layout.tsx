@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Tabs } from 'expo-router'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 import { getAlertFeed } from '@/lib/alerts'
-import { SidebarRail } from '@/components/nav/SidebarRail'
+import { Sidebar } from '@/components/nav/Sidebar'
 import { TabDock } from '@/components/nav/TabDock'
 import { TABS } from '@/components/nav/tabs'
 
@@ -53,7 +53,7 @@ export default function TabsLayout() {
       // `tabBarBadge` is the exception. It stays a screen option because both
       // of our bars read it back off the descriptor, which keeps the badge
       // declared next to the route it belongs to.
-      tabBar={(props) => (isWide ? <SidebarRail {...props} /> : <TabDock {...props} />)}
+      tabBar={(props) => (isWide ? <Sidebar {...props} /> : <TabDock {...props} />)}
       screenOptions={{
         // Every tab screen draws its own large-title header via ScreenHeader,
         // so the native one is off everywhere. See components/ui/ScreenHeader.

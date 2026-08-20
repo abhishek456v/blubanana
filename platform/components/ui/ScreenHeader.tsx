@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { FontFamily, HitSlop, Radius, Spacing, Typography } from '@/constants/design'
 import { Duration } from '@/constants/motion'
+import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 import { useTheme } from '@/hooks/useTheme'
 import { PressableScale } from './PressableScale'
 
@@ -72,6 +73,14 @@ export function ScreenHeader({
 }: ScreenHeaderProps) {
   const { c } = useTheme()
 
+  // Wide screens get the top-bar treatment (20 Aug redesign): the title row
+  // compacts and takes a hairline underneath, so the page opens with a bar
+  // rather than a phone-scale display title. Pushed screens keep the large
+  // title: they carry a back control and read as documents, not as pages of
+  // the shell.
+  const isWide = useIsWideScreen()
+  const asBar = isWide && !onBack
+
   return (
     <Animated.View entering={FadeInDown.duration(Duration.slow)} style={[styles.container, style]}>
       {onBack ? (
@@ -87,7 +96,12 @@ export function ScreenHeader({
         </PressableScale>
       ) : null}
 
-      <View style={styles.titleRow}>
+      <View
+        style={[
+          styles.titleRow,
+          asBar && [styles.titleRowBar, { borderBottomColor: c.border }],
+        ]}
+      >
         <View style={styles.titleBlock}>
           {eyebrow ? (
             <Text style={[styles.eyebrow, { color: c.textMuted }]} numberOfLines={1}>
@@ -95,7 +109,11 @@ export function ScreenHeader({
             </Text>
           ) : null}
           <Text
-            style={[styles.title, compactTitle && styles.titleCompact, { color: c.textPrimary }]}
+            style={[
+              styles.title,
+              (compactTitle || asBar) && styles.titleCompact,
+              { color: c.textPrimary },
+            ]}
             numberOfLines={2}
           >
             {title}
@@ -164,6 +182,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: Spacing.md,
+  },
+  // The wide-screen bar: hairline under the title row, controls on the same
+  // optical line as the title.
+  titleRowBar: {
+    alignItems: 'center',
+    paddingBottom: Spacing.base,
+    borderBottomWidth: 1,
   },
   titleBlock: {
     flex: 1,
