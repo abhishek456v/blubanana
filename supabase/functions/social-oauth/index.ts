@@ -46,7 +46,7 @@ async function connectYouTube(
   const clientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET')
   if (!clientId || !clientSecret) {
     console.error('social-oauth: GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET not set')
-    return page('Not configured yet', 'YouTube is not set up on this server.', false)
+    return back('notconfigured', 'YouTube')
   }
 
   const tokenRes = await fetch(GOOGLE_TOKEN, {
@@ -63,7 +63,7 @@ async function connectYouTube(
   const tokens = await tokenRes.json()
   if (!tokenRes.ok || !tokens.access_token) {
     console.error('social-oauth: google exchange failed', tokens?.error)
-    return page('Could not connect', 'YouTube refused the authorisation. Please try again.', false)
+    return back('refused', 'YouTube')
   }
 
   // No refresh token means Google treated this as a repeat consent and the
@@ -71,11 +71,7 @@ async function connectYouTube(
   // provider sends prompt=consent to prevent it; failing loudly here is what
   // stops that becoming a silent outage if the parameter is ever dropped.
   if (!tokens.refresh_token) {
-    return page(
-      'Could not connect',
-      'Google did not return a lasting permission. Remove Blubanana from your Google account permissions, then connect again.',
-      false
-    )
+    return back('norefresh')
   }
 
   const channelRes = await fetch(`${YT}/channels?part=snippet&mine=true`, {
@@ -85,11 +81,7 @@ async function connectYouTube(
   const channel = channelBody.items?.[0]
 
   if (!channel) {
-    return page(
-      'No channel on this account',
-      'This Google account has no YouTube channel. Sign in with the account that owns the channel.',
-      false
-    )
+    return back('nochannel')
   }
 
   const handle: string =
@@ -113,30 +105,52 @@ async function connectYouTube(
   )
   if (error) throw error
 
-  return page(
-    `Connected ${handle}`,
-    'Your subscriber count and view counts will refresh daily. You can close this tab and go back to the app.',
-    true
-  )
+  return back('connected', handle)
 }
 
 /** A plain page, because a human is looking at this in a browser tab. */
-function page(title: string, detail: string, ok: boolean): Response {
-  return new Response(
-    `<!DOCTYPE html><html><head><meta charset="utf-8" />
-     <meta name="viewport" content="width=device-width,initial-scale=1" />
-     <title>${title}</title></head>
-     <body style="margin:0;display:flex;align-items:center;justify-content:center;
-                  min-height:100vh;background:#08080C;color:#fff;
-                  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif">
-       <div style="max-width:420px;padding:32px;text-align:center">
-         <div style="font-size:34px;margin-bottom:14px">${ok ? '✅' : '⚠️'}</div>
-         <h1 style="font-size:19px;margin:0 0 10px">${title}</h1>
-         <p style="font-size:14px;line-height:1.6;color:rgba(255,255,255,.62);margin:0">${detail}</p>
-       </div>
-     </body></html>`,
-    { status: ok ? 200 : 400, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
-  )
+/** Where the creator came from, and where every ending sends them back to. */
+const APP_URL = Deno.env.get('APP_URL') ?? 'https://platform.blubanana.in'
+
+/**
+ * What happened, as something the app can read.
+ *
+ * Codes rather than prose: the wording belongs in the app with the rest of
+ * the copy, not in a query string assembled on a server.
+ */
+type Outcome =
+  | 'connected'
+  | 'cancelled'
+  | 'nocode'
+  | 'expired'
+  | 'notconfigured'
+  | 'refused'
+  | 'norefresh'
+  | 'nochannel'
+  | 'noaccount'
+  | 'failed'
+
+/**
+ * Send the browser back to the app.
+ *
+ * This used to render a small HTML page saying what happened, and it could
+ * not work: Supabase rewrites text/html to text/plain and adds nosniff on the
+ * functions domain, so the "Connected" page arrived as its own source code
+ * with the tick mark mojibaked into "âœ…". No response header changes that,
+ * because the rewrite happens above the function.
+ *
+ * Redirecting is the better ending anyway. The creator opened this from the
+ * app and now lands back in it, instead of being left on a supabase.co URL
+ * being told to close the tab.
+ *
+ * `detail` carries the channel handle on success, and the platform name when
+ * a platform is not configured, so the app can name what it is talking about.
+ */
+function back(outcome: Outcome, detail = ''): Response {
+  const url = new URL(`${APP_URL}/settings`)
+  url.searchParams.set('social', outcome)
+  if (detail) url.searchParams.set('detail', detail)
+  return Response.redirect(url.toString(), 303)
 }
 
 Deno.serve(async (req) => {
@@ -146,10 +160,10 @@ Deno.serve(async (req) => {
 
   // Meta sends the user back here when they decline, too.
   if (url.searchParams.get('error')) {
-    return page('Not connected', 'You cancelled, so nothing was changed. You can close this tab.', false)
+    return back('cancelled')
   }
   if (!code || !state) {
-    return page('Something is missing', 'That link did not carry an authorisation code.', false)
+    return back('nocode')
   }
 
   const admin = createClient(
@@ -171,11 +185,7 @@ Deno.serve(async (req) => {
 
     if (stateError) throw stateError
     if (!stateRow) {
-      return page(
-        'That link has expired',
-        'Start the connection again from the app. Links are single-use and last a few minutes.',
-        false
-      )
+      return back('expired')
     }
 
     const redirectUri = `${Deno.env.get('SUPABASE_URL')}/functions/v1/social-oauth`
@@ -200,7 +210,7 @@ Deno.serve(async (req) => {
     const appSecret = Deno.env.get('META_APP_SECRET')
     if (!appId || !appSecret) {
       console.error('social-oauth: META_APP_ID / META_APP_SECRET not set')
-      return page('Not configured yet', 'Instagram is not set up on this server.', false)
+      return back('notconfigured', 'Instagram')
     }
 
     // ── 2. Code → short-lived token → long-lived token ───────────────────────
@@ -211,7 +221,7 @@ Deno.serve(async (req) => {
     const short = await shortRes.json()
     if (!shortRes.ok || !short.access_token) {
       console.error('social-oauth: exchange failed', short)
-      return page('Could not connect', 'Instagram refused the authorisation. Please try again.', false)
+      return back('refused', 'Instagram')
     }
 
     // A short-lived token dies in about an hour, which would mean reconnecting
@@ -236,12 +246,7 @@ Deno.serve(async (req) => {
     )
 
     if (!linked) {
-      return page(
-        'No Instagram professional account',
-        'This Facebook account has no Instagram business or creator account linked to a Page. ' +
-          'Instagram only exposes insights for those.',
-        false
-      )
+      return back('noaccount')
     }
 
     const ig = linked.instagram_business_account as { id: string; username: string }
@@ -267,13 +272,9 @@ Deno.serve(async (req) => {
     )
     if (upsertError) throw upsertError
 
-    return page(
-      `Connected @${ig.username}`,
-      'Your reach and view counts will refresh daily. You can close this tab and go back to the app.',
-      true
-    )
+    return back('connected', ig.username)
   } catch (error) {
     console.error('social-oauth failed', error)
-    return page('Could not connect', 'Something went wrong on our side. Please try again.', false)
+    return back('failed')
   }
 })

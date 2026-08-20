@@ -1,7 +1,7 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useRouter } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useFocusEffect } from '@react-navigation/core'
 import { Ionicons } from '@expo/vector-icons'
 import { File, Paths } from 'expo-file-system'
@@ -25,6 +25,7 @@ import {
   ColumnGap,
   DesktopContentMaxWidth,
   FontFamily,
+  HitSlop,
   Radius,
   Spacing,
   Typography,
@@ -34,6 +35,7 @@ import {
   Card,
   HeaderUtilities,
   ListRow,
+  PressableScale,
   ScreenHeader,
   SegmentedControl,
   useConfirm,
@@ -58,6 +60,52 @@ export default function YouScreen() {
   const { mode, setMode } = useThemeMode()
   const toast = useToast()
   const confirm = useConfirm()
+  const params = useLocalSearchParams<{ social?: string; detail?: string }>()
+
+  /**
+   * What the OAuth redirect came back saying.
+   *
+   * The edge function cannot tell the creator anything itself. Supabase
+   * rewrites text/html to text/plain on the functions domain, so the page it
+   * used to render arrived as raw source with a mojibaked tick. It sends a
+   * short code back to this screen instead, and the wording lives here with
+   * the rest of the app's copy.
+   *
+   * `reconnectHint` exists because two of these are fixable by the creator
+   * and the rest are not, and a message that only says "could not connect"
+   * leaves her with nothing to do next.
+   */
+  const [socialNotice, setSocialNotice] = useState<string | null>(null)
+
+  useEffect(() => {
+    const outcome = params.social
+    if (!outcome) return
+
+    const detail = params.detail ?? 'That account'
+    const message: Record<string, string> = {
+      connected: `${detail} is connected. Your figures refresh daily.`,
+      cancelled: 'Not connected. You cancelled, so nothing changed.',
+      nocode: 'That link did not carry an authorisation code. Please try again.',
+      expired: 'That link had expired. Links last a few minutes, so start again.',
+      notconfigured: `${detail} is not set up on this server yet.`,
+      refused: `${detail} refused the authorisation. Please try again.`,
+      norefresh:
+        'Google did not give a lasting permission. Remove Blubanana from your Google account permissions, then connect again.',
+      nochannel:
+        'That Google account has no YouTube channel. Sign in with the account that owns the channel.',
+      noaccount:
+        'That Facebook account has no Instagram business or creator account linked to a Page. Instagram only shares figures for those.',
+      failed: 'Something went wrong on our side. Please try again.',
+    }
+
+    const text = message[outcome] ?? 'Something went wrong. Please try again.'
+    toast(text, { tone: outcome === 'connected' ? 'success' : 'error' })
+    setSocialNotice(outcome === 'connected' ? null : text)
+
+    // Cleared from the URL so a refresh does not replay the message, and so
+    // the address bar stops showing the result of something already done.
+    router.replace('/(app)/(tabs)/settings')
+  }, [params.social, params.detail, toast, router])
 
   const [profile, setProfile] = useState<Creator | null>(null)
   const [exporting, setExporting] = useState(false)
@@ -203,6 +251,24 @@ export default function YouScreen() {
           </View>
           <Ionicons name="chevron-forward" size={16} color={c.textMuted} />
         </Card>
+
+        {/* Kept on screen rather than left to the toast. She has just come
+            back from a browser tab, and a message that fades after three
+            seconds is one she is likely to arrive too late to read. */}
+        {socialNotice ? (
+          <View style={[styles.socialNotice, { backgroundColor: c.dangerLight }]}>
+            <Ionicons name="alert-circle-outline" size={16} color={c.danger} />
+            <Text style={[styles.socialNoticeText, { color: c.danger }]}>{socialNotice}</Text>
+            <PressableScale
+              onPress={() => setSocialNotice(null)}
+              hitSlop={HitSlop}
+              accessibilityRole="button"
+              accessibilityLabel="Dismiss"
+            >
+              <Ionicons name="close" size={15} color={c.danger} />
+            </PressableScale>
+          </View>
+        ) : null}
 
         <ConnectedAccounts />
           </View>
@@ -404,6 +470,19 @@ export default function YouScreen() {
 }
 
 const styles = StyleSheet.create({
+  socialNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    padding: Spacing.sm + 2,
+    borderRadius: Radius.sm,
+  },
+  socialNoticeText: {
+    flex: 1,
+    ...Typography.caption,
+    fontFamily: FontFamily.medium,
+    lineHeight: 18,
+  },
   container: {
     flex: 1,
   },
