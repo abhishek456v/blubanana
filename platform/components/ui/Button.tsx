@@ -1,7 +1,7 @@
 import { ActivityIndicator, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated'
-import { FontFamily, Radius, Spacing, accentGlow } from '@/constants/design'
+import { Elevation, FontFamily, Radius, Spacing, accentGlow } from '@/constants/design'
 import { useTheme } from '@/hooks/useTheme'
 import { PressableScale } from './PressableScale'
 import type { HapticKind } from '@/lib/haptics'
@@ -57,13 +57,17 @@ export function Button({
   const s = SIZES[size]
   const isDisabled = disabled || loading
 
-  const tone: Record<ButtonVariant, { bg: string; fg: string; border?: string }> = {
+  // Every variant separates by fill, never by outline (20 Aug redesign, round
+  // three). `secondary` used to be a transparent box with a hairline round it;
+  // it is a filled surface that lifts on its own now, which is what the user
+  // asked for and what makes it read as a button at a glance.
+  const tone: Record<ButtonVariant, { bg: string; fg: string; raised?: boolean }> = {
     primary: { bg: c.fillPrimary, fg: c.onFillPrimary },
-    secondary: { bg: 'transparent', fg: c.textPrimary, border: c.borderStrong },
+    secondary: { bg: c.bgSurface, fg: c.textPrimary, raised: true },
     ghost: { bg: 'transparent', fg: c.accent },
     danger: { bg: c.dangerLight, fg: c.danger },
   }
-  const { bg, fg, border } = tone[variant]
+  const { bg, fg, raised } = tone[variant]
 
   const iconNode = icon ? <Ionicons name={icon} size={s.icon} color={fg} /> : null
 
@@ -81,10 +85,9 @@ export function Button({
           height: s.height,
           paddingHorizontal: s.paddingHorizontal,
           backgroundColor: bg,
-          borderColor: border ?? 'transparent',
-          borderWidth: border ? 1 : 0,
           opacity: isDisabled ? 0.45 : 1,
         },
+        raised && !isDisabled && (isDark ? Elevation.dark : Elevation.light).sm,
         fullWidth && styles.fullWidth,
         // The soft accent halo on primary actions,
         // dropped while disabled so a dead button doesn't glow.

@@ -154,7 +154,7 @@ export function CardEditorSheet({
           }
           accessibilityRole="button"
           accessibilityLabel="Add a figure"
-          style={[styles.add, { borderColor: c.borderStrong }]}
+          style={[styles.add, { backgroundColor: c.accentLight }]}
         >
           <Ionicons name="add" size={16} color={c.accent} />
           <Text style={[styles.addText, { color: c.accentText }]}>Add a figure</Text>
@@ -201,7 +201,7 @@ export function CardEditorSheet({
           }
           accessibilityRole="button"
           accessibilityLabel="Add a rate"
-          style={[styles.add, { borderColor: c.borderStrong }]}
+          style={[styles.add, { backgroundColor: c.accentLight }]}
         >
           <Ionicons name="add" size={16} color={c.accent} />
           <Text style={[styles.addText, { color: c.accentText }]}>Add a rate</Text>
@@ -215,7 +215,7 @@ export function CardEditorSheet({
             disabled={suggesting}
             accessibilityRole="button"
             accessibilityLabel="Suggest rates for formats you have not sold"
-            style={[styles.add, { borderColor: c.borderStrong, marginTop: Spacing.sm }]}
+            style={[styles.add, { backgroundColor: c.accentLight, marginTop: Spacing.sm }]}
           >
             <Ionicons name="sparkles-outline" size={16} color={c.accent} />
             <Text style={[styles.addText, { color: c.accentText }]}>
@@ -321,8 +321,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.xs,
-    borderWidth: 1,
-    borderStyle: 'dashed',
     borderRadius: Radius.md,
     paddingVertical: Spacing.sm,
   },

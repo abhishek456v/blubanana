@@ -212,7 +212,7 @@ export default function OnboardingScreen() {
                 onPress={() => router.push('/(app)/import' as never)}
                 accessibilityRole="button"
                 accessibilityLabel="Import deals you already have"
-                style={[styles.importRow, { borderColor: c.borderStrong }]}
+                style={[styles.importRow, { backgroundColor: c.bgSurface }]}
               >
                 <Ionicons name="sparkles-outline" size={16} color={c.accent} />
                 <Text style={[styles.importText, { color: c.accentText }]}>
@@ -244,8 +244,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    borderWidth: 1,
-    borderStyle: 'dashed',
     borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 14,

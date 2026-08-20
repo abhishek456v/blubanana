@@ -823,10 +823,10 @@ export default function DealDetailScreen() {
   const nextStatus = deal ? getNextStatus(deal.status) : null
   const needsLiveLinkFirst = deal?.status === 'live' && !liveLink.trim()
 
+  // Matches the shared TextField: a filled box with no resting outline.
   const inputStyle = [
     styles.input,
     {
-      borderColor: c.borderStrong,
       color: c.textPrimary,
       backgroundColor: c.bgSurface,
     },
@@ -1015,7 +1015,7 @@ export default function DealDetailScreen() {
                         <TouchableOpacity
                           style={[
                             styles.advanceButton,
-                            { borderColor: c.borderStrong },
+                            { backgroundColor: c.bgSurface },
                             needsLiveLinkFirst && styles.advanceButtonDisabled,
                           ]}
                           onPress={handleAdvanceStatus}
@@ -1079,7 +1079,7 @@ export default function DealDetailScreen() {
                             styles.ratingToggle,
                             paidOnTime === true
                               ? { backgroundColor: c.accent }
-                              : { borderWidth: 1, borderColor: c.borderStrong },
+                              : { backgroundColor: c.bgSurface },
                           ]}
                         >
                           <Text style={[styles.ratingToggleText, { color: paidOnTime === true ? c.onFillPrimary : c.textSecondary }]}>
@@ -1092,7 +1092,7 @@ export default function DealDetailScreen() {
                             styles.ratingToggle,
                             easyToWorkWith === true
                               ? { backgroundColor: c.accent }
-                              : { borderWidth: 1, borderColor: c.borderStrong },
+                              : { backgroundColor: c.bgSurface },
                           ]}
                         >
                           <Text style={[styles.ratingToggleText, { color: easyToWorkWith === true ? c.onFillPrimary : c.textSecondary }]}>
@@ -1105,7 +1105,7 @@ export default function DealDetailScreen() {
                             styles.ratingToggle,
                             wouldWorkAgain === true
                               ? { backgroundColor: c.accent }
-                              : { borderWidth: 1, borderColor: c.borderStrong },
+                              : { backgroundColor: c.bgSurface },
                           ]}
                         >
                           <Text style={[styles.ratingToggleText, { color: wouldWorkAgain === true ? c.onFillPrimary : c.textSecondary }]}>
@@ -1262,7 +1262,7 @@ export default function DealDetailScreen() {
                       run out, and the one-tap Ad Library check. */}
                   {adRightsItem ? (
                     <View
-                      style={[styles.adRightsBox, { backgroundColor: c.accentLight, borderColor: c.accent }]}
+                      style={[styles.adRightsBox, { backgroundColor: c.accentLight }]}
                     >
                       <Text style={[styles.sectionLabel, styles.adRightsLabel, { color: c.accentText }]}>
                         Ad rights
@@ -1289,7 +1289,7 @@ export default function DealDetailScreen() {
                       )}
 
                       <TouchableOpacity
-                        style={[styles.metaAdLibraryButton, { borderColor: c.accent }]}
+                        style={[styles.metaAdLibraryButton, { backgroundColor: c.accentLight }]}
                         onPress={() => Linking.openURL(buildMetaAdLibraryUrl(brandName))}
                         activeOpacity={0.8}
                       >
@@ -1374,7 +1374,7 @@ export default function DealDetailScreen() {
                                 autoFocus
                               />
                               <TouchableOpacity
-                                style={[styles.phoneSaveButton, { borderColor: c.borderStrong }]}
+                                style={[styles.phoneSaveButton, { backgroundColor: c.bgSurface }]}
                                 onPress={handleSavePhone}
                                 disabled={savingPhone || !phoneInput.trim()}
                                 activeOpacity={0.8}
@@ -1391,7 +1391,7 @@ export default function DealDetailScreen() {
                           ) : (
                             <>
                               <TouchableOpacity
-                                style={[styles.paymentSendButton, { borderColor: c.borderStrong }]}
+                                style={[styles.paymentSendButton, { backgroundColor: c.bgSurface }]}
                                 onPress={handleSendPaymentReminder}
                                 disabled={sendingReminder}
                                 activeOpacity={0.8}
@@ -1419,7 +1419,7 @@ export default function DealDetailScreen() {
                   {/* ── Invoice (Phase 3) ──────────────────────────────────── */}
                   <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Invoice</Text>
                   <TouchableOpacity
-                    style={[styles.addAttachmentButton, { borderColor: c.accent }]}
+                    style={[styles.addAttachmentButton, { backgroundColor: c.accentLight }]}
                     onPress={() =>
                       invoice
                         ? router.push(`/(app)/invoice/${invoice.id}` as never)
@@ -1514,7 +1514,7 @@ export default function DealDetailScreen() {
                     )}
                   </View>
                   <TouchableOpacity
-                    style={[styles.addAttachmentButton, { borderColor: c.borderStrong }]}
+                    style={[styles.addAttachmentButton, { backgroundColor: c.bgSurface }]}
                     onPress={handleAddAttachment}
                     disabled={uploadingAttachment}
                     activeOpacity={0.8}
@@ -1584,7 +1584,7 @@ export default function DealDetailScreen() {
                         </View>
                       </View>
                       <TouchableOpacity
-                        style={[styles.addAttachmentButton, { borderColor: c.borderStrong }]}
+                        style={[styles.addAttachmentButton, { backgroundColor: c.bgSurface }]}
                         onPress={handleSavePerformance}
                         disabled={savingPerformance}
                         activeOpacity={0.8}
@@ -1762,7 +1762,6 @@ const styles = StyleSheet.create({
     height: 36,
     paddingHorizontal: Spacing.md,
     borderRadius: Radius.full,
-    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1806,7 +1805,6 @@ const styles = StyleSheet.create({
   // Text inputs
   input: {
     height: 44,
-    borderWidth: 1,
     borderRadius: Radius.sm,
     paddingHorizontal: Spacing.md,
     ...Typography.body,
@@ -1895,7 +1893,6 @@ const styles = StyleSheet.create({
   },
   paymentSendButton: {
     height: 40,
-    borderWidth: 1,
     borderRadius: Radius.full,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1918,7 +1915,6 @@ const styles = StyleSheet.create({
   phoneSaveButton: {
     height: 44,
     paddingHorizontal: Spacing.md,
-    borderWidth: 1,
     borderRadius: Radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1934,7 +1930,6 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.medium,
   },
   adRightsBox: {
-    borderWidth: 1,
     borderRadius: Radius.lg,
     padding: Spacing.md,
     marginTop: Spacing.sm,
@@ -1950,7 +1945,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: Spacing.xs,
     height: 40,
-    borderWidth: 1,
     borderRadius: Radius.full,
     marginTop: Spacing.md,
   },
@@ -2064,7 +2058,6 @@ const styles = StyleSheet.create({
   },
   addAttachmentButton: {
     height: 40,
-    borderWidth: 1,
     borderRadius: Radius.full,
     alignItems: 'center',
     justifyContent: 'center',

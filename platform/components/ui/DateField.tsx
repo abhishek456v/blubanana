@@ -122,7 +122,7 @@ export function DateField({
           variant === 'inline' ? styles.fieldInline : styles.field,
           variant === 'inline'
             ? null
-            : { backgroundColor: c.bgSurface, borderColor: error ? c.danger : c.borderStrong },
+            : { backgroundColor: c.bgSurface, borderColor: error ? c.danger : 'transparent' },
         ]}
       >
         <Ionicons name="calendar-outline" size={17} color={value ? c.accent : c.textMuted} />

@@ -147,7 +147,7 @@ export function ContactsEditor({ contacts, onChange, disabled = false }: Contact
         haptic="light"
         accessibilityRole="button"
         accessibilityLabel="Add a contact"
-        style={[styles.add, { borderColor: c.borderStrong }]}
+        style={[styles.add, { backgroundColor: c.accentLight }]}
       >
         <Ionicons name="add" size={17} color={c.accent} />
         <Text style={[styles.addText, { color: c.accentText }]}>Add contact</Text>
@@ -186,8 +186,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.sm,
-    borderWidth: 1,
-    borderStyle: 'dashed',
     borderRadius: Radius.md,
     paddingVertical: Spacing.base,
   },

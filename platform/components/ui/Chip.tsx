@@ -61,9 +61,12 @@ export function Chip({
 
   const progress = useDerivedValue(() => withTiming(selected ? 1 : 0, Timing.fast), [selected])
 
+  // Fill, not outline. An unselected chip used to be a transparent pill with
+  // a hairline round it, which is the "obvious border line" the 20 Aug round
+  // three asked to be rid of. It carries a surface fill now and selection
+  // reads as the fill going solid.
   const animatedBox = useAnimatedStyle(() => ({
-    backgroundColor: interpolateColor(progress.value, [0, 1], ['rgba(0,0,0,0)', activeBg]),
-    borderColor: interpolateColor(progress.value, [0, 1], [c.border, activeBg]),
+    backgroundColor: interpolateColor(progress.value, [0, 1], [c.bgSurface, activeBg]),
   }))
 
   const animatedText = useAnimatedStyle(() => ({
@@ -112,7 +115,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 5,
     borderRadius: Radius.full,
-    borderWidth: 1,
   },
   label: {
     ...Typography.label,

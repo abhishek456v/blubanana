@@ -163,7 +163,7 @@ export default function InvoiceDetailScreen() {
           contentContainerStyle={[styles.content, isWide && styles.contentWide]}
           showsVerticalScrollIndicator={false}
         >
-          <View style={[styles.preview, { backgroundColor: c.bgSurfaceRaised, borderColor: c.border }]}>
+          <View style={[styles.preview, { backgroundColor: c.bgSurfaceRaised }]}>
             <View style={styles.previewHeader}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.fromName, { color: c.textPrimary }]}>{creator.name}</Text>
@@ -257,7 +257,7 @@ export default function InvoiceDetailScreen() {
           {/* Above Share, because it is the step that now comes first: open
               the chat with the invoice's details, then send the PDF into it. */}
           <TouchableOpacity
-            style={[styles.whatsappButton, { borderColor: c.borderStrong }]}
+            style={[styles.whatsappButton, { backgroundColor: c.bgSurface }]}
             onPress={handleSendOnWhatsApp}
             disabled={sendingWhatsApp}
             activeOpacity={0.8}
@@ -297,7 +297,6 @@ const styles = StyleSheet.create({
   content: { padding: Spacing.md, paddingBottom: Spacing.xl },
   contentWide: { maxWidth: 560, width: '100%', alignSelf: 'center' },
   preview: {
-    borderWidth: 1,
     borderRadius: Radius.lg,
     padding: Spacing.lg,
   },
@@ -405,7 +404,6 @@ const styles = StyleSheet.create({
   whatsappButton: {
     height: 44,
     borderRadius: Radius.full,
-    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: Spacing.lg,

@@ -69,7 +69,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
     borderColor: interpolateColor(
       focus.value,
       [0, 1],
-      [error ? c.danger : c.borderStrong, error ? c.danger : c.accent]
+      [error ? c.danger : 'rgba(0,0,0,0)', error ? c.danger : c.accent]
     ),
   }))
 

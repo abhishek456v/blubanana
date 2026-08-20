@@ -510,7 +510,7 @@ export default function NewDealScreen() {
             <TouchableOpacity
               style={[
                 styles.intakeButton,
-                { borderColor: c.borderStrong },
+                { backgroundColor: c.bgSurface },
                 extracting !== null && styles.intakeButtonDisabled,
               ]}
               onPress={handleScanScreenshot}
@@ -527,8 +527,8 @@ export default function NewDealScreen() {
               style={[
                 styles.intakeButton,
                 recorderState.isRecording
-                  ? { backgroundColor: c.fillPrimary, borderColor: c.fillPrimary }
-                  : { borderColor: c.borderStrong },
+                  ? { backgroundColor: c.fillPrimary }
+                  : { backgroundColor: c.bgSurface },
                 extracting !== null && !recorderState.isRecording && styles.intakeButtonDisabled,
               ]}
               onPress={recorderState.isRecording ? handleStopRecording : handleStartRecording}
@@ -554,7 +554,7 @@ export default function NewDealScreen() {
                 with ten deals on screen that cannot answer "which one". This
                 is the moment she is actually thinking "same as last time". */}
             <TouchableOpacity
-              style={[styles.intakeButton, { borderColor: c.borderStrong }]}
+              style={[styles.intakeButton, { backgroundColor: c.bgSurface }]}
               onPress={() => setRepeatOpen(true)}
               disabled={extracting !== null || recorderState.isRecording}
               activeOpacity={0.7}
@@ -581,7 +581,7 @@ export default function NewDealScreen() {
           {brandsLoading ? (
             <ActivityIndicator color={c.textMuted} style={{ marginVertical: Spacing.md }} />
           ) : brands.length === 0 ? (
-            <View style={[styles.noBrandsBox, { backgroundColor: c.bgSurface, borderColor: c.border }]}>
+            <View style={[styles.noBrandsBox, { backgroundColor: c.bgSurface }]}>
               <Text style={[styles.noBrandsText, { color: c.textSecondary }]}>
                 No brands yet. Add a client first.
               </Text>
@@ -596,7 +596,7 @@ export default function NewDealScreen() {
               </TouchableOpacity>
             </View>
           ) : (
-            <View style={[styles.brandList, { borderColor: c.border }]}>
+            <View style={[styles.brandList, { backgroundColor: c.bgSurface }]}>
               {brands.map((brand, index) => {
                 const selected = brand.id === selectedBrandId
                 const summary = summarizeRatings(ratings.filter((r) => r.brand_id === brand.id))
@@ -618,9 +618,9 @@ export default function NewDealScreen() {
                     <View
                       style={[
                         styles.radio,
-                        {
-                          borderColor: selected ? c.fillPrimary : c.borderStrong,
-                        },
+                        selected
+                          ? { borderColor: c.fillPrimary }
+                          : { borderColor: 'transparent', backgroundColor: c.borderStrong },
                       ]}
                     >
                       {selected && (
@@ -660,7 +660,7 @@ export default function NewDealScreen() {
           )}
 
           {pendingBrandName && (
-            <View style={[styles.pendingBrandBanner, { backgroundColor: c.bgSurface, borderColor: c.border }]}>
+            <View style={[styles.pendingBrandBanner, { backgroundColor: c.bgSurface }]}>
               <Text style={[styles.pendingBrandText, { color: c.textSecondary }]}>
                 Brand "{pendingBrandName}" isn't in your list yet.
               </Text>
@@ -748,7 +748,7 @@ export default function NewDealScreen() {
           </View>
 
           {retainerEnabled && (
-            <View style={[styles.adRightsBox, { backgroundColor: c.accentLight, borderColor: c.accent }]}>
+            <View style={[styles.adRightsBox, { backgroundColor: c.accentLight }]}>
               <Text style={[styles.dateLabel, { color: c.textSecondary }]}>How many months</Text>
               <View style={styles.platformScroll}>
                 {[3, 6, 9, 12].map((months) => (
@@ -799,7 +799,7 @@ export default function NewDealScreen() {
           </View>
 
           {adRightsEnabled && (
-            <View style={[styles.adRightsBox, { backgroundColor: c.accentLight, borderColor: c.accent }]}>
+            <View style={[styles.adRightsBox, { backgroundColor: c.accentLight }]}>
               <TextField
                 label="Ad rights fee"
                 prefix="₹"
@@ -892,7 +892,7 @@ export default function NewDealScreen() {
                 onPress={() => applyRepeat(candidate)}
                 accessibilityRole="button"
                 accessibilityLabel={`Repeat the ${candidate.brandName} deal`}
-                style={[styles.repeatRow, { borderColor: c.border }]}
+                style={[styles.repeatRow, { backgroundColor: c.bgSurface }]}
               >
                 <View style={styles.repeatText}>
                   <Text style={[styles.repeatBrand, { color: c.textPrimary }]} numberOfLines={1}>
@@ -943,7 +943,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: Spacing.md,
-    borderWidth: 1,
     borderRadius: Radius.md,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.base,
@@ -976,7 +975,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: Spacing.xs,
     height: 44,
-    borderWidth: 1,
     borderRadius: Radius.full,
   },
   intakeButtonDisabled: {
@@ -997,7 +995,6 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.regular,
   },
   pendingBrandBanner: {
-    borderWidth: 1,
     borderRadius: Radius.md,
     padding: Spacing.md,
     marginTop: Spacing.sm,
@@ -1011,17 +1008,8 @@ const styles = StyleSheet.create({
     ...Typography.bodyStrong,
     fontFamily: FontFamily.medium,
   },
-  input: {
-    height: 44,
-    borderWidth: 1,
-    borderRadius: Radius.sm,
-    paddingHorizontal: Spacing.md,
-    ...Typography.body,
-    fontFamily: FontFamily.regular,
-  },
   // Brand list
   noBrandsBox: {
-    borderWidth: 1,
     borderRadius: Radius.md,
     padding: Spacing.md,
     gap: Spacing.sm,
@@ -1036,7 +1024,6 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.medium,
   },
   brandList: {
-    borderWidth: 1,
     borderRadius: Radius.md,
     overflow: 'hidden',
   },
@@ -1100,7 +1087,6 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.medium,
   },
   adRightsBox: {
-    borderWidth: 1,
     borderRadius: Radius.lg,
     padding: Spacing.md,
     marginTop: Spacing.sm,
