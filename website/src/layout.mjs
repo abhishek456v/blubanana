@@ -5,7 +5,7 @@
 // entire reason this site is generated rather than hand-written: the previous
 // version kept its header in six copies.
 
-import { COMPANY, FOOTER, NAV, PRICING, SITE, SUPABASE } from './site.mjs'
+import { ANALYTICS, COMPANY, FOOTER, NAV, PRICING, SITE, SUPABASE } from './site.mjs'
 import { PRODUCT_NAV } from './content/product.mjs'
 
 /**
@@ -119,6 +119,77 @@ function footer() {
  */
 export function page({ title, description, path, body, schema = [], announce = true, script = '', assets }) {
   const canonical = `${SITE.origin}${path === '/' ? '' : path}`
+
+  /**
+   * Google Analytics, loaded only after consent.
+   *
+   * The tag is not on the page at all until someone accepts. The usual
+   * pattern ships gtag immediately and sets `consent: denied` first, which
+   * still contacts Google on every visit; under the DPDP Act the safer
+   * reading is that nothing should be requested before permission, so the
+   * script element is created by the banner rather than being present and
+   * gagged.
+   *
+   * Returns nothing at all when no Measurement ID is configured, so a build
+   * without one carries no analytics code, no banner and no cookies.
+   */
+  function analytics() {
+    if (!ANALYTICS.measurementId) return ''
+    return `<script>
+  window.__gaId = ${JSON.stringify(ANALYTICS.measurementId)};
+  window.__gaLoad = function () {
+    if (window.__gaLoaded) return;
+    window.__gaLoaded = true;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://www.googletagmanager.com/gtag/js?id=' + window.__gaId;
+    document.head.appendChild(s);
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function () { window.dataLayer.push(arguments); };
+    window.gtag('js', new Date());
+    /* IP anonymisation is the default in GA4 and cannot be switched off,
+       so there is nothing to set here beyond the property itself. */
+    window.gtag('config', window.__gaId);
+  };
+  try {
+    if (localStorage.getItem('bb-consent') === 'yes') window.__gaLoad();
+  } catch (e) {}
+</script>`
+  }
+
+  /**
+   * The consent banner.
+   *
+   * Only rendered when analytics is configured, because a site that sets no
+   * cookies has nothing to ask about, and a banner on such a site is theatre.
+   * Both answers are stored, so the question is asked once.
+   */
+  function consentBanner() {
+    if (!ANALYTICS.measurementId) return ''
+    return `<div class="consent" id="consent" hidden>
+  <p class="consent-text">We use Google Analytics to see which pages are read. No advertising, and nothing is shared with anyone else. <a href="/privacy">How we handle data</a>.</p>
+  <div class="consent-actions">
+    <button type="button" class="btn btn-ghost btn-sm" data-consent="no">Decline</button>
+    <button type="button" class="btn btn-primary btn-sm" data-consent="yes">Accept</button>
+  </div>
+</div>
+<script>
+  (function () {
+    var el = document.getElementById('consent');
+    if (!el) return;
+    var stored;
+    try { stored = localStorage.getItem('bb-consent'); } catch (e) {}
+    if (!stored) el.hidden = false;
+    el.addEventListener('click', function (event) {
+      var answer = event.target && event.target.getAttribute('data-consent');
+      if (!answer) return;
+      try { localStorage.setItem('bb-consent', answer); } catch (e) {}
+      el.hidden = true;
+      if (answer === 'yes' && window.__gaLoad) window.__gaLoad();
+    });
+  })();
+</script>`
+  }
   const structured = schema.length
     ? `<script type="application/ld+json">${JSON.stringify(schema.length === 1 ? schema[0] : schema)}</script>`
     : ''
@@ -165,8 +236,10 @@ export function page({ title, description, path, body, schema = [], announce = t
   } catch (e) {}
 </script>
 ${structured}
+${analytics()}
 </head>
 <body>
+${consentBanner()}
 ${announce ? announceBar() : ''}
 ${header()}
 <main>

@@ -73,6 +73,27 @@ export const SITE = {
 }
 
 /**
+ * Google Analytics 4.
+ *
+ * Empty until a Measurement ID exists, and the build treats empty as "no
+ * analytics at all": no script, no banner, no cookies. So the site is
+ * shippable today and becomes measured the moment the ID is filled in, with
+ * nothing else to change.
+ *
+ * The ID is public by design; it identifies the property, and Google's own
+ * install instructions put it in the page source. It is not a secret and does
+ * not belong in an environment variable.
+ *
+ * GA sets cookies, which under the DPDP Act 2023 needs consent taken *before*
+ * they are set. Hence the gate in `layout.mjs`: nothing loads until someone
+ * accepts, and declining is remembered too, so the banner is asked once
+ * rather than on every page.
+ */
+export const ANALYTICS = {
+  measurementId: process.env.GA_MEASUREMENT_ID ?? '',
+}
+
+/**
  * Pricing, mirrored from the `pricing` table (migration 035).
  *
  * These are the fallback. The live figures are read at runtime with the anon
