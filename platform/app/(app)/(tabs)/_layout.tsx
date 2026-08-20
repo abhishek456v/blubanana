@@ -37,7 +37,7 @@ function useDueCount(): number {
 }
 
 export default function TabsLayout() {
-  // Badged on Home because that is where "Needs you" lives: the badge and the
+  // Badged on Home because that is where "Reminders" lives: the badge and the
   // list it points at are on the same screen, so tapping it lands somewhere
   // that explains the number.
   const dueCount = useDueCount()

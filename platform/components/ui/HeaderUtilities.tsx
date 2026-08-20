@@ -1,9 +1,7 @@
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
 import { Spacing } from '@/constants/design'
-import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 import { NotificationBell } from './NotificationBell'
 import { SearchButton } from './SearchButton'
-import { ThemeToggle } from './ThemeToggle'
 
 export interface HeaderUtilitiesProps {
   /** Hide the bell on the screen the bell itself opens. */
@@ -14,29 +12,27 @@ export interface HeaderUtilitiesProps {
 }
 
 /**
- * The always-present controls in a screen header: search, reminders, day/night.
+ * The always-present controls in a screen header: search and reminders.
  *
  * Exists so the cluster is declared once. Every tab screen was going to pass
- * the same three components inline, and five copies of that is exactly how the
+ * the same components inline, and five copies of that is exactly how the
  * order and spacing drift apart between screens.
  *
- * The bell sits between the others because it is the one that changes: a
- * control that sometimes carries a badge should not move the control beside
- * it when the badge appears.
+ * The day/night toggle used to live here and no longer does (20 Aug
+ * redesign). It has two better homes — the sidebar's spelled-out Light/Dark
+ * segment on wide screens, and Settings' Appearance control on a phone — and
+ * a fourth icon button in the header was pushing the phone's title onto two
+ * lines.
  */
 export function HeaderUtilities({
   showBell = true,
   showSearch = true,
   style,
 }: HeaderUtilitiesProps) {
-  // On wide screens the sidebar's Light/Dark segment owns the theme, so the
-  // icon toggle here would be a second control for the same thing.
-  const isWide = useIsWideScreen()
   return (
     <View style={[styles.row, style]}>
       {showSearch ? <SearchButton /> : null}
       {showBell ? <NotificationBell /> : null}
-      {isWide ? null : <ThemeToggle />}
     </View>
   )
 }

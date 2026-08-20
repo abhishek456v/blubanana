@@ -22,10 +22,15 @@ import { Platform } from 'react-native'
 // which stops being true the moment a screen has four of them.
 export const Colors = {
   light: {
-    // Crystal white, by request (20 Aug redesign). Panels separate from the
-    // page by shadow, not by a tinted ground.
+    // Crystal white page, by request (20 Aug redesign).
+    //
+    // The surfaces then have to move instead: a white card on a white page is
+    // not a subtle card, it is an invisible one, and `Card`'s default variant
+    // carries no shadow. So `bgSurface` steps a few points off white — enough
+    // to read as a panel, not enough to look grey — and `bgSurfaceRaised`
+    // keeps pure white so a sheet still lifts above the cards beneath it.
     bgPage: '#FFFFFF',
-    bgSurface: '#FFFFFF',
+    bgSurface: '#F4F6FA',
     bgSurfaceRaised: '#FFFFFF',
     bgContrast: '#0B0B12',
     onContrast: '#FFFFFF',

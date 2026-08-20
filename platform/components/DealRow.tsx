@@ -32,7 +32,7 @@ interface DealRowProps {
   deal: DealWithPaymentSummary
   onPress?: () => void
   /**
-   * Overrides the derived deadline line, used by Home's "Needs you" section
+   * Overrides the derived deadline line, used by Home's "Reminders" panel
    * to say *why* the row is surfaced there rather than repeating the deadline.
    */
   reason?: string
