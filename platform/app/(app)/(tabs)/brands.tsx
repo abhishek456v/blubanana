@@ -266,15 +266,16 @@ export default function BrandsScreen() {
           caption="out of 5"
           index={2}
         />
-        {isDesktop ? (
-          <StatTile
-            dense
-            label="Came back"
-            value={repeatBrands}
-            caption="brands with more than one deal"
-            index={3}
-          />
-        ) : null}
+        {/* Four, not three: on a phone three tiles wrap 2 + 1 and the last
+            one stretches to full width, which reads as a mistake. Four make
+            a square there and a strip on desktop. */}
+        <StatTile
+          dense={isDesktop}
+          label="Came back"
+          value={repeatBrands}
+          caption={repeatBrands === 1 ? 'brand with more than one deal' : 'brands with more than one deal'}
+          index={3}
+        />
       </View>
 
       {/* Always visible, not gated on a brand count: a search field that

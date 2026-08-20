@@ -67,9 +67,13 @@ borders, short lists with View all, simple words. The mockups live in
   Brands ranks who actually paid you and lists everyone in a table. Work caps
   each year at six pieces. And there is a new **Deals** page, reached from the
   sidebar or any View all, with search and filters over all 34 deals.
-- **Phase 4, the phone pass: next.** The labelled bottom bar from the
-  screenshot you sent, plus card and type sizes on every screen the phone
-  still shows in the old proportions.
+- **Phase 4, the phone: done and live.** The bottom bar now matches the
+  screenshot you sent: five labelled icons, the active one in bold, sitting
+  flush against the bottom of the screen. Money on a phone got the same
+  rebuild as desktop, calendar included. Brands shows four figures in a
+  square instead of three with an odd one out.
+
+The redesign is finished. Every screen, both themes, phone and desktop.
 
 ### Website, still to build
 

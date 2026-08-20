@@ -12,7 +12,6 @@ import {
 } from '@/lib/deals'
 import { computeRevenueSummary } from '@/lib/revenue'
 import { getInvoices } from '@/lib/invoices'
-import { getPaymentAlertTone } from '@/lib/paymentReminders'
 import {
   formatCurrency,
   formatCurrencyCompact,
@@ -32,21 +31,15 @@ import {
 import { useBreakpoint } from '@/hooks/useBreakpoint'
 import { useTheme } from '@/hooks/useTheme'
 import { useAuth } from '@/hooks/useAuth'
-import { EarningsCard } from '@/components/home'
 import { DealRow } from '@/components/DealRow'
 import {
   type CalendarMark,
-  CircleButton,
   CountBadge,
   DataTable,
   type DataTableColumn,
-  Figure,
-  FigureBlock,
-  GradientCard,
   HeaderUtilities,
   HeroCard,
   ListRow,
-  OrbitRing,
   Panel,
   PaymentCalendar,
   Reveal,
@@ -56,7 +49,6 @@ import {
   StatTile,
   useToast,
   ViewAllLink,
-  type OrbitItem,
 } from '@/components/ui'
 import { StatusPill } from '@/components/StatusPill'
 import { BrandAvatar } from '@/components/BrandAvatar'
@@ -64,15 +56,19 @@ import { BrandAvatar } from '@/components/BrandAvatar'
 /**
  * Money.
  *
- * Three cards, in the order the questions get asked: what is still out, what
- * actually arrived, and what this month has locked in.
+ * A strip of four figures, then the one magenta card, the payment calendar
+ * and the record, then everything still owed as a table (20 Aug redesign).
+ * The phone stacks the same pieces.
  *
- * "Locked" leads the third card rather than the screen because creator
- * payments land 45 to 90 days after the work; a screen built only on money
- * received reports on a quarter that is already over and cannot tell her
- * whether *this* month is going well while there is still time to act on it.
- * But what she is owed is the thing she opens this tab to check, so it goes
- * first.
+ * This replaced three full-bleed gradient cards carrying an orbit ring and a
+ * dot matrix between them. They stated what was outstanding without ever
+ * showing *which* deals made it up, and on a phone you reached the bottom of
+ * the screen before meeting a single date.
+ *
+ * `earnedThisMonth` deliberately does not lead: creator payments land 45 to
+ * 90 days after the work, so a screen built on money received reports on a
+ * quarter that is already over. What is still owed is what the tab is opened
+ * to check, so it leads the strip.
  */
 export default function MoneyScreen() {
   const { c } = useTheme()
@@ -142,34 +138,6 @@ export default function MoneyScreen() {
     [deals]
   )
 
-  /**
-   * Who is holding money, overdue first. Drives the blue card's ring.
-   *
-   * Deduplicated by brand, not by deal: the ring answers "who owes me", and a
-   * brand running two deals at once would otherwise occupy two chips with the
-   * same two initials, which reads as a rendering fault rather than as two
-   * invoices.
-   */
-  const debtors = useMemo<OrbitItem[]>(() => {
-    const overdueFirst = [...unpaid].sort((a, b) => {
-      const aNext = nextDuePayment(a)
-      const bNext = nextDuePayment(b)
-      const aLate = aNext && getPaymentAlertTone(aNext) === 'overdue' ? 0 : 1
-      const bLate = bNext && getPaymentAlertTone(bNext) === 'overdue' ? 0 : 1
-      return aLate - bLate
-    })
-
-    const seen = new Set<string>()
-    const chips: OrbitItem[] = []
-    for (const deal of overdueFirst) {
-      const brandName = deal.brand?.name ?? 'Unknown brand'
-      if (seen.has(brandName)) continue
-      seen.add(brandName)
-      chips.push({ id: brandName, label: brandName })
-      if (chips.length === 6) break
-    }
-    return chips
-  }, [unpaid])
 
   const sixMonthCount = useMemo(() => {
     const now = new Date()
@@ -405,104 +373,6 @@ export default function MoneyScreen() {
     </Panel>
   )
 
-  const stillOut = (
-    <GradientCard
-      gradient="blue"
-      title="Still out"
-      style={styles.fill}
-      onPress={() => router.push('/(app)/invoices' as never)}
-      accessibilityLabel={`Still out: ${formatCurrency(summary.pending.value)} across ${summary.pending.count} unpaid deals.`}
-      action={
-        <CircleButton icon="arrow-forward" iconRotate={-45} accessibilityLabel="Open invoices" />
-      }
-    >
-      <FigureBlock
-        label={
-          summary.pending.count === 1
-            ? 'across 1 unpaid deal'
-            : `across ${summary.pending.count} unpaid deals`
-        }
-        figure={
-          <Figure value={formatCurrency(summary.pending.value)} size="hero" color="#FFFFFF" bold />
-        }
-      />
-
-      <View style={styles.ringSlot}>
-        <OrbitRing
-          center={debtors[0] ?? null}
-          items={debtors.slice(1)}
-          size={170}
-        />
-      </View>
-
-      <View style={styles.row}>
-        <FigureBlock
-          reverse
-          label="On track"
-          figure={<Figure value={formatCurrencyCompact(onTrack)} size="lg" color="#FFFFFF" />}
-        />
-        <FigureBlock
-          reverse
-          align="right"
-          label="Overdue"
-          figure={
-            <Figure
-              value={formatCurrencyCompact(summary.overdue.value)}
-              size="lg"
-              // Overdue keeps the card's own white rather than turning red.
-              // On a saturated blue ground a red figure reads as a rendering
-              // fault, and the label already names it; the amount being
-              // non-zero is the alarm.
-              color="#FFFFFF"
-            />
-          }
-        />
-      </View>
-    </GradientCard>
-  )
-
-  const thisMonth = (
-    <GradientCard gradient="ink" title="This month" style={styles.fill}>
-      <FigureBlock
-        label={
-          summary.lockedThisMonth.count === 1
-            ? 'locked in 1 new deal'
-            : `locked in ${summary.lockedThisMonth.count} new deals`
-        }
-        figure={
-          <Figure
-            value={formatCurrency(summary.lockedThisMonth.value)}
-            size="hero"
-            color="#FFFFFF"
-            bold
-          />
-        }
-      />
-
-      <View style={styles.lines}>
-        <StatLine label="Average deal" value={formatCurrency(summary.averageDealValue)} />
-        <StatLine label="Deals on record" value={String(deals.length)} />
-        <StatLine label="Paid in full, all time" value={String(summary.dealsClosed)} />
-        {summary.collection ? (
-          <StatLine
-            label={
-              summary.collection.averageDays <= 0
-                ? 'Collected, paid on time'
-                : `Collected, ${summary.collection.averageDays}d late on average`
-            }
-            value={`${summary.collection.rate}%`}
-          />
-        ) : null}
-        {summary.bestPayingBrand ? (
-          <StatLine
-            label={`Best payer · ${summary.bestPayingBrand.name}`}
-            value={formatCurrencyCompact(summary.bestPayingBrand.total)}
-          />
-        ) : null}
-      </View>
-    </GradientCard>
-  )
-
   const links = (
     <View style={styles.links}>
       {/* Invoices live here and nowhere else. They used to be reachable from
@@ -572,15 +442,32 @@ export default function MoneyScreen() {
           ) : isDesktop ? (
             metricTiles
           ) : (
+            // The phone gets the same shape as desktop, stacked: one hero,
+            // then the two figures worth checking, then the calendar. It used
+            // to stack three full-bleed gradient cards, which is a screen and
+            // a half before any date or deal appears.
             <View style={styles.cardStack}>
-              {stillOut}
-              <EarningsCard
-                received={collected}
-                count={sixMonthCount}
-                monthly={summary.monthlyTotals}
-                onPress={() => router.push('/(app)/annual-report' as never)}
-              />
-              {thisMonth}
+              {receivedHero}
+              <View style={styles.phoneTileRow}>
+                <StatTile
+                  dense
+                  index={0}
+                  label="Still out"
+                  value={summary.pending.value}
+                  format={formatCurrencyCompact}
+                />
+                <StatTile
+                  dense
+                  index={1}
+                  label="Overdue"
+                  value={summary.overdue.value}
+                  format={formatCurrencyCompact}
+                  tone={summary.overdue.value > 0 ? 'danger' : 'default'}
+                />
+              </View>
+              <Panel title="Payment calendar" subtitle={monthLabel}>
+                <PaymentCalendar marks={calendarMarks} />
+              </Panel>
             </View>
           )}
         </ScreenHeader>
@@ -661,17 +548,6 @@ function RecordLine({ label, value }: { label: string; value: string }) {
   )
 }
 
-/** A label and a figure on one line, for the ink card's supporting numbers. */
-function StatLine({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.line}>
-      <Text style={styles.lineLabel} numberOfLines={1}>
-        {label}
-      </Text>
-      <Figure value={value} size="sm" color="#FFFFFF" />
-    </View>
-  )
-}
 
 const styles = StyleSheet.create({
   container: {
@@ -690,6 +566,10 @@ const styles = StyleSheet.create({
 
   cardStack: {
     gap: Spacing.md,
+  },
+  phoneTileRow: {
+    flexDirection: 'row',
+    gap: Spacing.base,
   },
   cardRow: {
     flexDirection: 'row',
