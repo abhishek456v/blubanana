@@ -37,6 +37,7 @@ import {
   Reveal,
   RevealScrollView,
   ScreenHeader,
+  ViewAllLink,
   SegmentedControl,
   SkeletonList,
   StatTile,
@@ -44,6 +45,9 @@ import {
 } from '@/components/ui'
 
 type WorkView = 'archive' | 'performance'
+
+/** Deals shown per year before the archive asks you to open it. */
+const YEAR_PREVIEW = 6
 
 const VIEWS = [
   { key: 'archive' as const, label: 'Archive' },
@@ -71,6 +75,18 @@ export default function WorkScreen() {
   const [deliverables, setDeliverables] = useState<Map<string, Deliverable[]>>(new Map())
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  // Which years are opened past the preview. A set rather than a single value
+  // so two busy years can both be open at once.
+  const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set())
+
+  const toggleYear = useCallback((year: number) => {
+    setExpandedYears((current) => {
+      const next = new Set(current)
+      if (next.has(year)) next.delete(year)
+      else next.add(year)
+      return next
+    })
+  }, [])
 
   const load = useCallback(
     async (mode: 'initial' | 'refresh') => {
@@ -222,18 +238,35 @@ export default function WorkScreen() {
             </View>
 
             <View style={isDesktop ? styles.listGrid : styles.list}>
-              {year.deals.map((deal, index) => (
-                <View key={deal.id} style={isDesktop ? styles.listGridCell : undefined}>
-                  <DealRow
-                    deal={deal}
-                    index={index}
-                    stretch={isDesktop}
-                    variant={isDesktop ? 'card' : 'plain'}
-                    onPress={() => router.push(`/(app)/deal/${deal.id}` as never)}
-                  />
-                </View>
-              ))}
+              {(expandedYears.has(year.year) ? year.deals : year.deals.slice(0, YEAR_PREVIEW)).map(
+                (deal, index) => (
+                  <View key={deal.id} style={isDesktop ? styles.listGridCell : undefined}>
+                    <DealRow
+                      deal={deal}
+                      index={index}
+                      stretch={isDesktop}
+                      variant={isDesktop ? 'card' : 'plain'}
+                      onPress={() => router.push(`/(app)/deal/${deal.id}` as never)}
+                    />
+                  </View>
+                )
+              )}
             </View>
+
+            {/* A busy year can hold thirty deals, and stacking all of them
+                under every heading turns the archive into a scroll rather
+                than a summary. Six, then the year opens on request. */}
+            {year.deals.length > YEAR_PREVIEW ? (
+              <ViewAllLink
+                label={
+                  expandedYears.has(year.year)
+                    ? 'Show fewer'
+                    : `View all ${year.deals.length} from ${year.year}`
+                }
+                onPress={() => toggleYear(year.year)}
+                style={styles.yearViewAll}
+              />
+            ) : null}
           </Reveal>
         ))}
       </View>
@@ -436,6 +469,10 @@ const styles = StyleSheet.create({
   },
   yearBlock: {
     gap: Spacing.sm,
+  },
+  yearViewAll: {
+    marginTop: Spacing.xs,
+    marginLeft: Spacing.xs,
   },
   yearHeader: {
     flexDirection: 'row',

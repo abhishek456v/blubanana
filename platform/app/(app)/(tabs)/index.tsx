@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { FlatList, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import { useFocusEffect } from '@react-navigation/core'
 import Animated, { FadeIn } from 'react-native-reanimated'
@@ -32,7 +31,6 @@ import {
   ColumnGap,
   DesktopContentMaxWidth,
   FontFamily,
-  HitSlop,
   Radius,
   Spacing,
   Typography,
@@ -55,11 +53,11 @@ import {
   EmptyState,
   HeaderUtilities,
   HeroCard,
-  PressableScale,
   ScreenHeader,
   SkeletonList,
   StatTile,
   useToast,
+  ViewAllLink,
 } from '@/components/ui'
 import { SubscriptionBanner } from '@/components/SubscriptionBanner'
 import { SyncBanner } from '@/components/SyncBanner'
@@ -651,23 +649,6 @@ export default function HomeScreen() {
     </>
   )
 
-  // The quiet View all: accent text and a chevron, no pill, no shadow
-  // (20 Aug redesign, round two).
-  function ViewAllLink({ label = 'View all', onPress }: { label?: string; onPress: () => void }) {
-    return (
-      <PressableScale
-        onPress={onPress}
-        accessibilityRole="button"
-        accessibilityLabel={label}
-        hitSlop={HitSlop}
-        style={styles.viewAll}
-      >
-        <Text style={[styles.viewAllText, { color: c.accentText }]}>{label}</Text>
-        <Ionicons name="chevron-forward" size={12} color={c.accentText} />
-      </PressableScale>
-    )
-  }
-
   function SectionTitle({ title, count }: { title: string; count?: number }) {
     return (
       <View style={styles.sectionTitleRow}>
@@ -894,15 +875,6 @@ const styles = StyleSheet.create({
     ...Typography.body,
     fontFamily: FontFamily.semiBold,
     fontVariant: ['tabular-nums'],
-  },
-  viewAll: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  viewAllText: {
-    ...Typography.caption,
-    fontFamily: FontFamily.semiBold,
   },
 
   // ── The card row ────────────────────────────────────────────────────

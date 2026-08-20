@@ -13,7 +13,13 @@ import {
 import { computeRevenueSummary } from '@/lib/revenue'
 import { getInvoices } from '@/lib/invoices'
 import { getPaymentAlertTone } from '@/lib/paymentReminders'
-import { formatCurrency, formatCurrencyCompact, parseLocalDate } from '@/lib/format'
+import {
+  formatCurrency,
+  formatCurrencyCompact,
+  formatDate,
+  parseLocalDate,
+} from '@/lib/format'
+import { PLATFORM_LABELS } from '@/constants/labels'
 import type { Invoice } from '@/types'
 import {
   ColumnGap,
@@ -29,21 +35,31 @@ import { useAuth } from '@/hooks/useAuth'
 import { EarningsCard } from '@/components/home'
 import { DealRow } from '@/components/DealRow'
 import {
+  type CalendarMark,
   CircleButton,
   CountBadge,
+  DataTable,
+  type DataTableColumn,
   Figure,
   FigureBlock,
   GradientCard,
   HeaderUtilities,
+  HeroCard,
   ListRow,
   OrbitRing,
+  Panel,
+  PaymentCalendar,
   Reveal,
   RevealScrollView,
   ScreenHeader,
   Skeleton,
+  StatTile,
   useToast,
+  ViewAllLink,
   type OrbitItem,
 } from '@/components/ui'
+import { StatusPill } from '@/components/StatusPill'
+import { BrandAvatar } from '@/components/BrandAvatar'
 
 /**
  * Money.
@@ -69,6 +85,7 @@ export default function MoneyScreen() {
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [showAllUnpaid, setShowAllUnpaid] = useState(false)
 
   // Fetched independently rather than with Promise.all: invoices come from a
   // newer table than deals/payments, so one being unavailable should not blank
@@ -167,6 +184,227 @@ export default function MoneyScreen() {
       )
     }).length
   }, [deals])
+
+  /**
+   * This month's payments, for the calendar.
+   *
+   * Both kinds in one pass: a due date that has not been met is money
+   * expected, a paid date is money that arrived. Only the current month's
+   * marks are kept, since that is all the grid draws.
+   */
+  const calendarMarks = useMemo<CalendarMark[]>(() => {
+    const now = new Date()
+    const prefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-`
+    const marks: CalendarMark[] = []
+
+    for (const deal of deals) {
+      for (const payment of paymentsInOrder(deal)) {
+        if (payment.status === 'paid' && payment.paid_date?.startsWith(prefix)) {
+          marks.push({ date: payment.paid_date, kind: 'paid' })
+        } else if (payment.status !== 'paid' && payment.due_date?.startsWith(prefix)) {
+          marks.push({ date: payment.due_date, kind: 'due' })
+        }
+      }
+    }
+    return marks
+  }, [deals])
+
+  const monthLabel = new Date().toLocaleDateString('en-IN', {
+    month: 'long',
+    year: 'numeric',
+  })
+
+  /** The best of the six months on record, for the hero's footer strip. */
+  const bestMonth = useMemo(
+    () =>
+      summary.monthlyTotals.reduce<{ label: string; total: number } | null>(
+        (best, month) => (best === null || month.total > best.total ? month : best),
+        null
+      ),
+    [summary.monthlyTotals]
+  )
+
+  // ── Desktop blocks (20 Aug redesign, Phase 3) ─────────────────────────
+
+  const metricTiles = (
+    <View style={styles.metricRow}>
+      <StatTile
+        dense
+        index={0}
+        label="Still out"
+        value={summary.pending.value}
+        format={formatCurrency}
+        caption={`${summary.pending.count} unpaid ${summary.pending.count === 1 ? 'deal' : 'deals'}`}
+      />
+      <StatTile
+        dense
+        index={1}
+        label="Received, six months"
+        value={collected}
+        format={formatCurrency}
+        caption={`${sixMonthCount} ${sixMonthCount === 1 ? 'deal' : 'deals'} paid`}
+      />
+      <StatTile
+        dense
+        index={2}
+        label="Overdue"
+        value={summary.overdue.value}
+        format={formatCurrency}
+        tone={summary.overdue.value > 0 ? 'danger' : 'default'}
+        caption={
+          summary.overdue.count === 0
+            ? 'nothing is late'
+            : `${summary.overdue.count} ${summary.overdue.count === 1 ? 'payment' : 'payments'} late`
+        }
+      />
+      <StatTile
+        dense
+        index={3}
+        label="On track"
+        value={onTrack}
+        format={formatCurrency}
+        caption="due, not yet late"
+      />
+    </View>
+  )
+
+  const receivedHero = (
+    <HeroCard
+      label="Received"
+      value={collected}
+      format={formatCurrency}
+      caption={`${summary.monthlyTotals.length} months, ${sixMonthCount} ${sixMonthCount === 1 ? 'deal' : 'deals'} paid`}
+      // The footer strip is what stops the card being a figure floating in a
+      // large empty rectangle: it is the tallest cell in its row, so without
+      // it the bottom half is void.
+      stats={[
+        { label: 'This month', value: formatCurrencyCompact(summary.earnedThisMonth.value) },
+        { label: bestMonth ? `Best · ${bestMonth.label}` : 'Best month', value: bestMonth ? formatCurrencyCompact(bestMonth.total) : '—' },
+      ]}
+      gradient="magenta"
+      action={{
+        label: 'Year report',
+        onPress: () => router.push('/(app)/annual-report' as never),
+      }}
+      onPress={() => router.push('/(app)/annual-report' as never)}
+      style={styles.fill}
+    />
+  )
+
+  const calendarPanel = (
+    <Panel title="Payment calendar" subtitle={monthLabel} fill>
+      <PaymentCalendar marks={calendarMarks} />
+    </Panel>
+  )
+
+  const recordPanel = (
+    <Panel title="The record" fill>
+      <View style={styles.recordLines}>
+        <RecordLine label="Average deal" value={formatCurrency(summary.averageDealValue)} />
+        <RecordLine label="Deals on record" value={String(deals.length)} />
+        <RecordLine label="Paid in full" value={String(summary.dealsClosed)} />
+        {summary.collection ? (
+          <RecordLine
+            label={
+              summary.collection.averageDays <= 0
+                ? 'Collected on time'
+                : `Collected, ${summary.collection.averageDays}d late`
+            }
+            value={`${summary.collection.rate}%`}
+          />
+        ) : null}
+        {summary.bestPayingBrand ? (
+          <RecordLine
+            label={`Best payer · ${summary.bestPayingBrand.name}`}
+            value={formatCurrencyCompact(summary.bestPayingBrand.total)}
+          />
+        ) : null}
+      </View>
+    </Panel>
+  )
+
+  const unpaidColumns: DataTableColumn<DealWithPaymentSummary>[] = [
+    {
+      key: 'brand',
+      title: 'Brand',
+      flex: 2.1,
+      render: (deal) => {
+        const brandName = deal.brand?.name ?? 'Unknown brand'
+        return (
+          <View style={styles.brandCell}>
+            <BrandAvatar name={brandName} size={26} />
+            <Text style={[styles.brandName, { color: c.textPrimary }]} numberOfLines={1}>
+              {brandName}
+            </Text>
+          </View>
+        )
+      },
+    },
+    {
+      key: 'deliverable',
+      title: 'Deliverable',
+      flex: 1.7,
+      render: (deal) => (
+        <Text style={[styles.cellMuted, { color: c.textMuted }]} numberOfLines={1}>
+          {PLATFORM_LABELS[deal.platform] ?? deal.platform} · {deal.deliverable_description}
+        </Text>
+      ),
+    },
+    {
+      key: 'amount',
+      title: 'Amount',
+      flex: 1,
+      align: 'right',
+      render: (deal) => (
+        <Text style={[styles.cellAmount, { color: c.textPrimary }]} numberOfLines={1}>
+          {formatCurrency(deal.rate)}
+        </Text>
+      ),
+    },
+    {
+      key: 'status',
+      title: 'Status',
+      flex: 0.9,
+      align: 'right',
+      render: (deal) => <StatusPill status={deal.status} />,
+    },
+    {
+      key: 'due',
+      title: 'Due',
+      flex: 0.7,
+      align: 'right',
+      render: (deal) => {
+        const next = nextDuePayment(deal)
+        return (
+          <Text style={[styles.cellMuted, { color: c.textMuted }]} numberOfLines={1}>
+            {next?.due_date ? formatDate(next.due_date) : '—'}
+          </Text>
+        )
+      },
+    },
+  ]
+
+  const unpaidTable = (
+    <Panel
+      title="To be paid"
+      count={unpaid.length}
+      action={
+        unpaid.length > 6 ? (
+          <ViewAllLink
+            label={showAllUnpaid ? 'Show fewer' : `View all ${unpaid.length}`}
+            onPress={() => setShowAllUnpaid((current) => !current)}
+          />
+        ) : undefined
+      }
+    >
+      <DataTable
+        columns={unpaidColumns}
+        rows={showAllUnpaid ? unpaid : unpaid.slice(0, 6)}
+        keyOf={(deal) => deal.id}
+        onRowPress={(deal) => router.push(`/(app)/deal/${deal.id}` as never)}
+      />
+    </Panel>
+  )
 
   const stillOut = (
     <GradientCard
@@ -331,28 +569,38 @@ export default function MoneyScreen() {
           ]}
         >
           {loading ? (
-            <Skeleton height={420} radius={Radius.card} />
+            <Skeleton height={isDesktop ? 120 : 420} radius={Radius.card} />
+          ) : isDesktop ? (
+            metricTiles
           ) : (
-            <View style={isDesktop ? styles.cardRow : styles.cardStack}>
-              <View style={isDesktop ? styles.cardCell : undefined}>{stillOut}</View>
-              <View style={isDesktop ? styles.cardCell : undefined}>
-                {/* The same card Home carries. The six-month series has one
-                    correct shape in this app, and drawing it twice in two
-                    idioms is how two screens end up disagreeing about it. */}
-                <EarningsCard
-                  received={collected}
-                  count={sixMonthCount}
-                  monthly={summary.monthlyTotals}
-                  onPress={() => router.push('/(app)/annual-report' as never)}
-                />
-              </View>
-              <View style={isDesktop ? styles.cardCell : undefined}>{thisMonth}</View>
+            <View style={styles.cardStack}>
+              {stillOut}
+              <EarningsCard
+                received={collected}
+                count={sixMonthCount}
+                monthly={summary.monthlyTotals}
+                onPress={() => router.push('/(app)/annual-report' as never)}
+              />
+              {thisMonth}
             </View>
           )}
         </ScreenHeader>
 
         {loading ? (
           <Skeleton height={140} radius={Radius.lg} />
+        ) : isDesktop ? (
+          <>
+            {/* One saturated card, the calendar, and the supporting figures,
+                all ending on the same line. */}
+            <Reveal>
+              <View style={styles.mainRow}>
+                <View style={styles.heroCell}>{receivedHero}</View>
+                <View style={styles.calendarCell}>{calendarPanel}</View>
+                <View style={styles.recordCell}>{recordPanel}</View>
+              </View>
+            </Reveal>
+            {unpaid.length > 0 ? <Reveal delay={70}>{unpaidTable}</Reveal> : null}
+          </>
         ) : (
           <>
             <Reveal>{links}</Reveal>
@@ -364,27 +612,53 @@ export default function MoneyScreen() {
             {unpaid.length > 0 ? (
               <Reveal delay={70}>
                 <View style={styles.sectionHead}>
-                  <Text style={[styles.sectionTitle, { color: c.textPrimary }]}>
-                    Waiting on payment
-                  </Text>
+                  <Text style={[styles.sectionTitle, { color: c.textPrimary }]}>To be paid</Text>
                   <CountBadge count={unpaid.length} size={26} />
                 </View>
-                {unpaid.map((deal, index) => (
+                {(showAllUnpaid ? unpaid : unpaid.slice(0, 6)).map((deal, index) => (
                   <DealRow
                     key={deal.id}
                     deal={deal}
                     index={index}
                     variant="plain"
-                    dense={isDesktop}
                     onPress={() => router.push(`/(app)/deal/${deal.id}` as never)}
                   />
                 ))}
+                {unpaid.length > 6 ? (
+                  <ViewAllLink
+                    label={showAllUnpaid ? 'Show fewer' : `View all ${unpaid.length}`}
+                    onPress={() => setShowAllUnpaid((current) => !current)}
+                    style={styles.phoneViewAll}
+                  />
+                ) : null}
               </Reveal>
             ) : null}
           </>
         )}
       </RevealScrollView>
     </SafeAreaView>
+  )
+}
+
+/**
+ * A label and a figure on one line, on a page surface.
+ *
+ * `StatLine` below does the same job on the ink gradient card, where the type
+ * is always white; this one reads its colours from the theme. Two components
+ * rather than one with a colour prop, because the gradient version also sets
+ * its own opacity and the shared version would be mostly branches.
+ */
+function RecordLine({ label, value }: { label: string; value: string }) {
+  const { c } = useTheme()
+  return (
+    <View style={styles.recordLine}>
+      <Text style={[styles.recordLabel, { color: c.textMuted }]} numberOfLines={1}>
+        {label}
+      </Text>
+      <Text style={[styles.recordValue, { color: c.textPrimary }]} numberOfLines={1}>
+        {value}
+      </Text>
+    </View>
   )
 }
 
@@ -425,6 +699,71 @@ const styles = StyleSheet.create({
   },
   cardCell: {
     flex: 1,
+  },
+
+  // ── The desktop dashboard (Phase 3) ──────────────────────────────────
+  metricRow: {
+    flexDirection: 'row',
+    gap: ColumnGap,
+  },
+  mainRow: {
+    flexDirection: 'row',
+    gap: ColumnGap,
+    alignItems: 'stretch',
+    marginBottom: Spacing.md,
+  },
+  heroCell: {
+    flex: 1.15,
+  },
+  calendarCell: {
+    flex: 1.4,
+  },
+  recordCell: {
+    flex: 1,
+  },
+  recordLines: {
+    gap: 2,
+  },
+  recordLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.sm,
+    paddingVertical: 7,
+  },
+  recordLabel: {
+    ...Typography.caption,
+    fontFamily: FontFamily.regular,
+    flexShrink: 1,
+  },
+  recordValue: {
+    ...Typography.caption,
+    fontFamily: FontFamily.semiBold,
+    fontVariant: ['tabular-nums'],
+  },
+  brandCell: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    minWidth: 0,
+  },
+  brandName: {
+    ...Typography.body,
+    fontFamily: FontFamily.semiBold,
+    flexShrink: 1,
+  },
+  cellMuted: {
+    ...Typography.caption,
+    fontFamily: FontFamily.regular,
+  },
+  cellAmount: {
+    ...Typography.body,
+    fontFamily: FontFamily.semiBold,
+    fontVariant: ['tabular-nums'],
+  },
+  phoneViewAll: {
+    marginTop: Spacing.base,
+    marginLeft: Spacing.xs,
   },
   fill: {
     flex: 1,
