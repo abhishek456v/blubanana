@@ -2,10 +2,10 @@
 //
 // Run with: node scripts/generate-icons.mjs
 //
-// The mark is drawn as geometry rather than set in Syne, deliberately: text in
-// an SVG depends on whatever fonts the rasterising machine happens to have, so
-// a lettered mark would render differently (or not at all) on another laptop or
-// in CI. An arc is an arc everywhere.
+// The mark is drawn as geometry rather than set in a typeface, deliberately:
+// text in an SVG depends on whatever fonts the rasterising machine happens to
+// have, so a lettered mark would render differently (or not at all) on another
+// laptop or in CI. Two arcs are two arcs everywhere.
 //
 // Colours are the design tokens from constants/design.ts. If the accent or the
 // page background changes there, change them here and re-run.
@@ -18,41 +18,37 @@ import sharp from 'sharp'
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const ASSETS = join(ROOT, 'assets')
 
-const INK = '#141210' // Colors.dark.bgPage
-const ACCENT = '#F5A623' // Colors.*.accent
+// These were still the pre-rename orange and brown, which is why the generated
+// icons did not match anything else in the product.
+const INK = '#050506' // Colors.dark.bgPage
+const ACCENT = '#4169E1' // Colors.*.accent, royal blue
 
 /**
- * The CreatorDesk mark: an open ring, cut on the right.
+ * The Blubanana mark: a banana, in royal blue.
  *
- * Reads as a C, but the opening is the point: this is a product about a
- * business loop that never quite closes on its own. Round caps and a heavy
- * stroke keep it legible down to a 16px favicon, where a thin or fussy mark
- * turns to mush.
+ * Same shape and same numbers as `components/ui/Mark.tsx`, which carries the
+ * explanation. It replaced an open ring that read as a C, drawn back when the
+ * product was called CreatorDesk.
  *
  * @param size    canvas edge in px
- * @param scale   mark diameter as a fraction of the canvas
+ * @param scale   mark width as a fraction of the canvas
  * @param bg      background fill, or null for transparent
  */
 function markSvg(size, scale, bg) {
-  const center = size / 2
-  const radius = (size * scale) / 2
-  const stroke = radius * 0.39
+  const d = 'M 25.54 86.19 A 43.56 43.56 0 0 0 89.89 32.20 A 63.13 63.13 0 0 1 25.54 86.19 Z'
 
-  // Gap centred on the right, 80° wide: the arc runs from +40° to −40° the
-  // long way round. y is negated because SVG's y axis points down.
-  const gapHalf = (40 * Math.PI) / 180
-  const x = center + radius * Math.cos(gapHalf)
-  const yTop = center - radius * Math.sin(gapHalf)
-  const yBottom = center + radius * Math.sin(gapHalf)
+  // Padding comes from widening the viewBox around the shape's measured
+  // centre, not from scaling the geometry, so `scale` means exactly what it
+  // says: the mark's width as a fraction of the canvas.
+  const CENTRE = { x: 59.69, y: 63.05, width: 76.3 }
+  const side = CENTRE.width / scale
+  const vx = (CENTRE.x - side / 2).toFixed(2)
+  const vy = (CENTRE.y - side / 2).toFixed(2)
+  const s = side.toFixed(2)
 
-  const round = (n) => Number(n.toFixed(2))
-  // large-arc-flag=1 (we take the long way), sweep-flag=0 (anticlockwise on
-  // screen, so the opening stays on the right).
-  const arc = `M ${round(x)} ${round(yTop)} A ${round(radius)} ${round(radius)} 0 1 0 ${round(x)} ${round(yBottom)}`
-
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-  ${bg ? `<rect width="${size}" height="${size}" fill="${bg}"/>` : ''}
-  <path d="${arc}" fill="none" stroke="${ACCENT}" stroke-width="${round(stroke)}" stroke-linecap="round"/>
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="${vx} ${vy} ${s} ${s}">
+  ${bg ? `<rect x="${vx}" y="${vy}" width="${s}" height="${s}" fill="${bg}"/>` : ''}
+  <path d="${d}" fill="${ACCENT}" stroke="${ACCENT}" stroke-width="8" stroke-linejoin="round"/>
 </svg>`
 }
 

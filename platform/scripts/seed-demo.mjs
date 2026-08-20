@@ -116,9 +116,9 @@ const SHAPES = [
 ]
 
 const EXPENSES = [
-  ['Editing',        6000, 18000, ['Reel edit — freelance editor', 'Long-form edit, 12 min', 'Colour grade and sound']],
+  ['Editing',        6000, 18000, ['Reel edit, freelance editor', 'Long-form edit, 12 min', 'Colour grade and sound']],
   ['Camera & gear',  4000, 42000, ['Lens rental for the shoot', 'Wireless mic set', 'Tripod and light stand']],
-  ['Team & salaries',8000, 30000, ['Assistant for the shoot day', 'Script writer — two briefs']],
+  ['Team & salaries',8000, 30000, ['Assistant for the shoot day', 'Script writer, two briefs']],
   ['Travel',         1500, 22000, ['Cab to the shoot location', 'Flight for the campaign shoot', 'Hotel, two nights']],
   ['Props & samples',1200, 14000, ['Props for the kitchen set', 'Wardrobe for the campaign']],
   ['Software',        499,  4500, ['Editing subscription', 'Stock music licence', 'Cloud storage']],

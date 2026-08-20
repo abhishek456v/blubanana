@@ -106,9 +106,16 @@ for (const spec of PAGES) {
 // ── static files ────────────────────────────────────────────────────────────
 cpSync(join(ROOT, 'assets'), join(DIST, 'assets'), { recursive: true })
 
+// The favicon: the Blubanana mark, the same shape the app draws.
+//
+// It used to be the letter b set in `system-ui`, so the tab icon was whatever
+// font the visitor's operating system happened to supply, in a blue that
+// predated the royal blue everything else uses. Geometry renders the same
+// everywhere. The path comes from platform/components/ui/Mark.tsx, and the
+// comment there explains the numbers; if they change, they change here too.
 writeFileSync(
   join(DIST, 'assets', 'favicon.svg'),
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#023C85"/><text x="16" y="23" font-family="system-ui,sans-serif" font-size="20" font-weight="700" fill="#FFFFFF" text-anchor="middle">b</text></svg>`
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="12.54 19.2 94.3 94.3"><rect x="12.54" y="19.2" width="94.3" height="94.3" rx="21" fill="#050506"/><path d="M 25.54 86.19 A 43.56 43.56 0 0 0 89.89 32.20 A 63.13 63.13 0 0 1 25.54 86.19 Z" fill="#4169E1" stroke="#4169E1" stroke-width="8" stroke-linejoin="round"/></svg>`
 )
 
 writeFileSync(

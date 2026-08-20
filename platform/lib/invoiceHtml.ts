@@ -86,15 +86,17 @@ export function amountInWords(amount: number): string {
   return `${parts.join(' ')} ${n === 1 ? 'Rupee' : 'Rupees'} Only`
 }
 
-/** The Blubanana mark, as inline SVG so the PDF needs no image asset. */
+/**
+ * The Blubanana mark, as inline SVG so the PDF needs no image asset.
+ *
+ * Same shape and same numbers as `components/ui/Mark.tsx`, which carries the
+ * explanation: two arcs sharing their tips, the inner one flatter, with the
+ * -40 degree tilt already applied to the endpoints. Not imported from there,
+ * because this string is handed to a PDF renderer rather than to React.
+ */
 function markSvg(size: number, color: string): string {
-  const c = size / 2
-  const r = size / 2 - size * 0.11
-  const gap = (40 * Math.PI) / 180
-  const x = (c + r * Math.cos(gap)).toFixed(2)
-  const yTop = (c - r * Math.sin(gap)).toFixed(2)
-  const yBottom = (c + r * Math.sin(gap)).toFixed(2)
-  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg"><path d="M ${x} ${yTop} A ${r.toFixed(2)} ${r.toFixed(2)} 0 1 0 ${x} ${yBottom}" fill="none" stroke="${color}" stroke-width="${(size * 0.16).toFixed(2)}" stroke-linecap="round"/></svg>`
+  const d = 'M 25.54 86.19 A 43.56 43.56 0 0 0 89.89 32.20 A 63.13 63.13 0 0 1 25.54 86.19 Z'
+  return `<svg width="${size}" height="${size}" viewBox="21.54 28.2 76.3 69.7" xmlns="http://www.w3.org/2000/svg"><path d="${d}" fill="${color}" stroke="${color}" stroke-width="8" stroke-linejoin="round"/></svg>`
 }
 
 export function buildInvoiceHtml(
