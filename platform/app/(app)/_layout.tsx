@@ -71,6 +71,10 @@ export default function AppLayout() {
           is what every pushed screen shows on its back button. Without it the
           back control reads "(tabs)", the raw route-group name. */}
       <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Home' }} />
+      {/* Where every capped list's "View all" lands. A sheet on wide screens
+          like the other sidebar destinations: it is reached *from* the
+          sidebar, so the sidebar has to still be there behind it. */}
+      <Stack.Screen name="deals" options={{ title: 'Deals', ...modalScreenOptions }} />
       <Stack.Screen name="deal/new" options={{ title: 'Add deal', ...modalScreenOptions }} />
       {/* title for [id] screens is set dynamically inside the screen via Stack.Screen */}
       {/* Deliberately not a modal on wide screens, unlike the forms around it:

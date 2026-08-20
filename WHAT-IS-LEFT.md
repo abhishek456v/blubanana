@@ -58,14 +58,18 @@ borders, short lists with View all, simple words. The mockups live in
   wordmark, groups, Reminders badge, Light and Dark switch and your profile
   card; it collapses to the icon rail and remembers your choice. New colours
   everywhere. The old blue and pink background wash is gone from dark mode.
-- **Phase 2, the Home dashboard: next.** Compact metric tiles, one hero card,
-  a real chart, and the deals table.
-- **Phase 3, the other four tabs** and the new Deals page.
-- **Phase 4, the phone pass:** the labelled bottom bar from your reference,
-  card sizes, type sizes.
-
-Until Phase 2 lands, the screens inside the new shell still show the old
-layout. That is expected.
+- **Phase 2, Home: done and live.** Four metric tiles, one blue card, a real
+  six month chart, Reminders, and a proper deals table. Six rows, then View
+  all. The phone got the same treatment early, so the first deal is visible
+  without scrolling.
+- **Phase 3, the other screens: done and live.** Money has the metric strip,
+  one magenta card, the dotted payment calendar and a To be paid table.
+  Brands ranks who actually paid you and lists everyone in a table. Work caps
+  each year at six pieces. And there is a new **Deals** page, reached from the
+  sidebar or any View all, with search and filters over all 34 deals.
+- **Phase 4, the phone pass: next.** The labelled bottom bar from the
+  screenshot you sent, plus card and type sizes on every screen the phone
+  still shows in the old proportions.
 
 ### Website, still to build
 

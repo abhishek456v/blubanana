@@ -108,7 +108,6 @@ export default function HomeScreen() {
   const [filter, setFilter] = useState<StatusFilter>('all')
   const [nudgeDismissed, setNudgeDismissed] = useState(false)
   const [reach, setReach] = useState<StatSnapshot[]>([])
-  const [showAllDeals, setShowAllDeals] = useState(false)
 
   const load = useCallback(
     async (mode: 'initial' | 'refresh') => {
@@ -358,7 +357,7 @@ export default function HomeScreen() {
       )}
 
       {attention.length > 0 ? (
-        <ViewAllLink onPress={() => router.push('/(app)/reminders' as never)} />
+        <ViewAllLink onPress={() => router.push('/(app)/deals?filter=attention' as never)} />
       ) : null}
     </Card>
   )
@@ -543,8 +542,12 @@ export default function HomeScreen() {
         <View style={styles.spacer} />
         {visibleDeals.length > 6 ? (
           <ViewAllLink
-            label={showAllDeals ? 'Show fewer' : `View all ${visibleDeals.length}`}
-            onPress={() => setShowAllDeals((current) => !current)}
+            label={`View all ${visibleDeals.length}`}
+            onPress={() =>
+              router.push(
+                (filter === 'all' ? '/(app)/deals' : `/(app)/deals?filter=${filter}`) as never
+              )
+            }
           />
         ) : null}
       </View>
@@ -564,7 +567,7 @@ export default function HomeScreen() {
       ) : (
         <DataTable
           columns={dealColumns}
-          rows={showAllDeals ? visibleDeals : visibleDeals.slice(0, 6)}
+          rows={visibleDeals.slice(0, 6)}
           keyOf={(deal) => deal.id}
           onRowPress={(deal) => router.push(`/(app)/deal/${deal.id}` as never)}
         />

@@ -85,7 +85,6 @@ export default function MoneyScreen() {
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
-  const [showAllUnpaid, setShowAllUnpaid] = useState(false)
 
   // Fetched independently rather than with Promise.all: invoices come from a
   // newer table than deals/payments, so one being unavailable should not blank
@@ -391,15 +390,15 @@ export default function MoneyScreen() {
       action={
         unpaid.length > 6 ? (
           <ViewAllLink
-            label={showAllUnpaid ? 'Show fewer' : `View all ${unpaid.length}`}
-            onPress={() => setShowAllUnpaid((current) => !current)}
+            label={`View all ${unpaid.length}`}
+            onPress={() => router.push('/(app)/deals?filter=unpaid' as never)}
           />
         ) : undefined
       }
     >
       <DataTable
         columns={unpaidColumns}
-        rows={showAllUnpaid ? unpaid : unpaid.slice(0, 6)}
+        rows={unpaid.slice(0, 6)}
         keyOf={(deal) => deal.id}
         onRowPress={(deal) => router.push(`/(app)/deal/${deal.id}` as never)}
       />
@@ -615,7 +614,7 @@ export default function MoneyScreen() {
                   <Text style={[styles.sectionTitle, { color: c.textPrimary }]}>To be paid</Text>
                   <CountBadge count={unpaid.length} size={26} />
                 </View>
-                {(showAllUnpaid ? unpaid : unpaid.slice(0, 6)).map((deal, index) => (
+                {unpaid.slice(0, 6).map((deal, index) => (
                   <DealRow
                     key={deal.id}
                     deal={deal}
@@ -626,8 +625,8 @@ export default function MoneyScreen() {
                 ))}
                 {unpaid.length > 6 ? (
                   <ViewAllLink
-                    label={showAllUnpaid ? 'Show fewer' : `View all ${unpaid.length}`}
-                    onPress={() => setShowAllUnpaid((current) => !current)}
+                    label={`View all ${unpaid.length}`}
+                    onPress={() => router.push('/(app)/deals?filter=unpaid' as never)}
                     style={styles.phoneViewAll}
                   />
                 ) : null}

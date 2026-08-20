@@ -30,6 +30,13 @@ const COLLAPSE_KEY = 'creatordesk.sidebar'
 /** Tab destinations in sidebar order. Settings renders in the group below. */
 const MAIN_TABS: TabName[] = ['index', 'money', 'brands', 'work']
 
+/**
+ * Deals is a pushed route, not a tab, but it belongs in the nav directly
+ * under Home: it is where every "View all" lands and the only place that
+ * holds the full list.
+ */
+const DEALS = { label: 'Deals', path: '/deals', icon: 'briefcase', iconOutline: 'briefcase-outline' } as const
+
 /** Children of Money: pushed routes, indented under the tab. */
 const MONEY_SUBS = [
   { label: 'Invoices', path: '/invoices' },
@@ -186,6 +193,15 @@ export function Sidebar({ state, navigation }: BottomTabBarProps) {
                 collapsed={collapsed}
                 onPress={() => goToTab(name)}
               />
+              {name === 'index' ? (
+                <Item
+                  label={DEALS.label}
+                  icon={pathname === DEALS.path ? DEALS.icon : DEALS.iconOutline}
+                  active={pathname === DEALS.path}
+                  collapsed={collapsed}
+                  onPress={() => router.push(DEALS.path as never)}
+                />
+              ) : null}
               {name === 'money' && !collapsed
                 ? MONEY_SUBS.map((sub) => (
                     <SubItem

@@ -10,6 +10,15 @@ import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 interface ModalSheetProps {
   title: string
   headerRight?: ReactNode
+  /**
+   * Widens the card from a form's measure to a table's.
+   *
+   * The default 560px is a reading width, right for the forms this started
+   * out wrapping. A screen whose content is a five-column table needs about
+   * twice that, or the columns truncate to "Panara Jewell..." and the table
+   * stops being worth having.
+   */
+  wide?: boolean
   children: ReactNode
 }
 
@@ -21,7 +30,7 @@ interface ModalSheetProps {
 // app/(app)/_layout.tsx), so this is the only chrome the screen gets.
 // On mobile widths this is a passthrough: the screen keeps its native
 // Stack header and full-page layout, unchanged.
-export function ModalSheet({ title, headerRight, children }: ModalSheetProps) {
+export function ModalSheet({ title, headerRight, wide = false, children }: ModalSheetProps) {
   const isWide = useIsWideScreen()
   const router = useRouter()
 
@@ -51,7 +60,11 @@ export function ModalSheet({ title, headerRight, children }: ModalSheetProps) {
   return (
     <Pressable style={styles.backdrop} onPress={dismiss}>
       <Pressable
-        style={[styles.card, { backgroundColor: c.bgSurfaceRaised, borderColor: c.border }]}
+        style={[
+          styles.card,
+          wide && styles.cardWide,
+          { backgroundColor: c.bgSurfaceRaised, borderColor: c.border },
+        ]}
         // Stops the tap from bubbling to the backdrop's dismiss handler;
         // react-native-web's Pressable uses real DOM click bubbling.
         onPress={(e) => e.stopPropagation()}
@@ -96,6 +109,10 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg,
     borderWidth: 1,
     overflow: 'hidden',
+  },
+  cardWide: {
+    maxWidth: 1120,
+    maxHeight: '90%',
   },
   header: {
     flexDirection: 'row',
