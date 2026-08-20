@@ -28,6 +28,7 @@ import privacy from './src/content/privacy.mjs'
 import refunds from './src/content/refunds.mjs'
 import compare from './src/content/compare.mjs'
 import tools from './src/content/tools.mjs'
+import blog from './src/content/blog.mjs'
 import product from './src/content/product.mjs'
 import company from './src/content/company.mjs'
 
@@ -51,7 +52,7 @@ const ON_TEMPORARY_HOST = Boolean(process.env.VERCEL) && !PRODUCTION_URL.include
 const ROOT = dirname(fileURLToPath(import.meta.url))
 const DIST = join(ROOT, 'dist')
 
-const PAGES = [home, pricing, compare, contact, terms, privacy, refunds, ...product, ...company, ...tools]
+const PAGES = [home, pricing, compare, contact, terms, privacy, refunds, ...product, ...company, ...tools, ...blog]
 
 rmSync(DIST, { recursive: true, force: true })
 mkdirSync(DIST, { recursive: true })

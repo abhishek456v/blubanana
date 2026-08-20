@@ -30,12 +30,27 @@ An Apple Developer account, about ₹8,900 a year. Needed before the iPhone app
 can be tested on a real device or submitted. Android needs nothing equivalent
 to start.
 
-### 4. One decision left
+### 4. One thing to paste in
 
-**Do you want analytics?** Plausible is about ₹800 a month and needs no cookie
-banner. Google Analytics is free and does need one. Or nothing for now.
+**Google Analytics.** You chose GA, and it is built and waiting for one value.
+Create a property at analytics.google.com for `blubanana.in`, copy the
+Measurement ID (it looks like `G-XXXXXXXXXX`), and send it to me. Until then
+the site loads no analytics, sets no cookies and shows no banner. Once it is
+in, visitors get a small "Accept or Decline" bar and nothing reaches Google
+unless they accept, which is what the DPDP Act requires.
 
-### 5. Two dates I am holding for you
+### 5. Two clicks: make blubanana.in the main address
+
+Right now `blubanana.in` sends visitors to `www.blubanana.in`, while every
+page tells search engines the real address is `blubanana.in`. Those two
+disagree, which splits your search ranking between the two names.
+
+In Vercel, open the **website** project, then **Settings**, then **Domains**.
+You will see both names listed. Set `www.blubanana.in` to redirect to
+`blubanana.in`, so it points the other way round. Tell me when it is done and
+I will confirm it from the outside.
+
+### 6. Two dates I am holding for you
 
 - **After 27 August:** I will ask you to confirm the address, phone, WhatsApp
   and legal name once more, as you asked.
@@ -75,20 +90,23 @@ borders, short lists with View all, simple words. The mockups live in
 
 The redesign is finished. Every screen, both themes, phone and desktop.
 
-### Website, still to build
+### Website
 
-- **A blog.** Held back on purpose: a blog with three posts and no fourth
-  reads worse than no blog.
+- **The blog is live**, at `blubanana.in/blog`, with five articles: advance
+  tax, chasing a late brand, GST registration, TDS, and how to price a reel.
+  Each one ends at the matching calculator. New posts get added to
+  `website/src/content/blog.mjs`.
 - **Retest the drawn interface** on the website against the real redesigned
-  platform once Phases 2 to 4 land; the drawn version stays unless the real
-  one photographs better.
-- Small: the site should treat `blubanana.in` as the main address and send
-  `www` to it, not the other way round. Cosmetic, queued.
+  platform; the drawn version stays unless the real one photographs better.
+- **The www redirect is the wrong way round** and needs two clicks from you,
+  in section 6 below.
 
-### Product, still to build
+### Product
 
-- **YouTube figures.** Instagram is done and waiting for credentials. YouTube
-  is a separate integration with Google.
+- **YouTube is built.** It has the same three pieces Instagram has, so it
+  needs only a Google client id to go live. Both show a "sample data" label
+  naming which one is still invented, so whichever gets approved first starts
+  showing real figures on its own.
 
 ### Before launch, not code
 

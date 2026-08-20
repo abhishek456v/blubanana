@@ -147,6 +147,7 @@ export const NAV = [
   { label: 'Free tools', href: '/tools', items: TOOLS.map(([href, title, note]) => [href, title, note]) },
   { label: 'Pricing', href: '/pricing' },
   { label: 'Compare', href: '/compare' },
+  { label: 'Writing', href: '/blog' },
   { label: 'Contact', href: '/contact' },
 ]
 
@@ -159,6 +160,7 @@ export const FOOTER = [
       ['/security', 'Security'],
       ['/pricing', 'Pricing'],
       ['/compare', 'Compare'],
+      ['/blog', 'Writing'],
       ['/contact', 'Contact'],
     ],
   },
