@@ -36,10 +36,17 @@ export async function startCheckout(term: string): Promise<CheckoutStarted> {
 
   // A 503 with this code means the keys are not set on the server yet, which is
   // a different thing from a failure and deserves a different sentence.
+  //
+  // 404 counts too, and did not used to. Razorpay is deliberately switched off,
+  // so the function is not deployed at all, and an undeployed function answers
+  // 404 rather than 503. That fell through to "Could not open the payment
+  // page", which reads as a fault on a working system rather than as a feature
+  // that is honestly not on yet. Nobody is charged either way; only the
+  // sentence differs, and the accurate one is worth having.
   if (data?.code === 'not_configured') throw new PaymentsNotConfigured()
   if (error) {
     const message = (error as { message?: string }).message ?? ''
-    if (/503/.test(message)) throw new PaymentsNotConfigured()
+    if (/\b(404|503)\b|not found/i.test(message)) throw new PaymentsNotConfigured()
     throw error
   }
   if (!data?.url) throw new Error('Razorpay did not return a payment page')
