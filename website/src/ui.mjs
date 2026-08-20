@@ -282,7 +282,7 @@ const screenHome = () => `
   <div class="act-row">
     <button class="act" data-go="newdeal"><span>${icon('camera', { size: 15 })}</span> New deal</button>
     <button class="act" data-go="invoice"><span>${icon('doc', { size: 15 })}</span> Raise invoice</button>
-    <button class="act" data-go="tax"><span>${icon('chart', { size: 15 })}</span> Year in review</button>
+    <button class="act" data-go="tax"><span>${icon('chart', { size: 15 })}</span> Year report</button>
   </div>
   <div class="list">
     <div class="list-head">Reminders</div>
@@ -376,7 +376,7 @@ const screenInvoice = () => `
 const screenTax = () => {
   const dates = [['15 Jun', '₹54,000'], ['15 Sep', '₹1,08,000'], ['15 Dec', '₹1,08,000'], ['15 Mar', '₹90,000']]
   return `
-  ${backBar('Year in review', 'April to March')}
+  ${backBar('Year report', 'April to March')}
   <div class="stat stat-hero"><div class="k">Advance tax expected</div><div class="v">₹3,60,000</div><div class="s">From your income, less your expenses</div></div>
   <div class="cal">${dates.map(([d, amt], i) => `<div class="${i === 1 ? 'soon' : ''}"><b>${d}</b><span>${amt}</span></div>`).join('')}</div>
   <button class="act" data-go="ratecard" style="justify-content:center"><span>${icon('users', { size: 15 })}</span> Open your rate card</button>`
@@ -483,7 +483,7 @@ export function uiDashboard() {
       <div class="act-row">
         <div class="act"><span>${icon('camera', { size: 15 })}</span> New deal</div>
         <div class="act"><span>${icon('doc', { size: 15 })}</span> Raise invoice</div>
-        <div class="act"><span>${icon('chart', { size: 15 })}</span> Year in review</div>
+        <div class="act"><span>${icon('chart', { size: 15 })}</span> Year report</div>
       </div>
 
       <div class="list">
