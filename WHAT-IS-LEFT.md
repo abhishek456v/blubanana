@@ -30,14 +30,46 @@ An Apple Developer account, about ₹8,900 a year. Needed before the iPhone app
 can be tested on a real device or submitted. Android needs nothing equivalent
 to start.
 
-### 4. One thing to paste in
+### 4. Google verification, and why it matters more than it looks
 
-**Google Analytics.** You chose GA, and it is built and waiting for one value.
-Create a property at analytics.google.com for `blubanana.in`, copy the
-Measurement ID (it looks like `G-XXXXXXXXXX`), and send it to me. Until then
-the site loads no analytics, sets no cookies and shows no banner. Once it is
-in, visitors get a small "Accept or Decline" bar and nothing reaches Google
-unless they accept, which is what the DPDP Act requires.
+**Done, 21 August:** Google Analytics is live on `G-ZN5MHYGQ8S` behind the
+consent bar, and YouTube is genuinely connected, refresh token and all.
+
+What is left is Google's **app verification**, and it is the one item here
+with a waiting period, so it wants starting early rather than the week of
+launch.
+
+Until it is granted, anyone connecting YouTube meets a full-page warning
+saying Google has not verified the app and "you shouldn't use it", with the
+continue button labelled **unsafe**. That wording is Google's and cannot be
+softened, reworded or skipped from our side.
+
+The reassuring part: while the app is in Testing, only the accounts listed
+under Audience -> Test users can reach that screen at all. No real creator can
+see it, because no real creator can get that far. It becomes a problem only if
+the app is published to Production while still unverified, which is the thing
+not to do.
+
+Everything Google asks for is already live and checked: `blubanana.in`
+answers, `www` now redirects to it rather than the other way round, and
+`/privacy` and `/terms` are up on the same domain. What is left is
+paperwork:
+
+1. Verify ownership of `blubanana.in` in Google Search Console, with the
+   same Google account.
+2. In the Google Auth Platform, under Branding, set the app home page to
+   `https://blubanana.in` and the privacy policy to
+   `https://blubanana.in/privacy`.
+3. Submit for verification, explaining why the app reads YouTube figures.
+   The honest answer is the right one: it compares a creator's reach against
+   what she charges, and never posts anything.
+4. Record a short screen video showing someone connecting the account and
+   where the numbers then appear. Google asks for this and will not proceed
+   without it.
+
+`youtube.readonly` is classed **sensitive**, not restricted, so this is a
+review by Google rather than a paid third-party security audit. Expect days
+to a few weeks.
 
 ### 5. Two clicks: make blubanana.in the main address
 
@@ -98,15 +130,19 @@ The redesign is finished. Every screen, both themes, phone and desktop.
   `website/src/content/blog.mjs`.
 - **Retest the drawn interface** on the website against the real redesigned
   platform; the drawn version stays unless the real one photographs better.
-- **The www redirect is the wrong way round** and needs two clicks from you,
-  in section 6 below.
+- ~~The www redirect is the wrong way round~~ **Fixed, 21 August.**
+  `www.blubanana.in` now redirects to `blubanana.in`, which is what every
+  page's canonical tag already claimed.
 
 ### Product
 
-- **YouTube is built.** It has the same three pieces Instagram has, so it
-  needs only a Google client id to go live. Both show a "sample data" label
-  naming which one is still invented, so whichever gets approved first starts
-  showing real figures on its own.
+- **YouTube is live, 21 August.** Connected end to end against the real API,
+  with the refresh token stored, which is the piece that keeps the nightly
+  sync alive beyond the first hour. Only the Google verification in section 4
+  is outstanding.
+- **Instagram is still sample data**, deliberately, and the app says so by
+  name. It needs the same two secrets YouTube now has, whenever you want it;
+  the server functions it depends on are already deployed.
 
 ### Before launch, not code
 
