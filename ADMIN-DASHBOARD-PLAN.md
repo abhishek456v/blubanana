@@ -1,5 +1,15 @@
 # The admin dashboard
 
+**Built and live as of 22 August 2026.** What follows was the plan; the state
+of each piece is marked against it, so this file stays useful as a record of
+what was decided and why rather than becoming a to-do list nobody trusts.
+
+Everything in the three tiers below is done except one item, which is blocked
+on SMTP and marked as such.
+
+---
+
+
 For you alone, to begin with. That simplifies the security model enormously:
 one allowlisted user id, not roles and permissions. If staff arrive later,
 `memberships` already carries a role column and the pattern extends.
@@ -31,29 +41,27 @@ private. A media library needs one more, public, for website images.
 
 ## The three tiers
 
-### Tier 1: screens over data that already exists
+### Tier 1: screens over data that already exists  ·  all built
 
-Days, not weeks. Nothing new in the database.
+| Area | Where it landed |
+|---|---|
+| Subscriptions and revenue | `/admin/subscriptions`, with four escape hatches |
+| Users and workspaces | `/admin/people`, and a read only look at one at `/admin/workspace/[id]` |
+| Activity log | `/admin/activity`, alongside a second log of what the dashboard itself did |
+| Pricing control | `/admin/pricing`. Every figure bounded on the server |
+| Message log | `/admin/health`, under messages that never went |
+| Reminder health | `/admin/health`, under reminders that passed |
+| Trial watch | `/admin/subscriptions`, the "ending this week" filter |
 
-| Area | Reads | Why it matters |
-|---|---|---|
-| Subscriptions and revenue | `subscriptions`, `subscription_payments`, `subscription_invoices` | Who is paying, who lapsed, what came in |
-| Users and workspaces | `workspaces`, `profiles`, `memberships` | Who signed up, when, how much they use it |
-| Activity log | `audit_logs` | 575 rows already. Who changed what, when |
-| Pricing control | `pricing`, `billing_terms` | Already drives the public site live |
-| Message log | `outbound_messages` | Did the reminder actually go |
-| Reminder health | `reminders` | What is queued, what failed |
-| Trial watch | `subscriptions` | Who is about to lapse, so you can reach them first |
+### Tier 2: needs new tables  ·  all built
 
-### Tier 2: needs new tables, but no architectural change
-
-| Area | New table | Notes |
-|---|---|---|
-| Support issues | `support_tickets` | Nothing like this exists yet. Status, assignee, the user it came from |
-| Broadcast | `announcements` | In-app banner is easy. Email to all needs SMTP first |
-| Media library | `media` + a public bucket | For website images and video |
-| Contact details | `settings` | Currently hardcoded in `website/src/site.mjs` at build time |
-| Feature switches | `feature_flags` | Turn Instagram off when Meta breaks, without a deploy |
+| Area | Where it landed |
+|---|---|
+| Support issues | `support_tickets` + `support_ticket_notes`. Creators write in from the app's Get help screen; replies they see and notes they never do, in one thread |
+| Broadcast | `announcements`, with three placements. **Email to everyone still needs SMTP** and is the one outstanding item |
+| Media library | `media` on a public bucket. No client holds a standing right to write to it |
+| Contact details | `site_content`, keys under `company.`. The WhatsApp number is derived from the phone so the two cannot drift |
+| Feature switches | `feature_flags`. All five are wired to real code, checked rather than assumed |
 
 ### Tier 3: the one that is genuinely architectural
 
@@ -70,27 +78,38 @@ into the database, and then choosing how the website reads them:
 For a blog, **rebuild on save is the right answer**, and it costs one webhook.
 Search visibility is the entire point of those five posts.
 
+**Built that way.** Posts are rows, the website reads them at build time, and
+publishing asks Vercel to rebuild. The first build off the database was byte
+for byte identical to the last one off the file. The webhook is the one thing
+still needed from outside; until it exists the dashboard says so rather than
+implying a post is live.
+
 ---
 
 ## Things you did not list, which you will want
 
 **Data requests, under the DPDP Act.** As a data fiduciary you are obliged to
-service access and erasure requests. `delete-account` already exists as an edge
-function; there is no way to see or record a request. This is a legal
-requirement, not a nicety.
+service access and erasure requests, and to be able to show that you did.
+**Built:** creators file one from Get help, and `/admin/data-requests` runs a
+thirty day clock on each.
 
 **View as a user.** When somebody writes in saying their deals vanished, the
-alternative to seeing what they see is a conversation conducted blind. Needs
-care and an audit entry every time it is used.
+alternative is a conversation conducted blind. **Built, and deliberately not
+as impersonation.** `/admin/workspace/[id]` shows what is actually there and
+cannot change a single row. A magic link would have been less code and would
+have let an admin do anything the creator can do, in a session that looks
+exactly like hers in every other log. Every visit is recorded by name.
 
-**Failed payment watch.** Empty today because Razorpay is not on. The day it
-is, a card declining silently is churn you never saw coming.
+**Failed payment watch.** Still empty, because Razorpay is not on. The
+subscriptions screen already separates `past_due`, so the day a card declines
+it appears there without further work.
 
-**Launch seat control.** `intro_seats_taken()` already drives the "500 places"
-counter on the public site. Being able to move that number is a pricing lever.
+**Launch seat control.** **Built**, on `/admin/pricing`: the number of intro
+places, and how many are taken, on one screen.
 
-**Deliverability.** Once SMTP is configured, bounces and complaints are the
-early warning that your reminder emails have stopped arriving.
+**Deliverability.** **The one outstanding item.** Needs SMTP working first;
+bounces and complaints are the early warning that reminder emails have stopped
+arriving, and there is nothing to watch until mail is sending.
 
 ---
 
