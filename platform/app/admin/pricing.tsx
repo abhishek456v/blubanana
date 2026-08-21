@@ -178,8 +178,10 @@ export default function AdminPricing() {
           <Text style={[styles.sectionTitle, { color: c.textPrimary }]}>Terms on offer</Text>
           <Card>
             {terms.map((term) => (
+              // The label already says the length: printing months again gave
+              // "3 months · 3 months".
               <Text key={term.key} style={[styles.term, { color: c.textSecondary }]}>
-                {term.label} · {term.months} {term.months === 1 ? 'month' : 'months'} ·{' '}
+                {term.label} ·{' '}
                 {formatCurrency(
                   Math.round(toRupees(pricing.list_monthly_paise) * Number(term.term_multiplier))
                 )}{' '}

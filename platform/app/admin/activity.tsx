@@ -142,9 +142,9 @@ export default function AdminActivity() {
           {shown.map((entry, index) => (
             <ListRow
               key={entry.id}
-              title={`${sentence(entry)}`}
+              title={sentence(entry)}
               subtitle={names[entry.workspace_id] ?? 'Unknown workspace'}
-              meta={`${entry.actor_user_id ? (actors[entry.actor_user_id] ?? 'Somebody') : 'The system'} · ${formatDateLong(entry.created_at)}`}
+              meta={metaFor(entry, names, actors)}
               index={index}
             />
           ))}
@@ -214,7 +214,32 @@ function sentence(entry: ActivityEntry): string {
         : entry.action === 'delete'
           ? 'Deleted'
           : entry.action
-  return `${verb} a ${entry.entity_type}`
+  // "a invoice" is the sort of thing that makes a screen look unfinished.
+  const article = /^[aeiou]/i.test(entry.entity_type) ? 'an' : 'a'
+  return `${verb} ${article} ${entry.entity_type}`
+}
+
+/**
+ * Who did it and when, without saying either thing twice.
+ *
+ * A creator working alone is the only member of a workspace named after her,
+ * so the actor and the workspace are the same word and printing both read as a
+ * stutter. And when the actor was not recorded, that is what it says: the
+ * previous wording claimed "The system", which is a guess, and a log that
+ * guesses is worse than one that admits a gap.
+ */
+function metaFor(
+  entry: ActivityEntry,
+  names: Record<string, string>,
+  actors: Record<string, string>
+): string {
+  const when = formatDateLong(entry.created_at)
+  if (!entry.actor_user_id) return `Who is not recorded · ${when}`
+
+  const actor = actors[entry.actor_user_id]
+  if (!actor) return `Somebody · ${when}`
+  if (actor === names[entry.workspace_id]) return when
+  return `${actor} · ${when}`
 }
 
 const styles = StyleSheet.create({
