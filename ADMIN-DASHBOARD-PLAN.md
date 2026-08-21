@@ -144,6 +144,70 @@ enabled at project level and needs enrolling. The realistic attack is a stolen
 or reused password, not a broken database, and 2FA is what makes a stolen
 password useless on its own.
 
+## Agreed scope, 21 August
+
+### Content: what is editable, and what is not
+
+The app carries roughly 380 pieces of visible text across 51 files. Making all
+of it dashboard-editable means moving every string into the database and
+fetching it at runtime, which is weeks of work and leaves the app worse: text
+arrives after the screens do, offline gets complicated, and nothing checks that
+a label exists before it ships.
+
+It is also solving a problem that is already solved. EAS Update pushes a copy
+change to every installed phone in about two minutes, with no rebuild and no
+reinstall. The goal, changing content without a release, is met.
+
+**Editable from the dashboard:**
+
+- The whole website: every page in `website/src/content/`, plus images and video
+- Onboarding screens, which get tuned constantly as you learn what confuses people
+- Empty states, which are really marketing surfaces
+- Pricing and plan copy
+- Legal pages
+- Announcements
+
+**Stays in code:** button labels, field names, error messages. They change
+rarely, and making them editable mostly creates opportunities for the app to
+contradict itself.
+
+### Blog: Word, not PDF
+
+`.docx` carries real structure, so it converts cleanly into a post: upload,
+review the draft, publish. Images inside the document are extracted to storage
+and their links rewritten.
+
+PDF is deliberately not supported. A PDF is not a document, it is a picture of
+one: it stores text at positions with no notion of what is a heading. Every
+post would arrive needing repair and the feature would go unused within a
+month. Pasting text is the better second option.
+
+### Announcements
+
+One table driving news, banners and alerts across the website and the app.
+Message, type, audience (everyone, trialing, paid), placement, start and end
+date, dismissible or not. The website already fetches live pricing from
+Supabase, so it reads announcements the same way. Publish, and it appears
+without a deploy.
+
+### Also agreed
+
+- **Activation funnel:** signed up, added a brand, added a deal, raised an
+  invoice. Two of the three workspaces that exist today have never created a
+  deal, and nothing currently says so.
+- **A health screen:** expiring social tokens, failed reminders, unsent
+  messages. All three are already recorded and none is watched, so the first
+  anyone hears of a failure is a creator complaining.
+- **Escape hatches:** extend a trial, comp a month, correct a figure,
+  un-cancel a subscription.
+- **Contact a creator** by WhatsApp or email from any row.
+- **View as a user**, with an audit entry every time.
+- **Data requests**, for the DPDP access and erasure obligations.
+- **A media library** on a public storage bucket, serving both lists above.
+
+Explicitly skipped: charts (Google Analytics covers it), per-role permission
+screens until a second person exists, and anything real-time.
+
 ## Suggested order
 
 1. **Tier 1 read-only screens.** Immediate value, no new schema, no risk.
