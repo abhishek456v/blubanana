@@ -22,6 +22,7 @@ import {
 } from '@/constants/design'
 import { useTheme } from '@/hooks/useTheme'
 import { useBreakpoint } from '@/hooks/useBreakpoint'
+import { MediaPickerField } from '@/components/admin/MediaPickerField'
 import {
   Button,
   Card,
@@ -165,13 +166,15 @@ export default function AdminAnnouncements() {
         </View>
 
         {draft.placement === 'image' || draft.placement === 'popup' ? (
-          <TextField
-            label={draft.placement === 'image' ? 'Image address' : 'Image address (optional)'}
-            placeholder="https://…"
-            value={draft.image_url ?? ''}
-            onChangeText={(v) => setDraft((d) => ({ ...d, image_url: v || null }))}
-            autoCapitalize="none"
-            hint="Paste a link to the picture. The media library comes later."
+          <MediaPickerField
+            label={draft.placement === 'image' ? 'The picture' : 'A picture (optional)'}
+            hint={
+              draft.placement === 'image'
+                ? 'Shown at the top of the app. Anything wide works better than anything tall.'
+                : 'Sits above the words in the popup.'
+            }
+            value={draft.image_url ?? null}
+            onChange={(url) => setDraft((d) => ({ ...d, image_url: url }))}
           />
         ) : null}
 

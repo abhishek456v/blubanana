@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Stack } from 'expo-router'
 import { claimPendingInvites } from '@/lib/team'
+import { useAuth } from '@/hooks/useAuth'
 import { Typography, FontFamily, Spacing } from '@/constants/design'
 import { useTheme } from '@/hooks/useTheme'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
@@ -29,6 +30,7 @@ export const unstable_settings = {
 export default function AppLayout() {
   const { c } = useTheme()
   const isWide = useIsWideScreen()
+  const { session, loading } = useAuth()
 
   // Turn any invite addressed to this account into a membership.
   //
@@ -40,8 +42,9 @@ export default function AppLayout() {
   // Failure is swallowed on purpose: an invite that does not resolve must not
   // stop someone reaching their own workspace.
   useEffect(() => {
+    if (!session) return
     claimPendingInvites().catch(() => {})
-  }, [])
+  }, [session])
 
   // On wide screens, deal/new, deal/[id], brand/new, and profile/edit present
   // as a floating ModalSheet over the still-visible sidebar instead of a
@@ -49,6 +52,22 @@ export default function AppLayout() {
   // ModalSheet supplies its own header in that case, so the native one is
   // turned off here; on mobile widths this object is empty and behavior is
   // unchanged from a plain push.
+  /*
+   * Nothing in this group renders without a session.
+   *
+   * The root layout redirects a signed-out visitor to sign-in, but a redirect
+   * is an effect: the route underneath still mounts for a frame first, and
+   * every tab screen fetches on mount. Opening the app signed out therefore
+   * fired a query for deals with no session on it, which the database refused,
+   * correctly and visibly, in the browser console of anybody who looked.
+   *
+   * Refused is not the same as harmless. A screen that asks for data it has no
+   * right to is a screen that would show that data the day a policy is written
+   * slightly too loosely, and it is a flash of somebody's dashboard before the
+   * redirect lands.
+   */
+  if (loading || !session) return null
+
   const modalScreenOptions = isWide
     ? { headerShown: false, presentation: 'transparentModal' as const }
     : {}
@@ -101,6 +120,9 @@ export default function AppLayout() {
       <Stack.Screen name="plans" options={{ title: 'Plans', ...modalScreenOptions }} />
       <Stack.Screen name="annual-report" options={{ title: 'Year report', ...modalScreenOptions }} />
       <Stack.Screen name="team" options={{ title: 'Team', ...modalScreenOptions }} />
+      {/* A full page rather than a sheet: somebody writing in is composing,
+          and a thread of replies underneath it grows past what a sheet holds. */}
+      <Stack.Screen name="help" options={{ title: 'Get help' }} />
     </Stack>
   )
 }

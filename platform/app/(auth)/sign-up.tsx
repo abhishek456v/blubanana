@@ -8,15 +8,31 @@ import { AuthFormMaxWidth, FontFamily, Radius, Spacing, Typography } from '@/con
 import { Duration, staggerDelay } from '@/constants/motion'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 import { useTheme } from '@/hooks/useTheme'
+import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { AuthShell } from '@/components/AuthShell'
 import { Button, PressableScale, TextField, useToast } from '@/components/ui'
 
-const MIN_PASSWORD_LENGTH = 8
+/**
+ * Six, because that is what the project itself enforces.
+ *
+ * It was eight here, which sounds harmless and is not: a creator choosing a
+ * six character password met "at least 8 characters" from a form, on a
+ * platform that would have accepted it. A client that is stricter than the
+ * server is not extra safety, it is a rule nobody agreed to that only the
+ * form knows about.
+ *
+ * Admins are held to ten, enforced where an admin password is actually set:
+ * see (auth)/reset-password.tsx.
+ */
+const MIN_PASSWORD_LENGTH = 6
 
 export default function SignUpScreen() {
   const { c } = useTheme()
   const isWide = useIsWideScreen()
   const toast = useToast()
+  // A door that can be held shut from the dashboard, without a release, on the
+  // day something is wrong enough that new people should not be walking in.
+  const signUpsOpen = useFeatureFlag('sign_ups')
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -63,6 +79,31 @@ export default function SignUpScreen() {
     }
     // With confirmation disabled (recommended for dev; see README), useAuth
     // picks up the session and the root layout redirects automatically.
+  }
+
+  if (!signUpsOpen) {
+    return (
+      <AuthShell>
+        <View style={[styles.container, styles.center]}>
+          <Animated.View
+            entering={FadeInDown.duration(Duration.slow)}
+            style={[styles.inner, isWide && styles.innerWide, styles.confirmBlock]}
+          >
+            <View style={[styles.iconCircle, { backgroundColor: c.accentLight }]}>
+              <Ionicons name="time-outline" size={26} color={c.accent} />
+            </View>
+            <Text style={[styles.title, { color: c.textPrimary }]}>Not taking new accounts</Text>
+            <Text style={[styles.subtitle, { color: c.textSecondary }]}>
+              We have paused sign ups for a short while. If you already have an account you can
+              still sign in as normal.
+            </Text>
+            <Link href="/(auth)/sign-in" asChild>
+              <Button label="Sign in" variant="secondary" fullWidth size="lg" />
+            </Link>
+          </Animated.View>
+        </View>
+      </AuthShell>
+    )
   }
 
   if (awaitingConfirmation) {

@@ -408,6 +408,21 @@ export default function YouScreen() {
             onPress={() => router.push('/(app)/team' as never)}
             index={5}
           />
+          {/* Above Import and Export because it is the row somebody is looking
+              for when something has already gone wrong, and that is not the
+              moment to be reading a list. */}
+          <ListRow
+            title="Get help"
+            subtitle="Write in about something, and see what we said back"
+            leading={
+              <View style={[styles.linkIcon, { backgroundColor: c.accentLight }]}>
+                <Ionicons name="chatbubbles" size={18} color={c.accent} />
+              </View>
+            }
+            showChevron
+            onPress={() => router.push('/(app)/help' as never)}
+            index={6}
+          />
           {/* Reachable after onboarding too: §8.2 makes every onboarding step
               skippable, so the creator most likely to need this is exactly the
               one who skipped past the offer. */}
@@ -421,7 +436,7 @@ export default function YouScreen() {
             }
             showChevron
             onPress={() => router.push('/(app)/import' as never)}
-            index={6}
+            index={7}
           />
           <ListRow
             title="Export my data"
@@ -433,7 +448,7 @@ export default function YouScreen() {
             }
             showChevron
             onPress={handleExport}
-            index={7}
+            index={8}
           />
           {/* Last, and directly under Export, which is deliberate: the one
               thing that makes this recoverable sits immediately above it. */}
@@ -447,7 +462,7 @@ export default function YouScreen() {
             }
             showChevron
             onPress={() => setDeleteOpen(true)}
-            index={8}
+            index={9}
           />
         </View>
 

@@ -14,6 +14,17 @@
  * local construction is the only correct reading.
  */
 export function parseLocalDate(dateStr: string): Date {
+  // A full timestamp rather than a calendar date. Splitting one on '-' gives
+  // "21T09:38:37.116+00:00" as the day, which is NaN, which is an Invalid Date
+  // that renders as the words "Invalid Date" in the middle of a table. Read it
+  // as the instant it is and take the local calendar day it falls on, which
+  // for a creator in IST is the day she would say it happened.
+  if (dateStr.includes('T')) {
+    const at = new Date(dateStr)
+    if (Number.isNaN(at.getTime())) return at
+    return new Date(at.getFullYear(), at.getMonth(), at.getDate())
+  }
+
   const [year, month, day] = dateStr.split('-').map(Number)
   return new Date(year, month - 1, day)
 }

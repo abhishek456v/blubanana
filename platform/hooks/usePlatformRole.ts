@@ -76,6 +76,10 @@ export type AdminArea =
   | 'subscriptions'
   | 'content'
   | 'announcements'
+  | 'media'
+  | 'support'
+  | 'activity'
+  | 'flags'
   | 'requests'
 
 /**
@@ -92,5 +96,23 @@ const AREA_ACCESS: Record<AdminArea, PlatformRole[]> = {
   subscriptions: ['finance'],
   content: ['editor'],
   announcements: ['editor'],
-  requests: ['support'],
+  media: ['editor', 'support'],
+  support: ['support'],
+  activity: ['support'],
+  // Everybody may look at the switches; only an admin may throw one, which the
+  // screen enforces separately. Hiding the page from a role that can read it
+  // would only mean nobody knew why a feature had vanished.
+  flags: ['support', 'finance', 'editor'],
+  // Answering a data request is a legal duty that sits with the fiduciary
+  // rather than with whoever happens to be on shift, so: admin only.
+  requests: [],
 }
+
+/**
+ * These lists must agree with ACTION_ACCESS in the admin edge function.
+ *
+ * They are not the same thing and neither can be derived from the other: this
+ * one decides what is worth showing, that one decides what is allowed. When
+ * they disagree the failure is mild and visible, which is a link that leads to
+ * a refusal rather than a refusal that never happens.
+ */

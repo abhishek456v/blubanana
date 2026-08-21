@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { base64ToBytes } from './bytes'
 
 /**
  * The admin dashboard's data layer.
@@ -15,10 +16,24 @@ async function call<T>(action: string, extra: Record<string, unknown> = {}): Pro
   const { data, error } = await supabase.functions.invoke('admin', {
     body: { action, ...extra },
   })
-  if (error) throw error
+
+  // A non-2xx from an edge function arrives as a FunctionsHttpError whose
+  // useful part is in the response body, not the message. Without this, every
+  // refusal reads "Edge Function returned a non-2xx status code", which is how
+  // "still used by 1 announcement" turns into a mystery.
+  if (error) {
+    const response = (error as { context?: Response }).context
+    if (response && typeof response.json === 'function') {
+      const body = await response.json().catch(() => null)
+      if (body?.error) throw new Error(body.error)
+    }
+    throw error
+  }
   if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error)
   return data as T
 }
+
+// ── The morning screen ───────────────────────────────────────────────────────
 
 export interface AdminOverview {
   workspaces: number
@@ -27,29 +42,38 @@ export interface AdminOverview {
   subscriptions: Record<string, number>
 }
 
+export interface HealthSocialAccount {
+  id: string
+  platform: string
+  handle: string
+  status: string
+  last_error: string | null
+  last_synced_at: string | null
+  workspace_id: string
+}
+
+export interface HealthReminder {
+  id: string
+  type: string
+  status: string
+  scheduled_for: string
+  workspace_id: string
+}
+
+export interface HealthMessage {
+  id: string
+  channel: string
+  purpose: string
+  status: string
+  created_at: string
+  workspace_id: string
+}
+
 export interface AdminHealth {
-  socialAccounts: {
-    platform: string
-    handle: string
-    status: string
-    last_error: string | null
-    workspace_id: string
-  }[]
-  missedReminders: {
-    id: string
-    type: string
-    status: string
-    scheduled_for: string
-    workspace_id: string
-  }[]
-  stuckMessages: {
-    id: string
-    channel: string
-    purpose: string
-    status: string
-    created_at: string
-    workspace_id: string
-  }[]
+  socialAccounts: HealthSocialAccount[]
+  missedReminders: HealthReminder[]
+  stuckMessages: HealthMessage[]
+  workspaceNames: Record<string, string>
 }
 
 export interface AdminFunnel {
@@ -76,6 +100,111 @@ export function healthIssueCount(health: AdminHealth): number {
   return health.socialAccounts.length + health.missedReminders.length + health.stuckMessages.length
 }
 
+// ── People ───────────────────────────────────────────────────────────────────
+
+export interface AdminPerson {
+  workspace_id: string
+  workspace_name: string
+  type: string
+  created_at: string
+  user_id: string | null
+  name: string | null
+  email: string | null
+  phone: string | null
+  niche: string | null
+  followers: number | null
+  deals: number
+  status: string | null
+  billing_term: string | null
+  trial_ends_at: string | null
+  current_period_end: string | null
+  cancelled_at: string | null
+  is_internal: boolean
+}
+
+export const getAdminPeople = () => call<{ rows: AdminPerson[] }>('people').then((r) => r.rows)
+
+export interface WorkspaceSnapshot {
+  workspace: { id: string; name: string; type: string; timezone: string; created_at: string }
+  owner: { user_id: string; name: string | null; email: string | null; phone: string | null } | null
+  brands: number
+  invoices: number
+  deals: {
+    id: string
+    deliverable_description: string | null
+    platform: string
+    status: string
+    rate: number | null
+    created_at: string
+  }[]
+  reminders: { id: string; type: string; status: string; scheduled_for: string }[]
+  social: { platform: string; handle: string; status: string }[]
+  receivedRupees: number
+  pendingRupees: number
+}
+
+/**
+ * A read-only look at one creator's workspace.
+ *
+ * Not a way to sign in as them. The question that actually gets asked is
+ * always "what is really there", and answering it should not come with the
+ * ability to change it.
+ */
+export const getWorkspaceSnapshot = (workspaceId: string) =>
+  call<WorkspaceSnapshot>('people.snapshot', { workspace_id: workspaceId })
+
+// ── Activity ─────────────────────────────────────────────────────────────────
+
+export interface ActivityEntry {
+  id: string
+  workspace_id: string
+  actor_user_id: string | null
+  entity_type: string
+  entity_id: string | null
+  action: string
+  changes: Record<string, unknown> | null
+  created_at: string
+}
+
+export const getAdminActivity = (workspaceId?: string) =>
+  call<{
+    rows: ActivityEntry[]
+    workspaceNames: Record<string, string>
+    actorNames: Record<string, string>
+  }>('activity', workspaceId ? { workspace_id: workspaceId } : {})
+
+// ── Subscriptions ────────────────────────────────────────────────────────────
+
+export interface AdminSubscription {
+  workspace_id: string
+  workspace_name: string
+  status: string
+  billing_term: string | null
+  trial_ends_at: string | null
+  current_period_end: string | null
+  intro_applied: boolean
+  agreed_term_paise: number | null
+  is_internal: boolean
+  cancelled_at: string | null
+  created_at: string
+  razorpay_subscription_id: string | null
+  paid_total_paise: number
+  last_paid_at: string | null
+}
+
+export const getAdminSubscriptions = () =>
+  call<{ rows: AdminSubscription[]; collectedPaise: number }>('subscriptions')
+
+export type SubscriptionLever = 'extend_trial' | 'comp_month' | 'uncancel' | 'set_status'
+
+export const adjustSubscription = (input: {
+  workspace_id: string
+  lever: SubscriptionLever
+  days?: number
+  status?: string
+}) => call<{ row: AdminSubscription }>('subscriptions.adjust', input)
+
+// ── Broadcast ────────────────────────────────────────────────────────────────
 
 export interface Announcement {
   id: string
@@ -104,8 +233,7 @@ export const listAnnouncements = () =>
 export const saveAnnouncement = (announcement: Partial<Announcement>) =>
   call<{ row: Announcement }>('announcements.save', { announcement }).then((r) => r.row)
 
-export const deleteAnnouncement = (id: string) =>
-  call<{ ok: true }>('announcements.delete', { id })
+export const deleteAnnouncement = (id: string) => call<{ ok: true }>('announcements.delete', { id })
 
 /** Whether an announcement is on screen right now, for the admin list. */
 export function isLive(a: Announcement, now = new Date()): boolean {
@@ -113,3 +241,174 @@ export function isLive(a: Announcement, now = new Date()): boolean {
   if (new Date(a.starts_at) > now) return false
   return !a.ends_at || new Date(a.ends_at) > now
 }
+
+// ── Media ────────────────────────────────────────────────────────────────────
+
+export type MediaFolder = 'general' | 'website' | 'blog' | 'app' | 'broadcast'
+
+export interface MediaItem {
+  id: string
+  kind: 'image' | 'video' | 'document'
+  path: string
+  url: string
+  title: string
+  alt: string | null
+  mime: string
+  bytes: number
+  width: number | null
+  height: number | null
+  folder: string
+  created_at: string
+}
+
+export const listMedia = (folder?: string) =>
+  call<{ rows: MediaItem[]; folders: string[] }>('media.list', folder ? { folder } : {})
+
+export const updateMedia = (id: string, patch: { title?: string; alt?: string }) =>
+  call<{ row: MediaItem }>('media.update', { id, ...patch })
+
+export class MediaInUse extends Error {}
+
+export const deleteMedia = (id: string, force = false) =>
+  call<{ ok: true }>('media.delete', { id, force }).catch((error: Error) => {
+    if (/still used by/i.test(error.message)) throw new MediaInUse(error.message)
+    throw error
+  })
+
+export const sweepMedia = (confirm = false) =>
+  call<{ orphans: string[]; removed: boolean }>('media.sweep', { confirm })
+
+/**
+ * Upload one file into the public library.
+ *
+ * Three steps, and the middle one is the point: the browser never holds a
+ * standing right to write into the bucket. It asks the server for permission
+ * to put one file at one path, uses it, and it expires. The path is decided by
+ * the server, so a filename cannot decide where a file lands.
+ */
+export async function uploadMedia(input: {
+  /** base64, because it is the one form a picked file takes identically on web and native. */
+  base64: string
+  mime: string
+  title: string
+  alt?: string
+  folder?: MediaFolder
+  width?: number
+  height?: number
+}): Promise<MediaItem> {
+  const { path, token } = await call<{ path: string; token: string; bucket: string }>(
+    'media.uploadUrl',
+    { mime: input.mime, folder: input.folder ?? 'general' }
+  )
+
+  const { error } = await supabase.storage
+    .from('public-media')
+    .uploadToSignedUrl(path, token, base64ToBytes(input.base64), { contentType: input.mime })
+  if (error) throw error
+
+  const { row } = await call<{ row: MediaItem }>('media.register', {
+    path,
+    mime: input.mime,
+    title: input.title,
+    alt: input.alt ?? null,
+    width: input.width ?? null,
+    height: input.height ?? null,
+  })
+  return row
+}
+
+/** `2.4 MB`, `812 KB`. Files are talked about in whole units, not bytes. */
+export function formatBytes(bytes: number): string {
+  if (bytes >= 1_048_576) return `${(bytes / 1_048_576).toFixed(1)} MB`
+  if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`
+  return `${bytes} B`
+}
+
+// ── Support ──────────────────────────────────────────────────────────────────
+
+export type TicketStatus = 'new' | 'open' | 'waiting' | 'closed'
+
+export interface SupportTicket {
+  id: string
+  workspace_id: string | null
+  user_id: string | null
+  email: string | null
+  subject: string
+  body: string
+  status: TicketStatus
+  priority: 'low' | 'normal' | 'high'
+  assigned_to: string | null
+  created_at: string
+  updated_at: string
+  closed_at: string | null
+}
+
+export interface TicketNote {
+  id: string
+  ticket_id: string
+  author_id: string | null
+  is_internal: boolean
+  body: string
+  created_at: string
+}
+
+export const listTickets = (status: 'open' | 'all' | TicketStatus = 'open') =>
+  call<{
+    rows: SupportTicket[]
+    workspaceNames: Record<string, string>
+    openCount: number
+  }>('support.list', { status })
+
+export const getTicket = (id: string) =>
+  call<{ ticket: SupportTicket; notes: TicketNote[]; authorEmails: Record<string, string> }>(
+    'support.get',
+    { id }
+  )
+
+export const replyToTicket = (ticketId: string, body: string, isInternal = false) =>
+  call<{ note: TicketNote }>('support.reply', {
+    ticket_id: ticketId,
+    body,
+    is_internal: isInternal,
+  })
+
+export const updateTicket = (
+  id: string,
+  patch: { status?: TicketStatus; priority?: string; assigned_to?: string | null }
+) => call<{ row: SupportTicket }>('support.update', { id, ...patch })
+
+// ── Feature switches ─────────────────────────────────────────────────────────
+
+export interface FeatureFlag {
+  key: string
+  label: string
+  description: string
+  enabled: boolean
+  updated_at: string
+}
+
+export const listFlags = () => call<{ rows: FeatureFlag[] }>('flags.list').then((r) => r.rows)
+
+export const setFlag = (key: string, enabled: boolean) =>
+  call<{ row: FeatureFlag }>('flags.set', { key, enabled }).then((r) => r.row)
+
+// ── Data requests ────────────────────────────────────────────────────────────
+
+export interface DataRequest {
+  id: string
+  user_id: string | null
+  workspace_id: string | null
+  email: string | null
+  kind: 'access' | 'erasure'
+  status: 'new' | 'in_progress' | 'done' | 'refused'
+  note: string | null
+  created_at: string
+  due_at: string
+  completed_at: string | null
+}
+
+export const listDataRequests = () =>
+  call<{ rows: DataRequest[]; workspaceNames: Record<string, string> }>('data.list')
+
+export const updateDataRequest = (id: string, patch: { status: string; note?: string }) =>
+  call<{ row: DataRequest }>('data.update', { id, ...patch })

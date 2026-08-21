@@ -21,6 +21,7 @@ import { formatCount } from '@/lib/performance'
 import { formatRelativeDay } from '@/lib/format'
 import { FontFamily, Radius, Spacing, Typography } from '@/constants/design'
 import { useTheme } from '@/hooks/useTheme'
+import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { Button, Card, PressableScale, Skeleton, Sparkline, useConfirm, useToast } from '@/components/ui'
 
 const PLATFORMS: { key: SocialPlatform; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
@@ -40,6 +41,13 @@ const PLATFORMS: { key: SocialPlatform; label: string; icon: keyof typeof Ionico
  */
 export function ConnectedAccounts() {
   const { c } = useTheme()
+  // Turned off from the dashboard on the evening one of them breaks, rather
+  // than shipping a release to every phone to hide a button.
+  const instagramOn = useFeatureFlag('instagram')
+  const youtubeOn = useFeatureFlag('youtube')
+  const platforms = PLATFORMS.filter(({ key }) =>
+    key === 'instagram' ? instagramOn : key === 'youtube' ? youtubeOn : true
+  )
   const toast = useToast()
   const confirm = useConfirm()
 
@@ -170,7 +178,7 @@ export function ConnectedAccounts() {
       ) : null}
 
       <Animated.View layout={LinearTransition.duration(200)} style={styles.list}>
-        {PLATFORMS.map(({ key, label, icon }) => {
+        {platforms.map(({ key, label, icon }) => {
           const account = accounts.find((a) => a.platform === key)
           const summary = reach[key]
 

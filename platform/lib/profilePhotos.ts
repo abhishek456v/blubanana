@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { base64ToBytes } from './bytes'
 
 // Profile photos, and getting one onto the rate card (§8.11, migration 032).
 //
@@ -16,32 +17,6 @@ export interface ProfilePhoto {
   path: string
   sort_order: number
   created_at: string
-}
-
-/**
- * base64 → bytes, without a dependency.
- *
- * The storage client wants binary. React Native has no `Buffer`, and `atob`
- * has only been reliably present since a recent Hermes, so this decodes by
- * hand rather than betting the upload path on which runtime the app lands on.
- */
-function base64ToBytes(base64: string): Uint8Array {
-  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-  const clean = base64.replace(/[^A-Za-z0-9+/]/g, '')
-  const bytes = new Uint8Array((clean.length * 3) / 4 | 0)
-
-  let byte = 0
-  let bits = 0
-  let out = 0
-  for (const char of clean) {
-    bits = (bits << 6) | alphabet.indexOf(char)
-    byte += 6
-    if (byte >= 8) {
-      byte -= 8
-      bytes[out++] = (bits >> byte) & 0xff
-    }
-  }
-  return bytes.subarray(0, out)
 }
 
 async function currentUserId(): Promise<string> {

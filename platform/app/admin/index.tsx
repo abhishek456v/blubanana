@@ -22,8 +22,77 @@ import {
 } from '@/constants/design'
 import { useTheme } from '@/hooks/useTheme'
 import { useBreakpoint } from '@/hooks/useBreakpoint'
-import { usePlatformRole } from '@/hooks/usePlatformRole'
+import { roleCan, usePlatformRole, type AdminArea } from '@/hooks/usePlatformRole'
 import { Card, MetricCard, PressableScale, Skeleton, useToast } from '@/components/ui'
+
+interface Section {
+  href: string
+  area: AdminArea
+  title: string
+  hint: string
+  icon: keyof typeof Ionicons.glyphMap
+  /** A count to show on the right, if there is one worth showing. */
+  badge?: (issues: number) => string | null
+}
+
+const SECTIONS: Section[] = [
+  {
+    href: '/admin/people',
+    area: 'people',
+    title: 'People',
+    hint: 'Everyone using it, how far they got, and a way to reach them',
+    icon: 'people-outline',
+  },
+  {
+    href: '/admin/subscriptions',
+    area: 'subscriptions',
+    title: 'Subscriptions',
+    hint: 'Who is paying, who is ending, and the levers to put something right',
+    icon: 'card-outline',
+  },
+  {
+    href: '/admin/support',
+    area: 'support',
+    title: 'Help',
+    hint: 'What people have written in about',
+    icon: 'chatbubbles-outline',
+  },
+  {
+    href: '/admin/announcements',
+    area: 'announcements',
+    title: 'Broadcast',
+    hint: 'A strip, a popup or a picture, on the app and the website',
+    icon: 'megaphone-outline',
+  },
+  {
+    href: '/admin/media',
+    area: 'media',
+    title: 'Media',
+    hint: 'Pictures and video, for anywhere the product shows one',
+    icon: 'images-outline',
+  },
+  {
+    href: '/admin/flags',
+    area: 'flags',
+    title: 'Switches',
+    hint: 'Turn part of the product off without shipping anything',
+    icon: 'toggle-outline',
+  },
+  {
+    href: '/admin/activity',
+    area: 'activity',
+    title: 'Activity',
+    hint: 'The last things anybody did, across every workspace',
+    icon: 'pulse-outline',
+  },
+  {
+    href: '/admin/data-requests',
+    area: 'requests',
+    title: 'Data requests',
+    hint: 'Copies and erasures, with the thirty day clock on each',
+    icon: 'shield-checkmark-outline',
+  },
+]
 
 /**
  * The one screen to open in the morning.
@@ -105,12 +174,19 @@ export default function AdminHome() {
             {/* Is anything broken. First, because it is the only thing here
                 that can be an emergency, and because the answer is usually
                 "no" and takes one second to read. */}
-            <Card
-              style={[
-                styles.healthCard,
-                { backgroundColor: issues === 0 ? c.successLight : c.dangerLight },
-              ]}
+            <PressableScale
+              onPress={() => router.push('/admin/health' as never)}
+              accessibilityRole="button"
+              accessibilityLabel={
+                issues === 0 ? 'Nothing is broken' : `${issues} things need attention`
+              }
             >
+              <Card
+                style={[
+                  styles.healthCard,
+                  { backgroundColor: issues === 0 ? c.successLight : c.dangerLight },
+                ]}
+              >
               <View style={styles.healthRow}>
                 <Ionicons
                   name={issues === 0 ? 'checkmark-circle' : 'alert-circle'}
@@ -133,8 +209,14 @@ export default function AdminHome() {
                       : 'Expired connections, missed reminders or messages that never sent.'}
                   </Text>
                 </View>
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={issues === 0 ? c.success : c.danger}
+                />
               </View>
-            </Card>
+              </Card>
+            </PressableScale>
 
             {/* Is anyone getting started. The number that matters most for a
                 product with a trial, and the one nothing reported until now. */}
@@ -200,21 +282,37 @@ export default function AdminHome() {
               </View>
             ) : null}
 
-            <PressableScale
-              onPress={() => router.push('/admin/announcements' as never)}
-              accessibilityRole="button"
-              accessibilityLabel="Broadcast a message"
-              style={[styles.link, { backgroundColor: c.bgSurface }]}
-            >
-              <Ionicons name="megaphone-outline" size={18} color={c.accent} />
-              <View style={styles.linkText}>
-                <Text style={[styles.linkTitle, { color: c.textPrimary }]}>Broadcast</Text>
-                <Text style={[styles.linkHint, { color: c.textSecondary }]}>
-                  A banner, an alert or a note, on the app and the website
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color={c.textMuted} />
-            </PressableScale>
+            {/* Everything else, in the order somebody actually needs it: what
+                is broken, who is here, what they are paying, what they asked
+                for, then the levers. A role that cannot reach an area does not
+                see the link, so nobody is invited to a refusal. */}
+            <View style={styles.links}>
+              {SECTIONS.filter((section) => roleCan(role, section.area)).map((section) => (
+                <PressableScale
+                  key={section.href}
+                  onPress={() => router.push(section.href as never)}
+                  accessibilityRole="button"
+                  accessibilityLabel={section.title}
+                  style={[styles.link, { backgroundColor: c.bgSurface }]}
+                >
+                  <Ionicons name={section.icon} size={18} color={c.accent} />
+                  <View style={styles.linkText}>
+                    <Text style={[styles.linkTitle, { color: c.textPrimary }]}>
+                      {section.title}
+                    </Text>
+                    <Text style={[styles.linkHint, { color: c.textSecondary }]}>
+                      {section.hint}
+                    </Text>
+                  </View>
+                  {section.badge && section.badge(issues) ? (
+                    <View style={[styles.badge, { backgroundColor: c.danger }]}>
+                      <Text style={styles.badgeText}>{section.badge(issues)}</Text>
+                    </View>
+                  ) : null}
+                  <Ionicons name="chevron-forward" size={16} color={c.textMuted} />
+                </PressableScale>
+              ))}
+            </View>
 
             <Text style={[styles.footnote, { color: c.textMuted }]}>
               Signed in as {role}. Every screen here is recorded, including what it read.
@@ -333,6 +431,20 @@ const styles = StyleSheet.create({
   metricCell: {
     flexGrow: 1,
     flexBasis: 190,
+  },
+  links: { gap: Spacing.sm },
+  badge: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: {
+    ...Typography.label,
+    fontFamily: FontFamily.semiBold,
+    color: '#FFFFFF',
   },
   link: {
     flexDirection: 'row',

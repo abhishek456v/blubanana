@@ -36,6 +36,14 @@ export interface DataTableProps<Row> {
  * branch on `isDesktop` and render their ListRow layout below it. The table
  * does not try to collapse itself responsively; a squeezed table is worse
  * than the rows it replaced.
+ *
+ * ── One rule about `onRowPress` ─────────────────────────────────────────────
+ *
+ * A pressable row is a `<button>`, so no cell may then render a control of its
+ * own: a button inside a button is invalid HTML and the browser reports it as
+ * a hydration error, which is a real defect and not a lint. If a row needs its
+ * own buttons, leave `onRowPress` off and make one cell the way in. The People
+ * screen does exactly that.
  */
 export function DataTable<Row>({ columns, rows, keyOf, onRowPress, style }: DataTableProps<Row>) {
   const { c } = useTheme()
