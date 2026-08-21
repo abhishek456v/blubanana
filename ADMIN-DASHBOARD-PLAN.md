@@ -148,7 +148,25 @@ on the service role. If a browser ever holds a key that can read every
 workspace, all of the tenancy work is undone.
 
 **Every admin action is written to `audit_logs`, including reads.** A dashboard
-that can see everyone's money should be able to say what it looked at.
+that can see everyone's money should be able to say what it looked at. Readable
+from `/admin/activity`, under "What this dashboard did": a record nobody can
+produce is not a record.
+
+### The permission matrix, as tested rather than as intended
+
+Checked live on 22 August by holding one account and moving it through all
+four roles, against every action the function routes:
+
+| Role | Reaches | Refused |
+|---|---|---|
+| `support` | Overview, health, funnel, people, activity, one workspace's snapshot, help, media, reading the switches | Every money screen, every content screen, and everything admin only |
+| `finance` | Overview, subscriptions and the four levers, the price list, reading the switches | People and every other piece of customer data, all content, everything admin only |
+| `editor` | Overview, broadcast, media, the blog, the words, reading the switches | All customer data, all money, everything admin only |
+| no role | Nothing. Every action answers 404, the same as an action that does not exist | Everything |
+
+Throwing a switch, the data request register, the admin audit log, tidying
+stray files and asking for a deploy are admin only, and were refused for all
+three of the other roles.
 
 ### Deferred, on purpose
 
