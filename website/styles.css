@@ -260,6 +260,9 @@ p:last-child { margin-bottom: 0; }
   padding: 9px 44px 9px 24px;
 }
 .announce b { font-weight: 600; }
+/* The link inside a broadcast has to look like one: the bar is a solid
+   colour, so an unstyled anchor inherits the surrounding text exactly. */
+.announce a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .announce-close { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--on-accent); padding: 4px 8px; line-height: 1; }
 .announce-close:hover { color: var(--on-accent); }
 

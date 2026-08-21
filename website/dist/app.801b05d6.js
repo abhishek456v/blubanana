@@ -245,6 +245,7 @@
   const SUPABASE_URL = root.dataset.supabaseUrl
   const SUPABASE_KEY = root.dataset.supabaseKey
   const announce = document.getElementById('announce')
+  const broadcast = document.getElementById('broadcast')
 
   const inr = (paise) => '\u20b9' + Math.round(paise / 100).toLocaleString('en-IN')
 
@@ -314,7 +315,14 @@
 
     if (introLive === true) {
       document.querySelectorAll('[data-intro-chip]').forEach((el) => (el.hidden = false))
-      if (announce && sessionStorage.getItem('cd-announce') !== 'closed') announce.hidden = false
+      // Not if a broadcast has already claimed the strip.
+      if (
+        announce &&
+        sessionStorage.getItem('cd-announce') !== 'closed' &&
+        broadcast?.hidden !== false
+      ) {
+        announce.hidden = false
+      }
     }
   })()
 
@@ -322,4 +330,47 @@
     announce.hidden = true
     sessionStorage.setItem('cd-announce', 'closed')
   })
+
+  /* ── broadcast ───────────────────────────────────────────────────────────── */
+  /*
+   * Whatever the admin dashboard has published for the website, read live the
+   * same way the price is. The policy on `announcements` exposes only published
+   * rows inside their dates, so a draft cannot appear here and a finished one
+   * stops appearing on its own, with no deploy and nobody remembering.
+   *
+   * When one exists it wins and the launch bar stays down. Two stacked bars is
+   * how a page starts looking like it is shouting.
+   */
+  ;(async () => {
+    if (!broadcast) return
+    const rows = await ask(
+      'announcements?select=id,title,body,link_url,link_label,dismissible' +
+        '&surface=in.(website,both)&order=starts_at.desc&limit=1'
+    )
+    const item = Array.isArray(rows) ? rows[0] : null
+    if (!item) return
+    if (sessionStorage.getItem('bb-broadcast') === item.id) return
+
+    broadcast.querySelector('[data-bc-title]').textContent = item.title
+    broadcast.querySelector('[data-bc-body]').textContent = item.body ?? ''
+    const link = broadcast.querySelector('[data-bc-link]')
+    if (item.link_url) {
+      link.href = item.link_url
+      link.textContent = item.link_label || 'Read more'
+      link.hidden = false
+    }
+    // A close button that does nothing is worse than none, so it goes when the
+    // announcement is not dismissible.
+    const close = broadcast.querySelector('.announce-close')
+    if (close && item.dismissible === false) close.remove()
+
+    broadcast.hidden = false
+    if (announce) announce.hidden = true
+
+    close?.addEventListener('click', () => {
+      broadcast.hidden = true
+      // Per announcement, so the next one is never pre-dismissed.
+      sessionStorage.setItem('bb-broadcast', item.id)
+    })
+  })()
 })()

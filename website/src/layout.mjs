@@ -257,6 +257,13 @@ ${script ? `<script src="${assets.tools}"></script>\n<script>${script}</script>`
 }
 
 /**
+ * Two bars, at most one of them showing.
+ *
+ * `broadcast` carries whatever the admin dashboard has published for the
+ * website, read live from Supabase the same way the price is. When one exists
+ * it wins and the launch bar stays hidden: two stacked bars is how a page
+ * starts looking like it is shouting, and the second never gets read.
+ *
  * The launch offer, without a running total.
  *
  * The 500 cap is what makes the struck through price honest, and it stays in
@@ -267,7 +274,11 @@ ${script ? `<script src="${assets.tools}"></script>\n<script>${script}</script>`
  * app.js owns that threshold.
  */
 function announceBar() {
-  return `<div class="announce" id="announce" hidden>
+  return `<div class="announce" id="broadcast" hidden>
+  <span><b data-bc-title></b> <span data-bc-body></span> <a data-bc-link hidden></a></span>
+  <button class="announce-close" aria-label="Dismiss">✕</button>
+</div>
+<div class="announce" id="announce" hidden>
   <span><b>Launch offer.</b> 50% off for the first 500 creators<span data-seats-line hidden>, and <b data-seats-left></b> places are left</span></span>
   <button class="announce-close" aria-label="Dismiss">✕</button>
 </div>`
