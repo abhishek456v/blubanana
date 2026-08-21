@@ -39,6 +39,7 @@ import { Duration } from '@/constants/motion'
 import { useBreakpoint } from '@/hooks/useBreakpoint'
 import { useTheme } from '@/hooks/useTheme'
 import { BrandAvatar } from '@/components/BrandAvatar'
+import { AnnouncementBanner } from '@/components/AnnouncementBanner'
 import { DealRow } from '@/components/DealRow'
 import { StatusPill } from '@/components/StatusPill'
 import type { UpcomingPayment } from '@/components/home'
@@ -603,6 +604,11 @@ export default function HomeScreen() {
       >
         {isDesktop ? null : cards}
       </ScreenHeader>
+
+      {/* Broadcast, from the admin dashboard. Home only, deliberately: this is
+          where a creator lands, and a banner that follows somebody into a form
+          they are trying to fill in stops being news and becomes noise. */}
+      <AnnouncementBanner />
 
       {isDesktop ? (
         <>

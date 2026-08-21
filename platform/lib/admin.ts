@@ -11,8 +11,10 @@ import { supabase } from './supabase'
  * The function re-checks the caller's role on the server every time. Nothing
  * here is trusted, and nothing here needs to be.
  */
-async function call<T>(action: string): Promise<T> {
-  const { data, error } = await supabase.functions.invoke('admin', { body: { action } })
+async function call<T>(action: string, extra: Record<string, unknown> = {}): Promise<T> {
+  const { data, error } = await supabase.functions.invoke('admin', {
+    body: { action, ...extra },
+  })
   if (error) throw error
   if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error)
   return data as T
@@ -72,4 +74,38 @@ export const getAdminFunnel = () => call<AdminFunnel>('funnel')
 /** Everything the health screen counts as needing attention, in one number. */
 export function healthIssueCount(health: AdminHealth): number {
   return health.socialAccounts.length + health.missedReminders.length + health.stuckMessages.length
+}
+
+
+export interface Announcement {
+  id: string
+  kind: 'news' | 'banner' | 'alert'
+  title: string
+  body: string | null
+  surface: 'app' | 'website' | 'both'
+  audience: 'everyone' | 'trialing' | 'paying' | 'lapsed'
+  link_url: string | null
+  link_label: string | null
+  dismissible: boolean
+  starts_at: string
+  ends_at: string | null
+  published: boolean
+  created_at: string
+}
+
+/** Everything, drafts included. The public policy only exposes live ones. */
+export const listAnnouncements = () =>
+  call<{ rows: Announcement[] }>('announcements.list').then((r) => r.rows)
+
+export const saveAnnouncement = (announcement: Partial<Announcement>) =>
+  call<{ row: Announcement }>('announcements.save', { announcement }).then((r) => r.row)
+
+export const deleteAnnouncement = (id: string) =>
+  call<{ ok: true }>('announcements.delete', { id })
+
+/** Whether an announcement is on screen right now, for the admin list. */
+export function isLive(a: Announcement, now = new Date()): boolean {
+  if (!a.published) return false
+  if (new Date(a.starts_at) > now) return false
+  return !a.ends_at || new Date(a.ends_at) > now
 }

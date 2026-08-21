@@ -200,6 +200,22 @@ export default function AdminHome() {
               </View>
             ) : null}
 
+            <PressableScale
+              onPress={() => router.push('/admin/announcements' as never)}
+              accessibilityRole="button"
+              accessibilityLabel="Broadcast a message"
+              style={[styles.link, { backgroundColor: c.bgSurface }]}
+            >
+              <Ionicons name="megaphone-outline" size={18} color={c.accent} />
+              <View style={styles.linkText}>
+                <Text style={[styles.linkTitle, { color: c.textPrimary }]}>Broadcast</Text>
+                <Text style={[styles.linkHint, { color: c.textSecondary }]}>
+                  A banner, an alert or a note, on the app and the website
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={c.textMuted} />
+            </PressableScale>
+
             <Text style={[styles.footnote, { color: c.textMuted }]}>
               Signed in as {role}. Every screen here is recorded, including what it read.
             </Text>
@@ -318,6 +334,17 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     flexBasis: 190,
   },
+  link: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.base,
+  },
+  linkText: { flex: 1, gap: 2 },
+  linkTitle: { ...Typography.bodyStrong, fontFamily: FontFamily.medium },
+  linkHint: { ...Typography.caption, fontFamily: FontFamily.regular },
   footnote: {
     ...Typography.caption,
     fontFamily: FontFamily.regular,

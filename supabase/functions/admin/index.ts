@@ -32,6 +32,11 @@ const ACTION_ACCESS: Record<string, PlatformRole[]> = {
   health: ['support'],
   funnel: ['support'],
   subscriptions: ['finance'],
+  // Broadcasting is content work, so an editor may do it. Nobody else but an
+  // admin: a message on every screen in the product is not a small lever.
+  'announcements.list': ['editor'],
+  'announcements.save': ['editor'],
+  'announcements.delete': ['editor'],
 }
 
 const json = (body: unknown, status = 200) =>
@@ -186,6 +191,65 @@ Deno.serve(async (req) => {
         withInvoice: rows.filter((r) => r.invoice).length,
         rows,
       })
+    }
+
+    if (action === 'announcements.list') {
+      // Everything, drafts included. The public policy only exposes published
+      // rows inside their window, which is exactly why the admin screen has to
+      // come through here to see the rest.
+      const { data } = await admin
+        .from('announcements')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100)
+      await audit()
+      return json({ rows: data ?? [] })
+    }
+
+    if (action === 'announcements.save') {
+      const input = (body as { announcement?: Record<string, unknown> }).announcement ?? {}
+      const title = String(input.title ?? '').trim()
+      if (!title) return json({ error: 'Give it a title' }, 400)
+
+      // Only these columns, listed rather than spread. A spread would let a
+      // crafted body set `created_by` to somebody else, or set columns added
+      // later that nobody thought about when writing this.
+      const row = {
+        kind: input.kind ?? 'banner',
+        title,
+        body: input.body ?? null,
+        surface: input.surface ?? 'both',
+        audience: input.audience ?? 'everyone',
+        link_url: input.link_url ?? null,
+        link_label: input.link_label ?? null,
+        dismissible: input.dismissible ?? true,
+        starts_at: input.starts_at ?? new Date().toISOString(),
+        ends_at: input.ends_at ?? null,
+        published: input.published ?? false,
+        updated_at: new Date().toISOString(),
+      }
+
+      const id = input.id ? String(input.id) : null
+      const { data, error } = id
+        ? await admin.from('announcements').update(row).eq('id', id).select().single()
+        : await admin
+            .from('announcements')
+            .insert({ ...row, created_by: user.id })
+            .select()
+            .single()
+
+      if (error) return json({ error: error.message }, 400)
+      await audit({ id: data?.id, title, published: row.published })
+      return json({ row: data })
+    }
+
+    if (action === 'announcements.delete') {
+      const id = String((body as { id?: string }).id ?? '')
+      if (!id) return json({ error: 'Which one' }, 400)
+      const { error } = await admin.from('announcements').delete().eq('id', id)
+      if (error) return json({ error: error.message }, 400)
+      await audit({ id })
+      return json({ ok: true })
     }
 
     if (action === 'subscriptions') {
