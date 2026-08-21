@@ -129,8 +129,23 @@ export async function adjust(ctx: Ctx) {
     patch.cancelled_at = null
     patch.status = 'active'
   } else {
-    patch.status = oneOf(body.status, STATUSES, 'active')
-    if (patch.status === 'cancelled') patch.cancelled_at = new Date().toISOString()
+    const status = oneOf(body.status, STATUSES, 'active')
+
+    /*
+     * Marking somebody as trialing without a date is how you lock them out.
+     *
+     * `trialing` only grants access while `trial_ends_at` is still ahead, so
+     * setting the status alone on an account whose trial ended months ago
+     * makes the workspace read only, silently, with nothing on their screen
+     * saying why. Extending the trial is the lever that sets both, so this
+     * points at it rather than doing half the job.
+     */
+    if (status === 'trialing') {
+      throw new Refused('Use "add days of trial" for that, so the date gets set too.')
+    }
+
+    patch.status = status
+    if (status === 'cancelled') patch.cancelled_at = new Date().toISOString()
     else patch.cancelled_at = null
   }
 
