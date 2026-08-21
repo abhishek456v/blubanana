@@ -50,13 +50,16 @@ export async function health(ctx: Ctx) {
       .neq('status', 'active'),
     db
       .from('reminders')
-      .select('id, type, status, scheduled_for, workspace_id')
+      // `title` matters: without it the screen showed the reminder's *type*,
+      // which is a database value ("payment", "workflow") and not a sentence
+      // anybody would recognise.
+      .select('id, type, title, status, scheduled_for, workspace_id')
       .in('status', ['expired', 'escalated'])
       .order('scheduled_for', { ascending: false })
       .limit(200),
     db
       .from('outbound_messages')
-      .select('id, channel, purpose, status, created_at, workspace_id')
+      .select('id, channel, purpose, recipient, status, created_at, workspace_id')
       .eq('status', 'approved')
       .order('created_at', { ascending: false })
       .limit(200),

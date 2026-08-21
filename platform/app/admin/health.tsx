@@ -1,7 +1,16 @@
 import { useCallback, useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { useFocusEffect } from '@react-navigation/core'
-import { getAdminHealth, healthIssueCount, type AdminHealth } from '@/lib/admin'
+import {
+  CHANNEL_NAMES,
+  PLATFORM_NAMES,
+  PURPOSE_NAMES,
+  REMINDER_TYPE_NAMES,
+  getAdminHealth,
+  healthIssueCount,
+  nameFor,
+  type AdminHealth,
+} from '@/lib/admin'
 import { formatDateLong, formatRelativeDay } from '@/lib/format'
 import { FontFamily, Radius, Spacing, Typography } from '@/constants/design'
 import { useTheme } from '@/hooks/useTheme'
@@ -68,7 +77,7 @@ export default function AdminHealthScreen() {
             {health.socialAccounts.map((account, index) => (
               <ListRow
                 key={account.id}
-                title={`${account.platform} · ${account.handle}`}
+                title={`${nameFor(PLATFORM_NAMES, account.platform)} · ${account.handle}`}
                 subtitle={nameOf(account.workspace_id)}
                 meta={
                   account.last_error ??
@@ -77,7 +86,10 @@ export default function AdminHealthScreen() {
                     : 'Never synced')
                 }
                 metaColor={c.danger}
-                trailing={<Pill label={account.status} tone="danger" />}
+                // Two lines: this is the error, which is the whole reason the
+                // row is here, and one line cut it off mid-sentence.
+                metaLines={2}
+                trailing={<Pill label={statusWord(account.status, 'connection')} tone="danger" />}
                 index={index}
               />
             ))}
@@ -91,10 +103,13 @@ export default function AdminHealthScreen() {
             {health.missedReminders.slice(0, 25).map((reminder, index) => (
               <ListRow
                 key={reminder.id}
-                title={reminder.type}
-                subtitle={nameOf(reminder.workspace_id)}
+                // The reminder's own title, not its type. "payment" is a
+                // database value; "Chase the Nykaa payment" is the thing that
+                // did not happen.
+                title={reminder.title || nameFor(REMINDER_TYPE_NAMES, reminder.type)}
+                subtitle={`${nameFor(REMINDER_TYPE_NAMES, reminder.type)} · ${nameOf(reminder.workspace_id)}`}
                 meta={`Was due ${formatRelativeDay(reminder.scheduled_for)}`}
-                trailing={<Pill label={reminder.status} tone="warning" />}
+                trailing={<Pill label={statusWord(reminder.status, 'reminder')} tone="warning" />}
                 index={index}
               />
             ))}
@@ -108,10 +123,10 @@ export default function AdminHealthScreen() {
             {health.stuckMessages.slice(0, 25).map((message, index) => (
               <ListRow
                 key={message.id}
-                title={`${message.channel} · ${message.purpose}`}
-                subtitle={nameOf(message.workspace_id)}
+                title={nameFor(PURPOSE_NAMES, message.purpose)}
+                subtitle={`${nameFor(CHANNEL_NAMES, message.channel)}${message.recipient ? ` to ${message.recipient}` : ''} · ${nameOf(message.workspace_id)}`}
                 meta={`Waiting since ${formatDateLong(message.created_at)}`}
-                trailing={<Pill label={message.status} tone="warning" />}
+                trailing={<Pill label={statusWord(message.status, 'message')} tone="warning" />}
                 index={index}
               />
             ))}
@@ -151,6 +166,26 @@ function Section({
       ) : null}
     </View>
   )
+}
+
+/**
+ * The status, said as what went wrong rather than as what the column holds.
+ *
+ * Two of these tables use the word "expired" for different things, which is
+ * why the subject has to be passed in: a reminder that expired was *missed*,
+ * and a connection that expired has simply *expired* and needs renewing.
+ * Calling a dead Instagram connection "Missed" is wrong, and it was, until
+ * somebody looked at the screen.
+ *
+ * "approved" is the one that matters most. On a list headed "messages that
+ * never went", a word that sounds like success beside a message is the
+ * opposite of the truth: it means cleared to send and still sitting there.
+ */
+function statusWord(status: string, about: 'connection' | 'reminder' | 'message'): string {
+  if (about === 'reminder' && status === 'expired') return 'Missed'
+  if (about === 'message' && status === 'approved') return 'Not sent'
+  if (status === 'escalated') return 'Escalated'
+  return status.charAt(0).toUpperCase() + status.slice(1)
 }
 
 function Pill({ label, tone }: { label: string; tone: 'danger' | 'warning' }) {

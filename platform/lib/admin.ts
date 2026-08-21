@@ -55,6 +55,7 @@ export interface HealthSocialAccount {
 export interface HealthReminder {
   id: string
   type: string
+  title: string
   status: string
   scheduled_for: string
   workspace_id: string
@@ -64,10 +65,51 @@ export interface HealthMessage {
   id: string
   channel: string
   purpose: string
+  recipient: string | null
   status: string
   created_at: string
   workspace_id: string
 }
+
+/**
+ * Database values, said the way a person would say them.
+ *
+ * These tables store enums, which is right for storage and wrong for a screen.
+ * The health page showed "whatsapp · payment_reminder_overdue" truncated to
+ * "payment_reminder_..." until this existed, which told the reader nothing at
+ * all about what had failed.
+ */
+export const CHANNEL_NAMES: Record<string, string> = {
+  whatsapp: 'WhatsApp',
+  email: 'Email',
+  sms: 'SMS',
+}
+
+export const PURPOSE_NAMES: Record<string, string> = {
+  delivery_notification: 'Telling a brand the work is live',
+  payment_reminder_pre: 'Payment reminder, before it is due',
+  payment_reminder_due: 'Payment reminder, on the day',
+  payment_reminder_overdue: 'Chasing an overdue payment',
+  ad_rights_followup: 'Following up on ad rights',
+  invoice_delivery: 'Sending an invoice',
+  custom: 'A message written by hand',
+}
+
+export const PLATFORM_NAMES: Record<string, string> = {
+  instagram: 'Instagram',
+  youtube: 'YouTube',
+}
+
+export const REMINDER_TYPE_NAMES: Record<string, string> = {
+  workflow: 'A deadline',
+  payment: 'A payment',
+  ad_rights: 'Ad rights',
+  survey: 'A survey',
+  tax: 'A tax date',
+}
+
+/** A lookup that falls back to the raw value rather than to an empty string. */
+export const nameFor = (map: Record<string, string>, key: string) => map[key] ?? key
 
 export interface AdminHealth {
   socialAccounts: HealthSocialAccount[]

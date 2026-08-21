@@ -140,13 +140,13 @@ export default function AdminBlog() {
                   <View
                     style={[
                       styles.pill,
-                      { backgroundColor: post.published ? c.successLight : c.bgSurface },
+                      { backgroundColor: post.published ? c.successLight : c.bgSurfaceRaised },
                     ]}
                   >
                     <Text
                       style={[
                         styles.pillText,
-                        { color: post.published ? c.success : c.textMuted },
+                        { color: post.published ? c.success : c.textSecondary },
                       ]}
                     >
                       {post.published ? 'Live' : 'Draft'}

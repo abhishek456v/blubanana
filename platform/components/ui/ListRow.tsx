@@ -13,6 +13,14 @@ export interface ListRowProps {
   /** Third line: deadlines, ad-rights windows, anything de-emphasised. */
   meta?: string
   metaColor?: string
+  /**
+   * How many lines the meta may take. One by default.
+   *
+   * Two when the meta is the actual point of the row rather than a timestamp:
+   * the health screen puts a connection's error message here, and one line
+   * truncated it mid-sentence, exactly where the useful half started.
+   */
+  metaLines?: number
   /** Avatar, icon tile, or anything else pinned to the left edge. */
   leading?: ReactNode
   /** Status pill, amount, or a custom node pinned to the right. */
@@ -38,6 +46,7 @@ export function ListRow({
   subtitle,
   meta,
   metaColor,
+  metaLines = 1,
   leading,
   trailing,
   onPress,
@@ -61,7 +70,10 @@ export function ListRow({
           </Text>
         ) : null}
         {meta ? (
-          <Text style={[styles.meta, { color: metaColor ?? c.textMuted }]} numberOfLines={1}>
+          <Text
+            style={[styles.meta, { color: metaColor ?? c.textMuted }]}
+            numberOfLines={metaLines}
+          >
             {meta}
           </Text>
         ) : null}

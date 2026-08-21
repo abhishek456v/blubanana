@@ -239,7 +239,7 @@ function StatusPill({ status }: { status: string | null }) {
         ? { bg: c.accentLight, fg: c.accentText, label: 'Trial' }
         : status === 'past_due'
           ? { bg: c.dangerLight, fg: c.danger, label: 'Late' }
-          : { bg: c.bgSurface, fg: c.textMuted, label: status ?? 'None' }
+          : { bg: c.bgSurfaceRaised, fg: c.textSecondary, label: status ?? 'None' }
 
   return (
     <View style={[styles.pill, { backgroundColor: tone.bg }]}>

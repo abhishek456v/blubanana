@@ -95,11 +95,14 @@ export default function AdminDataRequests() {
                     <View
                       style={[
                         styles.pill,
-                        { backgroundColor: late ? c.dangerLight : c.bgSurface },
+                        // bgSurfaceRaised, not bgSurface: the row underneath is
+                        // already bgSurface, so a pill in the same colour was
+                        // invisible and read as loose text.
+                        { backgroundColor: late ? c.dangerLight : c.bgSurfaceRaised },
                       ]}
                     >
                       <Text
-                        style={[styles.pillText, { color: late ? c.danger : c.textMuted }]}
+                        style={[styles.pillText, { color: late ? c.danger : c.textSecondary }]}
                       >
                         {request.status.replace('_', ' ')}
                       </Text>

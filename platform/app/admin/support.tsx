@@ -115,7 +115,7 @@ function StatusPill({ status, priority }: { status: TicketStatus; priority: stri
       : status === 'open'
         ? { bg: c.warningLight, fg: c.warning, label: 'On you' }
         : status === 'waiting'
-          ? { bg: c.bgSurface, fg: c.textMuted, label: 'On them' }
+          ? { bg: c.bgSurfaceRaised, fg: c.textSecondary, label: 'On them' }
           : { bg: c.successLight, fg: c.success, label: 'Closed' }
 
   return (
