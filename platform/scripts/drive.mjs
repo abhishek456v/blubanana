@@ -138,7 +138,20 @@ page.on('pageerror', (err) => problems.push(`uncaught: ${err.message.slice(0, 30
 page.on('requestfailed', (req) => {
   // Ignore the dev server's own hot-reload socket noise.
   if (req.url().includes('/_expo/') || req.url().includes('hot')) return
-  problems.push(`request failed: ${req.url().slice(0, 120)}`)
+
+  /*
+   * An aborted request is not a failure.
+   *
+   * Playwright raises `requestfailed` for a cancellation too, and navigating
+   * between screens cancels whatever the previous one had in flight. Reported
+   * as a problem, that produced the same line on every single run, which is
+   * the way a real failure gets missed: a list of problems that always has
+   * something in it stops being read.
+   */
+  const reason = req.failure()?.errorText ?? ''
+  if (reason.includes('ERR_ABORTED')) return
+
+  problems.push(`request failed (${reason}): ${req.url().slice(0, 110)}`)
 })
 // A 4xx/5xx is not a "failed request" to Playwright: the response arrived. It
 // surfaces only as a bare "Failed to load resource: 400" in the console, with
