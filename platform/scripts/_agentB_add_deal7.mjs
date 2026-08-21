@@ -39,17 +39,18 @@ await page.getByPlaceholder('1 Reel + 3 Stories').fill('QA- test reel, safe to d
 await page.getByPlaceholder('0').first().fill('1000')
 
 await page.mouse.move(1000, 700)
-await page.mouse.wheel(0, 900)
-await page.waitForTimeout(600)
-await page.mouse.wheel(0, 900)
-await page.waitForTimeout(600)
-await page.screenshot({ path: join(OUT, 'agentB-add-deal-prescroll.png'), fullPage: true })
+let found = 0
+for (let i = 0; i < 15; i++) {
+  await page.mouse.wheel(0, 700)
+  await page.waitForTimeout(300)
+  found = await page.getByRole('button', { name: 'Save deal', exact: true }).count()
+  if (found > 0) { console.log('found after', i, 'scrolls'); break }
+}
+await page.screenshot({ path: join(OUT, 'agentB-add-deal-prescroll2.png'), fullPage: true })
+console.log('Save deal button count:', found)
 
-const saveBtn = page.getByRole('button', { name: 'Save deal', exact: true })
-const exists = await saveBtn.count()
-console.log('Save deal button count in DOM:', exists)
-if (exists > 0) {
-  await saveBtn.click({ timeout: 10000 })
+if (found > 0) {
+  await page.getByRole('button', { name: 'Save deal', exact: true }).click({ timeout: 10000 })
   await page.waitForTimeout(2500)
   await page.screenshot({ path: join(OUT, 'agentB-add-deal-after-save.png'), fullPage: true })
   console.log('saved deal')

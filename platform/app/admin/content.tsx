@@ -130,9 +130,19 @@ export default function AdminContent() {
                     onChangeText={(next) =>
                       setEdited((current) => ({ ...current, [line.key]: next }))
                     }
-                    // Only for copy that is genuinely a paragraph. A headline
-                    // in a tall box leaves a hand-sized hole under every one.
-                    multiline={line.value.length > 120}
+                    /*
+                     * Always. Never a character count.
+                     *
+                     * It was `value.length > 120`, which is a guess about
+                     * width dressed up as a rule: a headline that fits one
+                     * line on a desktop is cut off hard at the card edge on a
+                     * phone, with no wrap and no ellipsis, so the copy you
+                     * came to read is the part you cannot see.
+                     *
+                     * Every value on this screen is a sentence. A single line
+                     * input was never the right control for one.
+                     */
+                    multiline
                   />
                   {changed ? (
                     <View style={styles.actions}>

@@ -6,6 +6,14 @@
 
 import { Ctx, count, emailsById, json, rows } from './lib.ts'
 
+/** One row of admin_workspace_counts(), from migration 047. */
+interface WorkspaceCounts {
+  workspace_id: string
+  brands: number
+  deals: number
+  invoices: number
+}
+
 export async function overview(ctx: Ctx) {
   const { db } = ctx
   const [workspaces, subs, deals, invoices] = await Promise.all([
@@ -84,27 +92,28 @@ export async function health(ctx: Ctx) {
 
 export async function funnel(ctx: Ctx) {
   const { db } = ctx
-  const [workspaces, brands, deals, invoices] = await Promise.all([
+  // Counts from the database rather than by dragging every row across the
+  // network to count them here. See migration 047.
+  const [workspaces, counts] = await Promise.all([
     db.from('workspaces').select('id, name, created_at'),
-    db.from('brands').select('workspace_id'),
-    db.from('deals').select('workspace_id'),
-    db.from('invoices').select('workspace_id'),
+    db.rpc('admin_workspace_counts'),
   ])
 
-  const has = (result: Parameters<typeof rows>[0]) =>
-    new Set(rows<{ workspace_id: string }>(result).map((r) => r.workspace_id))
-  const withBrand = has(brands)
-  const withDeal = has(deals)
-  const withInvoice = has(invoices)
+  const byWorkspace = new Map(
+    rows<WorkspaceCounts>(counts).map((c) => [c.workspace_id, c])
+  )
 
-  const list = rows<{ id: string; name: string; created_at: string }>(workspaces).map((w) => ({
-    id: w.id,
-    name: w.name,
-    created_at: w.created_at,
-    brand: withBrand.has(w.id),
-    deal: withDeal.has(w.id),
-    invoice: withInvoice.has(w.id),
-  }))
+  const list = rows<{ id: string; name: string; created_at: string }>(workspaces).map((w) => {
+    const count = byWorkspace.get(w.id)
+    return {
+      id: w.id,
+      name: w.name,
+      created_at: w.created_at,
+      brand: (count?.brands ?? 0) > 0,
+      deal: (count?.deals ?? 0) > 0,
+      invoice: (count?.invoices ?? 0) > 0,
+    }
+  })
 
   await ctx.audit()
   return json({
@@ -126,11 +135,11 @@ export async function funnel(ctx: Ctx) {
  */
 export async function people(ctx: Ctx) {
   const { db } = ctx
-  const [workspaces, owners, subs, deals, profiles] = await Promise.all([
+  const [workspaces, owners, subs, counts, profiles] = await Promise.all([
     db.from('workspaces').select('id, name, type, timezone, created_at').order('created_at', { ascending: false }),
     db.from('memberships').select('workspace_id, user_id, role, status').eq('role', 'owner'),
     db.from('subscriptions').select('workspace_id, status, billing_term, trial_ends_at, current_period_end, cancelled_at, is_internal'),
-    db.from('deals').select('workspace_id'),
+    db.rpc('admin_workspace_counts'),
     db.from('profiles').select('id, name, phone, follower_count, niche'),
   ])
 
@@ -144,10 +153,9 @@ export async function people(ctx: Ctx) {
     rows<{ workspace_id: string }>(subs).map((s) => [s.workspace_id, s as Record<string, unknown>])
   )
 
-  const dealCount = new Map<string, number>()
-  for (const d of rows<{ workspace_id: string }>(deals)) {
-    dealCount.set(d.workspace_id, (dealCount.get(d.workspace_id) ?? 0) + 1)
-  }
+  const dealCount = new Map<string, number>(
+    rows<WorkspaceCounts>(counts).map((c) => [c.workspace_id, Number(c.deals)])
+  )
 
   const list = rows<{ id: string; name: string; type: string; created_at: string }>(workspaces).map(
     (w) => {
