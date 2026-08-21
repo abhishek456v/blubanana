@@ -464,3 +464,23 @@ export const importDocx = (base64: string) => call<ImportedDoc>('blog.import', {
 
 /** Rebuild the website now, with nothing changed. */
 export const deploySite = () => call<{ deployed: boolean }>('site.deploy')
+
+// ── Editable copy ────────────────────────────────────────────────────────────
+
+export interface ContentLine {
+  key: string
+  value: string
+  kind: 'text' | 'html'
+  label: string
+  hint: string | null
+  /** website: needs a rebuild. app: takes effect next time somebody opens it. */
+  area: 'website' | 'app'
+  sort_order: number
+  updated_at: string
+}
+
+export const listContent = () =>
+  call<{ rows: ContentLine[]; deployConfigured: boolean }>('content.list')
+
+export const saveContent = (key: string, value: string) =>
+  call<{ row: ContentLine; deployed: boolean }>('content.save', { key, value })

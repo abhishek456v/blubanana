@@ -22,6 +22,7 @@ import {
 } from '@/constants/design'
 import { Duration } from '@/constants/motion'
 import { useTheme } from '@/hooks/useTheme'
+import { useContent } from '@/hooks/useContent'
 import { Button, Mark, PressableScale, TextField, useToast } from '@/components/ui'
 
 type Step = 'you' | 'money'
@@ -41,6 +42,20 @@ export default function OnboardingScreen() {
   const { c } = useTheme()
   const router = useRouter()
   const toast = useToast()
+
+  // Reworded from the dashboard when somebody works out what confuses people,
+  // which for onboarding is roughly monthly. The words here are what ships and
+  // what shows if anything at all goes wrong.
+  const youTitle = useContent('onboarding.you.title', 'Tell brands who you are')
+  const youLede = useContent(
+    'onboarding.you.lede',
+    'This fills your profile card, the page you send a brand mid-negotiation. Everything is optional and editable later.'
+  )
+  const moneyTitle = useContent('onboarding.money.title', 'How you get paid')
+  const moneyLede = useContent(
+    'onboarding.money.lede',
+    'These go on the invoices you raise. UPI is enough to start; bank details and GSTIN can wait until a brand asks.'
+  )
 
   const [step, setStep] = useState<Step>('you')
   const [saving, setSaving] = useState(false)
@@ -125,13 +140,8 @@ export default function OnboardingScreen() {
 
           {step === 'you' ? (
             <Animated.View entering={FadeInDown.duration(Duration.slow)} style={styles.body}>
-              <Text style={[styles.title, { color: c.textPrimary }]}>
-                Tell brands who you are
-              </Text>
-              <Text style={[styles.lede, { color: c.textSecondary }]}>
-                This fills your profile card, the page you send a brand mid-negotiation.
-                Everything is optional and editable later.
-              </Text>
+              <Text style={[styles.title, { color: c.textPrimary }]}>{youTitle}</Text>
+              <Text style={[styles.lede, { color: c.textSecondary }]}>{youLede}</Text>
 
               <View style={styles.fields}>
                 <TextField
@@ -162,11 +172,8 @@ export default function OnboardingScreen() {
             </Animated.View>
           ) : (
             <Animated.View entering={FadeInRight.duration(Duration.slow)} style={styles.body}>
-              <Text style={[styles.title, { color: c.textPrimary }]}>How you get paid</Text>
-              <Text style={[styles.lede, { color: c.textSecondary }]}>
-                These go on the invoices you raise. UPI is enough to start; bank details and
-                GSTIN can wait until a brand asks.
-              </Text>
+              <Text style={[styles.title, { color: c.textPrimary }]}>{moneyTitle}</Text>
+              <Text style={[styles.lede, { color: c.textSecondary }]}>{moneyLede}</Text>
 
               <View style={styles.fields}>
                 <TextField

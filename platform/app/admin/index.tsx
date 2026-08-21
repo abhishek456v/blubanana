@@ -72,6 +72,13 @@ const SECTIONS: Section[] = [
     icon: 'create-outline',
   },
   {
+    href: '/admin/content',
+    area: 'content',
+    title: 'Words',
+    hint: 'Reword the headlines and the onboarding, without a release',
+    icon: 'text-outline',
+  },
+  {
     href: '/admin/media',
     area: 'media',
     title: 'Media',

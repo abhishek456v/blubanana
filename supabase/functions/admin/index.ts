@@ -89,6 +89,9 @@ const ACTION_ACCESS: Record<string, PlatformRole[]> = {
   // is the one action here whose cost is somebody else's bill.
   'site.deploy': [],
 
+  'content.list': ['editor'],
+  'content.save': ['editor'],
+
   // The DPDP register. Admin only, because answering these is a legal duty
   // that sits with the fiduciary rather than with whoever is on shift.
   'data.list': [],
@@ -130,6 +133,9 @@ const HANDLERS: Record<string, (ctx: Ctx) => Promise<Response>> = {
   'blog.delete': writing.remove,
   'blog.import': writing.importDocx,
   'site.deploy': writing.deploy,
+
+  'content.list': writing.contentList,
+  'content.save': writing.contentSave,
 
   'data.list': desk.dataList,
   'data.update': desk.dataUpdate,

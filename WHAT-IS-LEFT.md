@@ -78,7 +78,8 @@ page's canonical tag already claimed. Nothing further here.
 
 ### 6. One setting, so publishing a blog post actually publishes it
 
-Ten minutes, in Vercel, and the blog is the only thing waiting on it.
+Ten minutes, in Vercel. The blog and the website's editable copy are both
+waiting on it.
 
 Posts now live in the database and you can write them, or bring a Word
 document across, from the dashboard. What is missing is the last step:
@@ -95,8 +96,9 @@ box rather than pretending otherwise.
    password in effect: anybody holding it can make your site rebuild over and
    over, which costs build minutes.
 
-Until then, publishing still works and the website simply keeps showing the
-five posts it already has.
+Until then, publishing still works and the website simply keeps showing what
+it already has. App copy is unaffected: that is read at runtime and changes the
+next time somebody opens the app.
 
 ### 7. Two dates I am holding for you
 
@@ -129,6 +131,12 @@ deliberately deferred.
 - **Help:** people can now write in from the app, and you answer from the
   dashboard. Replies they see and private notes they never do, in one thread.
 - **Broadcast, media, switches, activity and data requests**, as agreed.
+- **Words:** the headlines on the website and the onboarding lines in the app
+  can be reworded from the dashboard. Not every string: the app carries about
+  380 pieces of text, and putting all of them in a database would make the
+  interface arrive after the screens do. What is editable is what actually gets
+  reworded. Every line has the shipped words behind it, so a missing row or a
+  phone with no signal reads exactly as it does now.
 - **Writing:** the blog moved out of the website's code and into the database.
   Write a post, or bring a Word document across and it arrives converted, with
   any pictures in it uploaded to the media library and the links rewritten.

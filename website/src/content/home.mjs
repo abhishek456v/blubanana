@@ -12,6 +12,7 @@
 // The drawings in ui.mjs show the shape of the product instead.
 
 import { PRICING, SITE, inr } from '../site.mjs'
+import { t } from '../copy.mjs'
 import {
   closingCta, demoApp, faq, faqSchema, head, icon, planCard, section, split, tabs, uiTeam,
 } from '../ui.mjs'
@@ -47,13 +48,22 @@ const hero = `<section class="hero">
   <div class="container">
     <div class="hero-grid">
       <div>
-        <h1 class="reveal" style="max-width:20ch">Brand deals, deadlines and payments. One app, made for Indian creators.</h1>
-        <p class="lede reveal">Log a deal in thirty seconds, never miss a deadline, and get paid without chasing.</p>
+        <h1 class="reveal" style="max-width:20ch">${t(
+          'home.hero.title',
+          'Brand deals, deadlines and payments. One app, made for Indian creators.'
+        )}</h1>
+        <p class="lede reveal">${t(
+          'home.hero.lede',
+          'Log a deal in thirty seconds, never miss a deadline, and get paid without chasing.'
+        )}</p>
         <div class="btn-row reveal">
           <a class="btn btn-lg" href="${SITE.signup}">Start free for ${PRICING.trialDays} days</a>
           <a class="btn btn-lg btn-ghost" href="#capture">See how it works</a>
         </div>
-        <p class="fine reveal">No card needed. Works on the web, iOS and Android.</p>
+        <p class="fine reveal">${t(
+          'home.hero.fine',
+          'No card needed. Works on the web, iOS and Android.'
+        )}</p>
       </div>
       <div class="reveal">${demoApp({ id: 'hero' })}</div>
     </div>

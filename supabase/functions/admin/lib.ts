@@ -61,8 +61,14 @@ export function rows<T = Record<string, unknown>>(result: {
 
 export function one<T = Record<string, unknown>>(result: {
   data: T | null
-  error: { message: string } | null
+  error: { message: string; code?: string } | null
 }): T {
+  // PGRST116 is PostgREST saying "you asked for one row and there was not
+  // one". It is an error object rather than a null, so without this it fell
+  // through to the generic handler and a request for something that is simply
+  // not there answered "something went wrong on our side", which sends the
+  // reader looking for a fault that does not exist.
+  if (result.error?.code === 'PGRST116') throw new Refused('That is not there any more', 404)
   if (result.error) throw new Error(result.error.message)
   if (!result.data) throw new Refused('That is not there any more', 404)
   return result.data

@@ -6,6 +6,7 @@
 // fourth question unanswered is the one people write in about.
 
 import { COMPANY, PRICING, SITE, inr } from '../site.mjs'
+import { t } from '../copy.mjs'
 import { closingCta, faq, faqSchema, head, planCard, planCta, section } from '../ui.mjs'
 
 const QUESTIONS = [
@@ -46,9 +47,15 @@ const hero = `<section class="hero" style="padding-bottom:44px">
   <div class="container">
     <div class="hero-grid">
       <div>
-        <h1 class="reveal" style="max-width:13ch">One plan. Everything in it.</h1>
+        <h1 class="reveal" style="max-width:13ch">${t(
+          'pricing.hero.title',
+          'One plan. Everything in it.'
+        )}</h1>
         <p class="lede reveal" style="max-width:44ch;margin-top:18px">
-          Every feature on every term. The only decision is how long you pay for at a time.
+          ${t(
+            'pricing.hero.lede',
+            'Every feature on every term. The only decision is how long you pay for at a time.'
+          )}
         </p>
       </div>
       <div class="reveal">

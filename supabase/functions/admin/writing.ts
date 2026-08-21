@@ -294,3 +294,51 @@ function demoteHeadings(html: string): string {
 function stripTags(html: string): string {
   return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
 }
+
+
+// ── Editable copy ────────────────────────────────────────────────────────────
+
+export async function contentList(ctx: Ctx) {
+  const data = rows(
+    await ctx.db
+      .from('site_content')
+      .select('*')
+      .order('area')
+      .order('sort_order')
+  )
+  await ctx.audit()
+  return json({ rows: data, deployConfigured: Boolean(Deno.env.get('VERCEL_DEPLOY_HOOK')) })
+}
+
+/**
+ * Change one line.
+ *
+ * Only the value. The key, the label and which surface it belongs to are the
+ * contract between a row and the line of code that reads it, and none of them
+ * can be edited from a screen: renaming a key silently reverts the copy to its
+ * fallback, which looks exactly like nothing having happened.
+ */
+export async function contentSave(ctx: Ctx) {
+  const key = str(ctx.body, 'key')
+  const value = String(ctx.body.value ?? '')
+  if (!value.trim()) throw new Refused('This cannot be left empty')
+  if (/[\u2013\u2014]/.test(value)) {
+    throw new Refused('No long dashes. Use a full stop, a comma, or rewrite the sentence.')
+  }
+
+  const row = one<{ area: string }>(
+    await ctx.db
+      .from('site_content')
+      .update({ value, updated_by: ctx.user.id, updated_at: new Date().toISOString() })
+      .eq('key', key)
+      .select()
+      .single()
+  )
+
+  // Website copy is baked in at build time, so it does not change until the
+  // site is rebuilt. App copy is read at runtime and changes on next open.
+  const deployed = row.area === 'website' ? await triggerDeploy(`copy: ${key}`) : false
+
+  await ctx.audit({ key, deployed })
+  return json({ row, deployed })
+}
