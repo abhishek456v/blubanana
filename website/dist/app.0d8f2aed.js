@@ -289,10 +289,7 @@
     // be. The offer itself is stated either way, so nothing is hidden, and the
     // cap in the database is what keeps the struck through price honest.
     const revealAt = Math.round(limit * 0.2)
-    if (left !== null && left <= revealAt) {
-      document.querySelectorAll('[data-seats-left]').forEach((el) => (el.textContent = String(left)))
-      document.querySelectorAll('[data-seats-line]').forEach((el) => (el.hidden = false))
-    }
+    const seatsLeft = left !== null && left <= revealAt ? left : null
 
     if (pricing) {
       document.querySelectorAll('[data-price-list]').forEach((el) => (el.textContent = inr(pricing.list_monthly_paise)))
@@ -315,14 +312,13 @@
 
     if (introLive === true) {
       document.querySelectorAll('[data-intro-chip]').forEach((el) => (el.hidden = false))
-      // Not if a broadcast has already claimed the strip.
-      if (
-        announce &&
-        sessionStorage.getItem('cd-announce') !== 'closed' &&
-        broadcast?.hidden !== false
-      ) {
-        announce.hidden = false
-      }
+      // The launch offer is one item in the strip now, not a strip of its own.
+      addToStrip({
+        id: 'launch-offer',
+        html:
+          '<b>Launch offer.</b> 50% off for the first 500 creators' +
+          (seatsLeft ? ', and <b>' + seatsLeft + '</b> places are left' : ''),
+      })
     }
   })()
 
@@ -331,46 +327,100 @@
     sessionStorage.setItem('cd-announce', 'closed')
   })
 
-  /* ── broadcast ───────────────────────────────────────────────────────────── */
+  /* ── the strip, and the popup ────────────────────────────────────────────── */
   /*
-   * Whatever the admin dashboard has published for the website, read live the
-   * same way the price is. The policy on `announcements` exposes only published
-   * rows inside their dates, so a draft cannot appear here and a finished one
-   * stops appearing on its own, with no deploy and nobody remembering.
+   * One strip with everything live running through it: the launch offer while
+   * places remain, and every published announcement placed in the bar.
    *
-   * When one exists it wins and the launch bar stays down. Two stacked bars is
-   * how a page starts looking like it is shouting.
+   * Items arrive from two different async blocks in whichever order the network
+   * decides, so `addToStrip` is idempotent by id and restarts the ticker each
+   * time rather than assuming it knows how many items there will be.
+   *
+   * Nothing is in the markup. An empty strip flashing before the data arrives
+   * is worse than one that appears a moment late.
    */
-  ;(async () => {
-    if (!broadcast) return
-    const rows = await ask(
-      'announcements?select=id,title,body,link_url,link_label,dismissible' +
-        '&surface=in.(website,both)&order=starts_at.desc&limit=1'
-    )
-    const item = Array.isArray(rows) ? rows[0] : null
-    if (!item) return
-    if (sessionStorage.getItem('bb-broadcast') === item.id) return
+  const track = broadcast?.querySelector('[data-bc-track]')
+  const stripItems = []
 
-    broadcast.querySelector('[data-bc-title]').textContent = item.title
-    broadcast.querySelector('[data-bc-body]').textContent = item.body ?? ''
-    const link = broadcast.querySelector('[data-bc-link]')
-    if (item.link_url) {
-      link.href = item.link_url
-      link.textContent = item.link_label || 'Read more'
-      link.hidden = false
-    }
-    // A close button that does nothing is worse than none, so it goes when the
-    // announcement is not dismissible.
-    const close = broadcast.querySelector('.announce-close')
-    if (close && item.dismissible === false) close.remove()
+  function addToStrip(item) {
+    if (!track || stripItems.some((x) => x.id === item.id)) return
+    if (sessionStorage.getItem('bb-strip') === 'closed') return
+    stripItems.push(item)
+    renderStrip()
+  }
 
+  function renderStrip() {
+    if (!track || !broadcast) return
+    // Duplicated once so the loop has something to scroll into. With a single
+    // copy the strip runs off the left and leaves the bar empty for a beat.
+    const many = stripItems.length > 1
+    const html = stripItems.map((i) => `<span class="announce-item">${i.html}</span>`).join('')
+    track.innerHTML = many ? html + html : html
+    track.classList.toggle('is-running', many)
+    // Long queues should not take a minute to come round again.
+    if (many) track.style.animationDuration = `${Math.max(18, stripItems.length * 9)}s`
     broadcast.hidden = false
-    if (announce) announce.hidden = true
+  }
 
-    close?.addEventListener('click', () => {
-      broadcast.hidden = true
-      // Per announcement, so the next one is never pre-dismissed.
-      sessionStorage.setItem('bb-broadcast', item.id)
-    })
+  broadcast?.querySelector('.announce-close')?.addEventListener('click', () => {
+    broadcast.hidden = true
+    sessionStorage.setItem('bb-strip', 'closed')
+  })
+
+  ;(async () => {
+    const rows = await ask(
+      'announcements?select=id,title,body,link_url,link_label,placement,image_url,dismissible' +
+        '&surface=in.(website,both)&order=sort_order.asc,starts_at.desc&limit=10'
+    )
+    if (!Array.isArray(rows)) return
+
+    for (const item of rows.filter((r) => r.placement === 'bar')) {
+      const link = item.link_url
+        ? ` <a href="${item.link_url}">${item.link_label || 'Read more'}</a>`
+        : ''
+      addToStrip({
+        id: item.id,
+        html: `<b>${item.title}</b>${item.body ? ' ' + item.body : ''}${link}`,
+      })
+    }
+
+    /*
+     * The popup. One at a time, and only the first, because two dialogs in a
+     * row is not a message, it is an obstacle course.
+     *
+     * Remembered per announcement rather than as a single flag, so publishing a
+     * new one is not silently swallowed for everybody who dismissed the last.
+     */
+    const popupItem = rows.find((r) => r.placement === 'popup')
+    const popup = document.getElementById('bc-popup')
+    if (popupItem && popup && localStorage.getItem('bb-popup') !== popupItem.id) {
+      popup.querySelector('[data-bc-popup-title]').textContent = popupItem.title
+      popup.querySelector('[data-bc-popup-body]').textContent = popupItem.body ?? ''
+      const image = popup.querySelector('[data-bc-popup-image]')
+      if (popupItem.image_url) {
+        image.src = popupItem.image_url
+        image.hidden = false
+      }
+      const link = popup.querySelector('[data-bc-popup-link]')
+      if (popupItem.link_url) {
+        link.href = popupItem.link_url
+        link.textContent = popupItem.link_label || 'Read more'
+        link.hidden = false
+      }
+
+      const close = () => {
+        popup.hidden = true
+        localStorage.setItem('bb-popup', popupItem.id)
+      }
+      popup.querySelector('.bc-popup-close')?.addEventListener('click', close)
+      // Clicking the backdrop closes it; clicking the card must not.
+      popup.addEventListener('click', (event) => {
+        if (event.target === popup) close()
+      })
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !popup.hidden) close()
+      })
+      popup.hidden = false
+    }
   })()
 })()

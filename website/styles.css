@@ -257,13 +257,94 @@ p:last-child { margin-bottom: 0; }
   color: var(--on-accent);
   font-size: 14px;
   text-align: center;
-  padding: 9px 44px 9px 24px;
+  padding: 9px 24px;
+  /* Clips the track. Without it the duplicated items extend the page's own
+     scroll width and the whole site gains a horizontal scrollbar. */
+  overflow: hidden;
 }
 .announce b { font-weight: 600; }
+/* ── the strip, and the popup ─────────────────────────────────────────────── */
+/*
+ * The track scrolls only when there is more than one thing to say. A single
+ * announcement sliding past for no reason is harder to read than one sitting
+ * still, and most of the time there is exactly one.
+ */
+/*
+ * Neither padding nor a gap reserves space here: the track translates, so its
+ * contents pass through whatever the layout set aside and straight under the
+ * close button. The right edge is masked instead, with a fade into the bar's
+ * own colour, and the button sits on top of that.
+ */
+.announce-track { display: flex; gap: 44px; white-space: nowrap; min-width: 0; }
+.announce::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 68px;
+  pointer-events: none;
+  background: linear-gradient(to right, transparent, var(--accent) 60%);
+}
+.announce-track.is-running {
+  animation: announce-run 24s linear infinite;
+  will-change: transform;
+}
+.announce-item { flex: none; }
+/* Stopping to read is the one thing a ticker makes hard, so hovering pauses. */
+.announce:hover .announce-track.is-running { animation-play-state: paused; }
+@keyframes announce-run {
+  from { transform: translateX(0); }
+  /* Half, because the items are duplicated once to make the loop seamless. */
+  to { transform: translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Not slowed down: stopped. Somebody who asked for less motion is often
+     asking because motion makes text unreadable, and a slow ticker is still a
+     ticker. They get the first item, standing still. */
+  .announce-track.is-running { animation: none; }
+  .announce-track.is-running .announce-item:not(:first-child) { display: none; }
+}
+
+.bc-popup {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(8, 8, 12, 0.55);
+}
+.bc-popup[hidden] { display: none; }
+.bc-popup-card {
+  position: relative;
+  max-width: 420px;
+  width: 100%;
+  background: var(--surface);
+  border-radius: var(--r-xl);
+  padding: 26px;
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+}
+.bc-popup-card img { width: 100%; border-radius: var(--r-md); margin-bottom: 16px; }
+/* Room for the close button, which sits over this corner. */
+.bc-popup-card h3 { font-size: 19px; margin: 0 0 8px; padding: 0 26px; }
+.bc-popup-card p { font-size: 14px; line-height: 1.6; color: var(--text-2); margin: 0 0 18px; }
+.bc-popup-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  color: var(--text-3);
+}
+.bc-popup-close:hover { background: var(--bg-alt); color: var(--text); }
+
 /* The link inside a broadcast has to look like one: the bar is a solid
    colour, so an unstyled anchor inherits the surrounding text exactly. */
 .announce a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
-.announce-close { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--on-accent); padding: 4px 8px; line-height: 1; }
+.announce-close { position: absolute; z-index: 1; right: 14px; top: 50%; transform: translateY(-50%); color: var(--on-accent); padding: 4px 8px; line-height: 1; }
 .announce-close:hover { color: var(--on-accent); }
 
 .header {

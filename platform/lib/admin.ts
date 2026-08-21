@@ -80,6 +80,10 @@ export function healthIssueCount(health: AdminHealth): number {
 export interface Announcement {
   id: string
   kind: 'news' | 'banner' | 'alert'
+  /** bar: a line in the top strip. popup: a card over the page. image: a picture. */
+  placement: 'bar' | 'popup' | 'image'
+  image_url: string | null
+  sort_order: number
   title: string
   body: string | null
   surface: 'app' | 'website' | 'both'

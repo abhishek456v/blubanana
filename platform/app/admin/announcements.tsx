@@ -38,10 +38,12 @@ type Draft = Partial<Announcement>
 
 const EMPTY: Draft = {
   kind: 'banner',
+  placement: 'bar',
   surface: 'both',
   audience: 'everyone',
   dismissible: true,
   published: false,
+  sort_order: 0,
 }
 
 /**
@@ -144,6 +146,51 @@ export default function AdminAnnouncements() {
           multiline
         />
 
+        <Text style={[styles.fieldLabel, { color: c.textSecondary }]}>How it appears</Text>
+        <View style={styles.chips}>
+          {(
+            [
+              ['bar', 'A line in the top strip'],
+              ['popup', 'A card over the page'],
+              ['image', 'A picture at the top'],
+            ] as const
+          ).map(([value, label]) => (
+            <Chip
+              key={value}
+              label={label}
+              selected={draft.placement === value}
+              onPress={() => setDraft((d) => ({ ...d, placement: value }))}
+            />
+          ))}
+        </View>
+
+        {draft.placement === 'image' || draft.placement === 'popup' ? (
+          <TextField
+            label={draft.placement === 'image' ? 'Image address' : 'Image address (optional)'}
+            placeholder="https://…"
+            value={draft.image_url ?? ''}
+            onChangeText={(v) => setDraft((d) => ({ ...d, image_url: v || null }))}
+            autoCapitalize="none"
+            hint="Paste a link to the picture. The media library comes later."
+          />
+        ) : null}
+
+        <TextField
+          label="Link (optional)"
+          placeholder="https://blubanana.in/pricing"
+          value={draft.link_url ?? ''}
+          onChangeText={(v) => setDraft((d) => ({ ...d, link_url: v || null }))}
+          autoCapitalize="none"
+        />
+        {draft.link_url ? (
+          <TextField
+            label="Link wording"
+            placeholder="See pricing"
+            value={draft.link_label ?? ''}
+            onChangeText={(v) => setDraft((d) => ({ ...d, link_label: v || null }))}
+          />
+        ) : null}
+
         <Text style={[styles.fieldLabel, { color: c.textSecondary }]}>How loud</Text>
         <View style={styles.chips}>
           {(['news', 'banner', 'alert'] as const).map((k) => (
@@ -239,7 +286,7 @@ export default function AdminAnnouncements() {
                   <Text style={[styles.rowMeta, { color: c.textMuted }]} numberOfLines={1}>
                     {live ? 'On screen now' : row.published ? 'Published, outside its dates' : 'Draft'}
                     {' · '}
-                    {row.kind}
+                    {row.placement === 'bar' ? 'strip' : row.placement}
                     {' · '}
                     {row.surface === 'both' ? 'app and website' : row.surface}
                     {row.ends_at ? ` · until ${formatDate(row.ends_at.slice(0, 10))}` : ' · no end date'}

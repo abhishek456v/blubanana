@@ -257,29 +257,34 @@ ${script ? `<script src="${assets.tools}"></script>\n<script>${script}</script>`
 }
 
 /**
- * Two bars, at most one of them showing.
+ * One strip, with whatever is live running through it.
  *
- * `broadcast` carries whatever the admin dashboard has published for the
- * website, read live from Supabase the same way the price is. When one exists
- * it wins and the launch bar stays hidden: two stacked bars is how a page
- * starts looking like it is shouting, and the second never gets read.
+ * There used to be two bars, a launch offer and a broadcast, either of which
+ * could appear. Two strips stacked is how a page starts looking like it is
+ * shouting, and the second one never gets read.
  *
- * The launch offer, without a running total.
+ * So there is one, and everything that has something to say queues up in it:
+ * the launch offer while places remain, and every published announcement
+ * placed in the bar. app.js fills it and starts the ticker; nothing is in the
+ * markup, because an empty strip flashing before the data arrives is worse
+ * than a strip that appears a moment late.
  *
- * The 500 cap is what makes the struck through price honest, and it stays in
- * the database. Publishing how many places are *left* is a different claim:
- * early on it reads as "nobody has joined", which is true and unhelpful, and it
- * invites a visitor to count the customers rather than read the offer. The
- * counter turns itself on only once the number flatters rather than deters, and
- * app.js owns that threshold.
+ * Nothing shows unless it has been published and is inside its dates. That
+ * holds for all three placements, which is the entire reason they share a
+ * table.
  */
 function announceBar() {
   return `<div class="announce" id="broadcast" hidden>
-  <span><b data-bc-title></b> <span data-bc-body></span> <a data-bc-link hidden></a></span>
+  <div class="announce-track" data-bc-track></div>
   <button class="announce-close" aria-label="Dismiss">✕</button>
 </div>
-<div class="announce" id="announce" hidden>
-  <span><b>Launch offer.</b> 50% off for the first 500 creators<span data-seats-line hidden>, and <b data-seats-left></b> places are left</span></span>
-  <button class="announce-close" aria-label="Dismiss">✕</button>
+<div class="bc-popup" id="bc-popup" hidden>
+  <div class="bc-popup-card" role="dialog" aria-modal="true" aria-labelledby="bc-popup-title">
+    <button class="bc-popup-close" aria-label="Close">✕</button>
+    <img data-bc-popup-image hidden alt="">
+    <h3 id="bc-popup-title" data-bc-popup-title></h3>
+    <p data-bc-popup-body></p>
+    <a class="btn" data-bc-popup-link hidden></a>
+  </div>
 </div>`
 }
