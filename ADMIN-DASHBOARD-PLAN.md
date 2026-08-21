@@ -131,28 +131,18 @@ workspace, all of the tenancy work is undone.
 **Every admin action is written to `audit_logs`, including reads.** A dashboard
 that can see everyone's money should be able to say what it looked at.
 
-### Two rules that live in the app, not in Supabase
+### Deferred, on purpose
 
-Supabase has one password policy and one session length for the entire
-project, so neither of these can be a setting:
+Two hardening measures were considered and set aside on 21 August. Both are in
+WHAT-IS-LEFT.md rather than here, because neither blocks anything:
 
-- **Admin passwords must be at least 10 characters.** The project minimum
-  stays at 6 for creators, deliberately, and the admin area refuses to let an
-  admin hold a shorter one.
-- **Admin sessions re-authenticate sooner.** After a period on the admin
-  screens it asks for the password again, while the ordinary app session
-  continues untouched.
+- A sooner re-authentication on admin screens.
+- Leaked-password checking, which Supabase refuses on the free tier.
 
-### Owner's own hardening
-
-- **2FA on the admin account.** TOTP is already enabled at project level and
-  needs enrolling. This matters more than everything above: the realistic
-  attack is a stolen or reused password, not a broken database, and 2FA is
-  what makes a stolen password useless on its own.
-- **Leaked-password checking is a Pro plan feature** and was refused on the
-  free tier. Worth revisiting, well below 2FA in priority.
-
----
+**2FA on the admin account carries the weight instead.** TOTP is already
+enabled at project level and needs enrolling. The realistic attack is a stolen
+or reused password, not a broken database, and 2FA is what makes a stolen
+password useless on its own.
 
 ## Suggested order
 

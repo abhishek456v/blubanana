@@ -164,6 +164,20 @@ with it, and deleting a brand is refused while deals still point at it. Say
 the word and I will, with a confirmation on each and a clear sentence about
 what else goes.
 
+### Admin hardening, deliberately deferred
+
+Set aside on 21 August while planning the admin dashboard. Neither blocks
+anything; both are worth revisiting once there are real customers.
+
+- **A sooner re-authentication on admin screens.** Supabase has one session
+  length for the whole project, so making admin shorter would log creators out
+  too. It has to be built into the admin area instead.
+- **Leaked-password checking.** Refused on the free tier: "available on Pro
+  Plans and up". It rejects passwords that have appeared in known breaches.
+
+What is carrying the weight in the meantime is **2FA on the admin account**,
+which is already available and needs enrolling.
+
 ### Before launch, not code
 
 - **A lawyer should read the terms, the privacy policy and the refund terms.**
