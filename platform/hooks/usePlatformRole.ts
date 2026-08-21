@@ -37,6 +37,19 @@ export function usePlatformRole(): PlatformRoleState {
 
   const refresh = useCallback(async () => {
     try {
+      // Asked only when there is a session to ask with.
+      //
+      // `platform_role()` is executable by `authenticated` and nobody else, so
+      // calling it signed out is a 401 every time: a request that cannot
+      // succeed, and a red line in the console of anybody who opens the admin
+      // address without a session. The answer is the same either way, and the
+      // same for the same reason: no session is not a role.
+      const { data: session } = await supabase.auth.getSession()
+      if (!session.session) {
+        setRole(null)
+        return
+      }
+
       const { data, error } = await supabase.rpc('platform_role')
       setRole(error ? null : ((data as PlatformRole | null) ?? null))
     } catch {
