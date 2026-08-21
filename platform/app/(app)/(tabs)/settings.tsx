@@ -20,6 +20,7 @@ import { useBreakpoint } from '@/hooks/useBreakpoint'
 import { useTheme, useThemeMode, type ThemeMode } from '@/hooks/useTheme'
 import { BrandAvatar } from '@/components/BrandAvatar'
 import { ConnectedAccounts } from '@/components/social/ConnectedAccounts'
+import { TwoFactorCard } from '@/components/security/TwoFactorCard'
 import { DeleteAccountSheet } from '@/components/DeleteAccountSheet'
 import {
   ColumnGap,
@@ -269,6 +270,8 @@ export default function YouScreen() {
             </PressableScale>
           </View>
         ) : null}
+
+        <TwoFactorCard />
 
         <ConnectedAccounts />
           </View>

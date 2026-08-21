@@ -10,6 +10,7 @@ export { DateField, type DateFieldProps } from './DateField'
 export { Chip, type ChipProps, type ChipTone } from './Chip'
 export { SegmentedControl, type SegmentOption, type SegmentedControlProps } from './SegmentedControl'
 export { StarRating, type StarRatingProps } from './StarRating'
+export { QrCode, type QrCodeProps } from './QrCode'
 export { Sheet, type SheetProps } from './Sheet'
 export {
   OverflowMenu,

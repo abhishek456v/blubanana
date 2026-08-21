@@ -3,6 +3,7 @@ import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-na
 import { Link } from 'expo-router'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { supabase } from '@/lib/supabase'
+import { needsCode, submitSignInCode, verifiedFactorId } from '@/lib/twoFactor'
 import { AuthFormMaxWidth, FontFamily, Spacing, Typography } from '@/constants/design'
 import { Duration, staggerDelay } from '@/constants/motion'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
@@ -34,6 +35,48 @@ export default function SignInScreen() {
   const [sent, setSent] = useState(false)
   const [code, setCode] = useState('')
 
+  /**
+   * Two-step verification, when the account has it on.
+   *
+   * A password that is accepted is not the same as a session that is allowed
+   * in. Supabase hands back a session at the lower assurance level and expects
+   * a code before it counts, so this holds the screen until one arrives.
+   */
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null)
+  const [mfaCode, setMfaCode] = useState('')
+
+  /** Called after any successful credential step. Returns true if a code is owed. */
+  async function checkForSecondStep(): Promise<boolean> {
+    if (!(await needsCode())) return false
+    const factorId = await verifiedFactorId()
+    if (!factorId) return false
+    setMfaFactorId(factorId)
+    return true
+  }
+
+  async function handleMfaSubmit() {
+    if (!mfaFactorId) return
+    if (mfaCode.trim().length < 6) {
+      setErrors({ code: 'Enter the 6 digit code from your app' })
+      return
+    }
+    setErrors({})
+    setLoading(true)
+    try {
+      const ok = await submitSignInCode(mfaFactorId, mfaCode)
+      if (!ok) {
+        // The app rolls its code every thirty seconds, so a rejected one is
+        // usually stale rather than mistyped.
+        setErrors({ code: 'That code was wrong or has expired. Try the current one.' })
+        return
+      }
+      // The root layout redirects once the session reaches the level the
+      // account demands; nothing to navigate to from here.
+    } finally {
+      setLoading(false)
+    }
+  }
+
   async function handleSignIn() {
     const nextErrors: typeof errors = {}
     if (!email.trim()) nextErrors.email = 'Enter your email'
@@ -50,9 +93,13 @@ export default function SignInScreen() {
 
     if (error) {
       toast(error.message, { tone: 'error' })
+      return
     }
-    // On success, useAuth picks up the new session and the root layout
-    // redirects into (app)/, with no manual navigation needed here.
+    // A correct password is not the end of it when the account has two-step
+    // verification on: the session exists but is not yet allowed anywhere.
+    await checkForSecondStep()
+    // Otherwise useAuth picks up the session and the root layout redirects
+    // into (app)/, with no manual navigation needed here.
   }
 
   async function handleSendCode() {
@@ -97,7 +144,9 @@ export default function SignInScreen() {
 
     if (error) {
       setErrors({ code: 'That code is wrong or has expired' })
+      return
     }
+    await checkForSecondStep()
     // Success needs no navigation here either: verifyOtp establishes the
     // session and the root layout does the rest.
   }
@@ -117,12 +166,14 @@ export default function SignInScreen() {
         <View style={[styles.inner, isWide && styles.innerWide]}>
           <Animated.View entering={FadeInDown.duration(Duration.slow)}>
             <Text style={[styles.title, { color: c.textPrimary }]}>
-              {sent ? 'Check your email' : 'Welcome back'}
+              {mfaFactorId ? 'One more step' : sent ? 'Check your email' : 'Welcome back'}
             </Text>
             <Text style={[styles.subtitle, { color: c.textSecondary }]}>
-              {sent
-                ? `We sent a 6 digit code to ${email.trim()}. It works once and lasts an hour.`
-                : 'Your deals, deadlines and money are where you left them.'}
+              {mfaFactorId
+                ? 'Open your authenticator app and type the code it is showing.'
+                : sent
+                  ? `We sent a 6 digit code to ${email.trim()}. It works once and lasts an hour.`
+                  : 'Your deals, deadlines and money are where you left them.'}
             </Text>
           </Animated.View>
 
@@ -130,6 +181,7 @@ export default function SignInScreen() {
             entering={FadeInDown.duration(Duration.slow).delay(staggerDelay(1))}
             style={styles.form}
           >
+            {mfaFactorId ? null : (
             <TextField
               label="Email"
               placeholder="you@example.com"
@@ -146,8 +198,39 @@ export default function SignInScreen() {
               textContentType="emailAddress"
               returnKeyType="next"
             />
+            )}
 
-            {mode === 'password' ? (
+            {mfaFactorId ? (
+              <>
+                <TextField
+                  label="Code"
+                  placeholder="000000"
+                  value={mfaCode}
+                  onChangeText={(value) => {
+                    setMfaCode(value.replace(/[^0-9]/g, ''))
+                    if (errors.code) setErrors((e) => ({ ...e, code: undefined }))
+                  }}
+                  error={errors.code}
+                  keyboardType="number-pad"
+                  autoComplete="one-time-code"
+                  textContentType="oneTimeCode"
+                  maxLength={6}
+                  returnKeyType="go"
+                  onSubmitEditing={handleMfaSubmit}
+                />
+                <Button
+                  label="Sign in"
+                  onPress={handleMfaSubmit}
+                  loading={loading}
+                  fullWidth
+                  size="lg"
+                  style={styles.submit}
+                />
+                {/* Deliberately no "skip". A second step somebody can walk past
+                    is not a second step. Losing the authenticator is a support
+                    conversation, not a button. */}
+              </>
+            ) : mode === 'password' ? (
               <>
                 <TextField
                   label="Password"
