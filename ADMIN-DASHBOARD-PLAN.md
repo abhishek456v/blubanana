@@ -94,15 +94,63 @@ early warning that your reminder emails have stopped arriving.
 
 ---
 
-## Security, given it is one person
+## Security: what was decided, in plain terms
 
-1. An `is_admin` boolean on `profiles`, set by hand for one row, plus a
-   restrictive policy so no client can ever set it on itself.
-2. Admin reads that cross workspaces go through an edge function on the
-   service role, never through the app's own client. The moment the browser
-   holds a key that can read every workspace, the tenancy work is undone.
-3. Every admin action writes to `audit_logs`, including the reads. A dashboard
-   that can see everyone's money should be able to say what it looked at.
+Settled in conversation on 21 August. These are requirements, not options.
+
+**One front door.** Everyone signs in at the same page: you, staff, creators.
+Not two sites. Two front doors means two locks to maintain and the second one
+is the one that stops getting patched.
+
+**The admin area needs a keycard.** A creator can sign in perfectly well and
+reach the admin URL, and get nothing at all. Hiding the URL is not part of
+this: every route in the app is already readable in the JavaScript the site
+ships to every visitor, so a secret address protects nothing and pretending
+otherwise is how people end up relying on it.
+
+**No sign-up, ever.** The admin area has no registration of any kind. The only
+way in is an invitation issued by an existing admin. There is no request form
+and no self-service path.
+
+**Nobody can grant themselves a keycard.** The role lives in a column that the
+`authenticated` role has no permission to write, by column-level revoke. The
+codebase already does exactly this for the social tokens in migration 013. A
+crafted "make me an admin" request is refused by Postgres, one level below the
+application, so an application bug cannot undo it.
+
+**The founder cannot be removed or demoted.** One row is marked as founder and
+a restrictive policy refuses any delete or role change against it, including
+from another admin. Inviting somebody who later turns hostile costs nothing.
+
+**Invites can be revoked** by the founder at any time, immediately.
+
+**Admin reads that cross workspaces run server side only**, in an edge function
+on the service role. If a browser ever holds a key that can read every
+workspace, all of the tenancy work is undone.
+
+**Every admin action is written to `audit_logs`, including reads.** A dashboard
+that can see everyone's money should be able to say what it looked at.
+
+### Two rules that live in the app, not in Supabase
+
+Supabase has one password policy and one session length for the entire
+project, so neither of these can be a setting:
+
+- **Admin passwords must be at least 10 characters.** The project minimum
+  stays at 6 for creators, deliberately, and the admin area refuses to let an
+  admin hold a shorter one.
+- **Admin sessions re-authenticate sooner.** After a period on the admin
+  screens it asks for the password again, while the ordinary app session
+  continues untouched.
+
+### Owner's own hardening
+
+- **2FA on the admin account.** TOTP is already enabled at project level and
+  needs enrolling. This matters more than everything above: the realistic
+  attack is a stolen or reused password, not a broken database, and 2FA is
+  what makes a stolen password useless on its own.
+- **Leaked-password checking is a Pro plan feature** and was refused on the
+  free tier. Worth revisiting, well below 2FA in priority.
 
 ---
 
