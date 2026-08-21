@@ -6,10 +6,15 @@
 // has a real problem, and a page that answers it and then does the arithmetic
 // is worth more than any number of posts about productivity.
 //
-// Posts are data rather than files. There are five of them; a markdown
-// pipeline for five posts would be more machinery than content. When there are
-// thirty, this is the file to replace, and the page shapes below will not have
-// to change.
+// Posts live in the database now, and are read at build time. What is left in
+// this file is two things: the page shapes, and the five original posts as a
+// fallback.
+//
+// The fallback is not belt and braces. A static site that fetches its own
+// content at build time has a new way to fail that it did not have before: a
+// network blip during a deploy would publish a site with no blog on it, and
+// nobody would notice until search traffic fell. If the database cannot be
+// reached, the build uses these and says so, loudly, in its output.
 //
 // House rules the build enforces and these have to respect: no em or en
 // dashes, balanced tags, one h1 per page, a description of at least 60
@@ -25,7 +30,7 @@ import { closingCta } from '../ui.mjs'
  * A "last updated" line that moves every time the site is rebuilt is the
  * oldest trick in content marketing and readers can tell.
  */
-const POSTS = [
+export const FALLBACK_POSTS = [
   {
     slug: 'advance-tax-for-content-creators',
     title: 'Advance tax for content creators',
@@ -332,7 +337,7 @@ const POSTS = [
 ]
 
 /** Newest first, and the file is already in that order, but do not rely on it. */
-const sorted = [...POSTS].sort((a, b) => b.date.localeCompare(a.date))
+
 
 function card(post) {
   return `<a class="post-card reveal" href="/blog/${post.slug}">
@@ -343,7 +348,16 @@ function card(post) {
 </a>`
 }
 
-const index = {
+/**
+ * Every blog page, from whatever posts it is handed.
+ *
+ * Takes the posts rather than reaching for them, so that the same shapes serve
+ * the database and the fallback above and neither knows which it is.
+ */
+export function renderBlog(posts = FALLBACK_POSTS) {
+  const sorted = [...posts].sort((a, b) => b.date.localeCompare(a.date))
+
+  const index = {
   path: '/blog',
   title: 'Writing | Blubanana',
   description:
@@ -373,8 +387,8 @@ ${closingCta({
 })}`,
 }
 
-/** One page per post. Same bones, so a fix to the shape fixes all of them. */
-const posts = sorted.map((post, position) => {
+  /** One page per post. Same bones, so a fix to the shape fixes all of them. */
+  const pages = sorted.map((post, position) => {
   const next = sorted[position + 1] ?? sorted[0]
   const [toolHref, toolLabel] = post.tool
 
@@ -434,4 +448,7 @@ ${closingCta({
   }
 })
 
-export default [index, ...posts]
+  return [index, ...pages]
+}
+
+export default renderBlog()

@@ -28,7 +28,8 @@ import privacy from './src/content/privacy.mjs'
 import refunds from './src/content/refunds.mjs'
 import compare from './src/content/compare.mjs'
 import tools from './src/content/tools.mjs'
-import blog from './src/content/blog.mjs'
+import { renderBlog } from './src/content/blog.mjs'
+import { loadPosts } from './src/posts.mjs'
 import product from './src/content/product.mjs'
 import company from './src/content/company.mjs'
 
@@ -51,6 +52,11 @@ const PRODUCTION_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL ?? ''
 const ON_TEMPORARY_HOST = Boolean(process.env.VERCEL) && !PRODUCTION_URL.includes('blubanana.in')
 const ROOT = dirname(fileURLToPath(import.meta.url))
 const DIST = join(ROOT, 'dist')
+
+// Posts come from the database; every other page is code. Awaited here rather
+// than inside the blog module so that the one page shape that needs the
+// network says so at the top of the build.
+const blog = renderBlog(await loadPosts())
 
 const PAGES = [home, pricing, compare, contact, terms, privacy, refunds, ...product, ...company, ...tools, ...blog]
 

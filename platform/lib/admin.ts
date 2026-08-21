@@ -412,3 +412,55 @@ export const listDataRequests = () =>
 
 export const updateDataRequest = (id: string, patch: { status: string; note?: string }) =>
   call<{ row: DataRequest }>('data.update', { id, ...patch })
+
+// ── The blog ─────────────────────────────────────────────────────────────────
+
+export interface BlogPost {
+  id: string
+  slug: string
+  title: string
+  date: string
+  updated: string | null
+  read_minutes: number
+  description: string
+  lede: string
+  body_html: string
+  tool_href: string
+  tool_label: string
+  cover_url: string | null
+  published: boolean
+  published_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+/**
+ * Everything, drafts included.
+ *
+ * `deployConfigured` says whether publishing can actually ask the website to
+ * rebuild. It comes from the server because the answer is a function secret,
+ * and the screen has to be able to say "saved, but the site will not update
+ * until a deploy hook exists" rather than implying the post is live.
+ */
+export const listPosts = () =>
+  call<{ rows: BlogPost[]; deployConfigured: boolean }>('blog.list')
+
+export const savePost = (post: Partial<BlogPost>) =>
+  call<{ row: BlogPost; deployed: boolean }>('blog.save', { post })
+
+export const deletePost = (id: string) =>
+  call<{ ok: true; deployed: boolean }>('blog.delete', { id })
+
+export interface ImportedDoc {
+  title: string
+  body_html: string
+  read_minutes: number
+  images: number
+  warnings: string[]
+}
+
+/** A .docx, turned into a draft. base64, for the same reason media uploads are. */
+export const importDocx = (base64: string) => call<ImportedDoc>('blog.import', { file: base64 })
+
+/** Rebuild the website now, with nothing changed. */
+export const deploySite = () => call<{ deployed: boolean }>('site.deploy')

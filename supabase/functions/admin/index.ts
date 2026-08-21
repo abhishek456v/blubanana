@@ -33,6 +33,7 @@ import * as billing from './billing.ts'
 import * as broadcast from './broadcast.ts'
 import * as library from './library.ts'
 import * as desk from './desk.ts'
+import * as writing from './writing.ts'
 
 /**
  * Which roles may run which action. `admin` passes everything and is not
@@ -79,6 +80,15 @@ const ACTION_ACCESS: Record<string, PlatformRole[]> = {
   'flags.list': ['support', 'finance', 'editor'],
   'flags.set': [],
 
+  // The blog is the editor's job, which is what that role is for.
+  'blog.list': ['editor'],
+  'blog.save': ['editor'],
+  'blog.delete': ['editor'],
+  'blog.import': ['editor'],
+  // Spending a build on purpose, with nothing changed. Admin only, because it
+  // is the one action here whose cost is somebody else's bill.
+  'site.deploy': [],
+
   // The DPDP register. Admin only, because answering these is a legal duty
   // that sits with the fiduciary rather than with whoever is on shift.
   'data.list': [],
@@ -114,6 +124,12 @@ const HANDLERS: Record<string, (ctx: Ctx) => Promise<Response>> = {
 
   'flags.list': desk.flagsList,
   'flags.set': desk.flagsSet,
+
+  'blog.list': writing.list,
+  'blog.save': writing.save,
+  'blog.delete': writing.remove,
+  'blog.import': writing.importDocx,
+  'site.deploy': writing.deploy,
 
   'data.list': desk.dataList,
   'data.update': desk.dataUpdate,

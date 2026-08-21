@@ -3,7 +3,7 @@
 Two lists. The first is things only you can do, because they need a login, a
 bank account, a legal identity or a decision. The second is building work.
 
-Updated 20 August 2026, evening.
+Updated 21 August 2026, evening.
 
 ---
 
@@ -71,18 +71,34 @@ paperwork:
 review by Google rather than a paid third-party security audit. Expect days
 to a few weeks.
 
-### 5. Two clicks: make blubanana.in the main address
+### 5. Make blubanana.in the main address  ·  done, 21 August
 
-Right now `blubanana.in` sends visitors to `www.blubanana.in`, while every
-page tells search engines the real address is `blubanana.in`. Those two
-disagree, which splits your search ranking between the two names.
+You set `www.blubanana.in` to redirect to `blubanana.in`, which is what every
+page's canonical tag already claimed. Nothing further here.
 
-In Vercel, open the **website** project, then **Settings**, then **Domains**.
-You will see both names listed. Set `www.blubanana.in` to redirect to
-`blubanana.in`, so it points the other way round. Tell me when it is done and
-I will confirm it from the outside.
+### 6. One setting, so publishing a blog post actually publishes it
 
-### 6. Two dates I am holding for you
+Ten minutes, in Vercel, and the blog is the only thing waiting on it.
+
+Posts now live in the database and you can write them, or bring a Word
+document across, from the dashboard. What is missing is the last step:
+telling the website to rebuild itself when you publish one. Without it a post
+saves perfectly and never appears, and the dashboard says so in an orange
+box rather than pretending otherwise.
+
+1. In Vercel, open the **website** project, then **Settings**, then **Git**.
+2. Scroll to **Deploy Hooks**. Give it the name `Blog` and the branch `main`,
+   and press Create.
+3. It gives you a web address starting `https://api.vercel.com/v1/integrations/`.
+   Copy it.
+4. Send it to me and I will put it where only the server can read it. It is a
+   password in effect: anybody holding it can make your site rebuild over and
+   over, which costs build minutes.
+
+Until then, publishing still works and the website simply keeps showing the
+five posts it already has.
+
+### 7. Two dates I am holding for you
 
 - **After 27 August:** I will ask you to confirm the address, phone, WhatsApp
   and legal name once more, as you asked.
@@ -93,6 +109,41 @@ I will confirm it from the outside.
 ---
 
 ## My list
+
+### The admin dashboard  ·  built, 21 August
+
+Everything agreed on 21 August is in, except the two things below it that were
+deliberately deferred.
+
+- **The morning screen:** what is broken, who is getting started, and the
+  figures. The health card opens a page listing every expired connection,
+  missed reminder and stuck message, with the workspace each belongs to.
+- **People:** everyone using it, how far they got, and WhatsApp or email from
+  the row. Opening one shows a read only look at their workspace: what they
+  have, what they are owed, what is connected. Not a way to sign in as them,
+  on purpose, and every time you open one it is recorded.
+- **Subscriptions:** who is paying, who is ending this week, and four levers.
+  Add trial days, give a month on the house, undo a cancellation, or correct
+  the status. Extending an expired trial counts from today rather than
+  backdating, which is the sort of thing that is wrong until somebody checks.
+- **Help:** people can now write in from the app, and you answer from the
+  dashboard. Replies they see and private notes they never do, in one thread.
+- **Broadcast, media, switches, activity and data requests**, as agreed.
+- **Writing:** the blog moved out of the website's code and into the database.
+  Write a post, or bring a Word document across and it arrives converted, with
+  any pictures in it uploaded to the media library and the links rewritten.
+  PDF is deliberately not supported: a PDF is a picture of a document, not a
+  document, and every post imported from one would arrive needing repair.
+
+Two things needed saying about how this behaves:
+
+- **Nothing about a creator is readable by a browser.** Every figure comes
+  through one server function that re-checks who is asking. There is no key in
+  the app that can read another creator's business.
+- **The media library grants no standing permission to upload.** Uploading
+  asks the server for permission to put one file at one path it does not get
+  to choose, and that permission expires. Tested: a signed-in session holding
+  the admin role still cannot write to the bucket directly.
 
 ### The platform and app redesign  ·  in progress, this is the big one
 

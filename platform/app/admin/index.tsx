@@ -65,6 +65,13 @@ const SECTIONS: Section[] = [
     icon: 'megaphone-outline',
   },
   {
+    href: '/admin/blog',
+    area: 'content',
+    title: 'Writing',
+    hint: 'The blog. Write one, or bring a Word document across',
+    icon: 'create-outline',
+  },
+  {
     href: '/admin/media',
     area: 'media',
     title: 'Media',
