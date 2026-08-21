@@ -116,6 +116,12 @@ export default function AdminSubscriptions() {
           label: 'Add 14 days of trial',
           icon: 'time-outline',
           onPress: () => pull(row, 'extend_trial', 14),
+          // Greyed rather than hidden, with the reason, because the question
+          // "why can I not extend this one" deserves an answer on the screen.
+          disabledReason:
+            row.status === 'active' || row.status === 'past_due'
+              ? 'They are paying. A trial would take features away'
+              : undefined,
         },
         {
           label: 'A month on the house',

@@ -95,6 +95,23 @@ export async function adjust(ctx: Ctx) {
   const days = Math.min(Math.max(Number(body.days ?? 14) || 14, 1), 365)
 
   if (lever === 'extend_trial') {
+    /*
+     * Not on somebody who is paying.
+     *
+     * This lever sets the status to `trialing`, and a trialing workspace is
+     * capped at ten deals by a database trigger. Pressing it on a paying
+     * creator with forty nine deals would not give her anything: it would stop
+     * her adding another one, immediately, with no explanation on her screen.
+     *
+     * The lever she actually wants in that situation is a month on the house,
+     * so this says so rather than refusing blankly.
+     */
+    if (before.status === 'active' || before.status === 'past_due') {
+      throw new Refused(
+        'They are already paying, so a trial would take features away rather than add any. Give them a month on the house instead.'
+      )
+    }
+
     // From whichever is later: today, or the end of the trial they are on. An
     // extension granted to somebody whose trial ended last week should give
     // them the days, not backdate them into another expiry.
