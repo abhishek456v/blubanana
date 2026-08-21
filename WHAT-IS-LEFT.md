@@ -203,25 +203,14 @@ The redesign is finished. Every screen, both themes, phone and desktop.
   name. It needs the same two secrets YouTube now has, whenever you want it;
   the server functions it depends on are already deployed.
 
-### Missing, and it needs your call
+### Deleting things  ·  done, 21 August
 
-**Nothing can be deleted.** There is no way to remove a deal, an invoice or
-a brand anywhere in the app. Expenses, payments, attachments and photos can
-all be deleted; those three cannot.
+Deals, invoices and brands can all be deleted now, each from the three dot
+menu rather than a button sitting next to Save. A deal takes its payments,
+deliverables and stages with it and says so first; a brand with deals still
+pointing at it is refused rather than silently orphaning them.
 
-This is not an oversight in the database. Migration 024 deliberately creates
-"owner deletes only" rules for exactly those tables, so the backend was built
-expecting the buttons to exist. The Team screen also tells the creator they
-exist: "Nobody but you can delete a deal, payment, invoice or brand."
-
-So a creator who adds a deal by mistake is stuck with it, and it goes on
-counting toward her totals for ever.
-
-I have not built it, because three destructive controls are a decision rather
-than a bug fix: deleting a deal takes its payments, deliverables and stages
-with it, and deleting a brand is refused while deals still point at it. Say
-the word and I will, with a confirmation on each and a clear sentence about
-what else goes.
+This section used to say none of that existed. It does.
 
 ### Admin hardening, deliberately deferred
 
