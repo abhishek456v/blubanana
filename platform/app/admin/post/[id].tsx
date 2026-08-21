@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import * as DocumentPicker from 'expo-document-picker'
 import * as FileSystem from 'expo-file-system/legacy'
 import {
+  DESTINATION_NAMES,
   importDocx,
   listPosts,
   savePost,
@@ -13,7 +14,7 @@ import { FontFamily, Radius, Spacing, Typography } from '@/constants/design'
 import { useTheme } from '@/hooks/useTheme'
 import { AdminScreen } from '@/components/admin/AdminScreen'
 import { MediaPickerField } from '@/components/admin/MediaPickerField'
-import { Button, Card, DateField, TextField, useConfirm, useToast } from '@/components/ui'
+import { Button, Card, Chip, DateField, TextField, useConfirm, useToast } from '@/components/ui'
 
 type Draft = Partial<BlogPost>
 
@@ -48,14 +49,18 @@ export default function PostEditor() {
   const isNew = !id || id === 'new'
 
   const [draft, setDraft] = useState<Draft>(EMPTY)
+  const [destinations, setDestinations] = useState<string[]>([])
   const [loading, setLoading] = useState(!isNew)
   const [saving, setSaving] = useState(false)
   const [importing, setImporting] = useState(false)
 
+  // Fetched even for a new post, because the list of places a post may link to
+  // comes from the server and the editor must only offer what will be accepted.
   useEffect(() => {
-    if (isNew) return
     listPosts()
-      .then(({ rows }) => {
+      .then(({ rows, destinations: allowed }) => {
+        setDestinations(allowed ?? [])
+        if (isNew) return
         const found = rows.find((row) => row.id === id)
         if (found) setDraft(found)
       })
@@ -262,14 +267,25 @@ export default function PostEditor() {
           </View>
         </View>
 
-        <TextField
-          label="The calculator it ends at"
-          placeholder="/tools/advance-tax-calculator"
-          value={draft.tool_href ?? ''}
-          onChangeText={(value) => set('tool_href', value)}
-          autoCapitalize="none"
-          hint="Every post ends at the tool that does the arithmetic it describes."
-        />
+        {/* A list, not a box to type a path into.
+            A typo here would not break one link: the website's build refuses a
+            link to a page that does not exist, and it refuses all or nothing,
+            so one wrong character would stop the entire site deploying. */}
+        <Text style={[styles.label, { color: c.textSecondary }]}>Where the post ends</Text>
+        <Text style={[styles.hint, { color: c.textMuted }]}>
+          Every post ends at the tool that does the arithmetic it describes.
+        </Text>
+        <View style={styles.destinations}>
+          {destinations.map((path) => (
+            <Chip
+              key={path}
+              label={DESTINATION_NAMES[path] ?? path}
+              selected={draft.tool_href === path}
+              onPress={() => set('tool_href', path)}
+              size="sm"
+            />
+          ))}
+        </View>
         <TextField
           label="What that link says"
           placeholder="Work out your four dates"
@@ -340,6 +356,7 @@ const styles = StyleSheet.create({
   hint: { ...Typography.label, fontFamily: FontFamily.regular, lineHeight: 16, marginBottom: Spacing.xs },
   form: { gap: Spacing.md },
   body: { minHeight: 280 },
+  destinations: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs },
   pair: { flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap' },
   half: { flexGrow: 1, flexBasis: 180 },
   footnote: {

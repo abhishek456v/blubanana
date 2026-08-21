@@ -55,6 +55,9 @@ const ACTION_ACCESS: Record<string, PlatformRole[]> = {
 
   subscriptions: ['finance'],
   'subscriptions.adjust': ['finance'],
+  // What everybody pays. Finance, because that is the whole of that role.
+  'pricing.get': ['finance'],
+  'pricing.save': ['finance'],
 
   // Broadcasting is content work, so an editor may do it. Nobody else but an
   // admin: a message on every screen in the product is not a small lever.
@@ -96,6 +99,10 @@ const ACTION_ACCESS: Record<string, PlatformRole[]> = {
   // that sits with the fiduciary rather than with whoever is on shift.
   'data.list': [],
   'data.update': [],
+
+  // Reading what the dashboard itself did. Admin only: it names who looked at
+  // whose business, which is not something a support shift needs.
+  'admin.audit': [],
 }
 
 const HANDLERS: Record<string, (ctx: Ctx) => Promise<Response>> = {
@@ -108,6 +115,8 @@ const HANDLERS: Record<string, (ctx: Ctx) => Promise<Response>> = {
 
   subscriptions: billing.subscriptions,
   'subscriptions.adjust': billing.adjust,
+  'pricing.get': billing.pricingGet,
+  'pricing.save': billing.pricingSave,
 
   'announcements.list': broadcast.list,
   'announcements.save': broadcast.save,
@@ -139,6 +148,8 @@ const HANDLERS: Record<string, (ctx: Ctx) => Promise<Response>> = {
 
   'data.list': desk.dataList,
   'data.update': desk.dataUpdate,
+
+  'admin.audit': insight.adminAudit,
 }
 
 Deno.serve(async (req) => {

@@ -14,7 +14,7 @@ import { readFileSync } from 'node:fs'
  * a marketing site with a fake phone number is not a smaller problem than a
  * missing page, it is the specific thing that fails a merchant activation.
  */
-export const COMPANY = {
+const COMPANY_IN_CODE = {
   entity: 'Blubanana',
   legalName: 'Blubanana Marketing',
   address: 'WeWork, HSR Layout, Bengaluru 560102',
@@ -180,3 +180,58 @@ export const FOOTER = [
     ],
   },
 ]
+
+
+/**
+ * The contact details, with anything edited in the dashboard laid over them.
+ *
+ * ── Why this is fetched here rather than through copy.mjs ───────────────────
+ *
+ * `copy.mjs` imports this file for the credentials, so having this file import
+ * that one would be a cycle with a top level await inside it. This does its own
+ * request instead, which is a few more lines and no cleverness.
+ *
+ * ── Why every field falls back ──────────────────────────────────────────────
+ *
+ * These strings are on the terms, the privacy policy, the refund terms and the
+ * contact page. A blank address on a legal page is worse than an out of date
+ * one, and a build that cannot reach the database must still produce a
+ * complete, correct site.
+ *
+ * `whatsapp` is deliberately not stored. It is the phone number with everything
+ * but the digits removed, so the two cannot drift apart, which is the obvious
+ * way this goes wrong: somebody updates the phone number and the WhatsApp link
+ * quietly keeps ringing the old one.
+ */
+async function contactOverrides() {
+  if (!SUPABASE.url || !SUPABASE.anonKey) return {}
+
+  try {
+    const response = await fetch(
+      `${SUPABASE.url}/rest/v1/site_content?select=key,value&key=like.company.*`,
+      {
+        headers: { apikey: SUPABASE.anonKey, Authorization: `Bearer ${SUPABASE.anonKey}` },
+        signal: AbortSignal.timeout(15000),
+      }
+    )
+    if (!response.ok) throw new Error(String(response.status))
+
+    const out = {}
+    for (const row of await response.json()) {
+      const field = row.key.replace(/^company\./, '')
+      if (typeof row.value === 'string' && row.value.trim()) out[field] = row.value.trim()
+    }
+    return out
+  } catch (error) {
+    console.warn(`  contact: could not read (${error.message}), using what is in the code`)
+    return {}
+  }
+}
+
+const contact = await contactOverrides()
+
+export const COMPANY = {
+  ...COMPANY_IN_CODE,
+  ...contact,
+  whatsapp: (contact.phone ?? COMPANY_IN_CODE.phone).replace(/\D/g, ''),
+}

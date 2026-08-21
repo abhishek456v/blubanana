@@ -74,6 +74,7 @@ export type AdminArea =
   | 'health'
   | 'people'
   | 'subscriptions'
+  | 'pricing'
   | 'content'
   | 'announcements'
   | 'media'
@@ -94,6 +95,7 @@ const AREA_ACCESS: Record<AdminArea, PlatformRole[]> = {
   health: ['support'],
   people: ['support'],
   subscriptions: ['finance'],
+  pricing: ['finance'],
   content: ['editor'],
   announcements: ['editor'],
   media: ['editor', 'support'],

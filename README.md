@@ -542,9 +542,49 @@ types/
 | `OPENAI_API_KEY` | platform.openai.com → API keys |
 | `EXPO_PUBLIC_META_APP_ID` | developers.facebook.com → your app → Settings → Basic → App ID |
 | `EXPO_PUBLIC_GOOGLE_CLIENT_ID` | console.cloud.google.com → APIs & Services → Credentials → OAuth 2.0 Client ID |
+| `VERCEL_DEPLOY_HOOK` | Vercel → website project → Settings → Git → Deploy Hooks |
 
 `EXPO_PUBLIC_*` variables are bundled into the client. The others are server-side
 only (Edge Functions / scripts) — never reference them in app code.
+
+`VERCEL_DEPLOY_HOOK` is a Supabase **function secret**, not a `.env` entry:
+
+```
+npx supabase secrets set VERCEL_DEPLOY_HOOK=https://api.vercel.com/v1/integrations/...
+```
+
+It is what lets publishing a blog post, or editing website copy, ask the site
+to rebuild. Without it both still save and the dashboard says plainly that the
+website will keep showing the old version. Treat the URL as a password: anyone
+holding it can spend build minutes at will.
+
+## The admin dashboard's tables
+
+Added by migrations 038 to 046. None of them is readable or writable by a
+browser except where noted, and every write goes through the `admin` edge
+function on the service role.
+
+| Table | What it holds | What a client may do |
+|---|---|---|
+| `platform_admins` | Who may reach the dashboard, and as what | Nothing at all. No grants, no policies |
+| `admin_audit_logs` | Every admin action, including reads | Nothing |
+| `announcements` | Broadcast: strip, popup, picture | Read published rows inside their window |
+| `media` | The media library's catalogue | Read |
+| `blog_posts` | The blog, read by the website at build time | Read published rows |
+| `site_content` | Editable copy for the website and the app | Read |
+| `feature_flags` | Switches the app and website obey | Read |
+| `support_tickets` / `support_ticket_notes` | Help requests and the thread on each | Raise one, read your own, reply. Never an internal note |
+| `data_requests` | The DPDP access and erasure register | File one, read your own |
+
+Two things worth knowing before changing any of them:
+
+- **Storage writes are granted per file.** `public-media` has a read policy and
+  nothing else, so no client can write to it. An upload asks the admin function
+  for a signed URL, which is good for one path and expires.
+- **Migration 046 takes back TRUNCATE, TRIGGER and REFERENCES** from `anon` and
+  `authenticated` across `public`, and sets default privileges so new tables do
+  not get them. TRUNCATE in particular does not consult row level security,
+  which is what everything else in this schema relies on.
 
 ## Putting both sites online, on Hostinger
 

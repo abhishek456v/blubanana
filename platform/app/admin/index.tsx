@@ -51,6 +51,13 @@ const SECTIONS: Section[] = [
     icon: 'card-outline',
   },
   {
+    href: '/admin/pricing',
+    area: 'pricing',
+    title: 'Price',
+    hint: 'What everybody pays, and how many intro places are left',
+    icon: 'pricetag-outline',
+  },
+  {
     href: '/admin/support',
     area: 'support',
     title: 'Help',

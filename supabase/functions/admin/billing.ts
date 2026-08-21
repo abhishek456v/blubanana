@@ -7,6 +7,7 @@
 // bad one is whether that takes a click or a database console.
 
 import { Ctx, Refused, json, one, oneOf, rows, str } from './lib.ts'
+import { triggerDeploy } from './writing.ts'
 
 const STATUSES = ['trialing', 'active', 'past_due', 'cancelled', 'expired'] as const
 
@@ -136,4 +137,98 @@ function addDays(from: Date, days: number): Date {
   const out = new Date(from)
   out.setUTCDate(out.getUTCDate() + days)
   return out
+}
+
+
+// ── The price list ───────────────────────────────────────────────────────────
+
+/**
+ * What everybody pays, and how many intro places are left.
+ *
+ * These two tables already drive the public pricing page: the website reads
+ * them at runtime with the anonymous key, so a change here is visible on
+ * blubanana.in within seconds and without a deploy. That is exactly why they
+ * are worth having behind a screen, and exactly why nothing but this function
+ * may write them.
+ */
+export async function pricingGet(ctx: Ctx) {
+  const [pricing, terms, taken] = await Promise.all([
+    ctx.db.from('pricing').select('*').eq('id', true).maybeSingle(),
+    ctx.db.from('billing_terms').select('*').order('sort_order'),
+    // The counter that drives "N places left" on the public page. Read through
+    // the same function the website uses, so the dashboard cannot disagree
+    // with what a visitor is being told.
+    ctx.db.rpc('intro_seats_taken'),
+  ])
+
+  await ctx.audit()
+  return json({
+    pricing: one(pricing),
+    terms: rows(terms),
+    introSeatsTaken: Number((taken as { data?: number }).data ?? 0),
+  })
+}
+
+/**
+ * Change the price, or the number of intro places.
+ *
+ * Every field is bounded. Not because an admin is not trusted, but because
+ * this is the one screen in the product where a slipped decimal point is
+ * charged to real people: 199900 paise is ₹1,999, and the same number typed
+ * with one more zero is ₹19,990. A ceiling turns that into a refusal rather
+ * than into an apology.
+ */
+export async function pricingSave(ctx: Ctx) {
+  const body = ctx.body
+
+  const before = one<Record<string, unknown>>(
+    await ctx.db.from('pricing').select('*').eq('id', true).maybeSingle()
+  )
+
+  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
+
+  if (body.list_monthly_paise !== undefined) {
+    const paise = Math.round(Number(body.list_monthly_paise))
+    // ₹99 to ₹9,999 a month. Wide enough for any real decision, narrow enough
+    // that a typo cannot get through.
+    if (!Number.isFinite(paise) || paise < 9900 || paise > 999900) {
+      throw new Refused('The monthly price has to be between ₹99 and ₹9,999')
+    }
+    patch.list_monthly_paise = paise
+  }
+
+  if (body.yearly_discount_percent !== undefined) {
+    patch.yearly_discount_percent = bounded(body.yearly_discount_percent, 0, 60, 'The yearly discount')
+  }
+  if (body.intro_discount_percent !== undefined) {
+    patch.intro_discount_percent = bounded(body.intro_discount_percent, 0, 90, 'The intro discount')
+  }
+  if (body.intro_customer_limit !== undefined) {
+    patch.intro_customer_limit = bounded(body.intro_customer_limit, 0, 100000, 'The number of intro places')
+  }
+  if (body.seats !== undefined) {
+    patch.seats = bounded(body.seats, 1, 50, 'The number of seats')
+  }
+
+  if (Object.keys(patch).length === 1) throw new Refused('Nothing to change')
+
+  const after = one(
+    await ctx.db.from('pricing').update(patch).eq('id', true).select().single()
+  )
+
+  // The public page reads this at runtime, so it is already live. The rebuild
+  // is for the HTML behind it: the figures are also baked into the page a
+  // visitor sees before any script runs, and a search engine reads that copy.
+  const deployed = await triggerDeploy('pricing changed')
+
+  await ctx.audit({ before, patch, deployed })
+  return json({ row: after, deployed })
+}
+
+function bounded(value: unknown, min: number, max: number, what: string): number {
+  const n = Math.round(Number(value))
+  if (!Number.isFinite(n) || n < min || n > max) {
+    throw new Refused(`${what} has to be between ${min} and ${max}`)
+  }
+  return n
 }

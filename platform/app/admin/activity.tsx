@@ -1,12 +1,17 @@
 import { useCallback, useMemo, useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { useFocusEffect } from '@react-navigation/core'
-import { getAdminActivity, type ActivityEntry } from '@/lib/admin'
+import {
+  getAdminActivity,
+  getAdminAudit,
+  type ActivityEntry,
+  type AdminAuditEntry,
+} from '@/lib/admin'
 import { formatDateLong } from '@/lib/format'
 import { FontFamily, Radius, Spacing, Typography } from '@/constants/design'
 import { useTheme } from '@/hooks/useTheme'
 import { AdminScreen } from '@/components/admin/AdminScreen'
-import { Chip, EmptyState, ListRow, useToast } from '@/components/ui'
+import { Chip, EmptyState, ListRow, SegmentedControl, useToast } from '@/components/ui'
 
 /**
  * What has been happening, from the log that was filling up all along.
@@ -25,18 +30,41 @@ export default function AdminActivity() {
   const [loading, setLoading] = useState(true)
   const [kind, setKind] = useState<string>('all')
 
+  /*
+   * Two logs, deliberately not merged.
+   *
+   * `audit_logs` is what creators did inside their own workspaces.
+   * `admin_audit_logs` is what this dashboard did, including what it read.
+   * They answer different questions and mixing them would make both
+   * unanswerable.
+   *
+   * The second one had been filling up since the first admin screen shipped
+   * and nothing could read it. A record nobody can produce is not a record.
+   */
+  const [which, setWhich] = useState<'creators' | 'dashboard'>('creators')
+  const [audit, setAudit] = useState<AdminAuditEntry[]>([])
+  const [actorEmails, setActorEmails] = useState<Record<string, string>>({})
+
   const load = useCallback(async () => {
     try {
-      const data = await getAdminActivity()
-      setEntries(data.rows)
-      setNames(data.workspaceNames)
-      setActors(data.actorNames)
-    } catch {
-      toast('Could not load the activity', { tone: 'error' })
+      if (which === 'creators') {
+        const data = await getAdminActivity()
+        setEntries(data.rows)
+        setNames(data.workspaceNames)
+        setActors(data.actorNames)
+      } else {
+        const data = await getAdminAudit()
+        setAudit(data.rows)
+        setActorEmails(data.actorEmails)
+      }
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Could not load the activity', {
+        tone: 'error',
+      })
     } finally {
       setLoading(false)
     }
-  }, [toast])
+  }, [toast, which])
 
   useFocusEffect(
     useCallback(() => {
@@ -57,6 +85,40 @@ export default function AdminActivity() {
       hint="The last 200 things anybody did, across every workspace."
       loading={loading}
     >
+      <SegmentedControl
+        options={[
+          { key: 'creators', label: 'What creators did' },
+          { key: 'dashboard', label: 'What this dashboard did' },
+        ]}
+        value={which}
+        onChange={(value) => {
+          setWhich(value)
+          setLoading(true)
+        }}
+      />
+
+      {which === 'dashboard' ? (
+        audit.length === 0 ? (
+          <EmptyState
+            icon="shield-outline"
+            title="Nothing recorded yet"
+            message="Every admin screen writes here, including the ones that only read."
+          />
+        ) : (
+          <View style={styles.rows}>
+            {audit.map((entry, index) => (
+              <ListRow
+                key={entry.id}
+                title={adminSentence(entry)}
+                subtitle={`${actorEmails[entry.actor_id] ?? 'Somebody'} · ${entry.role}`}
+                meta={formatDateLong(entry.created_at)}
+                index={index}
+              />
+            ))}
+          </View>
+        )
+      ) : (
+        <>
       <View style={styles.filters}>
         {kinds.map((value) => (
           <Chip
@@ -88,8 +150,58 @@ export default function AdminActivity() {
           ))}
         </View>
       )}
+        </>
+      )}
     </AdminScreen>
   )
+}
+
+/**
+ * An admin action, said as a sentence.
+ *
+ * The stored value is the action name the function routes on, which is right
+ * for a router and useless in a list: nobody scanning for who looked at a
+ * creator's money is helped by "people.snapshot".
+ */
+function adminSentence(entry: AdminAuditEntry): string {
+  const words: Record<string, string> = {
+    overview: 'Opened the dashboard',
+    health: 'Checked what is broken',
+    funnel: 'Looked at who is getting started',
+    people: 'Listed everybody',
+    'people.snapshot': 'Looked inside one workspace',
+    activity: 'Read the activity log',
+    'admin.audit': 'Read this log',
+    subscriptions: 'Listed subscriptions',
+    'subscriptions.adjust': 'Changed somebody\'s subscription',
+    'pricing.get': 'Opened the price list',
+    'pricing.save': 'Changed the price',
+    'announcements.list': 'Opened broadcast',
+    'announcements.save': 'Saved a broadcast',
+    'announcements.delete': 'Deleted a broadcast',
+    'media.list': 'Opened the media library',
+    'media.uploadUrl': 'Started an upload',
+    'media.register': 'Added a file',
+    'media.update': 'Renamed a file',
+    'media.delete': 'Deleted a file',
+    'media.sweep': 'Tidied up stray files',
+    'support.list': 'Opened help',
+    'support.get': 'Read a ticket',
+    'support.reply': 'Replied on a ticket',
+    'support.update': 'Changed a ticket',
+    'flags.list': 'Looked at the switches',
+    'flags.set': 'Threw a switch',
+    'data.list': 'Opened the data requests',
+    'data.update': 'Progressed a data request',
+    'blog.list': 'Opened the blog',
+    'blog.save': 'Saved a post',
+    'blog.delete': 'Deleted a post',
+    'blog.import': 'Brought in a Word document',
+    'site.deploy': 'Asked the website to rebuild',
+    'content.list': 'Opened the words',
+    'content.save': 'Changed some words',
+  }
+  return words[entry.action] ?? entry.action
 }
 
 /** "Added a deal" rather than "deal / create". A log nobody can read is a file. */

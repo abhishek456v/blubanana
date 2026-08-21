@@ -485,7 +485,37 @@ export interface BlogPost {
  * until a deploy hook exists" rather than implying the post is live.
  */
 export const listPosts = () =>
-  call<{ rows: BlogPost[]; deployConfigured: boolean }>('blog.list')
+  call<{ rows: BlogPost[]; deployConfigured: boolean; destinations: string[] }>('blog.list')
+
+/**
+ * The website paths a post may send somebody to, said in words.
+ *
+ * The list itself comes from the server, so the editor can only offer what the
+ * server will accept. This is only the wording, and an unknown path falls back
+ * to the path itself rather than disappearing.
+ */
+export const DESTINATION_NAMES: Record<string, string> = {
+  '/tools': 'All the calculators',
+  '/tools/advance-tax-calculator': 'Advance tax calculator',
+  '/tools/tds-calculator': 'TDS calculator',
+  '/tools/gst-calculator': 'GST calculator',
+  '/tools/rate-calculator': 'Rate calculator',
+  '/tools/engagement-rate-calculator': 'Engagement rate calculator',
+  '/pricing': 'Pricing',
+  '/features': 'What it does',
+  '/features/deals': 'Deals',
+  '/features/deadlines': 'Deadlines',
+  '/features/payments': 'Payments',
+  '/features/invoices': 'Invoices',
+  '/features/tax': 'Tax',
+  '/features/rate-card': 'Rate card',
+  '/features/team': 'Team',
+  '/features/offline': 'Offline',
+  '/compare': 'How it compares',
+  '/contact': 'Contact',
+  '/security': 'Security',
+  '/blog': 'The blog',
+}
 
 export const savePost = (post: Partial<BlogPost>) =>
   call<{ row: BlogPost; deployed: boolean }>('blog.save', { post })
@@ -526,3 +556,42 @@ export const listContent = () =>
 
 export const saveContent = (key: string, value: string) =>
   call<{ row: ContentLine; deployed: boolean }>('content.save', { key, value })
+
+// ── The price list ───────────────────────────────────────────────────────────
+
+export interface Pricing {
+  list_monthly_paise: number
+  yearly_discount_percent: number
+  intro_discount_percent: number
+  intro_customer_limit: number
+  seats: number
+  updated_at: string
+}
+
+export interface BillingTerm {
+  key: string
+  label: string
+  months: number
+  term_multiplier: string
+  sort_order: number
+}
+
+export const getPricing = () =>
+  call<{ pricing: Pricing; terms: BillingTerm[]; introSeatsTaken: number }>('pricing.get')
+
+export const savePricing = (patch: Partial<Pricing>) =>
+  call<{ row: Pricing; deployed: boolean }>('pricing.save', patch)
+
+// ── What the dashboard itself did ────────────────────────────────────────────
+
+export interface AdminAuditEntry {
+  id: string
+  actor_id: string
+  role: string
+  action: string
+  detail: Record<string, unknown> | null
+  created_at: string
+}
+
+export const getAdminAudit = () =>
+  call<{ rows: AdminAuditEntry[]; actorEmails: Record<string, string> }>('admin.audit')

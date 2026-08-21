@@ -16,6 +16,7 @@ import {
   type Term,
 } from '@/lib/subscription'
 import { PaymentsNotConfigured, startCheckout } from '@/lib/billing'
+import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { useEntitlement } from '@/hooks/useEntitlement'
 import { Elevation, FontFamily, Radius, Spacing, Typography } from '@/constants/design'
 import { useTheme } from '@/hooks/useTheme'
@@ -63,6 +64,7 @@ export default function PlansScreen() {
   const [selected, setSelected] = useState<Term['key']>('yearly')
   const [loading, setLoading] = useState(true)
   const [starting, setStarting] = useState(false)
+  const paymentsOn = useFeatureFlag('payments')
 
   const load = useCallback(async () => {
     try {
@@ -244,16 +246,28 @@ export default function PlansScreen() {
         ))}
       </Card>
 
-      <Button
-        label={starting ? 'Opening…' : 'Subscribe'}
-        onPress={handleSubscribe}
-        disabled={starting || !term}
-        fullWidth
-      />
-      <Text style={[styles.note, { color: c.textMuted }]}>
-        Card, UPI and netbanking through Razorpay. Your price holds for the whole
-        term you buy; renewal is at whatever the price is then.
-      </Text>
+      {/* The switch, thrown from the dashboard. Razorpay having a bad hour
+          should take the button away rather than leave people pressing it and
+          meeting an error, and that decision should not need a release. */}
+      {paymentsOn ? (
+        <>
+          <Button
+            label={starting ? 'Opening…' : 'Subscribe'}
+            onPress={handleSubscribe}
+            disabled={starting || !term}
+            fullWidth
+          />
+          <Text style={[styles.note, { color: c.textMuted }]}>
+            Card, UPI and netbanking through Razorpay. Your price holds for the whole
+            term you buy; renewal is at whatever the price is then.
+          </Text>
+        </>
+      ) : (
+        <Text style={[styles.note, { color: c.textMuted }]}>
+          Subscribing is switched off for a short while. Nothing changes about your
+          workspace in the meantime, and we will let you know as soon as it is back.
+        </Text>
+      )}
     </>
   )
 

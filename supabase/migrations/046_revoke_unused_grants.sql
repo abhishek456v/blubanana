@@ -1,0 +1,74 @@
+-- Take back three privileges no client has ever needed.
+--
+-- ── What was found ──────────────────────────────────────────────────────────
+--
+-- Every table in `public` grants TRUNCATE, TRIGGER and REFERENCES to `anon`
+-- and `authenticated`. This is not something any migration here asked for: it
+-- is the stock Supabase default, `grant all on all tables in schema public`,
+-- and it has been sitting under every table in this project since the first
+-- one was created.
+--
+-- ── Why it matters, and how much ────────────────────────────────────────────
+--
+-- Being honest about the size of it: none of the three is reachable today.
+-- PostgREST exposes select, insert, update and delete and nothing else, there
+-- is no endpoint that runs arbitrary SQL, and `authenticated` has no CREATE
+-- privilege on the schema, so it cannot write a function to hang off a
+-- trigger.
+--
+-- It matters anyway, for two reasons.
+--
+-- TRUNCATE does not consult row level security. Every other write in this
+-- project is filtered by a policy that keeps one creator inside her own
+-- workspace; TRUNCATE would empty the table for everybody. The entire tenancy
+-- model rests on policies, and this is the one verb that walks past them. A
+-- standing grant of it, held by the role every signed-in browser uses, is a
+-- loaded gun that happens to have no trigger attached this week.
+--
+-- TRIGGER lets a role attach a trigger to a table it does not own. Combined
+-- with any future function that is executable by `authenticated` and runs as
+-- definer, that is an escalation path. The defence against it right now is
+-- that no such function exists, which is a fact about today rather than a
+-- property of the design.
+--
+-- REFERENCES is harmless and goes with them because nothing uses it either.
+--
+-- ── What this does not touch ────────────────────────────────────────────────
+--
+-- `service_role` keeps everything. It is the role the edge functions run as,
+-- and it is never handed to a browser.
+
+revoke truncate, trigger, references on all tables in schema public from anon, authenticated;
+
+-- And so that the next table created does not quietly get them back. Written
+-- for `postgres`, which is the role every migration here runs as and therefore
+-- the role that will own whatever is created next.
+alter default privileges for role postgres in schema public
+  revoke truncate, trigger, references on tables from anon, authenticated;
+
+
+-- ── The same three exist in the storage schema, and cannot be taken back ────
+--
+-- `storage.objects`, `storage.buckets` and `storage.buckets_analytics` grant
+-- the same three privileges to the same two roles. A TRUNCATE of
+-- storage.objects would remove every file in the project: every signed
+-- contract and every profile photograph, in one statement, with no policy
+-- consulted.
+--
+-- It is not fixed here because it cannot be. Those tables are owned by
+-- `supabase_storage_admin`, `postgres` is not a member of that role, and only
+-- an owner may revoke. A `revoke` written here would return without error and
+-- change nothing, which is worse than leaving it out: a migration that appears
+-- to have done something is how a hole gets marked closed while standing open.
+--
+-- Checked, rather than assumed, before deciding it did not matter:
+--
+--   * The `storage` schema is not exposed through PostgREST. Both tables
+--     answer 404 by name, an explicit `Accept-Profile: storage` answers 406,
+--     and neither appears in the schema the anon key is served.
+--   * There is no endpoint anywhere in this project that runs arbitrary SQL
+--     for a client.
+--
+-- So there is no path from a browser to that verb. If Supabase ever exposes
+-- the storage schema, or if a function is added that takes SQL from a caller,
+-- this becomes live and wants revisiting from an account that owns the schema.

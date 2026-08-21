@@ -42,6 +42,7 @@ import { queueDeal, shouldQueue } from '@/lib/capture'
 import { StageEditor } from '@/components/deal/StageEditor'
 import { getAllRatings, summarizeRatings } from '@/lib/reputation'
 import { extractFromImage, extractFromTranscript, transcribeAudio } from '@/lib/aiIntake'
+import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import type {
   Brand,
   BrandRating,
@@ -119,6 +120,9 @@ export default function NewDealScreen() {
   // shared by both the screenshot and voice paths (PRODUCT.md 2.1: one
   // review step, three entry points).
   const [extracting, setExtracting] = useState<'screenshot' | 'voice' | null>(null)
+  // Both AI entry points come off together: they are the same bill and they
+  // break the same way. Typing a deal in by hand is unaffected.
+  const captureOn = useFeatureFlag('ai_capture')
   const [repeatOpen, setRepeatOpen] = useState(false)
   const [repeatOptions, setRepeatOptions] = useState<RepeatCandidate[]>([])
   // Set when extraction returns a brand name that doesn't match any existing
@@ -507,6 +511,11 @@ export default function NewDealScreen() {
             Extraction only fills fields. Nothing saves until "Save deal".
           */}
           <View style={styles.intakeRow}>
+            {/* Both AI ways in, behind one switch. Repeat below is not AI and
+                stays: it copies a deal she already has, costs nothing, and has
+                no reason to disappear because a model is misbehaving. */}
+            {captureOn ? (
+              <>
             <TouchableOpacity
               style={[
                 styles.intakeButton,
@@ -549,6 +558,8 @@ export default function NewDealScreen() {
                 {recorderState.isRecording ? 'Stop recording' : 'Record voice'}
               </Text>
             </TouchableOpacity>
+              </>
+            ) : null}
 
             {/* The fourth way in. Not a duplicate button on every deal row:
                 with ten deals on screen that cannot answer "which one". This

@@ -220,3 +220,31 @@ async function workspaceNames(db: Ctx['db'], ids: string[]): Promise<Record<stri
   for (const w of list) map[w.id] = w.name
   return map
 }
+
+
+/**
+ * What the dashboard itself has done.
+ *
+ * `admin_audit_logs` has been recording every admin action from the first day,
+ * including the reads, and until now nothing could look at it. A record nobody
+ * can read is not a record; it is storage. The whole argument for writing down
+ * that somebody opened a creator's workspace is that it can be produced later.
+ *
+ * Deliberately separate from the activity screen, which reads `audit_logs` and
+ * is about what creators did in their own workspaces. Mixing the two would
+ * make it impossible to answer either question.
+ */
+export async function adminAudit(ctx: Ctx) {
+  const { db } = ctx
+  const list = rows<{ actor_id: string }>(
+    await db
+      .from('admin_audit_logs')
+      .select('id, actor_id, role, action, detail, created_at')
+      .order('created_at', { ascending: false })
+      .limit(300)
+  )
+
+  const actors = await emailsById(db, list.map((r) => r.actor_id))
+  await ctx.audit({ entries: list.length })
+  return json({ rows: list, actorEmails: actors })
+}

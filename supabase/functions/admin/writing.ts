@@ -13,6 +13,99 @@
 
 import { Ctx, Refused, json, one, rows, str } from './lib.ts'
 
+/**
+ * Where a post is allowed to send somebody.
+ *
+ * A list rather than a free text field, because `tool_href` ends up as an
+ * `href` in built HTML and the website's build refuses a link to a page that
+ * does not exist. A typo here would not produce a broken link on one post: it
+ * would fail the build, and the build is all or nothing, so the entire
+ * marketing site would stop deploying because of one character in one post.
+ *
+ * Keep in step with the website's routes. It is checked against them at the
+ * bottom of this file rather than trusted, so a page that is renamed shows up
+ * as a refusal when somebody next saves, not as a dead site.
+ */
+const DESTINATIONS = [
+  '/tools',
+  '/tools/advance-tax-calculator',
+  '/tools/tds-calculator',
+  '/tools/gst-calculator',
+  '/tools/rate-calculator',
+  '/tools/engagement-rate-calculator',
+  '/pricing',
+  '/features',
+  '/features/deals',
+  '/features/deadlines',
+  '/features/payments',
+  '/features/invoices',
+  '/features/tax',
+  '/features/rate-card',
+  '/features/team',
+  '/features/offline',
+  '/compare',
+  '/contact',
+  '/security',
+  '/blog',
+] as const
+
+/**
+ * The checks the website's build runs, run here instead.
+ *
+ * ── Why this exists ─────────────────────────────────────────────────────────
+ *
+ * The build fails on the first problem it finds and refuses to write anything.
+ * That is right for a site built from code, and dangerous now that a post is a
+ * row: a stray `<h1>`, an unclosed `<p>`, the word TODO, or a link to a page
+ * that was renamed would each take the whole website off the air, and the
+ * person who pressed Publish would have no way to know why.
+ *
+ * So every rule the build enforces about a post's own content is enforced here
+ * first, as a sentence, at the moment somebody could still fix it. Publishing
+ * must not be able to break the site.
+ */
+function checkAgainstBuildRules(row: { body_html: string; title: string; tool_href: string }) {
+  const body = row.body_html
+
+  // One h1 per page, and the template already spends it on the title.
+  if (/<h1[\s>]/i.test(body)) {
+    throw new Refused(
+      'The post has a top level heading in it. The title is already the page heading, so use h2 for sections.'
+    )
+  }
+
+  // Unbalanced tags. The build counts these because a missing </div> silently
+  // swallows the rest of the page and nothing about the markup looks wrong.
+  for (const tag of ['b', 'strong', 'span', 'div', 'p', 'a', 'ul', 'ol', 'li', 'table', 'tr', 'td', 'h2', 'h3', 'blockquote']) {
+    const open = (body.match(new RegExp(`<${tag}[\\s>]`, 'gi')) ?? []).length
+    const close = (body.match(new RegExp(`</${tag}>`, 'gi')) ?? []).length
+    if (open !== close) {
+      throw new Refused(
+        `There are ${open} <${tag}> tags and ${close} closing ones. Every tag needs closing before this can go out.`
+      )
+    }
+  }
+
+  if (/TODO/.test(body) || /TODO/.test(row.title)) {
+    throw new Refused('The post still says TODO somewhere. Finish that bit first.')
+  }
+
+  // Pictures must be full web addresses. A `/something` path would be looked
+  // for among the website's own files, which is not where anything uploaded
+  // here lives.
+  for (const [, src] of body.matchAll(/<img[^>]+src="([^"]+)"/gi)) {
+    if (!src.startsWith('http')) {
+      throw new Refused(
+        'A picture in the post uses a partial address. Pick it from the media library so it gets a full one.'
+      )
+    }
+  }
+
+  if (!DESTINATIONS.includes(row.tool_href as (typeof DESTINATIONS)[number])) {
+    throw new Refused('Choose where the post should send people from the list.')
+  }
+}
+
 /** Only these columns, listed rather than spread. Same reasoning as broadcast. */
 function postFrom(input: Record<string, unknown>) {
   const slug = String(input.slug ?? '')
@@ -44,7 +137,13 @@ export async function list(ctx: Ctx) {
     await ctx.db.from('blog_posts').select('*').order('date', { ascending: false }).limit(200)
   )
   await ctx.audit()
-  return json({ rows: data, deployConfigured: Boolean(Deno.env.get('VERCEL_DEPLOY_HOOK')) })
+  return json({
+    rows: data,
+    deployConfigured: Boolean(Deno.env.get('VERCEL_DEPLOY_HOOK')),
+    // Sent so the editor offers exactly what the server will accept, rather
+    // than keeping a second copy of the list that drifts.
+    destinations: DESTINATIONS,
+  })
 }
 
 export async function save(ctx: Ctx) {
@@ -65,6 +164,8 @@ export async function save(ctx: Ctx) {
   // a failing build twenty minutes later.
   const dash = row.body_html.match(/[–—]/) || row.title.match(/[–—]/)
   if (dash) throw new Refused('No long dashes. Use a full stop, a comma, or rewrite the sentence.')
+
+  checkAgainstBuildRules(row)
 
   const id = input.id ? String(input.id) : null
   const wasPublished = id
@@ -138,7 +239,7 @@ export async function deploy(ctx: Ctx) {
  * that failed, and telling somebody their writing was lost when it was not is
  * the worse error.
  */
-async function triggerDeploy(reason: string): Promise<boolean> {
+export async function triggerDeploy(reason: string): Promise<boolean> {
   const hook = Deno.env.get('VERCEL_DEPLOY_HOOK')
   if (!hook) return false
 
@@ -324,6 +425,12 @@ export async function contentSave(ctx: Ctx) {
   if (!value.trim()) throw new Refused('This cannot be left empty')
   if (/[\u2013\u2014]/.test(value)) {
     throw new Refused('No long dashes. Use a full stop, a comma, or rewrite the sentence.')
+  }
+  // Same reasoning as the blog: the website's build refuses a page with a
+  // placeholder on it and refuses all or nothing, so one unfinished line here
+  // would stop the whole site deploying.
+  if (/TODO/i.test(value)) {
+    throw new Refused('This still says TODO. Finish the sentence before saving it.')
   }
 
   const row = one<{ area: string }>(
