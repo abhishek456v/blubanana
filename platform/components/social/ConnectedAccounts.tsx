@@ -154,7 +154,18 @@ export function ConnectedAccounts() {
     )
   }
 
-  const mocked = mockedPlatformNames()
+  /*
+   * Only about platforms that are actually on the screen.
+   *
+   * With the Instagram switch off, this said "Instagram shows sample data"
+   * above a list with no Instagram in it: a warning about something the reader
+   * cannot see, which is worse than no warning, because it invites them to
+   * look for a row that is deliberately not there.
+   */
+  const shownNames = new Set<string>(
+    platforms.map(({ key }) => (key === 'instagram' ? 'Instagram' : 'YouTube'))
+  )
+  const mocked = mockedPlatformNames().filter((name) => shownNames.has(name))
 
   return (
     <Card>
