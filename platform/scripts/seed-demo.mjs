@@ -111,7 +111,7 @@ const SHAPES = [
   ['instagram_reel',  '1 Reel + 3 Stories',          'reel',           25000,  60000],
   ['instagram_story', '3 Stories',                   'story',           8000,  18000],
   ['instagram_feed',  '1 Feed post + 2 Stories',     'carousel',       15000,  35000],
-  ['youtube_long',    'YouTube integration, 60–90s', 'yt_integration', 45000, 120000],
+  ['youtube_long',    'YouTube integration, 60 to 90s', 'yt_integration', 45000, 120000],
   ['youtube_short',   '1 YouTube Short',             'yt_short',       20000,  40000],
 ]
 

@@ -275,7 +275,11 @@ export default function BrandsScreen() {
           dense={isDesktop}
           label="Came back"
           value={repeatBrands}
-          caption={repeatBrands === 1 ? 'brand with more than one deal' : 'brands with more than one deal'}
+          // Short enough to fit a half width tile on a phone. The longer
+          // wording was cut off mid-word, which reads as a broken screen
+          // rather than as a caption. No singular form: it reads the same
+          // either way now.
+          caption="more than one deal"
           index={3}
         />
       </View>
