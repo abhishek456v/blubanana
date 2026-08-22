@@ -3,7 +3,7 @@
 Two lists. The first is things only you can do, because they need a login, a
 bank account, a legal identity or a decision. The second is building work.
 
-Updated 21 August 2026, evening.
+Updated 22 August 2026.
 
 ---
 
@@ -111,6 +111,33 @@ next time somebody opens the app.
 ---
 
 ## My list
+
+### Everything was tested, 22 August
+
+Two independent QA sweeps plus my own. What came out of it, worst first:
+
+- **"Delete my account" did not work for anybody who had ever added a
+  deal.** Deleting a workspace cascades to its deals and payments, whose
+  audit trigger then wrote a record pointing at the workspace that had just
+  been removed, and the database refused it. So the button failed with an
+  error at the one moment a person has decided to leave, and the erasure
+  obligation could not be met. Fixed and tested end to end: a throwaway
+  account with a brand, a deal and a payment pressed the real button and
+  came back clean.
+- **Publishing a blog post could take the whole website off the air.** The
+  build refuses all or nothing, so a stray heading, an unclosed tag or a link
+  to a renamed page would have stopped every page deploying. Every rule the
+  build enforces is now checked when you press Save, as a sentence.
+- **A client could truncate any table.** The stock Supabase grant, under
+  every table since the first migration. TRUNCATE ignores row level
+  security, which is the whole of the tenancy model. Revoked.
+- **Two switches switched nothing**, one escape hatch would have capped a
+  paying creator at ten deals, and the media library would have let you
+  delete a picture that a live post was using.
+- Plus the smaller things a phone showed and a desktop did not.
+
+Nothing was left behind: every test account and every row either sweep
+created has been removed and the database checked.
 
 ### The admin dashboard  ·  built, 21 August
 
