@@ -3,7 +3,7 @@
 Two lists. The first is things only you can do, because they need a login, a
 bank account, a legal identity or a decision. The second is building work.
 
-Updated 22 August 2026.
+Updated 22 August 2026, evening.
 
 ---
 
@@ -114,7 +114,16 @@ next time somebody opens the app.
 
 ### Everything was tested, 22 August
 
-Two independent QA sweeps plus my own. What came out of it, worst first:
+Two independent QA sweeps plus my own, then a second pass over everything the
+sweeps could not reach. What came out of it, worst first:
+
+- **Two-step verification did nothing at all.** Two separate faults, one on
+  top of the other. The app redirected into the product the moment a password
+  was accepted, so the code was never asked for; and the admin endpoint never
+  checked the assurance level, so a stolen password used directly against the
+  API reached every screen in the dashboard. Both fixed and proved with a real
+  authenticator code: the password alone now stops at "one more step", and the
+  endpoint refuses a session that has not answered it.
 
 - **"Delete my account" did not work for anybody who had ever added a
   deal.** Deleting a workspace cascades to its deals and payments, whose
