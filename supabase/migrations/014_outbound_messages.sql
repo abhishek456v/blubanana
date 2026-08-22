@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- CreatorDesk: the outbound message log.
+-- Blubanana: the outbound message log.
 -- Run this once in the Supabase dashboard SQL editor, after 013.
 --
 -- Every message the app drafts for a brand (delivery notifications, the four

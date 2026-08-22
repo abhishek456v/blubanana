@@ -28,7 +28,7 @@ const ACCENT = '#4169E1' // Colors.*.accent, royal blue
  *
  * Same shape and same numbers as `components/ui/Mark.tsx`, which carries the
  * explanation. It replaced an open ring that read as a C, drawn back when the
- * product was called CreatorDesk.
+ * product had a different name.
  *
  * @param size    canvas edge in px
  * @param scale   mark width as a fraction of the canvas

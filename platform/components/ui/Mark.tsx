@@ -10,7 +10,7 @@ export interface MarkProps {
  * The Blubanana mark: a banana, in royal blue.
  *
  * It replaces an open ring that read as a C, drawn when the product was called
- * CreatorDesk and left behind by the rename. A wordmark reading "blubanana"
+ * an earlier name and left behind by the rename. A wordmark reading "blubanana"
  * beside a C is a mark working against its own name.
  *
  * Two arcs sharing their endpoints. The inner arc has the *larger* radius, so

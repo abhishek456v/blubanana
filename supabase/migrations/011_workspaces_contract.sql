@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- CreatorDesk: Phase 2, stage 3 of 3: workspaces (CONTRACT).
+-- Blubanana: Phase 2, stage 3 of 3: workspaces (CONTRACT).
 -- Run this ONLY after 010 has been applied AND the app has been running against
 -- it long enough that you trust it. This is the point of no return: once
 -- creator_id is gone, 010's down script no longer has anything to fall back to.

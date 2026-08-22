@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- CreatorDesk: Phase 2, stage 1 of 3: workspaces (EXPAND).
+-- Blubanana: Phase 2, stage 1 of 3: workspaces (EXPAND).
 -- Run this once in the Supabase dashboard SQL editor, after 008.
 --
 -- This stage is deliberately NON-BREAKING. It adds the workspace tables and a

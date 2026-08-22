@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- CreatorDesk: fix reminder rescheduling floor (PRODUCT.md 2.3)
+-- Blubanana: fix reminder rescheduling floor (PRODUCT.md 2.3)
 -- Run this once in the Supabase dashboard SQL editor (or via supabase db push).
 --
 -- reminder_stage alone isn't enough to know which stages are safe to

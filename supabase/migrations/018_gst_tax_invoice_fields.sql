@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- CreatorDesk: the fields a GST tax invoice is legally required to carry.
+-- Blubanana: the fields a GST tax invoice is legally required to carry.
 -- Run this once in the Supabase dashboard SQL editor, after 017.
 --
 -- The invoice this app generates was not a valid tax invoice whenever GST was

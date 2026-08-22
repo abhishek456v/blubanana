@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- CreatorDesk: invoice line items, so one invoice can cover several deals.
+-- Blubanana: invoice line items, so one invoice can cover several deals.
 -- Run this once in the Supabase dashboard SQL editor, after 007.
 --
 -- Today an invoice is one row with one `description` and one `amount`, tied to

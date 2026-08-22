@@ -338,7 +338,7 @@ export default function YouScreen() {
         <View style={styles.links}>
           <ListRow
             title="Billing details"
-            subtitle="PAN, GSTIN and bank details used on your invoices"
+            subtitle="PAN, GSTIN and bank details for invoices"
             leading={
               <View style={[styles.linkIcon, { backgroundColor: c.accentLight }]}>
                 <Ionicons name="card" size={18} color={c.accent} />
@@ -350,7 +350,7 @@ export default function YouScreen() {
           />
           <ListRow
             title="Expenses"
-            subtitle="What the work cost, so the Year report shows what you are taxed on"
+            subtitle="What the work cost, for your Year report"
             leading={
               <View style={[styles.linkIcon, { backgroundColor: c.accentLight }]}>
                 <Ionicons name="receipt" size={18} color={c.accent} />
@@ -362,7 +362,7 @@ export default function YouScreen() {
           />
           <ListRow
             title="Advance tax"
-            subtitle="What to set aside, and by which of the four dates"
+            subtitle="What to set aside, and by which date"
             leading={
               <View style={[styles.linkIcon, { backgroundColor: c.accentLight }]}>
                 <Ionicons name="calculator" size={18} color={c.accent} />
@@ -386,7 +386,7 @@ export default function YouScreen() {
           />
           <ListRow
             title="Rate card"
-            subtitle="What you charge, built from your own deals, ready to send when a brand asks"
+            subtitle="What you charge, built from your deals"
             leading={
               <View style={[styles.linkIcon, { backgroundColor: c.accentLight }]}>
                 <Ionicons name="id-card" size={18} color={c.accent} />
@@ -398,7 +398,7 @@ export default function YouScreen() {
           />
           <ListRow
             title="Team"
-            subtitle="Invite a manager and choose what they can see"
+            subtitle="Invite a manager, and choose what they see"
             leading={
               <View style={[styles.linkIcon, { backgroundColor: c.accentLight }]}>
                 <Ionicons name="people" size={18} color={c.accent} />
@@ -413,7 +413,7 @@ export default function YouScreen() {
               moment to be reading a list. */}
           <ListRow
             title="Get help"
-            subtitle="Write in about something, and see what we said back"
+            subtitle="Write in, and see what we said back"
             leading={
               <View style={[styles.linkIcon, { backgroundColor: c.accentLight }]}>
                 <Ionicons name="chatbubbles" size={18} color={c.accent} />
@@ -428,7 +428,7 @@ export default function YouScreen() {
               one who skipped past the offer. */}
           <ListRow
             title="Import deals"
-            subtitle="Bring across a spreadsheet, or a photo of your notes"
+            subtitle="Bring across a spreadsheet or a photo"
             leading={
               <View style={[styles.linkIcon, { backgroundColor: c.accentLight }]}>
                 <Ionicons name="cloud-upload" size={18} color={c.accent} />
@@ -440,7 +440,7 @@ export default function YouScreen() {
           />
           <ListRow
             title="Export my data"
-            subtitle="Every deal, brand, payment, invoice and expense as a file"
+            subtitle="Every deal, payment and invoice, as a file"
             leading={
               <View style={[styles.linkIcon, { backgroundColor: c.accentLight }]}>
                 <Ionicons name="download" size={18} color={c.accent} />
@@ -454,7 +454,7 @@ export default function YouScreen() {
               thing that makes this recoverable sits immediately above it. */}
           <ListRow
             title="Delete my account"
-            subtitle="Permanently removes your workspace and everything in it"
+            subtitle="Removes your workspace, permanently"
             leading={
               <View style={[styles.linkIcon, { backgroundColor: c.dangerLight }]}>
                 <Ionicons name="trash" size={18} color={c.danger} />

@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { StorageKeys, readOnboardingFlag } from './storageKeys'
 import { supabase } from './supabase'
 import { getProfile } from './profile'
 
@@ -15,7 +16,7 @@ import { getProfile } from './profile'
 //   * sign-in on a new device, still empty→ offer once more, which is right:
 //     the details are genuinely missing and invoices need them.
 
-const KEY_PREFIX = 'creatordesk.onboarding.dismissed.'
+const KEY_PREFIX = StorageKeys.onboardingPrefix
 
 /** Keyed per user so two accounts on one device don't hide each other's. */
 async function storageKey(): Promise<string | null> {
@@ -29,7 +30,10 @@ export async function shouldOfferOnboarding(): Promise<boolean> {
   try {
     const key = await storageKey()
     if (!key) return false
-    if ((await AsyncStorage.getItem(key)) != null) return false
+    // Reads the old key too, so somebody who dismissed onboarding before the
+    // rename is not offered it a second time.
+    const userId = key.slice(KEY_PREFIX.length)
+    if ((await readOnboardingFlag(userId)) != null) return false
 
     const profile = await getProfile()
     // Any sign of a filled profile means onboarding already happened, here or

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { StorageKeys, readKey } from '@/lib/storageKeys'
 import { Platform, StyleSheet, Text, View } from 'react-native'
 import { usePathname, useRouter } from 'expo-router'
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -25,7 +26,7 @@ import { TAB_BY_NAME, type TabName } from './tabs'
 
 // The storage key keeps the old product name on purpose, like every other
 // stored key: renaming it would silently reset every existing user's choice.
-const COLLAPSE_KEY = 'creatordesk.sidebar'
+const COLLAPSE_KEY = StorageKeys.sidebar
 
 /** Tab destinations in sidebar order. Settings renders in the group below. */
 const MAIN_TABS: TabName[] = ['index', 'money', 'brands', 'work']
@@ -96,7 +97,7 @@ export function Sidebar({ state, navigation }: BottomTabBarProps) {
   const dueCount = useDueCount()
 
   useEffect(() => {
-    AsyncStorage.getItem(COLLAPSE_KEY)
+    readKey(COLLAPSE_KEY)
       .then((stored) => {
         if (stored === 'closed') setChoice(true)
         if (stored === 'open') setChoice(false)

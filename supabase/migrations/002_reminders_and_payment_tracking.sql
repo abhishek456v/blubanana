@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- CreatorDesk: reminder scheduling state (PRODUCT.md 2.3, 2.4)
+-- Blubanana: reminder scheduling state (PRODUCT.md 2.3, 2.4)
 -- Run this once in the Supabase dashboard SQL editor (or via supabase db push).
 --
 -- These columns are a client-side cache of what's currently scheduled as a

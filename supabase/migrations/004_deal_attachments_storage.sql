@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- CreatorDesk: deal attachments storage (PRODUCT.md 1: "attachments
+-- Blubanana: deal attachments storage (PRODUCT.md 1: "attachments
 -- (contracts/briefs, stored as files in Supabase storage)")
 -- Run this once in the Supabase dashboard SQL editor (or via supabase db push).
 --

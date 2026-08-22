@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- CreatorDesk: durable reminder chains.
+-- Blubanana: durable reminder chains.
 -- Run this once in the Supabase dashboard SQL editor, after 014.
 --
 -- Reminders currently exist only as local OS notifications, with a couple of

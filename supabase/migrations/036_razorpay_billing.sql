@@ -1,4 +1,4 @@
--- 036: Razorpay billing, and CreatorDesk's own GST invoices.
+-- 036: Razorpay billing, and Blubanana's own GST invoices.
 --
 -- Everything that does not need the keys. Setting RAZORPAY_KEY_ID and
 -- RAZORPAY_KEY_SECRET as function secrets is the switch, exactly as with Meta
@@ -109,7 +109,7 @@ revoke insert, update, delete on subscription_payments from anon, authenticated;
 
 
 -- ── 3. Our own GST invoices ─────────────────────────────────────────────────
--- §3: "CreatorDesk sells a SaaS subscription to Indian customers and therefore
+-- §3: "Blubanana sells a SaaS subscription to Indian customers and therefore
 -- owes GST on it, and must issue a GST invoice to each subscriber, carrying
 -- their GSTIN where they have one."
 --

@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- CreatorDesk: audit log for money and status changes.
+-- Blubanana: audit log for money and status changes.
 -- Run this once in the Supabase dashboard SQL editor, after 010.
 --
 -- The functional spec's rule: "Money data is never silently modified. Every

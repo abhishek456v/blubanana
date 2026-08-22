@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- CreatorDesk: Phase 2, stage 2 of 3: workspaces (MIGRATE / ENFORCE).
+-- Blubanana: Phase 2, stage 2 of 3: workspaces (MIGRATE / ENFORCE).
 -- Run this once in the Supabase dashboard SQL editor, after 009 has been
 -- applied AND its verification block reported zero orphans.
 --

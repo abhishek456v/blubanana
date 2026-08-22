@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- CreatorDesk: Phase 2 & 3 features.
+-- Blubanana: Phase 2 & 3 features.
 -- Run this once in the Supabase dashboard SQL editor (or via supabase db push),
 -- after 004 and 005.
 --

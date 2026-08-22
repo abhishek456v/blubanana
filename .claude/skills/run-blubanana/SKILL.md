@@ -1,9 +1,9 @@
 ---
-name: run-creatordesk
-description: Launch and drive CreatorDesk (Expo + React Native Web) — start the dev server, sign in, navigate to any screen, and screenshot it in both themes and at both widths. Use whenever you need to see what a change actually looks like, or reproduce a UI/network bug.
+name: run-blubanana
+description: Launch and drive Blubanana (Expo + React Native Web) — start the dev server, sign in, navigate to any screen, and screenshot it in both themes and at both widths. Use whenever you need to see what a change actually looks like, or reproduce a UI/network bug.
 ---
 
-# Running CreatorDesk
+# Running Blubanana
 
 This app ships to iOS, Android **and web**, and web is where you can actually
 look at it. Everything below drives the web build.

@@ -36,8 +36,8 @@ const URL_ = env.EXPO_PUBLIC_SUPABASE_URL
 const SERVICE = env.SUPABASE_SERVICE_ROLE_KEY
 if (!URL_ || !SERVICE) throw new Error('Missing Supabase URL or service role key in .env')
 
-const EMAIL = process.env.DEMO_EMAIL ?? 'demo@creatordesk.in'
-const PASSWORD = process.env.DEMO_PASSWORD ?? 'CreatorDeskDemo!2026'
+const EMAIL = process.env.DEMO_EMAIL ?? 'demo@blubanana.in'
+const PASSWORD = process.env.DEMO_PASSWORD ?? 'BlubananaDemo!2026'
 
 // Plain fetch rather than supabase-js: the client pulls in realtime, which
 // wants a native WebSocket this Node build does not have. Nothing here needs a

@@ -1,4 +1,5 @@
 import { Platform } from 'react-native'
+import { StorageKeys, readKey } from './storageKeys'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
 // Capture that survives no signal (PRODUCT.md §8.19).
@@ -24,7 +25,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 // creation path in two, and the offline copy would be the one that quietly
 // stopped matching.
 
-const STORAGE_KEY = 'creatordesk.offline.queue.v1'
+const STORAGE_KEY = StorageKeys.offlineQueue
 
 export type QueuedKind =
   | 'create_deal'
@@ -72,7 +73,7 @@ export function offlineQueueAvailable(): boolean {
 export async function readQueue(): Promise<QueuedItem[]> {
   if (!offlineQueueAvailable()) return []
   try {
-    const raw = await AsyncStorage.getItem(STORAGE_KEY)
+    const raw = await readKey(STORAGE_KEY)
     return raw ? (JSON.parse(raw) as QueuedItem[]) : []
   } catch {
     // A corrupt queue must not brick capture. Losing the queue is bad; an app

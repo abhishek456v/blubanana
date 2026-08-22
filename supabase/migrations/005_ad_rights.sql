@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- CreatorDesk: Ad Rights tracking on deals.
+-- Blubanana: Ad Rights tracking on deals.
 -- Run this once in the Supabase dashboard SQL editor (or via supabase db push).
 --
 -- Ad rights are an optional add-on term on a deal: the brand pays an extra

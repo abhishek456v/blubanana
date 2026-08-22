@@ -10,6 +10,7 @@ import {
 import { Platform, useColorScheme } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Colors } from '@/constants/design'
+import { StorageKeys, readKey } from '@/lib/storageKeys'
 
 export type ThemeColors = { readonly [K in keyof typeof Colors.light]: string }
 
@@ -19,7 +20,7 @@ export type ThemeColors = { readonly [K in keyof typeof Colors.light]: string }
  */
 export type ThemeMode = 'light' | 'dark' | 'system'
 
-const STORAGE_KEY = 'creatordesk.theme'
+const STORAGE_KEY = StorageKeys.theme
 
 interface ThemeContextValue {
   c: ThemeColors
@@ -40,7 +41,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // corrects itself. Blocking render on a disk read to avoid that would trade
   // a one-frame flash for a visible startup delay on every launch.
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY)
+    readKey(STORAGE_KEY)
       .then((stored) => {
         if (stored === 'light' || stored === 'dark' || stored === 'system') {
           setModeState(stored)

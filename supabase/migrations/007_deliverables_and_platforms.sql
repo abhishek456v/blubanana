@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- CreatorDesk: typed deliverables, and a corrected platform list.
+-- Blubanana: typed deliverables, and a corrected platform list.
 -- Run this once in the Supabase dashboard SQL editor, after 006.
 --
 -- Two changes:

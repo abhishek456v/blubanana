@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- CreatorDesk: connected social accounts and the reach time series.
+-- Blubanana: connected social accounts and the reach time series.
 -- Run this once in the Supabase dashboard SQL editor, after 012.
 --
 -- Each creator connects THEIR OWN Instagram / YouTube. The app reads their

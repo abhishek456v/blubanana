@@ -20,16 +20,15 @@ lives only in a chat log is a decision that will be lost.
 
 ## 1. What Blubanana is
 
-**The product was called CreatorDesk until 19 August 2026.** The rename is
-complete in everything a user sees: the app, the website, the invoice and rate
-card marks, the store listing, the deep link scheme and the bundle identifier.
-
-Two things were deliberately left as they were. Local storage keys still read
-`creatordesk.*`, because renaming `creatordesk.offline.queue.v1` would strand
-any capture already sitting in a queue on a device, and that is the one piece of
-local state that cannot be reproduced. Migration comments keep the old name too:
-they are an applied historical record, and rewriting history to match a present
-decision is how a record stops being worth reading.
+**The product was renamed to Blubanana on 19 August 2026.** Nothing carries
+the old name any more, including the four local storage keys on installed
+devices, which were the last hold-outs. Renaming a key does not move what is
+under it, and one of those keys holds deals captured with no signal that have
+not reached the server yet; abandoning those on somebody's phone is not a
+cosmetic cost. So `lib/storageKeys.ts` migrates each one on first read, writing
+the new key before removing the old, and that file is now the only place in the
+codebase where the previous name appears at all. It can be deleted once every
+installed copy has opened once.
 
 The wordmark is set in lower case, with "blu" carrying the accent colour.
 
