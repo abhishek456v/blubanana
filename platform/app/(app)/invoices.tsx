@@ -5,7 +5,13 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/core'
 import { Ionicons } from '@expo/vector-icons'
 import { getInvoices } from '@/lib/invoices'
-import { formatCurrency, formatDate, financialYearOf, parseLocalDate } from '@/lib/format'
+import {
+  formatCurrency,
+  formatDate,
+  formatDateLong,
+  financialYearOf,
+  parseLocalDate,
+} from '@/lib/format'
 import type { Invoice } from '@/types'
 import { ContentMaxWidth, FontFamily, Radius, Spacing, Typography } from '@/constants/design'
 import { useBreakpoint } from '@/hooks/useBreakpoint'
@@ -20,6 +26,21 @@ import {
   useToast,
   type DataTableColumn,
 } from '@/components/ui'
+
+/**
+ * The date, with the year on it when the year is the point.
+ *
+ * The heading above this list totals one financial year, and the list shows
+ * every invoice ever raised. An invoice from last September rendered as
+ * "23 Sept" sat between two from this August looking like it belonged with
+ * them, and the heading then appeared to have the wrong count and the wrong
+ * total. It did not; the row was hiding the only thing that explained it.
+ */
+function invoiceDate(date: string, currentFy: string): string {
+  return financialYearOf(parseLocalDate(date)) === currentFy
+    ? formatDate(date)
+    : formatDateLong(date)
+}
 
 export default function InvoicesScreen() {
   const toast = useToast()
@@ -63,7 +84,11 @@ export default function InvoicesScreen() {
   const columns: DataTableColumn<Invoice>[] = [
     { key: 'number', title: 'Invoice', flex: 1.2, render: (row) => row.invoice_number },
     { key: 'brand', title: 'Brand', flex: 1.4, render: (row) => row.brand_name },
-    { key: 'date', title: 'Date', render: (row) => formatDate(row.invoice_date) },
+    {
+      key: 'date',
+      title: 'Date',
+      render: (row) => invoiceDate(row.invoice_date, summary.fy),
+    },
     { key: 'gst', title: 'GST', render: (row) => (row.gst_applicable ? '18%' : '—') },
     {
       key: 'amount',
@@ -137,7 +162,7 @@ export default function InvoicesScreen() {
               <ListRow
                 title={item.invoice_number}
                 subtitle={item.brand_name}
-                meta={formatDate(item.invoice_date)}
+                meta={invoiceDate(item.invoice_date, summary.fy)}
                 leading={
                   <View style={[styles.icon, { backgroundColor: c.accentLight }]}>
                     <Ionicons name="document-text" size={17} color={c.accent} />
