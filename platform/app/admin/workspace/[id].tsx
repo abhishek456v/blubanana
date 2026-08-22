@@ -8,6 +8,8 @@ import { FontFamily, Radius, Spacing, Typography } from '@/constants/design'
 import { useTheme } from '@/hooks/useTheme'
 import { AdminScreen } from '@/components/admin/AdminScreen'
 import { buildWhatsAppLink } from '@/lib/whatsapp'
+import { PLATFORM_LABELS, STATUS_LABELS } from '@/constants/labels'
+import type { DealStatus, Platform } from '@/types'
 import { Button, Card, EmptyState, ListRow, MetricCard, useToast } from '@/components/ui'
 
 /**
@@ -157,7 +159,14 @@ export default function WorkspaceSnapshotScreen() {
                 <ListRow
                   key={deal.id}
                   title={deal.deliverable_description || deal.platform}
-                  subtitle={`${deal.platform} · ${deal.status}`}
+                  // The same labels the creator sees on her own screen, rather
+                  // than the values the column holds. "instagram_reel · active"
+                  // is a database row; "Reel · Active" is a deal.
+                  // Cast because the snapshot comes back as plain strings
+                  // from the server; the fallback covers anything unexpected.
+                  subtitle={`${PLATFORM_LABELS[deal.platform as Platform] ?? deal.platform} · ${
+                    STATUS_LABELS[deal.status as DealStatus] ?? deal.status
+                  }`}
                   meta={formatRelativeDay(deal.created_at)}
                   trailing={
                     <Text style={[styles.amount, { color: c.textPrimary }]}>

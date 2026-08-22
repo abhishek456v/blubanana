@@ -117,7 +117,11 @@ export default function TicketScreen() {
               {['low', 'normal', 'high'].map((level) => (
                 <Chip
                   key={level}
-                  label={level === 'high' ? 'Urgent' : level}
+                  // "low", "normal", "Urgent" sat next to each other with
+                  // only one of them capitalised.
+                  label={
+                    level === 'high' ? 'Urgent' : level.charAt(0).toUpperCase() + level.slice(1)
+                  }
                   selected={ticket.priority === level}
                   onPress={() => setPriority(level)}
                   size="sm"
