@@ -27,7 +27,7 @@ import { useTheme } from '@/hooks/useTheme'
 export default function AdminLayout() {
   const router = useRouter()
   const { c } = useTheme()
-  const { session, loading: authLoading } = useAuth()
+  const { session, loading: authLoading, secondStepPending } = useAuth()
   const { role, loading: roleLoading } = usePlatformRole()
 
   const loading = authLoading || roleLoading
@@ -36,8 +36,8 @@ export default function AdminLayout() {
     if (loading) return
     // Not signed in at all: the root layout already sends these to sign-in,
     // so this only catches the gap while a session is being torn down.
-    if (!session) router.replace('/(auth)/sign-in')
-  }, [loading, session, router])
+    if (!session || secondStepPending) router.replace('/(auth)/sign-in')
+  }, [loading, session, secondStepPending, router])
 
   if (loading) {
     return (

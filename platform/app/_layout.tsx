@@ -51,7 +51,7 @@ function parseRecoveryTokens(url: string): { access_token: string; refresh_token
 }
 
 export default function RootLayout() {
-  const { session, loading } = useAuth()
+  const { session, loading, secondStepPending } = useAuth()
   const segments = useSegments()
   const router = useRouter()
 
@@ -104,12 +104,22 @@ export default function RootLayout() {
       return
     }
 
-    if (!session && !inAuthGroup) {
+    /*
+     * A session that still owes a code is not a way in.
+     *
+     * Supabase hands back a session as soon as the password is right, at the
+     * lower assurance level. Redirecting on that alone took the sign-in screen
+     * off the display before it could ask for the code, so two-step
+     * verification asked for nothing and protected nobody.
+     */
+    const signedIn = Boolean(session) && !secondStepPending
+
+    if (!signedIn && !inAuthGroup) {
       router.replace('/(auth)/sign-in')
-    } else if (session && inAuthGroup) {
+    } else if (signedIn && inAuthGroup) {
       router.replace('/(app)/(tabs)/' as never)
     }
-  }, [session, loading, fontsLoaded, segments, isPasswordRecovery])
+  }, [session, secondStepPending, loading, fontsLoaded, segments, isPasswordRecovery])
 
   // Native-only: catch password-recovery deep links (blubanana://reset-
   // password#...). Web doesn't need this: the Supabase client parses

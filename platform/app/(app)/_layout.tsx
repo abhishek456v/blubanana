@@ -30,7 +30,7 @@ export const unstable_settings = {
 export default function AppLayout() {
   const { c } = useTheme()
   const isWide = useIsWideScreen()
-  const { session, loading } = useAuth()
+  const { session, loading, secondStepPending } = useAuth()
 
   // Turn any invite addressed to this account into a membership.
   //
@@ -66,7 +66,9 @@ export default function AppLayout() {
    * slightly too loosely, and it is a flash of somebody's dashboard before the
    * redirect lands.
    */
-  if (loading || !session) return null
+  // Includes a session that has not answered its second step yet: see the
+  // note in useAuth. A deep link must not be a way around it.
+  if (loading || !session || secondStepPending) return null
 
   const modalScreenOptions = isWide
     ? { headerShown: false, presentation: 'transparentModal' as const }
