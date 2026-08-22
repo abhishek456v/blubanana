@@ -9,6 +9,7 @@ import { useTheme } from '@/hooks/useTheme'
 import { AdminScreen } from '@/components/admin/AdminScreen'
 import { buildWhatsAppLink } from '@/lib/whatsapp'
 import { PLATFORM_LABELS, STATUS_LABELS } from '@/constants/labels'
+import { PLATFORM_NAMES, REMINDER_TYPE_NAMES, nameFor } from '@/lib/admin'
 import type { DealStatus, Platform } from '@/types'
 import { Button, Card, EmptyState, ListRow, MetricCard, useToast } from '@/components/ui'
 
@@ -138,7 +139,8 @@ export default function WorkspaceSnapshotScreen() {
                   key={`${account.platform}-${account.handle}`}
                   style={[styles.line, { color: c.textSecondary }]}
                 >
-                  {account.platform} · {account.handle} · {account.status}
+                  {nameFor(PLATFORM_NAMES, account.platform)} · {account.handle} ·{' '}
+                  {account.status === 'active' ? 'Working' : 'Needs reconnecting'}
                 </Text>
               ))
             )}
@@ -186,8 +188,12 @@ export default function WorkspaceSnapshotScreen() {
                 {snapshot.reminders.map((reminder, index) => (
                   <ListRow
                     key={reminder.id}
-                    title={reminder.type}
-                    subtitle={reminder.status}
+                    title={nameFor(REMINDER_TYPE_NAMES, reminder.type)}
+                    subtitle={
+                      reminder.status === 'expired'
+                        ? 'Missed'
+                        : reminder.status.charAt(0).toUpperCase() + reminder.status.slice(1)
+                    }
                     meta={formatRelativeDay(reminder.scheduled_for)}
                     index={index}
                   />
