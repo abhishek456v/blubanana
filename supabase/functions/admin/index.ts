@@ -36,6 +36,49 @@ import * as desk from './desk.ts'
 import * as writing from './writing.ts'
 
 /**
+ * The claims out of a token Supabase has already verified.
+ *
+ * `admin.auth.getUser(jwt)` further down is what proves the token is genuine.
+ * This only reads what is inside it, which is why it does not check a
+ * signature: an unverified token never reaches the line that calls this.
+ */
+/** Whether this person has finished setting up a second step. Migration 049. */
+async function hasSecondStep(userId: string): Promise<boolean> {
+  try {
+    const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const response = await fetch(
+      `${Deno.env.get('SUPABASE_URL')}/rest/v1/rpc/has_verified_second_factor`,
+      {
+        method: 'POST',
+        headers: {
+          apikey: key,
+          Authorization: `Bearer ${key}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ uid: userId }),
+      }
+    )
+    if (!response.ok) return false
+    return (await response.json()) === true
+  } catch {
+    // Fails open, deliberately. A network blip between two Supabase services
+    // must not lock the founder out of her own dashboard, and the password is
+    // still required either way.
+    return false
+  }
+}
+
+function decodeClaims(jwt: string): { aal?: string } | null {
+  try {
+    const payload = jwt.split('.')[1]
+    const padded = payload.replace(/-/g, '+').replace(/_/g, '/')
+    return JSON.parse(atob(padded + '='.repeat((4 - (padded.length % 4)) % 4)))
+  } catch {
+    return null
+  }
+}
+
+/**
  * Which roles may run which action. `admin` passes everything and is not
  * listed; an empty list means admin only.
  *
@@ -180,6 +223,64 @@ Deno.serve(async (req) => {
   // Deliberately the same answer as a bad action: someone probing this
   // endpoint learns only that they are not welcome, not which actions exist.
   if (!role) return json({ error: 'Not found' }, 404)
+
+  /*
+   * ── The second factor, enforced here rather than by the screen ────────────
+   *
+   * Enrolling a phone made the *app* ask for a code. It did not make this
+   * endpoint ask for anything. So somebody holding a stolen admin password
+   * could skip the app entirely, sign in against the auth API, and call this
+   * with the aal1 token they got back. Every screen in the dashboard would
+   * have been readable to them, and the phone in the admin's pocket would
+   * never have rung.
+   *
+   * That makes two-step verification a thing the interface does rather than a
+   * thing that is true, which is the same as not having it.
+   *
+   * The rule is: if you have set up a second factor, you must have used it.
+   * Not "every admin must have one", because that would lock out an admin who
+   * has not enrolled yet, and a security control whose first act is to lock
+   * out the founder does not get switched on.
+   */
+  // One line of SQL against the table that holds the answer, rather than an
+  // SDK method. Two attempts at the latter returned 500s from surfaces that do
+  // not exist on a service role client, and an endpoint that always fails is
+  // worse than the hole it was closing. See migration 049.
+  /*
+   * ── The second factor, enforced here rather than by the screen ────────────
+   *
+   * Enrolling a phone made the *app* ask for a code. It did not make this
+   * endpoint ask for anything, so somebody holding a stolen admin password
+   * could skip the app, sign in against the auth API, and call this with the
+   * aal1 token they got back. Every screen in the dashboard would have been
+   * readable to them and the phone in the admin's pocket would never have
+   * rung. That makes two-step verification a thing the interface does rather
+   * than a thing that is true.
+   *
+   * The rule is: if you have set up a second step, you must have used it. Not
+   * "every admin must have one", because that would lock out an admin who has
+   * not enrolled yet, and a control whose first act is to lock out the founder
+   * never gets switched on.
+   *
+   * Called over plain HTTP rather than through the client's `.rpc()` helper,
+   * which crashed this function in this runtime for reasons that did not
+   * reproduce against the same endpoint with curl. An endpoint that always
+   * fails is worse than the hole it was closing, so this uses the request that
+   * is known to work.
+   */
+  const hasVerifiedFactor = await hasSecondStep(user.id)
+
+  if (hasVerifiedFactor) {
+    // The level lives in the token Supabase already verified above, so this is
+    // reading a checked claim rather than trusting the caller.
+    const claims = decodeClaims(jwt)
+    if (claims?.aal !== 'aal2') {
+      return json(
+        { error: 'This account uses a second step. Sign in through the app and enter your code.' },
+        403
+      )
+    }
+  }
 
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>
   const action = String(body.action ?? '')

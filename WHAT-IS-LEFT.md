@@ -214,8 +214,14 @@ The redesign is finished. Every screen, both themes, phone and desktop.
   tax, chasing a late brand, GST registration, TDS, and how to price a reel.
   Each one ends at the matching calculator. New posts get added to
   `website/src/content/blog.mjs`.
-- **Retest the drawn interface** on the website against the real redesigned
-  platform; the drawn version stays unless the real one photographs better.
+- ~~Retest the drawn interface against the real platform~~ **Done, 22 August.
+  The drawing stays.** Compared side by side at phone width. The real screen is
+  denser: at the size the marketing page shows it, the reminders list and the
+  deals table read as texture rather than as information, where the drawing
+  reads instantly. The drawing also costs nothing to maintain, and a real
+  screenshot would need retaking after every change to the app, which is the
+  sort of upkeep that quietly stops happening and leaves a marketing page
+  showing a version of the product that no longer exists.
 - ~~The www redirect is the wrong way round~~ **Fixed, 21 August.**
   `www.blubanana.in` now redirects to `blubanana.in`, which is what every
   page's canonical tag already claimed.
