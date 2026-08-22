@@ -134,15 +134,37 @@ export async function remove(ctx: Ctx) {
     await ctx.db.from('media').select('path, url').eq('id', id).maybeSingle()
   )
 
-  // Anything still pointing at this picture keeps its own copy of the URL, so
-  // deleting the file breaks it. Worth saying so before it happens rather than
-  // after somebody opens the website.
-  const stillUsed = rows(
-    await ctx.db.from('announcements').select('id, title').eq('image_url', row.url)
-  )
-  if (stillUsed.length > 0 && !ctx.body.force) {
+  /*
+   * Everything that keeps its own copy of this URL.
+   *
+   * Deleting the file does not break a reference, it breaks the picture, and
+   * nothing downstream notices: the website's build only checks that local
+   * asset paths exist, and these are full addresses to storage, so a post
+   * pointing at a deleted file passes every check and renders a broken image
+   * on a live page.
+   *
+   * This checked announcements only at first, which covered one of the four
+   * places a picture can end up.
+   */
+  const [announcements, covers, inPosts, inCopy] = await Promise.all([
+    ctx.db.from('announcements').select('title').eq('image_url', row.url),
+    ctx.db.from('blog_posts').select('title').eq('cover_url', row.url),
+    ctx.db.from('blog_posts').select('title').like('body_html', `%${row.path}%`),
+    ctx.db.from('site_content').select('label').like('value', `%${row.path}%`),
+  ])
+
+  const users = [
+    ...rows<{ title: string }>(announcements).map((r) => `the broadcast "${r.title}"`),
+    ...rows<{ title: string }>(covers).map((r) => `the post "${r.title}" (its cover)`),
+    ...rows<{ title: string }>(inPosts).map((r) => `the post "${r.title}"`),
+    ...rows<{ label: string }>(inCopy).map((r) => r.label),
+  ]
+  // A post can hold the same picture as its cover and in its body.
+  const unique = [...new Set(users)]
+
+  if (unique.length > 0 && !ctx.body.force) {
     throw new Refused(
-      `Still used by ${stillUsed.length} ${stillUsed.length === 1 ? 'announcement' : 'announcements'}`,
+      `Still used by ${unique.slice(0, 3).join(', ')}${unique.length > 3 ? ` and ${unique.length - 3} more` : ''}`,
       409
     )
   }
