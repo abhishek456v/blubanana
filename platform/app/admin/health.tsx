@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
-import { useFocusEffect } from '@react-navigation/core'
+import { useFocusEffect } from 'expo-router/react-navigation'
 import {
   CHANNEL_NAMES,
   PLATFORM_NAMES,

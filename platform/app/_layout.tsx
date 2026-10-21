@@ -23,7 +23,7 @@ import {
   DarkTheme,
   DefaultTheme,
   ThemeProvider as NavigationThemeProvider,
-} from '@react-navigation/native'
+} from 'expo-router/react-navigation'
 import { FeedbackProvider } from '@/components/ui'
 import { ThemeProvider, useTheme } from '@/hooks/useTheme'
 import { useAuth } from '@/hooks/useAuth'

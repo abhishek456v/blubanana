@@ -28,6 +28,8 @@
       "output": "single"
     },
     "plugins": [
+      "./plugins/withLocalIosSigning",
+      "./plugins/withPodDeploymentTarget",
       "expo-router",
       [
         "expo-font",

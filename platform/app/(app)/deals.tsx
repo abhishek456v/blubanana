@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useFocusEffect } from '@react-navigation/core'
+import { useFocusEffect } from 'expo-router/react-navigation'
 import { getDeals, nextDuePayment, type DealWithPaymentSummary } from '@/lib/deals'
 import { getAttentionItems } from '@/lib/insights'
 import { formatCurrency, formatDate } from '@/lib/format'
@@ -290,7 +290,7 @@ export default function DealsScreen() {
                   : () => router.push('/(app)/deal/new' as never)
               }
             />
-          ) : null
+          ) : undefined
         }
         refreshControl={
           <RefreshControl

@@ -231,7 +231,8 @@ export function useAlert() {
 
 const styles = StyleSheet.create({
   toastHost: {
-    position: 'absolute',
+    // `fixed` on web so the toast stays put while the page scrolls.
+    position: Platform.OS === 'web' ? ('fixed' as 'absolute') : 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
@@ -240,7 +241,6 @@ const styles = StyleSheet.create({
     // Above the tab bar and any open screen content, below a Modal (which
     // renders in its own layer on native and at the document root on web).
     zIndex: 200,
-    ...Platform.select({ web: { position: 'fixed' as 'absolute' } }),
   },
   toast: {
     flexDirection: 'row',

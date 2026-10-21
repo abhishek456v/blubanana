@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
-import { useFocusEffect } from '@react-navigation/core'
+import { useFocusEffect } from 'expo-router/react-navigation'
 import { deletePost, deploySite, listPosts, type BlogPost } from '@/lib/admin'
 import { formatDateLong } from '@/lib/format'
 import { FontFamily, Radius, Spacing, Typography } from '@/constants/design'

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { View, Text, TouchableOpacity, Pressable, StyleSheet } from 'react-native'
 import { useRouter } from 'expo-router'
-import { useIsFocused } from '@react-navigation/core'
+import { useIsFocused } from 'expo-router/react-navigation'
 import { Ionicons } from '@expo/vector-icons'
 import { Spacing, Radius, Typography, FontFamily } from '@/constants/design'
 import { useTheme } from '@/hooks/useTheme'

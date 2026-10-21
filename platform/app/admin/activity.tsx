@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
-import { useFocusEffect } from '@react-navigation/core'
+import { useFocusEffect } from 'expo-router/react-navigation'
 import {
   getAdminActivity,
   getAdminAudit,

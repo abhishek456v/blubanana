@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
-import { useFocusEffect } from '@react-navigation/core'
+import { useFocusEffect } from 'expo-router/react-navigation'
 import { listContent, saveContent, type ContentLine } from '@/lib/admin'
 import { refreshContent } from '@/hooks/useContent'
 import { FontFamily, Radius, Spacing, Typography } from '@/constants/design'

@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
   },
   rim: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: Radius.card,
     borderWidth: 1,
   },

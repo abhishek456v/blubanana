@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { Linking, StyleSheet, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
-import { useFocusEffect } from '@react-navigation/core'
+import { useFocusEffect } from 'expo-router/react-navigation'
 import { Ionicons } from '@expo/vector-icons'
 import { getAdminPeople, type AdminPerson } from '@/lib/admin'
 import { formatRelativeDay } from '@/lib/format'
