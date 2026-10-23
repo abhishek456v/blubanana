@@ -95,7 +95,9 @@ export default function AppLayout() {
       {/* Where every capped list's "View all" lands. A sheet on wide screens
           like the other sidebar destinations: it is reached *from* the
           sidebar, so the sidebar has to still be there behind it. */}
-      <Stack.Screen name="deals" options={{ title: 'Deals', ...modalScreenOptions }} />
+      {/* deals and reminders draw their own title and back link at phone
+          width, so the native header would put both on screen twice. */}
+      <Stack.Screen name="deals" options={{ title: 'Deals', headerShown: false, ...modalScreenOptions }} />
       <Stack.Screen name="deal/new" options={{ title: 'Add deal', ...modalScreenOptions }} />
       {/* title for [id] screens is set dynamically inside the screen via Stack.Screen */}
       {/* Deliberately not a modal on wide screens, unlike the forms around it:
@@ -115,7 +117,7 @@ export default function AppLayout() {
           so both opened onto a grey void with the app nowhere behind them. */}
       <Stack.Screen name="tax" options={{ title: 'Advance tax', ...modalScreenOptions }} />
       <Stack.Screen name="expenses" options={{ title: 'Expenses', ...modalScreenOptions }} />
-      <Stack.Screen name="reminders" options={{ title: 'Reminders', ...modalScreenOptions }} />
+      <Stack.Screen name="reminders" options={{ title: 'Reminders', headerShown: false, ...modalScreenOptions }} />
       {/* Full-screen, chromeless: it draws its own progress dots and Skip. */}
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="import" options={{ title: 'Import deals', ...modalScreenOptions }} />
