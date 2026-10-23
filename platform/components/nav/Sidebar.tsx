@@ -4,7 +4,7 @@ import { Platform, StyleSheet, Text, View } from 'react-native'
 import { usePathname, useRouter } from 'expo-router'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Ionicons } from '@expo/vector-icons'
-import type { BottomTabBarProps } from '@react-navigation/bottom-tabs'
+import type { BottomTabBarProps } from 'expo-router/js-tabs'
 import {
   Elevation,
   FontFamily,
@@ -83,7 +83,7 @@ const WORKSPACE = [
  * routes it links to (Invoices, Reminders, ...) present as modal sheets over
  * the tabs on wide screens, so the sidebar stays on screen behind them.
  */
-export function Sidebar({ state, navigation }: BottomTabBarProps) {
+export function Sidebar({ state, emitter, navigateToTab }: BottomTabBarProps) {
   const { c } = useTheme()
   const router = useRouter()
   const pathname = usePathname()
@@ -130,13 +130,13 @@ export function Sidebar({ state, navigation }: BottomTabBarProps) {
     const index = state.routes.findIndex((route) => route.name === name)
     if (index === -1) return
     const route = state.routes[index]
-    const event = navigation.emit({
+    const event = emitter.emit({
       type: 'tabPress',
       target: route.key,
       canPreventDefault: true,
     })
     if (state.index !== index && !event.defaultPrevented) {
-      navigation.navigate(route.name, route.params)
+      navigateToTab(route.key)
     }
   }
 

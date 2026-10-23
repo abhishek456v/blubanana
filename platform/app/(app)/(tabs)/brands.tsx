@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useFocusEffect } from '@react-navigation/core'
+import { useFocusEffect } from 'expo-router/react-navigation'
 import { useRouter } from 'expo-router'
 import { brandContact, getBrands } from '@/lib/brands'
 import { getDeals, paymentsInOrder, type DealWithPaymentSummary } from '@/lib/deals'
@@ -426,7 +426,7 @@ export default function BrandsScreen() {
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListHeaderComponent={header}
         ListEmptyComponent={
-          isDesktop ? null : (
+          isDesktop ? undefined : (
           <EmptyState
             icon={query ? 'search-outline' : 'people-outline'}
             title={query ? 'No match' : 'No brands yet'}

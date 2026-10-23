@@ -1,6 +1,6 @@
 import { StyleSheet, View } from 'react-native'
 import { Stack } from 'expo-router'
-import { ThemeProvider as NavigationThemeProvider, useTheme as useNavTheme } from '@react-navigation/native'
+import { ThemeProvider as NavigationThemeProvider, useTheme as useNavTheme } from 'expo-router/react-navigation'
 import { AuraBackground } from '@/components/ui'
 import { useTheme } from '@/hooks/useTheme'
 

@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import { StyleSheet, Switch, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useFocusEffect } from '@react-navigation/core'
+import { useFocusEffect } from 'expo-router/react-navigation'
 import { Ionicons } from '@expo/vector-icons'
 import Animated, { FadeIn, FadeOut, Layout } from 'react-native-reanimated'
 import {

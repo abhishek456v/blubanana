@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import { Image, Platform, StyleSheet, Text, View } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
-import { useFocusEffect } from '@react-navigation/core'
+import { useFocusEffect } from 'expo-router/react-navigation'
 import { Ionicons } from '@expo/vector-icons'
 import {
   deleteMedia,

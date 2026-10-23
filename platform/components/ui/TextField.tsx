@@ -5,6 +5,7 @@ import {
   TextInput,
   View,
   type StyleProp,
+  type TextInputInstance,
   type TextInputProps,
   type TextStyle,
   type ViewStyle,
@@ -43,7 +44,7 @@ export interface TextFieldProps extends Omit<TextInputProps, 'style'> {
  * animated focus ring, a real error state, and a ₹ prefix that doesn't drift
  * out of alignment between screens.
  */
-export const TextField = forwardRef<TextInput, TextFieldProps>(function TextField(
+export const TextField = forwardRef<TextInputInstance, TextFieldProps>(function TextField(
   {
     label,
     error,

@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import type { BottomTabBarProps } from '@react-navigation/bottom-tabs'
+import type { BottomTabBarProps } from 'expo-router/js-tabs'
 import { FontFamily, Radius, Spacing, Typography } from '@/constants/design'
 import { useTheme } from '@/hooks/useTheme'
 import { PressableScale } from '@/components/ui'
@@ -30,7 +30,7 @@ import { TAB_BY_NAME } from './tabs'
  * height; positioning it absolutely reports zero and puts the last row of
  * every list underneath it.
  */
-export function TabDock({ state, descriptors, navigation }: BottomTabBarProps) {
+export function TabDock({ state, descriptors, emitter, navigateToTab }: BottomTabBarProps) {
   const { c } = useTheme()
   const insets = useSafeAreaInsets()
 
@@ -63,7 +63,7 @@ export function TabDock({ state, descriptors, navigation }: BottomTabBarProps) {
             label={spec.title}
             badge={typeof badge === 'number' && badge > 0 ? badge : null}
             onPress={() => {
-              const event = navigation.emit({
+              const event = emitter.emit({
                 type: 'tabPress',
                 target: route.key,
                 canPreventDefault: true,
@@ -73,7 +73,7 @@ export function TabDock({ state, descriptors, navigation }: BottomTabBarProps) {
               // focused; the default bar does this and a custom one that
               // skips it silently breaks that behaviour.
               if (!focused && !event.defaultPrevented) {
-                navigation.navigate(route.name, route.params)
+                navigateToTab(route.key)
               }
             }}
           />

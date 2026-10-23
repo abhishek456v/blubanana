@@ -19,6 +19,7 @@ import { getWorkspaceId } from './workspace'
  *   - the web build has no Expo push token (browser push is a different
  *     mechanism and is not wired up)
  *   - the creator declined the permission, which is hers to decline
+ *   - the free-signed local iPhone build, which cannot hold the entitlement
  *
  * Callers should treat null as "this device will not be pushed to" and carry
  * on. Nothing else in the app depends on it succeeding.
@@ -29,6 +30,9 @@ export async function registerPushToken(): Promise<string | null> {
   // erroring on every launch.
   if (!Device.isDevice) return null
   if (Platform.OS === 'web') return null
+  // The free-signed local iPhone build has no push entitlement, so it takes the
+  // same on-device path as a declined permission (plugins/withLocalIosSigning).
+  if (Constants.expoConfig?.extra?.remotePushUnavailable) return null
 
   const existing = await Notifications.getPermissionsAsync()
   let status = existing.status

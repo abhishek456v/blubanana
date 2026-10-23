@@ -3,7 +3,7 @@ import { RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { ModalSheet } from '@/components/ModalSheet'
 import { Stack, useRouter } from 'expo-router'
-import { useFocusEffect } from '@react-navigation/core'
+import { useFocusEffect } from 'expo-router/react-navigation'
 import { Ionicons } from '@expo/vector-icons'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import {

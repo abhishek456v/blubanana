@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
-import { useFocusEffect } from '@react-navigation/core'
+import { useFocusEffect } from 'expo-router/react-navigation'
 import { listDataRequests, updateDataRequest, type DataRequest } from '@/lib/admin'
 import { formatDateLong, daysFromToday } from '@/lib/format'
 import { FontFamily, Radius, Spacing, Typography } from '@/constants/design'

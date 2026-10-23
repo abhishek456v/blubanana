@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import { StyleSheet, Switch, Text, View } from 'react-native'
-import { useFocusEffect } from '@react-navigation/core'
+import { useFocusEffect } from 'expo-router/react-navigation'
 import { listFlags, setFlag, type FeatureFlag } from '@/lib/admin'
 import { refreshFeatureFlags } from '@/hooks/useFeatureFlags'
 import { formatRelativeDay } from '@/lib/format'

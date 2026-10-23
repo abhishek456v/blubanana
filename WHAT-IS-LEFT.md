@@ -3,7 +3,7 @@
 Two lists. The first is things only you can do, because they need a login, a
 bank account, a legal identity or a decision. The second is building work.
 
-Updated 22 August 2026, evening.
+Updated 19 October 2026.
 
 ---
 
@@ -26,9 +26,29 @@ night after that.
 
 ### 3. Apple, for the iPhone app
 
-An Apple Developer account, about ₹8,900 a year. Needed before the iPhone app
-can be tested on a real device or submitted. Android needs nothing equivalent
-to start.
+An Apple Developer account, about ₹8,900 a year. Needed to put the app on
+TestFlight or in the App Store, and needed for push notifications on iPhone,
+because the push entitlement cannot be signed by a free account.
+
+It is **not** needed to try the app on your own iPhone. Xcode will sign a
+build with a free personal Apple ID and install it on a phone plugged into
+this Mac. That build stops opening after seven days and is rebuilt by
+repeating the same step, which is fine for testing and no use for anybody
+else's phone. Android needs nothing equivalent to start.
+
+**Ready as of 19 October,** and two things only you can do, both once:
+
+1. In Xcode, open **Settings**, then **Accounts**, press **+** and sign in
+   with your Apple ID.
+2. Plug the iPhone into this Mac, unlock it, and press **Trust** when it
+   asks. Then turn on **Developer Mode** on the phone: Settings, Privacy &
+   Security, Developer Mode. The phone restarts.
+
+After that, tell me and I run the build. The first time it opens, the phone
+will refuse until you go to Settings, General, VPN & Device Management and
+trust your own name there. On this build reminders arrive from the phone
+itself rather than from the server, because a free Apple ID cannot carry push
+notifications; everything else is the real app.
 
 ### 4. Google verification, and why it matters more than it looks
 
@@ -100,10 +120,15 @@ Until then, publishing still works and the website simply keeps showing what
 it already has. App copy is unaffected: that is read at runtime and changes the
 next time somebody opens the app.
 
-### 7. Two dates I am holding for you
+### 7. One date I am still holding for you
 
-- **After 27 August:** I will ask you to confirm the address, phone, WhatsApp
-  and legal name once more, as you asked.
+- ~~After 27 August: confirm the address, phone, WhatsApp and legal name~~
+  **Confirmed, 4 October 2026.** Checked against what is actually published
+  rather than against this file: the `company.*` rows in the database and the
+  live pages agree exactly, and you confirmed all four unchanged — Blubanana
+  Marketing; WeWork, HSR Layout, Bengaluru 560102; +91 78000 39987; and the
+  same number on WhatsApp, which is derived from the phone rather than stored,
+  so the two cannot drift.
 - **Before launch:** a hosting decision. Vercel's free plan does not allow
   commercial use, so before real users pay, the sites move to a paid plan or
   another host. This is a ten minute change when the time comes.
@@ -111,6 +136,36 @@ next time somebody opens the app.
 ---
 
 ## My list
+
+### The iPhone app would not open, fixed 19 October
+
+Apple's newest Xcode refuses to launch any app that still starts up the old
+way, and Expo 54, which the app was built on, was the old way. The app
+installed and then closed before drawing a single screen. Only Expo 58 starts
+up the new way, so the app moved from 54 to 58, four versions in one go.
+
+Checked after the move, against the same checks run before it:
+
+- The iPhone app opens and stays open, in the simulator.
+- The web app builds, and a throwaway account with a full demo year in it
+  walked every tab at phone and desktop width, light and dark, with no errors
+  at all. Screens match the August screenshots. The account was deleted
+  afterwards and checked gone.
+- Two real faults found on the way and fixed: exporting your data could have
+  opened the share sheet on a half-written file, and on the free-signed
+  iPhone build reminders would silently never have arrived.
+- Security warnings in the build tools went from 56 to 40. None of them is in
+  what reaches a creator's phone or browser.
+
+**It is on a separate branch and not live yet.** The web app at
+`platform.blubanana.in` republishes itself from the main branch, so it goes
+live only when that branch is merged, and it then builds with Node 24 rather
+than 20, which Expo 58 requires.
+
+Two small things noticed while comparing, both already there before the move:
+the Deals page on a phone shows its title twice, the bar at the top and the
+page's own heading under it; and on the dark sign-in page at desktop width the
+blue circle behind the logo is cut off with a hard straight edge.
 
 ### Everything was tested, 22 August
 

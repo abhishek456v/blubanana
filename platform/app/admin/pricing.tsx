@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
-import { useFocusEffect } from '@react-navigation/core'
+import { useFocusEffect } from 'expo-router/react-navigation'
 import { getPricing, savePricing, type BillingTerm, type Pricing } from '@/lib/admin'
 import { formatCurrency } from '@/lib/format'
 import { FontFamily, Radius, Spacing, Typography } from '@/constants/design'

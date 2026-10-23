@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { FlatList, StyleSheet, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useFocusEffect } from '@react-navigation/core'
+import { useFocusEffect } from 'expo-router/react-navigation'
 import { Ionicons } from '@expo/vector-icons'
 import { getInvoices } from '@/lib/invoices'
 import {
@@ -149,7 +149,7 @@ export default function InvoicesScreen() {
                     across {summary.count} {summary.count === 1 ? 'invoice' : 'invoices'}
                   </Text>
                 </View>
-              ) : null
+              ) : undefined
             }
             contentContainerStyle={[styles.list, styles.listWide]}
             showsVerticalScrollIndicator={false}
@@ -199,7 +199,7 @@ export default function InvoicesScreen() {
                     across {summary.count} {summary.count === 1 ? 'invoice' : 'invoices'}
                   </Text>
                 </View>
-              ) : null
+              ) : undefined
             }
             ListEmptyComponent={
               <EmptyState

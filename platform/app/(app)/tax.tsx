@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useFocusEffect } from '@react-navigation/core'
+import { useFocusEffect } from 'expo-router/react-navigation'
 import { getDeals, paymentsInOrder, type DealWithPaymentSummary } from '@/lib/deals'
 import { getExpenses, type Expense } from '@/lib/expenses'
 import { advanceTaxSchedule, estimateTax, financialYearStart } from '@/lib/tax'

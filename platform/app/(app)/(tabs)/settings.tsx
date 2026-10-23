@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useFocusEffect } from '@react-navigation/core'
+import { useFocusEffect } from 'expo-router/react-navigation'
 import { Ionicons } from '@expo/vector-icons'
 import { File, Paths } from 'expo-file-system'
 import * as Sharing from 'expo-sharing'
@@ -201,7 +201,7 @@ export default function YouScreen() {
       } else {
         const file = new File(Paths.cache, name)
         file.create({ overwrite: true })
-        file.write(json)
+        await file.write(json)
         await Sharing.shareAsync(file.uri, { mimeType: 'application/json' })
       }
       toast('Export ready')

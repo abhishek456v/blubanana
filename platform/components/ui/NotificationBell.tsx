@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native'
 import { useRouter } from 'expo-router'
-import { useFocusEffect } from '@react-navigation/core'
+import { useFocusEffect } from 'expo-router/react-navigation'
 import { Ionicons } from '@expo/vector-icons'
 import Animated, { FadeIn } from 'react-native-reanimated'
 import { getAlertFeed } from '@/lib/alerts'

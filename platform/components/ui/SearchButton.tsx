@@ -5,7 +5,7 @@ import {
   Text,
   View,
   type StyleProp,
-  type TextInput,
+  type TextInputInstance,
   type ViewStyle,
 } from 'react-native'
 import { useRouter } from 'expo-router'
@@ -52,7 +52,7 @@ export function SearchButton({ size = 40, style }: SearchButtonProps) {
   const [results, setResults] = useState<SearchResult[]>([])
   const [searching, setSearching] = useState(false)
 
-  const inputRef = useRef<TextInput>(null)
+  const inputRef = useRef<TextInputInstance>(null)
   // Stamped per keystroke so a slow response for "ny" cannot overwrite the
   // results for "nyka" that already arrived.
   const requestId = useRef(0)

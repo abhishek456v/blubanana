@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { FlatList, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
-import { useFocusEffect } from '@react-navigation/core'
+import { useFocusEffect } from 'expo-router/react-navigation'
 import Animated, { FadeIn } from 'react-native-reanimated'
 import { getDeals, paymentsInOrder, type DealWithPaymentSummary } from '@/lib/deals'
 import { describeNudge, getRateBenchmarkNudge } from '@/lib/rateBenchmark'
@@ -726,10 +726,10 @@ export default function HomeScreen() {
         // deal, on the one screen where a creator is looking for a deal. Their
         // primary item, New deal, is the header button now.
         ListFooterComponent={
-          isDesktop ? null : <View style={styles.footerActions}>{actions}</View>
+          isDesktop ? undefined : <View style={styles.footerActions}>{actions}</View>
         }
         ListEmptyComponent={
-          isDesktop ? null : (
+          isDesktop ? undefined : (
           <EmptyState
             icon={filter === 'all' ? 'sparkles' : 'funnel-outline'}
             title={filter === 'all' ? 'No deals yet' : 'Nothing here'}

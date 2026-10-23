@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import { Linking, StyleSheet, Text, View } from 'react-native'
 import { useLocalSearchParams } from 'expo-router'
-import { useFocusEffect } from '@react-navigation/core'
+import { useFocusEffect } from 'expo-router/react-navigation'
 import { getWorkspaceSnapshot, type WorkspaceSnapshot } from '@/lib/admin'
 import { formatCurrency, formatDateLong, formatRelativeDay } from '@/lib/format'
 import { FontFamily, Radius, Spacing, Typography } from '@/constants/design'

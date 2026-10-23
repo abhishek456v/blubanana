@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
-import { useFocusEffect } from '@react-navigation/core'
+import { useFocusEffect } from 'expo-router/react-navigation'
 import { listTickets, type SupportTicket, type TicketStatus } from '@/lib/admin'
 import { formatRelativeDay } from '@/lib/format'
 import { FontFamily, Radius, Spacing, Typography } from '@/constants/design'
