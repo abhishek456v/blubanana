@@ -64,10 +64,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     overflow: 'hidden',
   },
+  // Behind the logo, against the window's own corner. Anchored to the right it
+  // was sliced by this panel's edge, a hard straight line down the page.
   glow: {
     position: 'absolute',
-    top: -140,
-    right: -140,
+    top: -200,
+    left: -200,
     width: 360,
     height: 360,
     borderRadius: 360,

@@ -3,7 +3,7 @@
 Two lists. The first is things only you can do, because they need a login, a
 bank account, a legal identity or a decision. The second is building work.
 
-Updated 19 October 2026.
+Updated 23 October 2026.
 
 ---
 
@@ -157,15 +157,15 @@ Checked after the move, against the same checks run before it:
 - Security warnings in the build tools went from 56 to 40. None of them is in
   what reaches a creator's phone or browser.
 
-**It is on a separate branch and not live yet.** The web app at
-`platform.blubanana.in` republishes itself from the main branch, so it goes
-live only when that branch is merged, and it then builds with Node 24 rather
-than 20, which Expo 58 requires.
+**Live since 23 October.** Merged into main, and `platform.blubanana.in`
+rebuilt on Node 24 without a hitch, the website alongside it.
 
-Two small things noticed while comparing, both already there before the move:
-the Deals page on a phone shows its title twice, the bar at the top and the
-page's own heading under it; and on the dark sign-in page at desktop width the
-blue circle behind the logo is cut off with a hard straight edge.
+Two small things noticed while comparing, both already there before the move,
+**both fixed 23 October:** the Deals page on a phone showed its title twice,
+the bar at the top and the page's own heading under it, and Reminders turned
+out to do the same; and on the dark sign-in page at desktop width the blue
+circle was sliced off by a hard straight edge. It now sits behind the logo in
+the corner.
 
 ### Everything was tested, 22 August
 
