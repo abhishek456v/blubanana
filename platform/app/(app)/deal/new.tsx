@@ -217,7 +217,12 @@ export default function NewDealScreen() {
       )
     }
     if (fields.notes) setNotes(fields.notes)
-    if (fields.platform) setPlatform(fields.platform)
+    // Only a platform the picker offers. The deals table's CHECK accepts exactly
+    // these, so anything else (an older extractor still said "podcast") would
+    // fail at Save, long after the moment it could have been ignored quietly.
+    if (fields.platform && PLATFORMS.some((p) => p.key === fields.platform)) {
+      setPlatform(fields.platform)
+    }
 
     if (fields.brand_name) {
       const match = brands.find(
