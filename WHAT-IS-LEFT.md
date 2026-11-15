@@ -234,6 +234,8 @@ tried again in the browser after the fix.
 - A deal's headline overwrote what you typed with a bare label: "1 Reel + 2
   Stories" showed as "Reel" in every list. A single described line now keeps
   your own words.
+- Sign-in, sign-up and forgot-password accepted any text as an email and
+  answered "Invalid login credentials". They now say the email looks wrong.
 - The website's calculators let a minus sign through, so a negative invoice
   total appeared. They now treat it as zero.
 

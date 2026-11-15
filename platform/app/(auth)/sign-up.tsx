@@ -11,6 +11,7 @@ import { useTheme } from '@/hooks/useTheme'
 import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { AuthShell } from '@/components/AuthShell'
 import { Button, PressableScale, TextField, useToast } from '@/components/ui'
+import { emailError } from '@/lib/validate'
 
 /**
  * Six, because that is what the project itself enforces.
@@ -49,6 +50,7 @@ export default function SignUpScreen() {
     const nextErrors: typeof errors = {}
     if (!name.trim()) nextErrors.name = 'What should we call you?'
     if (!email.trim()) nextErrors.email = 'Enter your email'
+    else if (emailError(email)) nextErrors.email = emailError(email) ?? undefined
     if (!password) nextErrors.password = 'Choose a password'
     else if (password.length < MIN_PASSWORD_LENGTH) {
       nextErrors.password = `At least ${MIN_PASSWORD_LENGTH} characters`

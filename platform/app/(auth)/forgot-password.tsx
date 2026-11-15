@@ -11,6 +11,7 @@ import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 import { useTheme } from '@/hooks/useTheme'
 import { AuthShell } from '@/components/AuthShell'
 import { Button, PressableScale, TextField, useToast } from '@/components/ui'
+import { emailError } from '@/lib/validate'
 
 export default function ForgotPasswordScreen() {
   const { c } = useTheme()
@@ -23,8 +24,8 @@ export default function ForgotPasswordScreen() {
   const [error, setError] = useState<string | undefined>()
 
   async function handleSendReset() {
-    if (!email.trim()) {
-      setError('Enter the email you signed up with')
+    if (!email.trim() || emailError(email)) {
+      setError(email.trim() ? (emailError(email) ?? undefined) : 'Enter the email you signed up with')
       return
     }
     setError(undefined)

@@ -10,6 +10,7 @@ import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 import { useTheme } from '@/hooks/useTheme'
 import { AuthShell } from '@/components/AuthShell'
 import { Button, PressableScale, TextField, useToast } from '@/components/ui'
+import { emailError } from '@/lib/validate'
 
 export default function SignInScreen() {
   const { c } = useTheme()
@@ -80,6 +81,7 @@ export default function SignInScreen() {
   async function handleSignIn() {
     const nextErrors: typeof errors = {}
     if (!email.trim()) nextErrors.email = 'Enter your email'
+    else if (emailError(email)) nextErrors.email = emailError(email) ?? undefined
     if (!password) nextErrors.password = 'Enter your password'
     setErrors(nextErrors)
     if (Object.keys(nextErrors).length > 0) return
@@ -103,8 +105,8 @@ export default function SignInScreen() {
   }
 
   async function handleSendCode() {
-    if (!email.trim()) {
-      setErrors({ email: 'Enter your email' })
+    if (!email.trim() || emailError(email)) {
+      setErrors({ email: email.trim() ? (emailError(email) ?? undefined) : 'Enter your email' })
       return
     }
     setErrors({})
