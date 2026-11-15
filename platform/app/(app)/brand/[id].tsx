@@ -4,7 +4,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { BrandHasDeals, deleteBrand, getBrand, updateBrand } from '@/lib/brands'
 import { getContacts, replaceContacts, type ContactDraft } from '@/lib/brandContacts'
-import { ContactsEditor } from '@/components/brand/ContactsEditor'
+import { ContactsEditor, contactsHaveErrors } from '@/components/brand/ContactsEditor'
 import { getDealsForBrand, paymentsInOrder, type DealWithPaymentSummary } from '@/lib/deals'
 import { getRatingsForBrand, summarizeRatings } from '@/lib/reputation'
 import { formatCurrency } from '@/lib/format'
@@ -44,6 +44,7 @@ export default function BrandDetailScreen() {
   const [contactDrafts, setContactDrafts] = useState<ContactDraft[]>([])
   const [notes, setNotes] = useState('')
   const [nameError, setNameError] = useState<string | undefined>()
+  const [showContactErrors, setShowContactErrors] = useState(false)
 
   // brand/deals fetched together (both depend on tables that have existed since
   // migration 001); ratings fetched separately since brand_ratings is newer
@@ -103,6 +104,15 @@ export default function BrandDetailScreen() {
       return
     }
     setNameError(undefined)
+
+    // The phone feeds the WhatsApp nudge and the email goes on invoices, so a
+    // value that cannot work is stopped here rather than found out when a
+    // reminder opens a chat with nobody.
+    if (contactsHaveErrors(contactDrafts)) {
+      setShowContactErrors(true)
+      toast('Check the highlighted contact details', { tone: 'error' })
+      return
+    }
 
     setSaving(true)
     try {
@@ -229,7 +239,11 @@ export default function BrandDetailScreen() {
         contacts change often enough that chasing the old one is how a
         payment quietly stops arriving. */}
     <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>Contacts</Text>
-    <ContactsEditor contacts={contactDrafts} onChange={setContactDrafts} />
+    <ContactsEditor
+      contacts={contactDrafts}
+      onChange={setContactDrafts}
+      showErrors={showContactErrors}
+    />
 
     <TextField
       label="Notes"

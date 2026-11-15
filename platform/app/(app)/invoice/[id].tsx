@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { deleteInvoice, getInvoice, getInvoiceLineItems } from '@/lib/invoices'
-import { getProfile } from '@/lib/profile'
+import { getWorkspaceProfile, type WorkspaceProfile } from '@/lib/profile'
 import { buildInvoiceHtml } from '@/lib/invoiceHtml'
 import { sharePdf } from '@/lib/sharePdf'
 import { getDeal } from '@/lib/deals'
@@ -37,7 +37,7 @@ export default function InvoiceDetailScreen() {
   const isWide = useIsWideScreen()
 
   const [invoice, setInvoice] = useState<Invoice | null>(null)
-  const [creator, setCreator] = useState<Creator | null>(null)
+  const [creator, setCreator] = useState<WorkspaceProfile | null>(null)
   const [lineItems, setLineItems] = useState<InvoiceLineItem[]>([])
   const [loading, setLoading] = useState(true)
   const [sharing, setSharing] = useState(false)
@@ -46,7 +46,7 @@ export default function InvoiceDetailScreen() {
   useEffect(() => {
     if (!id) return
     let active = true
-    Promise.all([getInvoice(id), getProfile()])
+    Promise.all([getInvoice(id), getWorkspaceProfile()])
       .then(([inv, profile]) => {
         if (!active) return
         setInvoice(inv)
@@ -229,6 +229,7 @@ export default function InvoiceDetailScreen() {
                 ) : null}
                 {creator.phone ? <Text style={[styles.fromMeta, { color: c.textSecondary }]}>{creator.phone}</Text> : null}
                 {creator.gstin ? <Text style={[styles.fromMeta, { color: c.textSecondary }]}>GSTIN: {creator.gstin}</Text> : null}
+                {creator.pan ? <Text style={[styles.fromMeta, { color: c.textSecondary }]}>PAN: {creator.pan}</Text> : null}
               </View>
               <View style={{ alignItems: 'flex-end' }}>
                 <Text style={[styles.invLabel, { color: c.textMuted }]}>Invoice</Text>
@@ -314,6 +315,17 @@ export default function InvoiceDetailScreen() {
                 <Text style={[styles.finalValue, { color: c.accentText }]}>{formatINR(netDue)}</Text>
               </View>
             </View>
+
+            {/* A manager who is not allowed the creator's bank details would
+                otherwise see an invoice with no way to pay and no reason why. */}
+            {creator.payment_hidden ? (
+              <View style={[styles.paymentDetails, { borderTopColor: c.border }]}>
+                <Text style={[styles.fromMeta, { color: c.textMuted }]}>
+                  The creator's payment details are not shared with you, so they are
+                  left off this invoice. Ask them before sending it on.
+                </Text>
+              </View>
+            ) : null}
 
             {creator.upi_id || creator.bank_account_number || invoice.payment_due_date ? (
               <View style={[styles.paymentDetails, { borderTopColor: c.border }]}>

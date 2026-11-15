@@ -24,6 +24,7 @@ import {
   type ProfilePhoto,
 } from '@/lib/profilePhotos'
 import { getProfile, updateProfile } from '@/lib/profile'
+import { useWorkspace } from '@/hooks/useWorkspace'
 import { sharePdf } from '@/lib/sharePdf'
 import { CARD_THEMES, resolveTheme, type CardTheme } from '@/constants/cardThemes'
 import { FontFamily, HitSlop, Radius, Spacing, Typography } from '@/constants/design'
@@ -69,6 +70,7 @@ export default function ProfileCardScreen() {
   const { isDesktop } = useBreakpoint()
   const toast = useToast()
   const confirm = useConfirm()
+  const { current, isOwner } = useWorkspace()
 
   const [loading, setLoading] = useState(true)
   const [content, setContent] = useState<CardContent | null>(null)
@@ -369,6 +371,22 @@ export default function ProfileCardScreen() {
       />
     </>
   )
+
+  // The card is the creator's own media kit: her photos, her theme, her name.
+  // A manager has none of those in this workspace, and building one from the
+  // manager's profile would put the wrong person on a document sent to a brand.
+  if (current && !isOwner) {
+    return (
+      <ModalSheet title="Rate card">
+        <View style={styles.content}>
+          <Text style={[styles.note, { color: c.textSecondary }]}>
+            The rate card belongs to the creator, who builds and sends it from their
+            own account.
+          </Text>
+        </View>
+      </ModalSheet>
+    )
+  }
 
   return (
     <ModalSheet title="Rate card" wide>

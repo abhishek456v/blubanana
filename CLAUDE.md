@@ -39,9 +39,20 @@ These were settled during the November 2026 QA pass. Break one and figures on di
 - **Dates:** turn a `Date` into a stored day with `toDateString(date)` and read one back with `parseLocalDate`, both in `platform/lib/format.ts`. `toISOString().split('T')[0]` is a day early before 5:30 in the morning in India. `formatDate` adds the year whenever the date is not in the current one.
 - **`Figure` counts bare numbers up in their own decimal places.** Pass `format` only when the number needs dressing (currency, a suffix); never pass `String`.
 
+## Workspaces, managers and whose details print
+
+A person can belong to several workspaces (their own, plus any they manage). The database works in exactly one at a time.
+
+- **`auth_active_workspace_id()`** (migration 052) is the chosen workspace (`profiles.active_workspace_id`) if an active membership still backs it, else the one they own, else the oldest. All four `auth_*workspace_ids*` helpers are narrowed to it, so every policy and masking view follows. Do not add a policy that reads `memberships` directly.
+- **`getWorkspaceId()`** asks the database for it. Never take "the earliest membership" in the client. `switchWorkspace()` stores the choice and bumps a version; the signed-in layout is keyed on it, so screens remount and re-read. `useWorkspace()` gives `choices`, `isOwner`, `switchTo`.
+- **`claim_pending_invites()`** moves a newly invited person into the workspace they were invited to only if their own is empty. The layout waits for it (4 s cap) before rendering.
+- **Owners' things stay with owners.** A manager does not see Team, Plan and billing, Billing details or the Rate card, and the trial banner is replaced by a read-only note when the creator's plan lapses. The rate card is the creator's own media kit (their photos, theme, name).
+- **Never print `getProfile()` on an invoice.** That is the viewer's own row. Use `getWorkspaceProfile()` (RPC `workspace_owner_profile`, migration 053): the workspace owner's details, with phone/address/GSTIN/PAN released to Invoices or Bank-and-billing members and UPI/account/IFSC to Bank-and-billing members only. `payment_hidden` / `invoicing_hidden` say what was withheld.
+- **Format checks live in `lib/validate.ts`** (GSTIN with checksum, PAN, IFSC, account, UPI, phone, email). Profile, onboarding, brand contacts and the invoice form use them. `profiles.pan` exists (053, constraint added `not valid` so old rows are untouched). The seed computes valid GSTIN check characters.
+
 ## Database changes
 
-`supabase db push` is blocked, so migrations are applied through the Management API with the keychain token (`POST https://api.supabase.com/v1/projects/bbdvgeavtxfxykhiafbp/database/query`). A migration file in the repo is therefore not proof it ran: read the result back. `050` and `051` were applied on 15 Nov 2026.
+`supabase db push` is blocked, so migrations are applied through the Management API with the keychain token (`POST https://api.supabase.com/v1/projects/bbdvgeavtxfxykhiafbp/database/query`). A migration file in the repo is therefore not proof it ran: read the result back. `050` and `051` were applied on 15 Nov 2026, and `052` and `053` the same day.
 
 ## The demo account
 

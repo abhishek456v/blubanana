@@ -202,6 +202,35 @@ tried again in the browser after the fix.
 - A mistyped address showed a blank page with no way out. There is now a
   "Nothing here" page with a button back to the dashboard.
 
+**Managers and billing details (found when I invited a second account as a manager)**
+
+- A manager's screens mixed their own empty workspace with yours, and anything
+  they added was filed in their own. The app now works in one workspace at a
+  time. Somebody who manages your work lands in it, and anybody who belongs to
+  more than one picks between them on the You screen. Verified: the manager saw
+  your 34 deals and nothing of their own, and the switch back worked.
+- A manager opening your invoice saw (and printed) their own GSTIN, UPI and
+  bank account as if they were yours. Invoices now always carry the creator's
+  details. A manager only gets the bank and UPI lines if you allowed "Bank and
+  billing details"; otherwise the invoice says they are not shared.
+- A manager's trial banner counted your deals against their own trial, and the
+  Team screen called them the creator. Both fixed. Managers no longer see Team,
+  Plan and billing, Billing details or the Rate card, which are yours.
+- A deal list for a manager who may not see rates said "₹0 in total". It now
+  shows only the count.
+- Billing details were saved however they were typed: a GSTIN of "GARBAGE", a
+  2-digit account number. That switched GST on for every invoice. Every
+  billing field, phone number and email is now checked as you type it in, in
+  onboarding, your profile, the brand form and the invoice form. GSTINs are
+  checked against their check character, and a PAN against the one inside the
+  GSTIN.
+- There was nowhere to enter your address (a tax invoice must carry it) or PAN
+  (Settings promised it). Both are now on your profile, and the PAN prints on
+  the invoice and the PDF.
+- A phone typed with a leading 0 made a broken WhatsApp link.
+- The demo account's invented GSTINs would fail the new check. The seed now
+  works out valid ones; the live demo keeps the old ones until it is re-seeded.
+
 **Smaller faults**
 
 - A deal billed on a shared invoice still offered "Create invoice", and
@@ -215,9 +244,9 @@ show the fee as a line item. Their payment schedules were made before the
 rule changed, so each shows a line saying part of the deal is not scheduled
 yet. That is accurate, and running the demo seed again clears it.
 
-**Still to test in this pass:** a brand-new account from sign-up onwards, the
-admin dashboard, the website, and whether one account can reach another's
-data.
+**Still to test in this pass:** creating deals, invoices and expenses on a
+brand-new account, the admin dashboard, the website, and whether one account
+can reach another's data.
 
 ### The iPhone app would not open, fixed 19 October
 

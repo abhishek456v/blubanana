@@ -8,6 +8,7 @@ import { ContentMaxWidth, Spacing } from '@/constants/design'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 import { useTheme } from '@/hooks/useTheme'
 import { ModalSheet } from '@/components/ModalSheet'
+import { emailError, phoneError } from '@/lib/validate'
 import { Button, TextField, useToast } from '@/components/ui'
 
 export default function NewBrandScreen() {
@@ -27,6 +28,8 @@ export default function NewBrandScreen() {
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
   const [nameError, setNameError] = useState<string | undefined>()
+  const [phoneProblem, setPhoneProblem] = useState<string | null>(null)
+  const [emailProblem, setEmailProblem] = useState<string | null>(null)
 
   async function handleSave() {
     if (!name.trim()) {
@@ -34,6 +37,14 @@ export default function NewBrandScreen() {
       return
     }
     setNameError(undefined)
+
+    // The phone feeds the WhatsApp nudge and the email goes on invoices, so a
+    // value that cannot work is stopped here.
+    const badPhone = phoneError(contactPhone)
+    const badEmail = emailError(contactEmail)
+    setPhoneProblem(badPhone)
+    setEmailProblem(badEmail)
+    if (badPhone || badEmail) return
 
     setSaving(true)
     try {
@@ -111,7 +122,11 @@ export default function NewBrandScreen() {
               label="Phone"
               placeholder="+91 98765 43210"
               value={contactPhone}
-              onChangeText={setContactPhone}
+              onChangeText={(value) => {
+                setContactPhone(value)
+                setPhoneProblem(null)
+              }}
+              error={phoneProblem}
               keyboardType="phone-pad"
               autoComplete="tel"
               hint="Used for the one-tap WhatsApp payment nudge"
@@ -122,7 +137,11 @@ export default function NewBrandScreen() {
               label="Email"
               placeholder="poc@brand.com"
               value={contactEmail}
-              onChangeText={setContactEmail}
+              onChangeText={(value) => {
+                setContactEmail(value)
+                setEmailProblem(null)
+              }}
+              error={emailProblem}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}

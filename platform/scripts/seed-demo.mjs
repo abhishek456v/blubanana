@@ -101,6 +101,20 @@ const iso = (d) => d.toISOString().slice(0, 10)
 // Invented brands. Plausible Indian D2C names, none of them a real company —
 // which is the entire point: a screenshot on a public site must not imply a
 // client relationship, and must not put anyone's real rate on the internet.
+// A GSTIN ends in a check character computed from the other fourteen, and the
+// app now rejects one that does not match (lib/validate.ts). The numbers below
+// are invented, so their last character is worked out here rather than guessed:
+// a demo brand the app itself calls invalid is a poor demo.
+const BASE36 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+function withCheckChar(gstin) {
+  let sum = 0
+  for (let i = 0; i < 14; i += 1) {
+    const product = BASE36.indexOf(gstin[i]) * (i % 2 === 0 ? 1 : 2)
+    sum += Math.floor(product / 36) + (product % 36)
+  }
+  return gstin.slice(0, 14) + BASE36[(36 - (sum % 36)) % 36]
+}
+
 const BRANDS = [
   ['Lumora Skincare',   'Ritika Sharma',  'ritika@lumora.in',      '29AABCL1234M1Z8', '29', 'Bengaluru, Karnataka'],
   ['Tarai Coffee Co.',  'Karan Mehta',    'karan@taraicoffee.in',  '07AAFCT5678K1Z2', '07', 'New Delhi'],
@@ -206,7 +220,7 @@ await rest(`profiles?id=eq.${user.id}`, {
   follower_count: 184000,
   niche: 'Lifestyle & travel',
   address: 'Indiranagar, Bengaluru, Karnataka 560038',
-  gstin: '29ABCDE1234F1Z5',
+  gstin: withCheckChar('29ABCDE1234F1Z5'),
   upi_id: 'aanya@okhdfcbank',
   bank_account_number: '50100234567890',
   ifsc_code: 'HDFC0001234',
@@ -216,7 +230,13 @@ await rest(`profiles?id=eq.${user.id}`, {
 
 const brands = await insert(
   'brands',
-  BRANDS.map(([name, , , gstin, state_code, address]) => ({ workspace_id, name, gstin, state_code, address }))
+  BRANDS.map(([name, , , gstin, state_code, address]) => ({
+    workspace_id,
+    name,
+    gstin: withCheckChar(gstin),
+    state_code,
+    address,
+  }))
 )
 await insert(
   'brand_contacts',
@@ -476,7 +496,7 @@ invoiceable.forEach((deal, i) => {
     brand_name: brand.name,
     brand_contact_person: source[1],
     brand_contact_email: source[2],
-    brand_gstin: source[3],
+    brand_gstin: withCheckChar(source[3]),
     brand_address: source[5],
     place_of_supply_code: state,
     supplier_address: 'Indiranagar, Bengaluru, Karnataka 560038',

@@ -3,6 +3,15 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } fr
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { getProfile, updateProfile } from '@/lib/profile'
+import {
+  accountNumberError,
+  gstinError,
+  ifscError,
+  panError,
+  phoneError,
+  tidyId,
+  upiError,
+} from '@/lib/validate'
 import { ContentMaxWidth, FontFamily, Spacing, Typography } from '@/constants/design'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 import { useTheme } from '@/hooks/useTheme'
@@ -25,7 +34,13 @@ export default function EditProfileScreen() {
   const [bankAccount, setBankAccount] = useState('')
   const [ifscCode, setIfscCode] = useState('')
   const [gstin, setGstin] = useState('')
+  const [pan, setPan] = useState('')
+  const [address, setAddress] = useState('')
   const [nameError, setNameError] = useState<string | undefined>()
+  // One message per field, cleared as that field is edited, so a creator fixing
+  // the GSTIN is not left looking at a red PAN she has not touched yet.
+  const [errors, setErrors] = useState<Record<string, string | null>>({})
+  const clear = (key: string) => setErrors((prev) => (prev[key] ? { ...prev, [key]: null } : prev))
 
   useEffect(() => {
     let active = true
@@ -40,6 +55,8 @@ export default function EditProfileScreen() {
         setBankAccount(profile.bank_account_number ?? '')
         setIfscCode(profile.ifsc_code ?? '')
         setGstin(profile.gstin ?? '')
+        setPan(profile.pan ?? '')
+        setAddress(profile.address ?? '')
       })
       .catch(() => {
         if (active) toast('Could not load your profile', { tone: 'error' })
@@ -56,23 +73,41 @@ export default function EditProfileScreen() {
   }, [])
 
   async function handleSave() {
-    if (!name.trim()) {
-      setNameError('Enter your name')
+    // All of it at once: stopping at the name hid the billing errors below it
+    // until the next press, which read as the form having only one fault.
+    const missingName = !name.trim()
+    setNameError(missingName ? 'Enter your name' : undefined)
+
+    // Everything here is optional, but what is filled in has to be possible.
+    // Saved as typed, a bad GSTIN switched "Charge GST" on for every invoice
+    // and went out to a brand with the creator's name on it.
+    const found = {
+      phone: phoneError(phone),
+      gstin: gstinError(gstin),
+      pan: panError(pan, gstin),
+      upi: upiError(upiId),
+      account: accountNumberError(bankAccount),
+      ifsc: ifscError(ifscCode),
+    }
+    setErrors(found)
+    if (missingName || Object.values(found).some(Boolean)) {
+      toast('Check the highlighted details', { tone: 'error' })
       return
     }
-    setNameError(undefined)
 
     setSaving(true)
     try {
       await updateProfile({
         name: name.trim(),
         phone: phone.trim() || null,
+        address: address.trim() || null,
         follower_count: followerCount.trim() ? parseInt(followerCount, 10) : null,
         niche: niche.trim() || null,
         upi_id: upiId.trim() || null,
-        bank_account_number: bankAccount.trim() || null,
-        ifsc_code: ifscCode.trim() || null,
-        gstin: gstin.trim() || null,
+        bank_account_number: bankAccount.replace(/\s+/g, '') || null,
+        ifsc_code: tidyId(ifscCode) || null,
+        gstin: tidyId(gstin) || null,
+        pan: tidyId(pan) || null,
       })
       toast('Profile saved', { tone: 'success' })
       router.back()
@@ -125,7 +160,11 @@ export default function EditProfileScreen() {
               label="Phone"
               placeholder="+91 98765 43210"
               value={phone}
-              onChangeText={setPhone}
+              onChangeText={(value) => {
+                setPhone(value)
+                clear('phone')
+              }}
+              error={errors.phone}
               keyboardType="phone-pad"
               autoComplete="tel"
             />
@@ -155,20 +194,53 @@ export default function EditProfileScreen() {
             </View>
 
             <TextField
+              label="Address"
+              placeholder="Flat, street, city, State, PIN"
+              value={address}
+              onChangeText={setAddress}
+              multiline
+              autoComplete="street-address"
+              hint="A tax invoice has to carry the supplier's address"
+            />
+
+            <TextField
               label="GSTIN"
               placeholder="22AAAAA0000A1Z5"
               value={gstin}
-              onChangeText={(value) => setGstin(value.toUpperCase())}
+              onChangeText={(value) => {
+                setGstin(value.toUpperCase())
+                clear('gstin')
+                clear('pan')
+              }}
+              error={errors.gstin}
               autoCapitalize="characters"
               autoCorrect={false}
               hint="Leave blank if you're not GST registered"
             />
 
             <TextField
+              label="PAN"
+              placeholder="ABCDE1234F"
+              value={pan}
+              onChangeText={(value) => {
+                setPan(value.toUpperCase())
+                clear('pan')
+              }}
+              error={errors.pan}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              hint="Printed on your invoices"
+            />
+
+            <TextField
               label="UPI ID"
               placeholder="you@upi"
               value={upiId}
-              onChangeText={setUpiId}
+              onChangeText={(value) => {
+                setUpiId(value)
+                clear('upi')
+              }}
+              error={errors.upi}
               autoCapitalize="none"
               autoCorrect={false}
             />
@@ -177,7 +249,11 @@ export default function EditProfileScreen() {
               label="Account number"
               placeholder="Bank account number"
               value={bankAccount}
-              onChangeText={setBankAccount}
+              onChangeText={(value) => {
+                setBankAccount(value)
+                clear('account')
+              }}
+              error={errors.account}
               keyboardType="number-pad"
             />
 
@@ -185,7 +261,11 @@ export default function EditProfileScreen() {
               label="IFSC"
               placeholder="HDFC0001234"
               value={ifscCode}
-              onChangeText={(value) => setIfscCode(value.toUpperCase())}
+              onChangeText={(value) => {
+                setIfscCode(value.toUpperCase())
+                clear('ifsc')
+              }}
+              error={errors.ifsc}
               autoCapitalize="characters"
               autoCorrect={false}
             />

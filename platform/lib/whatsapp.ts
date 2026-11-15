@@ -139,6 +139,9 @@ function normalizePhone(phone: string): string | null {
   const digits = phone.replace(/\D/g, '')
   if (!digits) return null
   if (digits.length === 10) return `91${digits}`
+  // 098450 12345: the trunk 0 people dial before a mobile number at home. wa.me
+  // wants the country code and nothing else, so it goes.
+  if (digits.length === 11 && digits.startsWith('0')) return `91${digits.slice(1)}`
   return digits
 }
 

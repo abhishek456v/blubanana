@@ -256,7 +256,7 @@ export function buildInvoiceHtml(
         <span class="name">${esc(creator.name)}</span>
       </div>
       <div class="from">
-        Content creator${supplierAddress ? `<br/>${esc(supplierAddress).replace(/\n/g, '<br/>')}` : ''}${creator.phone ? `<br/>${esc(creator.phone)}` : ''}${creator.gstin ? `<br/>GSTIN ${esc(creator.gstin)}` : ''}
+        Content creator${supplierAddress ? `<br/>${esc(supplierAddress).replace(/\n/g, '<br/>')}` : ''}${creator.phone ? `<br/>${esc(creator.phone)}` : ''}${creator.gstin ? `<br/>GSTIN ${esc(creator.gstin)}` : ''}${creator.pan ? `<br/>PAN ${esc(creator.pan)}` : ''}
       </div>
     </div>
     <div class="doc">

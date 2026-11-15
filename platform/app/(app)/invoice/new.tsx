@@ -13,9 +13,10 @@ import {
 } from '@/lib/deals'
 import { createInvoice, getInvoicedDealIds, type LineItemInput } from '@/lib/invoices'
 import { brandContact, getBrands } from '@/lib/brands'
-import { getProfile } from '@/lib/profile'
+import { getWorkspaceProfile } from '@/lib/profile'
 import { GST_STATE_OPTIONS, stateCodeFromGstin } from '@/constants/gst'
 import { formatCurrency, formatDate } from '@/lib/format'
+import { emailError, gstinError, tidyId } from '@/lib/validate'
 import { amountInWords } from '@/lib/invoiceHtml'
 import {
   ContentMaxWidth,
@@ -124,6 +125,8 @@ export default function NewInvoiceScreen() {
   const [brandName, setBrandName] = useState('')
   const [contactPerson, setContactPerson] = useState('')
   const [contactEmail, setContactEmail] = useState('')
+  const [emailProblem, setEmailProblem] = useState<string | null>(null)
+  const [gstinProblem, setGstinProblem] = useState<string | null>(null)
   const [lines, setLines] = useState<DraftLine[]>([])
   const [gstApplicable, setGstApplicable] = useState(false)
   const [dueDate, setDueDate] = useState<string | null>(null)
@@ -197,7 +200,7 @@ export default function NewInvoiceScreen() {
     // from the profile instead of asking a question they can get wrong. Read
     // for every invoice, not only one raised from a deal: an ad hoc invoice
     // still has to print the creator's own GSTIN and address.
-    getProfile()
+    getWorkspaceProfile()
       .then((profile) => {
         setGstApplicable(Boolean(profile.gstin))
         setSupplierGstin(profile.gstin)
@@ -339,6 +342,18 @@ export default function NewInvoiceScreen() {
     // one. Counting lines stopped being the test once a deal with ad rights
     // put two lines on its own invoice: that invoice was saved against no
     // deal, so the deal went on offering to create it again.
+    // Still nothing is mandatory, but what is typed has to be possible. An
+    // email that cannot receive the invoice, or a GSTIN that fails its own
+    // check, is a document a finance team bounces; better stopped here.
+    const badEmail = emailError(contactEmail)
+    const badGstin = gstApplicable ? gstinError(brandGstin) : null
+    setEmailProblem(badEmail)
+    setGstinProblem(badGstin)
+    if (badEmail || badGstin) {
+      toast('Check the highlighted details', { tone: 'error' })
+      return
+    }
+
     const dealIds = new Set(items.map((item) => item.deal_id).filter(Boolean) as string[])
 
     setSaving(true)
@@ -352,7 +367,7 @@ export default function NewInvoiceScreen() {
         brand_contact_email: contactEmail.trim() || null,
         items,
         gst_applicable: gstApplicable,
-        brand_gstin: brandGstin.trim() || null,
+        brand_gstin: tidyId(brandGstin) || null,
         brand_address: brandAddress.trim() || null,
         place_of_supply_code: placeOfSupply,
         supplier_gstin: supplierGstin,
@@ -420,7 +435,11 @@ export default function NewInvoiceScreen() {
               label="Email"
               placeholder="finance@brand.com"
               value={contactEmail}
-              onChangeText={setContactEmail}
+              onChangeText={(value) => {
+                setContactEmail(value)
+                setEmailProblem(null)
+              }}
+              error={emailProblem}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -556,12 +575,14 @@ export default function NewInvoiceScreen() {
                     placeholder="27AABCU9603R1ZM"
                     value={brandGstin}
                     onChangeText={(next) => {
-                      setBrandGstin(next)
+                      setBrandGstin(next.toUpperCase())
+                      setGstinProblem(null)
                       // The first two characters are the State code, so a
                       // pasted GSTIN answers the place-of-supply question too.
                       const derived = stateCodeFromGstin(next)
                       if (derived) setPlaceOfSupply(derived)
                     }}
+                    error={gstinProblem}
                     autoCapitalize="characters"
                   />
 

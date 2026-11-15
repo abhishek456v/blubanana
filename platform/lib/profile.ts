@@ -14,6 +14,32 @@ export async function getProfile(): Promise<Creator> {
   return data as Creator
 }
 
+/**
+ * What an invoice or a response to "who is this for" is built from: the profile
+ * of the person who OWNS the workspace being worked in.
+ *
+ * Not the same as getProfile() the moment somebody manages another creator's
+ * work. Then getProfile() is the manager's own row, and printing it on the
+ * creator's invoice put the wrong GSTIN, the wrong UPI id and the wrong bank
+ * account on a document going to a brand (found 15 Nov 2026).
+ *
+ * Fields the signed-in member is not allowed to see arrive as null, and the two
+ * flags say which group was withheld (migration 053). The owner is always
+ * allowed everything, so for a solo creator this is exactly getProfile().
+ */
+export interface WorkspaceProfile extends Creator {
+  invoicing_hidden: boolean
+  payment_hidden: boolean
+}
+
+export async function getWorkspaceProfile(): Promise<WorkspaceProfile> {
+  const { data, error } = await supabase.rpc('workspace_owner_profile')
+  if (error) throw error
+  const row = ((data ?? []) as WorkspaceProfile[])[0]
+  if (!row) throw new Error('No profile found for this workspace')
+  return row
+}
+
 export async function updateProfile(
   fields: Partial<
     Pick<
@@ -25,6 +51,8 @@ export async function updateProfile(
       | 'bank_account_number'
       | 'ifsc_code'
       | 'gstin'
+      | 'pan'
+      | 'address'
       | 'niche'
       | 'card_theme'
       | 'card_photo_id'

@@ -16,6 +16,7 @@ import {
   sendTestAsync,
 } from '@/lib/notifications'
 import { useAuth } from '@/hooks/useAuth'
+import { useWorkspace } from '@/hooks/useWorkspace'
 import { useBreakpoint } from '@/hooks/useBreakpoint'
 import { useTheme, useThemeMode, type ThemeMode } from '@/hooks/useTheme'
 import { BrandAvatar } from '@/components/BrandAvatar'
@@ -63,6 +64,16 @@ export default function YouScreen() {
   const toast = useToast()
   const confirm = useConfirm()
   const params = useLocalSearchParams<{ social?: string; detail?: string }>()
+  const { choices, current, isOwner, switchTo } = useWorkspace()
+
+  async function handleSwitch(workspaceId: string, label: string) {
+    try {
+      await switchTo(workspaceId)
+      toast(`Now working in ${label}`)
+    } catch {
+      toast('Could not switch workspace', { tone: 'error' })
+    }
+  }
 
   /**
    * What the OAuth redirect came back saying.
@@ -236,6 +247,47 @@ export default function YouScreen() {
 
         <View style={isDesktop ? styles.columns : styles.stack}>
           <View style={isDesktop ? styles.column : undefined}>
+        {/* Only for somebody who belongs to more than one, which is a manager
+            or a creator who also manages a friend. Everyone else has nothing
+            to choose between, and a one-option picker is clutter. */}
+        {choices.length > 1 ? (
+          <Card style={styles.appearanceCard}>
+            <Text style={[styles.cardTitle, { color: c.textPrimary }]}>Workspace</Text>
+            <Text style={[styles.cardHint, { color: c.textSecondary }]}>
+              {current && current.role !== 'owner'
+                ? 'You are managing somebody else\'s work. Deals, brands and invoices below are theirs.'
+                : 'Everything on screen is your own work.'}
+            </Text>
+            {choices.map((choice) => {
+              const label =
+                choice.role === 'owner'
+                  ? 'Your own'
+                  : `${choice.ownerName ?? 'A creator'}'s`
+              return (
+                <ListRow
+                  key={choice.workspaceId}
+                  title={label}
+                  subtitle={
+                    choice.isActive
+                      ? 'Working here now'
+                      : choice.role === 'owner'
+                        ? 'Your workspace'
+                        : 'You manage this'
+                  }
+                  leading={
+                    <Ionicons
+                      name={choice.isActive ? 'radio-button-on' : 'radio-button-off'}
+                      size={20}
+                      color={choice.isActive ? c.accent : c.textMuted}
+                    />
+                  }
+                  onPress={choice.isActive ? undefined : () => handleSwitch(choice.workspaceId, label)}
+                />
+              )
+            })}
+          </Card>
+        ) : null}
+
         <Card onPress={() => router.push('/(app)/profile/edit' as never)} style={styles.profileCard}>
           <BrandAvatar name={name} size={52} />
           <View style={styles.profileText}>
@@ -337,18 +389,22 @@ export default function YouScreen() {
         ) : null}
 
         <View style={styles.links}>
-          <ListRow
-            title="Billing details"
-            subtitle="PAN, GSTIN and bank details for invoices"
-            leading={
-              <View style={[styles.linkIcon, { backgroundColor: c.accentLight }]}>
-                <Ionicons name="card" size={18} color={c.accent} />
-              </View>
-            }
-            showChevron
-            onPress={() => router.push('/(app)/profile/edit' as never)}
-            index={0}
-          />
+          {/* A manager works in somebody else's workspace: the plan, the team and
+              the billing details on an invoice are the creator's to change. */}
+          {isOwner ? (
+            <ListRow
+              title="Billing details"
+              subtitle="PAN, GSTIN and bank details for invoices"
+              leading={
+                <View style={[styles.linkIcon, { backgroundColor: c.accentLight }]}>
+                  <Ionicons name="card" size={18} color={c.accent} />
+                </View>
+              }
+              showChevron
+              onPress={() => router.push('/(app)/profile/edit' as never)}
+              index={0}
+            />
+          ) : null}
           <ListRow
             title="Expenses"
             subtitle="What the work cost, for your Year report"
@@ -373,18 +429,20 @@ export default function YouScreen() {
             onPress={() => router.push('/(app)/tax' as never)}
             index={2}
           />
-          <ListRow
-            title="Plan and billing"
-            subtitle="What you are on, and what it costs"
-            leading={
-              <View style={[styles.linkIcon, { backgroundColor: c.accentLight }]}>
-                <Ionicons name="card-outline" size={18} color={c.accent} />
-              </View>
-            }
-            showChevron
-            onPress={() => router.push('/(app)/plans' as never)}
-            index={3}
-          />
+          {isOwner ? (
+            <ListRow
+              title="Plan and billing"
+              subtitle="What you are on, and what it costs"
+              leading={
+                <View style={[styles.linkIcon, { backgroundColor: c.accentLight }]}>
+                  <Ionicons name="card-outline" size={18} color={c.accent} />
+                </View>
+              }
+              showChevron
+              onPress={() => router.push('/(app)/plans' as never)}
+              index={3}
+            />
+          ) : null}
           <ListRow
             title="Rate card"
             subtitle="What you charge, built from your deals"
@@ -397,18 +455,20 @@ export default function YouScreen() {
             onPress={() => router.push('/(app)/profile/card' as never)}
             index={4}
           />
-          <ListRow
-            title="Team"
-            subtitle="Invite a manager, and choose what they see"
-            leading={
-              <View style={[styles.linkIcon, { backgroundColor: c.accentLight }]}>
-                <Ionicons name="people" size={18} color={c.accent} />
-              </View>
-            }
-            showChevron
-            onPress={() => router.push('/(app)/team' as never)}
-            index={5}
-          />
+          {isOwner ? (
+            <ListRow
+              title="Team"
+              subtitle="Invite a manager, and choose what they see"
+              leading={
+                <View style={[styles.linkIcon, { backgroundColor: c.accentLight }]}>
+                  <Ionicons name="people" size={18} color={c.accent} />
+                </View>
+              }
+              showChevron
+              onPress={() => router.push('/(app)/team' as never)}
+              index={5}
+            />
+          ) : null}
           {/* Above Import and Export because it is the row somebody is looking
               for when something has already gone wrong, and that is not the
               moment to be reading a list. */}

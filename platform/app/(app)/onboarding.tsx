@@ -12,6 +12,14 @@ import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated'
 import { updateProfile } from '@/lib/profile'
+import {
+  accountNumberError,
+  gstinError,
+  ifscError,
+  phoneError,
+  tidyId,
+  upiError,
+} from '@/lib/validate'
 import { dismissOnboarding } from '@/lib/onboarding'
 import {
   AuthFormMaxWidth,
@@ -67,13 +75,34 @@ export default function OnboardingScreen() {
   const [bankAccount, setBankAccount] = useState('')
   const [ifscCode, setIfscCode] = useState('')
   const [gstin, setGstin] = useState('')
+  // One message per field, cleared as that field is edited.
+  const [errors, setErrors] = useState<Record<string, string | null>>({})
+  const clear = (key: string) => setErrors((prev) => (prev[key] ? { ...prev, [key]: null } : prev))
 
   async function leave() {
     await dismissOnboarding()
     router.replace('/(app)/(tabs)/' as never)
   }
 
+  function handleNext() {
+    const found = { phone: phoneError(phone) }
+    setErrors(found)
+    if (!found.phone) setStep('money')
+  }
+
   async function handleFinish() {
+    // Skipping is always allowed, but what is typed has to be possible: a
+    // GSTIN of "GARBAGE" used to be saved here, and switched GST on for every
+    // invoice she would ever raise.
+    const found = {
+      upi: upiError(upiId),
+      account: accountNumberError(bankAccount),
+      ifsc: ifscError(ifscCode),
+      gstin: gstinError(gstin),
+    }
+    setErrors(found)
+    if (Object.values(found).some(Boolean)) return
+
     setSaving(true)
     try {
       await updateProfile({
@@ -82,8 +111,8 @@ export default function OnboardingScreen() {
         follower_count: followers.trim() ? parseInt(followers, 10) : null,
         upi_id: upiId.trim() || null,
         bank_account_number: bankAccount.trim() || null,
-        ifsc_code: ifscCode.trim() || null,
-        gstin: gstin.trim().toUpperCase() || null,
+        ifsc_code: tidyId(ifscCode) || null,
+        gstin: tidyId(gstin) || null,
       })
       toast('You are set up', { tone: 'success' })
     } catch {
@@ -162,13 +191,17 @@ export default function OnboardingScreen() {
                   label="Phone"
                   placeholder="For payment reminders you send"
                   value={phone}
-                  onChangeText={setPhone}
+                  onChangeText={(t) => {
+                    setPhone(t)
+                    clear('phone')
+                  }}
+                  error={errors.phone}
                   keyboardType="phone-pad"
                   autoComplete="tel"
                 />
               </View>
 
-              <Button label="Next" fullWidth onPress={() => setStep('money')} />
+              <Button label="Next" fullWidth onPress={handleNext} />
             </Animated.View>
           ) : (
             <Animated.View entering={FadeInRight.duration(Duration.slow)} style={styles.body}>
@@ -180,7 +213,11 @@ export default function OnboardingScreen() {
                   label="UPI ID"
                   placeholder="you@upi"
                   value={upiId}
-                  onChangeText={setUpiId}
+                  onChangeText={(t) => {
+                    setUpiId(t)
+                    clear('upi')
+                  }}
+                  error={errors.upi}
                   autoCapitalize="none"
                   autoCorrect={false}
                 />
@@ -188,14 +225,22 @@ export default function OnboardingScreen() {
                   label="Account number"
                   placeholder="Bank account for larger deals"
                   value={bankAccount}
-                  onChangeText={(t) => setBankAccount(t.replace(/[^\d]/g, ''))}
+                  onChangeText={(t) => {
+                    setBankAccount(t.replace(/[^\d]/g, ''))
+                    clear('account')
+                  }}
+                  error={errors.account}
                   keyboardType="number-pad"
                 />
                 <TextField
                   label="IFSC"
                   placeholder="The branch code on your passbook"
                   value={ifscCode}
-                  onChangeText={(t) => setIfscCode(t.toUpperCase())}
+                  onChangeText={(t) => {
+                    setIfscCode(t.toUpperCase())
+                    clear('ifsc')
+                  }}
+                  error={errors.ifsc}
                   autoCapitalize="characters"
                   autoCorrect={false}
                 />
@@ -203,7 +248,11 @@ export default function OnboardingScreen() {
                   label="GSTIN"
                   placeholder="Only if you are GST-registered"
                   value={gstin}
-                  onChangeText={(t) => setGstin(t.toUpperCase())}
+                  onChangeText={(t) => {
+                    setGstin(t.toUpperCase())
+                    clear('gstin')
+                  }}
+                  error={errors.gstin}
                   autoCapitalize="characters"
                   autoCorrect={false}
                   hint="Registered creators add 18% GST on invoices. Leave blank if unsure."

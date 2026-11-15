@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { TRIAL_DEAL_LIMIT } from '@/lib/subscription'
 import { useEntitlement } from '@/hooks/useEntitlement'
+import { useWorkspace } from '@/hooks/useWorkspace'
 import { FontFamily, Radius, Spacing, Typography } from '@/constants/design'
 import { useTheme } from '@/hooks/useTheme'
 import { Button, PressableScale } from '@/components/ui'
@@ -22,8 +23,26 @@ export function SubscriptionBanner() {
   const { c } = useTheme()
   const router = useRouter()
   const { canWrite, isTrialing, trialDaysLeft, dealsLeft, loading } = useEntitlement()
+  const { isOwner } = useWorkspace()
 
   if (loading) return null
+
+  // A manager is in somebody else's workspace. Its plan is the creator's to
+  // buy, so there is nothing for a manager to act on: no countdown to nag with,
+  // and no button that would start a purchase for the wrong account.
+  if (!isOwner) {
+    if (canWrite) return null
+    return (
+      <View style={[styles.stop, { backgroundColor: c.dangerLight }]}>
+        <Text style={[styles.stopTitle, { color: c.textPrimary }]}>
+          This workspace is read-only
+        </Text>
+        <Text style={[styles.stopBody, { color: c.textSecondary }]}>
+          Adding and editing resume once the creator subscribes. Ask them to renew.
+        </Text>
+      </View>
+    )
+  }
 
   // ── Read-only ─────────────────────────────────────────────────────────────
   // §3 allows exactly two offers here: buy a plan, and export. Anything else

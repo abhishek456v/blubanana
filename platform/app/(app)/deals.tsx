@@ -116,10 +116,18 @@ export default function DealsScreen() {
     })
   }, [deals, filter, query, attentionIds])
 
-  const total = useMemo(
-    () => visible.reduce((sum, deal) => sum + (dealValue(deal) ?? 0), 0),
-    [visible]
-  )
+  // Null when any rate is withheld from this member (§7). Adding the rest and
+  // calling it the total printed "₹0 in total" over thirty-four deals for a
+  // manager who is not allowed to see rates.
+  const total = useMemo(() => {
+    let sum = 0
+    for (const deal of visible) {
+      const value = dealValue(deal)
+      if (value === null) return null
+      sum += value
+    }
+    return sum
+  }, [visible])
 
   const columns: DataTableColumn<DealWithPaymentSummary>[] = [
     {
@@ -189,9 +197,10 @@ export default function DealsScreen() {
       // control, so this drops to the count line only.
       title={isWide ? '' : 'Deals'}
       subtitle={
-        visible.length === deals.length
-          ? `${deals.length} on record, ${formatCurrency(total)} in total`
-          : `${visible.length} of ${deals.length}, ${formatCurrency(total)} in total`
+        (visible.length === deals.length
+          ? `${deals.length} on record`
+          : `${visible.length} of ${deals.length}`) +
+        (total === null ? '' : `, ${formatCurrency(total)} in total`)
       }
       onBack={isWide ? undefined : () => router.back()}
       backLabel="Back"

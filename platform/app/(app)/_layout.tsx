@@ -1,6 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Stack } from 'expo-router'
 import { claimPendingInvites } from '@/lib/team'
+import { refreshWorkspace } from '@/lib/workspace'
+import { useWorkspace } from '@/hooks/useWorkspace'
 import { useAuth } from '@/hooks/useAuth'
 import { Typography, FontFamily, Spacing } from '@/constants/design'
 import { useTheme } from '@/hooks/useTheme'
@@ -32,6 +34,8 @@ export default function AppLayout() {
   const isWide = useIsWideScreen()
   const { session, loading, secondStepPending } = useAuth()
 
+  const { version } = useWorkspace()
+
   // Turn any invite addressed to this account into a membership.
   //
   // Here rather than in the sign-up flow because a creator can invite someone
@@ -39,11 +43,33 @@ export default function AppLayout() {
   // sign-up again to collect it. This layout mounts once per session and only
   // for a signed-in user, which is exactly the moment the check is worth.
   //
-  // Failure is swallowed on purpose: an invite that does not resolve must not
-  // stop someone reaching their own workspace.
+  // Claiming can move her into the workspace she was invited to (migration
+  // 052), so nothing renders until it has answered: a screen that mounted
+  // first would read her own, empty workspace, and show it as if that were
+  // the whole app. The wait is capped, because an invite that does not
+  // resolve must not stop someone reaching their own workspace.
+  const [claimed, setClaimed] = useState(false)
   useEffect(() => {
-    if (!session) return
-    claimPendingInvites().catch(() => {})
+    if (!session) {
+      setClaimed(false)
+      return
+    }
+    let active = true
+    const settle = () => {
+      if (active) setClaimed(true)
+    }
+    const cap = setTimeout(settle, 4000)
+    claimPendingInvites()
+      .then(() => refreshWorkspace())
+      .catch(() => {})
+      .finally(() => {
+        clearTimeout(cap)
+        settle()
+      })
+    return () => {
+      active = false
+      clearTimeout(cap)
+    }
   }, [session])
 
   // On wide screens, deal/new, deal/[id], brand/new, and profile/edit present
@@ -68,7 +94,7 @@ export default function AppLayout() {
    */
   // Includes a session that has not answered its second step yet: see the
   // note in useAuth. A deep link must not be a way around it.
-  if (loading || !session || secondStepPending) return null
+  if (loading || !session || secondStepPending || !claimed) return null
 
   const modalScreenOptions = isWide
     ? { headerShown: false, presentation: 'transparentModal' as const }
@@ -76,6 +102,7 @@ export default function AppLayout() {
 
   return (
     <Stack
+      key={version}
       screenOptions={{
         headerStyle: { backgroundColor: c.bgPage },
         headerTitleStyle: {

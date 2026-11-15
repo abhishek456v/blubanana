@@ -20,6 +20,7 @@ import { useBreakpoint } from '@/hooks/useBreakpoint'
 import { useTheme, useThemeMode } from '@/hooks/useTheme'
 import { getAlertFeed } from '@/lib/alerts'
 import { getProfile } from '@/lib/profile'
+import { useWorkspace } from '@/hooks/useWorkspace'
 import { BrandAvatar } from '@/components/BrandAvatar'
 import { PressableScale, ThemeToggle } from '@/components/ui'
 import { TAB_BY_NAME, type TabName } from './tabs'
@@ -95,6 +96,9 @@ export function Sidebar({ state, emitter, navigateToTab }: BottomTabBarProps) {
   const collapsed = choice ?? !isDesktop
   const [creator, setCreator] = useState<{ name: string } | null>(null)
   const dueCount = useDueCount()
+  // Team and the rate card are the creator's own; a manager is in somebody
+  // else's workspace and has neither to open.
+  const { isOwner } = useWorkspace()
 
   useEffect(() => {
     readKey(COLLAPSE_KEY)
@@ -223,7 +227,7 @@ export function Sidebar({ state, emitter, navigateToTab }: BottomTabBarProps) {
           <Text style={[styles.groupLabel, { color: c.textMuted }]}>Workspace</Text>
         )}
 
-        {WORKSPACE.map((item) => {
+        {WORKSPACE.filter((item) => isOwner || item.path === '/reminders').map((item) => {
           const active = pathname === item.path
           return (
             <Item

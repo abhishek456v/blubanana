@@ -5,12 +5,24 @@ import { FontFamily, HitSlop, Radius, Spacing, Typography } from '@/constants/de
 import { Duration } from '@/constants/motion'
 import { useTheme } from '@/hooks/useTheme'
 import type { ContactDraft } from '@/lib/brandContacts'
+import { emailError, phoneError } from '@/lib/validate'
 import { PressableScale, TextField } from '@/components/ui'
 
 export interface ContactsEditorProps {
   contacts: ContactDraft[]
   onChange: (contacts: ContactDraft[]) => void
   disabled?: boolean
+  /**
+   * Shown only once a save has been attempted. Marking a phone number wrong
+   * while somebody is still typing it is a red field halfway through every
+   * entry.
+   */
+  showErrors?: boolean
+}
+
+/** True when any contact has a phone or email that cannot be right. */
+export function contactsHaveErrors(contacts: ContactDraft[]): boolean {
+  return contacts.some((contact) => phoneError(contact.phone) || emailError(contact.email))
 }
 
 /**
@@ -26,7 +38,12 @@ export interface ContactsEditorProps {
  * the choice is "which one", not "is this one" — a set of independent
  * switches invites the state where none is selected.
  */
-export function ContactsEditor({ contacts, onChange, disabled = false }: ContactsEditorProps) {
+export function ContactsEditor({
+  contacts,
+  onChange,
+  disabled = false,
+  showErrors = false,
+}: ContactsEditorProps) {
   const { c } = useTheme()
 
   const update = (index: number, patch: Partial<ContactDraft>) => {
@@ -128,6 +145,7 @@ export function ContactsEditor({ contacts, onChange, disabled = false }: Contact
             value={contact.phone ?? ''}
             onChangeText={(phone) => update(index, { phone })}
             keyboardType="phone-pad"
+            error={showErrors ? phoneError(contact.phone) : null}
             placeholder="For the WhatsApp nudges"
           />
           <TextField
@@ -136,6 +154,7 @@ export function ContactsEditor({ contacts, onChange, disabled = false }: Contact
             onChangeText={(email) => update(index, { email })}
             keyboardType="email-address"
             autoCapitalize="none"
+            error={showErrors ? emailError(contact.email) : null}
             placeholder="For invoices"
           />
         </Animated.View>

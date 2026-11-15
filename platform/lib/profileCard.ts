@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import { getProfile } from './profile'
+import { getWorkspaceProfile } from './profile'
 import { getSocialAccounts, getStatHistory, isLive, summarizeReach } from './social'
 import { DELIVERABLE_LABELS } from '@/constants/labels'
 import type { CardContent, CardStat } from './profileCardHtml'
@@ -74,7 +74,7 @@ function median(values: number[]): number {
 
 export async function getProfileCardData(): Promise<ProfileCardData> {
   const [profile, accounts, lineItems] = await Promise.all([
-    getProfile(),
+    getWorkspaceProfile(),
     getSocialAccounts().catch(() => []),
     // The masking view, so this respects `can_see_rates` like everything else:
     // a manager building the card gets no prices rather than the creator's.
