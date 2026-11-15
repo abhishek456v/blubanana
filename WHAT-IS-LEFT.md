@@ -231,6 +231,12 @@ tried again in the browser after the fix.
 - The demo account's invented GSTINs would fail the new check. The seed now
   works out valid ones; the live demo keeps the old ones until it is re-seeded.
 
+- A deal's headline overwrote what you typed with a bare label: "1 Reel + 2
+  Stories" showed as "Reel" in every list. A single described line now keeps
+  your own words.
+- The website's calculators let a minus sign through, so a negative invoice
+  total appeared. They now treat it as zero.
+
 **Smaller faults**
 
 - A deal billed on a shared invoice still offered "Create invoice", and
@@ -244,9 +250,13 @@ show the fee as a line item. Their payment schedules were made before the
 rule changed, so each shows a line saying part of the deal is not scheduled
 yet. That is accurate, and running the demo seed again clears it.
 
-**Still to test in this pass:** creating deals, invoices and expenses on a
-brand-new account, the admin dashboard, the website, and whether one account
-can reach another's data.
+**Also checked, and found sound:** one account cannot read or change another's
+deals, brands or invoices (tried with two accounts); a manager cannot raise
+their own access or invite others; the 10-deal trial limit holds and says so;
+the admin pages all load; every website page, link and calculator works, and
+the plan prices on screen match the server's.
+
+**Not covered:** the iPhone app itself. Everything here was tried in a browser.
 
 ### The iPhone app would not open, fixed 19 October
 

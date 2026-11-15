@@ -224,15 +224,18 @@
 <script src="/tools.8c2ad030.js"></script>
 <script>
     const $ = (id) => document.getElementById(id)
+    // The inputs carry min="0", but typing a minus sign gets past that, and a
+    // negative invoice total is not an answer to anything.
+    const val = (id) => Math.max(Number($(id).value) || 0, 0)
     document.querySelectorAll('.preset').forEach((b) => b.addEventListener('click', () => {
       const target = $(b.dataset.for)
       target.value = b.dataset.value
       target.dispatchEvent(new Event('input', { bubbles: true }))
     }))
     function run() {
-      const income = Number($('income').value) || 0
-      const rate = Number($('rate').value) || 0
-      const paid = Number($('paid').value) || 0
+      const income = val('income')
+      const rate = val('rate')
+      const paid = val('paid')
       const expected = CD.estimateTax(income, rate)
       const remaining = Math.max(expected - paid, 0)
       $('total').textContent = CD.inr(expected)

@@ -230,6 +230,9 @@
 <script src="/tools.8c2ad030.js"></script>
 <script>
     const $ = (id) => document.getElementById(id)
+    // The inputs carry min="0", but typing a minus sign gets past that, and a
+    // negative invoice total is not an answer to anything.
+    const val = (id) => Math.max(Number($(id).value) || 0, 0)
     document.querySelectorAll('.preset').forEach((b) => b.addEventListener('click', () => {
       const target = $(b.dataset.for)
       target.value = b.dataset.value
@@ -241,8 +244,8 @@
     $('mine').value = '29'
     $('theirs').value = '27'
     function run() {
-      const amount = Number($('amount').value) || 0
-      const rate = Number($('rate2').value) || 0
+      const amount = val('amount')
+      const rate = val('rate2')
       const tax = Math.round((amount * rate) / 100)
       const split = CD.splitGst(tax, $('mine').value, $('theirs').value)
       $('g-total').textContent = CD.inr(amount + tax)

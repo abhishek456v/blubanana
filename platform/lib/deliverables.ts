@@ -151,6 +151,15 @@ export function summarizeDeliverables(items: DeliverableInput[]): string {
 
   const content = items.filter((item) => item.kind !== 'ad_rights')
   const source = content.length > 0 ? content : items
+
+  // One line the creator described herself is the best summary there is. The
+  // deal form asks for "1 Reel + 3 Stories", saves that as the single line's
+  // description, and the headline used to overwrite it with the bare kind
+  // ("Reel"), so every list lost what she had typed. With several lines the
+  // kinds and counts are the summary, as before.
+  const own = source.length === 1 ? source[0].description?.trim() : ''
+  if (own) return own
+
   return source.map(describe).join(' + ')
 }
 

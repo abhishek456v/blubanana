@@ -115,15 +115,18 @@ const advanceTax = toolPage({
   how: 'Section 211 sets the dates and the percentages: 15% by 15 June, 45% by 15 September, 75% by 15 December, the balance by 15 March.',
   script: `
     const $ = (id) => document.getElementById(id)
+    // The inputs carry min="0", but typing a minus sign gets past that, and a
+    // negative invoice total is not an answer to anything.
+    const val = (id) => Math.max(Number($(id).value) || 0, 0)
     document.querySelectorAll('.preset').forEach((b) => b.addEventListener('click', () => {
       const target = $(b.dataset.for)
       target.value = b.dataset.value
       target.dispatchEvent(new Event('input', { bubbles: true }))
     }))
     function run() {
-      const income = Number($('income').value) || 0
-      const rate = Number($('rate').value) || 0
-      const paid = Number($('paid').value) || 0
+      const income = val('income')
+      const rate = val('rate')
+      const paid = val('paid')
       const expected = CD.estimateTax(income, rate)
       const remaining = Math.max(expected - paid, 0)
       $('total').textContent = CD.inr(expected)
@@ -162,15 +165,18 @@ const tdsTool = toolPage({
   how: 'TDS comes off the value of the service, never the GST on top of it. That is the usual reason your figure and the brand’s disagree.',
   script: `
     const $ = (id) => document.getElementById(id)
+    // The inputs carry min="0", but typing a minus sign gets past that, and a
+    // negative invoice total is not an answer to anything.
+    const val = (id) => Math.max(Number($(id).value) || 0, 0)
     document.querySelectorAll('.preset').forEach((b) => b.addEventListener('click', () => {
       const target = $(b.dataset.for)
       target.value = b.dataset.value
       target.dispatchEvent(new Event('input', { bubbles: true }))
     }))
     function run() {
-      const base = Number($('base').value) || 0
-      const gst = Number($('gst').value) || 0
-      const rate = Number($('tdsrate').value) || 0
+      const base = val('base')
+      const gst = val('gst')
+      const rate = val('tdsrate')
       const r = CD.tds(base, rate, gst)
       $('net').textContent = CD.inr(r.received)
       $('r-base').textContent = CD.inr(base)
@@ -202,6 +208,9 @@ const gstTool = toolPage({
   how: 'A supply is inter State when your state and the place of supply differ. That one comparison decides IGST, or CGST and SGST at half each.',
   script: `
     const $ = (id) => document.getElementById(id)
+    // The inputs carry min="0", but typing a minus sign gets past that, and a
+    // negative invoice total is not an answer to anything.
+    const val = (id) => Math.max(Number($(id).value) || 0, 0)
     document.querySelectorAll('.preset').forEach((b) => b.addEventListener('click', () => {
       const target = $(b.dataset.for)
       target.value = b.dataset.value
@@ -213,8 +222,8 @@ const gstTool = toolPage({
     $('mine').value = '29'
     $('theirs').value = '27'
     function run() {
-      const amount = Number($('amount').value) || 0
-      const rate = Number($('rate2').value) || 0
+      const amount = val('amount')
+      const rate = val('rate2')
       const tax = Math.round((amount * rate) / 100)
       const split = CD.splitGst(tax, $('mine').value, $('theirs').value)
       $('g-total').textContent = CD.inr(amount + tax)
@@ -269,19 +278,22 @@ const rateTool = toolPage({
   how: 'Cost per thousand views is the unit a brand is actually buying, and the one number that lets you compare a Reel with a fourteen minute video. Working it backwards out of a deal you have already closed gives you your own figure rather than somebody else\'s average, which is the only defensible one in a negotiation.',
   script: `
     const $ = (id) => document.getElementById(id)
+    // The inputs carry min="0", but typing a minus sign gets past that, and a
+    // negative invoice total is not an answer to anything.
+    const val = (id) => Math.max(Number($(id).value) || 0, 0)
     document.querySelectorAll('.preset').forEach((b) => b.addEventListener('click', () => {
       const target = $(b.dataset.for)
       target.value = b.dataset.value
       target.dispatchEvent(new Event('input', { bubbles: true }))
     }))
     function run() {
-      const fee = Number($('fee').value) || 0
-      const past = Number($('pastviews').value) || 0
-      const views = Number($('views').value) || 0
+      const fee = val('fee')
+      const past = val('pastviews')
+      const views = val('views')
       const own = CD.cpmFromDeal(fee, past)
       // Her own rate when there is one, and the band she set when there is not.
-      const low = own > 0 ? own * 0.85 : Number($('cpmlow').value) || 0
-      const high = own > 0 ? own * 1.25 : Number($('cpmhigh').value) || 0
+      const low = own > 0 ? own * 0.85 : val('cpmlow')
+      const high = own > 0 ? own * 1.25 : val('cpmhigh')
       const r = CD.rateFromReach(views, Math.min(low, high), Math.max(low, high))
       $('range').textContent = CD.inr(r.low) + ' to ' + CD.inr(r.high)
       $('cpm').textContent = own > 0 ? CD.inr(own) : 'set your band'
@@ -313,6 +325,9 @@ const engagementTool = toolPage({
   how: 'Interactions divided by the denominator, times one hundred. Saves and shares count, because on Reels they carry more weight than a like.',
   script: `
     const $ = (id) => document.getElementById(id)
+    // The inputs carry min="0", but typing a minus sign gets past that, and a
+    // negative invoice total is not an answer to anything.
+    const val = (id) => Math.max(Number($(id).value) || 0, 0)
     document.querySelectorAll('.preset').forEach((b) => b.addEventListener('click', () => {
       const target = $(b.dataset.for)
       target.value = b.dataset.value
@@ -320,11 +335,11 @@ const engagementTool = toolPage({
     }))
     const pct = (n) => n.toFixed(2) + '%'
     function run() {
-      const f = Number($('followers').value) || 0
-      const r = Number($('reach').value) || 0
-      const l = Number($('likes').value) || 0
-      const c = Number($('comments').value) || 0
-      const s = Number($('saves').value) || 0
+      const f = val('followers')
+      const r = val('reach')
+      const l = val('likes')
+      const c = val('comments')
+      const s = val('saves')
       $('erf').textContent = f ? pct(CD.engagement(l, c, s, f)) : '-'
       $('err').textContent = r ? pct(CD.engagement(l, c, s, r)) : 'add reach above'
       $('eri').textContent = (l + c + s).toLocaleString('en-IN')

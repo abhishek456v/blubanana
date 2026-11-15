@@ -252,19 +252,22 @@
 <script src="/tools.8c2ad030.js"></script>
 <script>
     const $ = (id) => document.getElementById(id)
+    // The inputs carry min="0", but typing a minus sign gets past that, and a
+    // negative invoice total is not an answer to anything.
+    const val = (id) => Math.max(Number($(id).value) || 0, 0)
     document.querySelectorAll('.preset').forEach((b) => b.addEventListener('click', () => {
       const target = $(b.dataset.for)
       target.value = b.dataset.value
       target.dispatchEvent(new Event('input', { bubbles: true }))
     }))
     function run() {
-      const fee = Number($('fee').value) || 0
-      const past = Number($('pastviews').value) || 0
-      const views = Number($('views').value) || 0
+      const fee = val('fee')
+      const past = val('pastviews')
+      const views = val('views')
       const own = CD.cpmFromDeal(fee, past)
       // Her own rate when there is one, and the band she set when there is not.
-      const low = own > 0 ? own * 0.85 : Number($('cpmlow').value) || 0
-      const high = own > 0 ? own * 1.25 : Number($('cpmhigh').value) || 0
+      const low = own > 0 ? own * 0.85 : val('cpmlow')
+      const high = own > 0 ? own * 1.25 : val('cpmhigh')
       const r = CD.rateFromReach(views, Math.min(low, high), Math.max(low, high))
       $('range').textContent = CD.inr(r.low) + ' to ' + CD.inr(r.high)
       $('cpm').textContent = own > 0 ? CD.inr(own) : 'set your band'

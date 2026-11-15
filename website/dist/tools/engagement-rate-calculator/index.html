@@ -237,6 +237,9 @@
 <script src="/tools.8c2ad030.js"></script>
 <script>
     const $ = (id) => document.getElementById(id)
+    // The inputs carry min="0", but typing a minus sign gets past that, and a
+    // negative invoice total is not an answer to anything.
+    const val = (id) => Math.max(Number($(id).value) || 0, 0)
     document.querySelectorAll('.preset').forEach((b) => b.addEventListener('click', () => {
       const target = $(b.dataset.for)
       target.value = b.dataset.value
@@ -244,11 +247,11 @@
     }))
     const pct = (n) => n.toFixed(2) + '%'
     function run() {
-      const f = Number($('followers').value) || 0
-      const r = Number($('reach').value) || 0
-      const l = Number($('likes').value) || 0
-      const c = Number($('comments').value) || 0
-      const s = Number($('saves').value) || 0
+      const f = val('followers')
+      const r = val('reach')
+      const l = val('likes')
+      const c = val('comments')
+      const s = val('saves')
       $('erf').textContent = f ? pct(CD.engagement(l, c, s, f)) : '-'
       $('err').textContent = r ? pct(CD.engagement(l, c, s, r)) : 'add reach above'
       $('eri').textContent = (l + c + s).toLocaleString('en-IN')
