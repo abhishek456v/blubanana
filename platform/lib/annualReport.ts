@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 import { getWorkspaceId } from './workspace'
-import { paymentsInOrder, type DealWithPaymentSummary } from './deals'
+import { grossOf, isFullyPaid, paymentsInOrder, type DealWithPaymentSummary } from './deals'
 import type { Invoice, BrandRating } from '@/types'
 
 // Indian financial year: April 1 → March 31. fyStartYear=2025 means
@@ -55,12 +55,20 @@ export function hasAdjustments(adjustments: AnnualAdjustments): boolean {
 
 export interface AnnualReport {
   fyLabel: string
+  /**
+   * What was earned, before TDS. A brand that withheld ₹10,000 from a
+   * ₹1,00,000 payment still paid ₹1,00,000 of income: the ₹10,000 went to the
+   * tax department in her name. Reporting the ₹90,000 that reached the bank
+   * understated the income on the return and lost the credit at the same time.
+   */
   totalRevenue: number
+  /** Deals whose last payment landed in this year. */
   dealsClosed: number
   bestClient: { name: string; total: number } | null
   worstClient: { name: string; averageRating: number } | null
   gstCollected: number
   tdsDeducted: number
+  /** Payments received in this year, an advance and a balance counting as two. */
   paymentsResolved: number
   /** What the work cost. Zero when nothing has been logged. */
   totalExpenses: number
@@ -162,10 +170,21 @@ export function computeAnnualReport(
     )
 
   const totalRevenue = paidInFY.reduce(
-    (sum, d) =>
-      sum + settledInFY(d).reduce((n, p) => n + (p.amount_received ?? p.amount), 0),
+    (sum, d) => sum + settledInFY(d).reduce((n, p) => n + grossOf(p), 0),
     0
   )
+  const paymentsResolved = paidInFY.reduce((sum, d) => sum + settledInFY(d).length, 0)
+  // Closed means nothing left owing, and it closed in the year its last
+  // payment landed. A deal with only its advance in is not closed yet.
+  const dealsClosed = paidInFY.filter((d) => {
+    if (!isFullyPaid(d)) return false
+    const last = paymentsInOrder(d)
+      .map((p) => p.paid_date)
+      .filter((date): date is string => Boolean(date))
+      .sort()
+      .at(-1)
+    return Boolean(last && inFinancialYear(last, fyStartYear))
+  }).length
 
   const byBrand = new Map<string, number>()
   for (const d of paidInFY) {
@@ -198,7 +217,28 @@ export function computeAnnualReport(
 
   const invoicesInFY = invoices.filter((inv) => inFinancialYear(inv.invoice_date, fyStartYear))
   const gstCollected = invoicesInFY.reduce((sum, inv) => sum + (inv.gst_applicable ? inv.gst_amount : 0), 0)
-  const tdsDeducted = invoicesInFY.reduce((sum, inv) => sum + (inv.tds_deducted ? inv.tds_amount ?? 0 : 0), 0)
+
+  // TDS is what was actually withheld when each payment landed, which is what
+  // Form 26AS will show. It used to be read off the invoices alone, where it
+  // is only what the creator expected when she raised one, and so missed every
+  // rupee recorded at receipt.
+  //
+  // The invoice figure is the fallback for the one case the receipt cannot
+  // answer: a payment settled without its split ever being recorded.
+  const tdsAtReceipt = paidInFY.reduce(
+    (sum, d) => sum + settledInFY(d).reduce((n, p) => n + (p.tds_amount ?? 0), 0),
+    0
+  )
+  const splitUnknown = new Set(
+    paidInFY
+      .filter((d) => settledInFY(d).some((p) => p.amount_received == null))
+      .filter((d) => paymentsInOrder(d).every((p) => !p.tds_amount))
+      .map((d) => d.id)
+  )
+  const tdsFromInvoices = invoices
+    .filter((inv) => inv.deal_id && splitUnknown.has(inv.deal_id) && inv.tds_deducted)
+    .reduce((sum, inv) => sum + (inv.tds_amount ?? 0), 0)
+  const tdsDeducted = tdsAtReceipt + tdsFromInvoices
 
   // The same April-to-March window the revenue figures use, so the two sides
   // of the subtraction cover the same period.
@@ -216,12 +256,12 @@ export function computeAnnualReport(
     totalRevenue,
     totalExpenses,
     netIncome: totalRevenue - totalExpenses,
-    dealsClosed: paidInFY.length,
+    dealsClosed,
     bestClient,
     worstClient,
     gstCollected,
     tdsDeducted,
-    paymentsResolved: paidInFY.length,
+    paymentsResolved,
 
     adjustments,
     adjustedRevenue,

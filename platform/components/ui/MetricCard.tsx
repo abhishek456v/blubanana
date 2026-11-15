@@ -83,7 +83,7 @@ export function MetricCard({
       <Figure
         value={text}
         count
-        format={format ?? String}
+        format={format}
         size={figureSize}
         color={valueColor[tone]}
         bold

@@ -88,7 +88,7 @@ export function StatTile({
         <Figure
           value={(format ?? String)(value)}
           count
-          format={format ?? String}
+          format={format}
           size={dense ? 22 : 26}
           color={valueColor}
           bold

@@ -7,7 +7,7 @@ import { COMMERCIAL_KINDS, DELIVERABLE_LABELS } from '@/constants/labels'
 import { FontFamily, Radius, Spacing, Typography } from '@/constants/design'
 import { useTheme } from '@/hooks/useTheme'
 import { adRightsBreakdown, adRightsExpiry, contentValue, totalDealValue } from '@/lib/deliverables'
-import { formatCurrency, formatDate, formatRelativeDay } from '@/lib/format'
+import { formatCurrency, formatDate, formatRelativeDayInline } from '@/lib/format'
 import { Button, Card, PressableScale, useConfirm } from '@/components/ui'
 import {
   DeliverableEditor,
@@ -176,7 +176,7 @@ function DeliverableRow({
     : expiry
       ? `Ends ${formatDate(expiry)}`
       : deliverable.due_date
-        ? `Due ${formatRelativeDay(deliverable.due_date).toLowerCase()}`
+        ? `Due ${formatRelativeDayInline(deliverable.due_date)}`
         : null
 
   return (

@@ -1,6 +1,7 @@
 import { Linking } from 'react-native'
 import { supabase } from './supabase'
 import { getWorkspaceId } from './workspace'
+import { toDateString } from './format'
 import { buildWhatsAppLink } from './whatsapp'
 
 // The outbox: every message drafted for a brand is a row before it goes
@@ -174,7 +175,7 @@ export async function getLastChaser(paymentId: string): Promise<OutboundMessage 
 export async function chasedToday(paymentId: string): Promise<boolean> {
   const last = await getLastChaser(paymentId)
   if (!last?.handed_off_at) return false
-  return last.handed_off_at.slice(0, 10) === new Date().toISOString().slice(0, 10)
+  return toDateString(new Date(last.handed_off_at)) === toDateString(new Date())
 }
 
 /**

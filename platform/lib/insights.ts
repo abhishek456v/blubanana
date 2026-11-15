@@ -6,7 +6,7 @@ import {
 } from './deals'
 import { getPaymentAlertTone } from './paymentReminders'
 import { getAdRightsStatus } from './adRights'
-import { daysFromToday, formatRelativeDay } from './format'
+import { daysFromToday, formatRelativeDayInline } from './format'
 
 // What Home puts at the top of the screen.
 //
@@ -31,6 +31,14 @@ export interface AttentionItem {
   tone: AttentionTone
   /** One short line naming the action: "Payment 8 days late". */
   reason: string
+  /**
+   * The instalment being chased, on the two payment kinds only.
+   *
+   * A deal split into an advance and a balance is late by the balance, not by
+   * the whole fee, so a row that says "Payment 8 days late" has to show this
+   * figure beside it rather than the deal's value.
+   */
+  amount?: number
 }
 
 // Lower sorts first. Money already owed outranks work not yet done, because a
@@ -85,13 +93,15 @@ export function getAttentionItems(deals: DealWithPaymentSummary[]): AttentionIte
         kind: 'payment_overdue',
         tone: 'danger',
         reason: late === 0 ? 'Payment due today' : `Payment ${late} ${late === 1 ? 'day' : 'days'} late`,
+        amount: chasing.amount,
       })
     } else if (paymentTone === 'due_soon' && chasing?.due_date) {
       candidates.push({
         deal,
         kind: 'payment_due_soon',
         tone: 'warning',
-        reason: `Payment due ${formatRelativeDay(chasing.due_date).toLowerCase()}`,
+        reason: `Payment due ${formatRelativeDayInline(chasing.due_date)}`,
+        amount: chasing.amount,
       })
     }
 
@@ -103,7 +113,7 @@ export function getAttentionItems(deals: DealWithPaymentSummary[]): AttentionIte
           deal,
           kind: 'deadline_passed',
           tone: 'danger',
-          reason: `${deadline.label} was due ${formatRelativeDay(deadline.date).toLowerCase()}`,
+          reason: `${deadline.label} was due ${formatRelativeDayInline(deadline.date)}`,
         })
       } else if (days === 0) {
         candidates.push({
@@ -131,7 +141,7 @@ export function getAttentionItems(deals: DealWithPaymentSummary[]): AttentionIte
         deal,
         kind: 'ad_rights_expiring',
         tone: 'warning',
-        reason: `Ad rights end ${formatRelativeDay(deal.ad_rights_expires_date).toLowerCase()}`,
+        reason: `Ad rights end ${formatRelativeDayInline(deal.ad_rights_expires_date)}`,
       })
     }
 

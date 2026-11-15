@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { StyleSheet, Text, type StyleProp, type TextStyle } from 'react-native'
 import { FigureSize, FontFamily } from '@/constants/design'
 import { useTheme } from '@/hooks/useTheme'
@@ -15,7 +15,10 @@ export interface FigureProps {
    * slot machine rather than as data.
    */
   count?: boolean
-  /** Rebuilds the display string from a tweened number. Required by `count`. */
+  /**
+   * Rebuilds the display string from a tweened number. Needed by `count` for
+   * anything but a bare number, which is counted in its own decimal places.
+   */
   format?: (value: number) => string
   size?: keyof typeof FigureSize | number
   color?: string
@@ -88,7 +91,14 @@ export function Figure({
  * spinning up from zero reads as a slot machine; the count is only worth
  * anything when it shows a change the viewer was present for.
  */
-function useCountUp(value: string, enabled: boolean, format?: (value: number) => string): string {
+function useCountUp(value: string, enabled: boolean, given?: (value: number) => string): string {
+  // A bare number (`2`, `4.5`) can be counted without being told how to print
+  // it. Anything dressed (`₹3,75,000`, `+14%`) needs the caller's formatter,
+  // or the frames in between would lose the dressing.
+  const format = useMemo(
+    () => given ?? (PLAIN_NUMBER.test(value) ? plainFigure(value) : undefined),
+    [given, value]
+  )
   const target = enabled && format ? parseFigure(value) : null
   const [displayed, setDisplayed] = useState<string>(value)
   const fromRef = useRef<number | null>(target)
@@ -136,6 +146,21 @@ function useCountUp(value: string, enabled: boolean, format?: (value: number) =>
   }, [target, value, format])
 
   return displayed
+}
+
+const PLAIN_NUMBER = /^-?\d+(\.\d+)?$/
+
+/**
+ * The count-up formatter for a figure with no formatter of its own.
+ *
+ * `String` is right for the resting value and wrong for the frames between: a
+ * count on its way from 0 to 2 was printed as `1.9795850996813837`. This keeps
+ * each frame to the decimal places the target itself has, so a count stays
+ * whole and a 4.5 rating stays at one place.
+ */
+function plainFigure(text: string): (value: number) => string {
+  const decimals = (text.split('.')[1] ?? '').length
+  return (value) => value.toFixed(decimals)
 }
 
 /** Pulls a number back out of a formatted figure, or null if there isn't one. */

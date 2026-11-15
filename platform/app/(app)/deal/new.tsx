@@ -333,6 +333,15 @@ export default function NewDealScreen() {
       return
     }
 
+    // A blank fee is a real answer: the rights are bundled into the rate. A
+    // blank that reached parseInt was NaN, which the database refused, taking
+    // the deal's line items down with it.
+    const adRightsFeeNum = parseInt(adRightsFee, 10) || 0
+    if (adRightsEnabled && !adRightsDuration) {
+      toast('How many months do the ad rights run?', { tone: 'warning' })
+      return
+    }
+
     const retainerPerPeriodNum = parseInt(retainerPerPeriod, 10)
     if (retainerEnabled) {
       if (!retainerMonths) {
@@ -387,7 +396,7 @@ export default function NewDealScreen() {
         ad_rights: adRightsEnabled
           ? {
               ad_rights_granted: true,
-              ad_rights_fee: parseInt(adRightsFee, 10),
+              ad_rights_fee: adRightsFeeNum,
               ad_rights_duration_months: adRightsDuration,
               ad_rights_start_date: parseDate(adRightsStartDate),
             }
@@ -444,7 +453,7 @@ export default function NewDealScreen() {
           kind: 'ad_rights',
           quantity: 1,
           description: 'Paid amplification / whitelisting rights',
-          rate: parseInt(adRightsFee, 10),
+          rate: adRightsFeeNum,
           duration_months: adRightsDuration,
           starts_on: startsOn,
           expires_on: adRightsExpiry(startsOn, adRightsDuration),

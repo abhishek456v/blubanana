@@ -12,7 +12,7 @@ import {
   summarizeExpenses,
   type Expense,
 } from '@/lib/expenses'
-import { formatCurrency, formatDate, toDateString } from '@/lib/format'
+import { formatCurrency, formatDate, formatDateLong, toDateString } from '@/lib/format'
 import { FontFamily, HitSlop, Radius, Spacing, Typography } from '@/constants/design'
 import { Duration } from '@/constants/motion'
 import { useTheme } from '@/hooks/useTheme'
@@ -239,7 +239,19 @@ export default function ExpensesScreen() {
                 {expense.category}
               </Text>
               <Text style={[styles.rowMeta, { color: c.textMuted }]} numberOfLines={1}>
-                {[formatDate(expense.spent_on), expense.note].filter(Boolean).join(' · ')}
+                {[
+                  // The total above covers one financial year and this list
+                  // runs back further, so a row from outside that year says
+                  // which year it was. Without it, last October's camera sat
+                  // among this October's costs with nothing to explain why
+                  // the total left it out.
+                  expense.spent_on >= fy.from && expense.spent_on <= fy.to
+                    ? formatDate(expense.spent_on)
+                    : formatDateLong(expense.spent_on),
+                  expense.note,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
               </Text>
             </View>
 

@@ -128,7 +128,9 @@ export function buildInvoiceHtml(
   const tds = invoice.tds_deducted ? (invoice.tds_amount ?? 0) : 0
   const netPayable = invoice.total_amount - tds
 
-  const supplierAddress = creator.address
+  // As issued. The profile's address is only the fallback for invoices older
+  // than the column: one raised last year should not move when she does.
+  const supplierAddress = invoice.supplier_address ?? creator.address
   const placeOfSupply = placeOfSupplyLabel(invoice.place_of_supply_code)
 
   // Half the headline rate on each of CGST and SGST; the full rate on IGST.

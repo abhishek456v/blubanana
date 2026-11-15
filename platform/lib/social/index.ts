@@ -3,6 +3,7 @@ import { getWorkspaceId } from '../workspace'
 import { MetaGraphProvider } from './meta'
 import { MockSocialProvider } from './mock'
 import { YouTubeProvider } from './youtube'
+import { toDateString } from '../format'
 import type {
   SocialAccount,
   SocialPlatform,
@@ -217,7 +218,7 @@ async function recordSnapshot(
       workspace_id: workspaceId,
       social_account_id: account.id,
       platform: account.platform,
-      captured_on: new Date().toISOString().slice(0, 10),
+      captured_on: toDateString(new Date()),
       followers: stats.followers,
       following: stats.following ?? null,
       posts_count: stats.postsCount ?? null,
@@ -243,7 +244,7 @@ export async function getStatHistory(
     .from('creator_stat_snapshots')
     .select('*')
     .eq('platform', platform)
-    .gte('captured_on', since.toISOString().slice(0, 10))
+    .gte('captured_on', toDateString(since))
     .order('captured_on', { ascending: true })
 
   if (error) throw error

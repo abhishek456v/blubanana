@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { toDateString } from './format'
 
 /**
  * Two-step verification, over Supabase's TOTP factors.
@@ -59,7 +60,7 @@ export async function startEnrolment(): Promise<StartedEnrolment> {
 
   const { data, error } = await supabase.auth.mfa.enroll({
     factorType: 'totp',
-    friendlyName: `Authenticator ${new Date().toISOString().slice(0, 10)}`,
+    friendlyName: `Authenticator ${toDateString(new Date())}`,
   })
   if (error) throw error
   return {

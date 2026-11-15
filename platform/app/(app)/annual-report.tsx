@@ -124,8 +124,8 @@ export default function AnnualReportScreen() {
         bold
       />
       <Text style={[styles.heroCaption, { color: c.textSecondary }]}>
-        across {report.dealsClosed} closed {report.dealsClosed === 1 ? 'deal' : 'deals'} in{' '}
-        {report.fyLabel}
+        from {report.paymentsResolved} {report.paymentsResolved === 1 ? 'payment' : 'payments'} in{' '}
+        {report.fyLabel}, before TDS
       </Text>
     </Card>
   )
@@ -180,7 +180,7 @@ export default function AnnualReportScreen() {
       : []),
     { label: 'GST collected', value: report.gstCollected, format: formatCurrency },
     { label: 'TDS deducted', value: report.tdsDeducted, format: formatCurrency, caption: 'claim against 26AS' },
-    { label: 'Payments settled', value: report.paymentsResolved },
+    { label: 'Payments received', value: report.paymentsResolved },
     { label: 'Deals closed', value: report.dealsClosed },
   ]
 

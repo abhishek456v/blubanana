@@ -20,10 +20,11 @@ import * as DocumentPicker from 'expo-document-picker'
 import { Ionicons } from '@expo/vector-icons'
 import { notificationsEnabledAsync } from '@/lib/notifications'
 import {
-  addPayment,
+  addInstalment,
   advanceDealStatus,
   deleteDeal,
-  deletePayment,
+  dealValue,
+  dueDateFromTerms,
   getDeal,
   getNextStatus,
   isFullyPaid,
@@ -39,6 +40,9 @@ import {
   type DealWithPayments,
   updateAdRights,
   updateDeal,
+  rebalanceSchedule,
+  removeInstalment,
+  updateInstalment,
   updatePaymentRecord,
   updatePerformance,
 } from '@/lib/deals'
@@ -225,7 +229,7 @@ export default function DealDetailScreen() {
         // is settled.
         data.payments = await Promise.all(
           paymentsInOrder(data).map(async (payment) => {
-            const syncedStatus = await syncPaymentStatus(data.id, payment)
+            const syncedStatus = await syncPaymentStatus(payment)
             return syncedStatus === payment.status ? payment : { ...payment, status: syncedStatus }
           })
         )
@@ -249,7 +253,11 @@ export default function DealDetailScreen() {
         )
         setLiveLink(data.live_link ?? '')
         setNotes(data.notes ?? '')
-        setPaymentTerms(primaryPayment(data)?.payment_terms ?? '')
+        // The row that carries the terms, which on a split deal is the balance
+        // rather than whichever instalment happens to come first.
+        setPaymentTerms(
+          paymentsInOrder(data).find((payment) => payment.payment_terms)?.payment_terms ?? ''
+        )
         setPerfViews(data.performance_views != null ? String(data.performance_views) : '')
         setPerfLikes(data.performance_likes != null ? String(data.performance_likes) : '')
         setPerfComments(data.performance_comments != null ? String(data.performance_comments) : '')
@@ -359,15 +367,20 @@ export default function DealDetailScreen() {
       // screen (rate field, header total) reflects the change without a reload.
       const summary = summarizeDeliverables(items)
       const contentTotal = contentValue(saved)
-      setDeliverable(summary)
-      // Blank rather than the string "null" when the total is withheld.
-      setRate(contentTotal === null ? '' : String(contentTotal))
-      setDeal({
+      const next = {
         ...deal,
         deliverable_description: summary,
         rate: contentTotal,
         ...adRightsFields,
-      })
+      }
+      // The deal's value just changed in the database, so the schedule has to
+      // follow now. Leaving it for the Save button meant a creator who repriced
+      // a line item and went back was still owed the old figure everywhere.
+      const payments = await rebalanceSchedule(deal, dealValue(deal), dealValue(next))
+      setDeliverable(summary)
+      // Blank rather than the string "null" when the total is withheld.
+      setRate(contentTotal === null ? '' : String(contentTotal))
+      setDeal({ ...next, payments })
     } catch {
       toast('Could not save the deliverables. Please try again', { tone: 'error' })
     } finally {
@@ -448,10 +461,24 @@ export default function DealDetailScreen() {
         notes: notes.trim() || null,
       })
 
-      await updatePaymentRecord(deal, primaryPayment(deal), {
-        ...(rateWithheld ? {} : { amount: rateNum }),
+      if (!rateWithheld) {
+        await rebalanceSchedule(deal, dealValue(deal), dealValue({ ...deal, rate: rateNum }))
+      }
+
+      // The terms sit on one row: the only payment, or on a split deal the one
+      // they were written for. Its due date follows the publish date unless it
+      // was set by hand, which is told apart by whether it still matches what
+      // the old terms and the old publish date gave.
+      const schedule = paymentsInOrder(deal)
+      const termsRow = schedule.find((payment) => payment.payment_terms) ?? primaryPayment(deal)
+      const previousPublish = stagesInOrder(deal).at(-1)?.due_date ?? null
+      const derived =
+        !termsRow?.due_date ||
+        termsRow.due_date === dueDateFromTerms(previousPublish, termsRow.payment_terms)
+      await updatePaymentRecord(deal, termsRow, {
         paymentTerms: paymentTerms.trim() || null,
         publishDate: parsedPublishFromStages,
+        keepDueDate: schedule.length > 1 && !derived,
       })
 
       // Ad rights are not written here. They are saved by the Deliverables
@@ -558,25 +585,39 @@ export default function DealDetailScreen() {
   }) {
     if (!deal) return
     try {
-      const created = await addPayment(deal.id, {
+      const payments = await addInstalment(deal, {
         amount: input.amount,
         due_date: input.due_date,
         label: input.label || null,
-        sort_order: paymentsInOrder(deal).length,
       })
-      setDeal((prev) => (prev ? { ...prev, payments: [...prev.payments, created] } : prev))
+      setDeal((prev) => (prev ? { ...prev, payments } : prev))
     } catch {
       toast('Could not add the instalment', { tone: 'error' })
+    }
+  }
+
+  async function handleUpdateInstalment(
+    paymentId: string,
+    input: { amount: number; due_date: string | null; label: string }
+  ) {
+    if (!deal) return
+    try {
+      const payments = await updateInstalment(deal, paymentId, {
+        amount: input.amount,
+        due_date: input.due_date,
+        label: input.label || null,
+      })
+      setDeal((prev) => (prev ? { ...prev, payments } : prev))
+    } catch {
+      toast('Could not save the instalment', { tone: 'error' })
     }
   }
 
   async function handleRemoveInstalment(paymentId: string) {
     if (!deal) return
     try {
-      await deletePayment(paymentId)
-      setDeal((prev) =>
-        prev ? { ...prev, payments: prev.payments.filter((p) => p.id !== paymentId) } : prev
-      )
+      const payments = await removeInstalment(deal, paymentId)
+      setDeal((prev) => (prev ? { ...prev, payments } : prev))
     } catch {
       toast('Could not remove the instalment', { tone: 'error' })
     }
@@ -595,9 +636,29 @@ export default function DealDetailScreen() {
         // One instalment, settled on its own. The deal only becomes Paid once
         // nothing is left outstanding, so an advance landing does not mark a
         // deal settled while the balance is still owed.
-        await settlePayment(settlingPayment, { received, tds })
+        const settled = await settlePayment(settlingPayment, { received, tds })
         const remaining = outstanding.filter((p) => p.id !== settlingPayment.id)
         if (remaining.length === 0) await updateDeal(deal.id, { status: 'paid' })
+        else {
+          // More is still owed, so she stays on the deal with the schedule in
+          // front of her. Closing the screen here sent her back to wherever
+          // she came from after every advance, with the balance out of sight.
+          const settledId = settlingPayment.id
+          setDeal((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  payments: prev.payments.map((payment) =>
+                    payment.id === settledId ? { ...payment, ...settled } : payment
+                  ),
+                }
+              : prev
+          )
+          setReceivedSheetOpen(false)
+          setSettlingPayment(null)
+          toast(`${formatCurrency(settlingPayment.amount)} marked received`, { tone: 'success' })
+          return
+        }
       } else {
         // The deal-level advance. Only the payment she was actually shown
         // carries the split; spreading her answer across instalments she never
@@ -733,7 +794,7 @@ export default function DealDetailScreen() {
         return
       }
 
-      const newStatus = await markPaymentReminderSent(deal.id, payment.status)
+      const newStatus = await markPaymentReminderSent(payment)
       setDeal((prev) =>
         prev
           ? {
@@ -1011,7 +1072,13 @@ export default function DealDetailScreen() {
                     label={summarizeDeliverables(deliverables) || PLATFORM_LABELS[platform]}
                     figure={
                       <Figure
-                        value={formatCurrency(rate ? parseInt(rate, 10) || 0 : null)}
+                        // Content and ad rights together, the same figure
+                        // every list shows for this deal. The content rate on
+                        // its own made a deal read as one amount in the list
+                        // and a smaller one once opened.
+                        value={formatCurrency(
+                          rate ? dealValue({ ...deal, rate: parseInt(rate, 10) || 0 }) : null
+                        )}
                         // Steps down on a phone. At `hero` the rate and the
                         // due date are set side by side and nearly touch at
                         // 390px, which reads as one run of digits.
@@ -1061,15 +1128,19 @@ export default function DealDetailScreen() {
                         <Text style={[styles.statusStage, { color: c.textSecondary }]}>
                           {STATUS_LABELS[deal.status]}
                         </Text>
-                        <PressableScale
-                          onPress={handleToggleHold}
-                          accessibilityRole="button"
-                          accessibilityLabel={deal.on_hold ? 'Resume this deal' : 'Put this deal on hold'}
-                        >
-                          <Text style={[styles.holdAction, { color: c.textMuted }]}>
-                            {deal.on_hold ? 'Resume' : 'Put on hold'}
-                          </Text>
-                        </PressableScale>
+                        {/* A paid deal has nothing left to pause. Resume stays
+                            for one that was already on hold when it settled. */}
+                        {deal.status !== 'paid' || deal.on_hold ? (
+                          <PressableScale
+                            onPress={handleToggleHold}
+                            accessibilityRole="button"
+                            accessibilityLabel={deal.on_hold ? 'Resume this deal' : 'Put this deal on hold'}
+                          >
+                            <Text style={[styles.holdAction, { color: c.textMuted }]}>
+                              {deal.on_hold ? 'Resume' : 'Put on hold'}
+                            </Text>
+                          </PressableScale>
+                        ) : null}
                       </View>
                       {nextStatus ? (
                         <TouchableOpacity
@@ -1392,9 +1463,10 @@ export default function DealDetailScreen() {
                   <View style={styles.deliverablesBlock}>
                     <InstalmentsCard
                       payments={paymentsInOrder(deal)}
-                      dealRate={deal.rate}
+                      dealRate={dealValue(deal)}
                       busy={advancing}
                       onAdd={handleAddInstalment}
+                      onUpdate={handleUpdateInstalment}
                       onRemove={handleRemoveInstalment}
                       onMarkReceived={(payment) => {
                         setSettlingPayment(payment)

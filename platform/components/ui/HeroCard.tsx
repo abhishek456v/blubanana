@@ -120,7 +120,7 @@ export function HeroCard({
               value={(format ?? String)(value)}
               // The one figure on the screen that earns a count-up.
               count
-              format={format ?? String}
+              format={format}
               size={40}
               color={ON_GRADIENT}
               bold

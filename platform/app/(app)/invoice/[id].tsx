@@ -11,6 +11,7 @@ import { getContacts, primaryContact } from '@/lib/brandContacts'
 import { sendNow } from '@/lib/messaging'
 import { buildInvoiceMessage } from '@/lib/whatsapp'
 import { isValidUpiId } from '@/lib/upi'
+import { placeOfSupplyLabel } from '@/constants/gst'
 import type { Creator, Invoice, InvoiceLineItem } from '@/types'
 import { Colors, Spacing, Radius, Typography, FontFamily, ContentMaxWidth } from '@/constants/design'
 import { useTheme } from '@/hooks/useTheme'
@@ -158,6 +159,22 @@ export default function InvoiceDetailScreen() {
 
   const netDue = invoice.total_amount - (invoice.tds_deducted ? invoice.tds_amount ?? 0 : 0)
 
+  // The address the invoice was issued from, not wherever she lives now.
+  const supplierAddress = invoice.supplier_address ?? creator.address
+  const placeOfSupply = placeOfSupplyLabel(invoice.place_of_supply_code)
+  // The same rows the printed invoice shows. One issued before the place of
+  // supply was recorded has no split to show, and keeps its single line.
+  const halfRate = invoice.gst_rate / 2
+  const gstRows: [string, number][] =
+    invoice.igst_amount > 0
+      ? [[`IGST @ ${invoice.gst_rate}%`, invoice.igst_amount]]
+      : invoice.cgst_amount > 0 || invoice.sgst_amount > 0
+        ? [
+            [`CGST @ ${halfRate}%`, invoice.cgst_amount],
+            [`SGST @ ${halfRate}%`, invoice.sgst_amount],
+          ]
+        : [[`GST @ ${invoice.gst_rate}%`, invoice.gst_amount]]
+
   async function handleDelete() {
     if (!invoice) return
     const ok = await confirm({
@@ -190,7 +207,12 @@ export default function InvoiceDetailScreen() {
 
   return (
     <>
-    <Stack.Screen options={{ headerRight: () => menu }} />
+    {/* The native header gives its right-hand slot no inset of its own, so a
+        bare menu sat flush against the screen edge with its last dot cut
+        off. The sheet's own header (wide screens) already pads its slot. */}
+    <Stack.Screen
+      options={{ headerRight: () => <View style={styles.headerMenu}>{menu}</View> }}
+    />
     <ModalSheet title={invoice.invoice_number} headerRight={menu}>
       <SafeAreaView style={[styles.safe, { backgroundColor: c.bgPage }]} edges={['bottom']}>
         <ScrollView
@@ -202,6 +224,9 @@ export default function InvoiceDetailScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={[styles.fromName, { color: c.textPrimary }]}>{creator.name}</Text>
                 <Text style={[styles.fromMeta, { color: c.textSecondary }]}>Content Creator</Text>
+                {supplierAddress ? (
+                  <Text style={[styles.fromMeta, { color: c.textSecondary }]}>{supplierAddress}</Text>
+                ) : null}
                 {creator.phone ? <Text style={[styles.fromMeta, { color: c.textSecondary }]}>{creator.phone}</Text> : null}
                 {creator.gstin ? <Text style={[styles.fromMeta, { color: c.textSecondary }]}>GSTIN: {creator.gstin}</Text> : null}
               </View>
@@ -218,6 +243,20 @@ export default function InvoiceDetailScreen() {
               {invoice.brand_contact_person || invoice.brand_contact_email ? (
                 <Text style={[styles.fromMeta, { color: c.textSecondary }]}>
                   {[invoice.brand_contact_person, invoice.brand_contact_email].filter(Boolean).join(' · ')}
+                </Text>
+              ) : null}
+              {/* The tax details the printed invoice carries. Left off the
+                  screen, the only way to check a GSTIN before sending was to
+                  make the PDF and read it there. */}
+              {invoice.brand_address ? (
+                <Text style={[styles.fromMeta, { color: c.textSecondary }]}>{invoice.brand_address}</Text>
+              ) : null}
+              {invoice.brand_gstin ? (
+                <Text style={[styles.fromMeta, { color: c.textSecondary }]}>GSTIN: {invoice.brand_gstin}</Text>
+              ) : null}
+              {placeOfSupply ? (
+                <Text style={[styles.fromMeta, { color: c.textSecondary }]}>
+                  Place of supply: {placeOfSupply}
                 </Text>
               ) : null}
             </View>
@@ -256,12 +295,14 @@ export default function InvoiceDetailScreen() {
                 <Text style={[styles.totalLabel, { color: c.textSecondary }]}>Subtotal</Text>
                 <Text style={[styles.totalValue, { color: c.textSecondary }]}>{formatINR(invoice.amount)}</Text>
               </View>
-              {invoice.gst_applicable ? (
-                <View style={styles.totalRow}>
-                  <Text style={[styles.totalLabel, { color: c.textSecondary }]}>GST ({invoice.gst_rate}%)</Text>
-                  <Text style={[styles.totalValue, { color: c.textSecondary }]}>{formatINR(invoice.gst_amount)}</Text>
-                </View>
-              ) : null}
+              {invoice.gst_applicable
+                ? gstRows.map(([label, value]) => (
+                    <View key={label} style={styles.totalRow}>
+                      <Text style={[styles.totalLabel, { color: c.textSecondary }]}>{label}</Text>
+                      <Text style={[styles.totalValue, { color: c.textSecondary }]}>{formatINR(value)}</Text>
+                    </View>
+                  ))
+                : null}
               {invoice.tds_deducted && invoice.tds_amount ? (
                 <View style={styles.totalRow}>
                   <Text style={[styles.totalLabel, { color: c.textSecondary }]}>TDS deducted</Text>
@@ -280,6 +321,9 @@ export default function InvoiceDetailScreen() {
                 {creator.upi_id ? <Text style={[styles.fromMeta, { color: c.textSecondary }]}>UPI: {creator.upi_id}</Text> : null}
                 {creator.bank_account_number ? (
                   <Text style={[styles.fromMeta, { color: c.textSecondary }]}>Account: {creator.bank_account_number}</Text>
+                ) : null}
+                {creator.ifsc_code ? (
+                  <Text style={[styles.fromMeta, { color: c.textSecondary }]}>IFSC: {creator.ifsc_code}</Text>
                 ) : null}
                 {invoice.payment_due_date ? (
                   <Text style={[styles.fromMeta, { color: c.textSecondary }]}>Due: {formatDate(invoice.payment_due_date)}</Text>
@@ -328,6 +372,7 @@ export default function InvoiceDetailScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
+  headerMenu: { marginRight: Spacing.md },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   content: { padding: Spacing.md, paddingBottom: Spacing.xl },
   contentWide: { maxWidth: 560, width: '100%', alignSelf: 'center' },

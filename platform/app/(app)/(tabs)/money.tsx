@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons'
 import {
   getDeals,
   nextDuePayment,
+  outstandingOn,
   paymentsInOrder,
   type DealWithPaymentSummary,
 } from '@/lib/deals'
@@ -325,9 +326,11 @@ export default function MoneyScreen() {
       title: 'Amount',
       flex: 1,
       align: 'right',
+      // What is still owed, not what the deal is worth: once an advance has
+      // landed, this list has to add up to the "to be paid" figure above it.
       render: (deal) => (
         <Text style={[styles.cellAmount, { color: c.textPrimary }]} numberOfLines={1}>
-          {formatCurrency(deal.rate)}
+          {formatCurrency(outstandingOn(deal))}
         </Text>
       ),
     },
@@ -508,6 +511,7 @@ export default function MoneyScreen() {
                   <DealRow
                     key={deal.id}
                     deal={deal}
+                    amount={outstandingOn(deal)}
                     index={index}
                     variant="plain"
                     onPress={() => router.push(`/(app)/deal/${deal.id}` as never)}

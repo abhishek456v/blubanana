@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { FlatList, StyleSheet, Text, View } from 'react-native'
-import { useRouter } from 'expo-router'
+import { Stack, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from 'expo-router/react-navigation'
 import { Ionicons } from '@expo/vector-icons'
@@ -18,6 +18,7 @@ import { useBreakpoint } from '@/hooks/useBreakpoint'
 import { useTheme } from '@/hooks/useTheme'
 import { ModalSheet } from '@/components/ModalSheet'
 import {
+  Button,
   DataTable,
   EmptyState,
   Figure,
@@ -102,8 +103,24 @@ export default function InvoicesScreen() {
     },
   ]
 
+  // The way to raise an invoice from the place invoices live. This screen
+  // used to be read-only: the only route to a new invoice was to open a deal
+  // first, and the empty state said so, which left no way at all to bill for
+  // work that was never logged as a deal.
+  const newInvoice = (
+    <Button
+      label="New invoice"
+      icon="add"
+      size="sm"
+      onPress={() => router.push('/(app)/invoice/new' as never)}
+    />
+  )
+
   return (
-    <ModalSheet title="Invoices" wide>
+    <ModalSheet title="Invoices" headerRight={newInvoice} wide>
+      <Stack.Screen
+        options={{ headerRight: () => <View style={styles.headerAction}>{newInvoice}</View> }}
+      />
       <SafeAreaView style={[styles.container, { backgroundColor: c.bgPage }]} edges={['bottom']}>
         {loading ? (
           <View style={[styles.list, isWide && styles.listWide]}>
@@ -205,7 +222,9 @@ export default function InvoicesScreen() {
               <EmptyState
                 icon="document-text-outline"
                 title="No invoices yet"
-                message="Open any deal and tap Create invoice. The brand's details, the amount and the GST are filled in for you."
+                message="Raise one here, or open a deal and tap Create invoice to have the brand's details, the amount and the GST filled in for you."
+                actionLabel="New invoice"
+                onAction={() => router.push('/(app)/invoice/new' as never)}
               />
             }
             contentContainerStyle={[styles.list, isWide && styles.listWide]}
@@ -218,6 +237,7 @@ export default function InvoicesScreen() {
 }
 
 const styles = StyleSheet.create({
+  headerAction: { marginRight: Spacing.md },
   container: {
     flex: 1,
   },

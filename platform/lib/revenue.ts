@@ -1,4 +1,5 @@
-import { isFullyPaid, paymentsInOrder, type DealWithPaymentSummary } from './deals'
+import { grossOf, isFullyPaid, paymentsInOrder, type DealWithPaymentSummary } from './deals'
+import { parseLocalDate, toDateString } from './format'
 import { getPaymentAlertTone } from './paymentReminders'
 
 // Revenue dashboard. Every number here is derived client-side from deals +
@@ -96,7 +97,12 @@ export function computeRevenueSummary(deals: DealWithPaymentSummary[]): RevenueS
     return sum
   }
 
-  const lockedDeals = deals.filter((d) => isSameMonth(d.created_at.slice(0, 10), now))
+  // The local calendar day it was logged on. `created_at` is a UTC timestamp,
+  // and its first ten characters are yesterday for anything logged before
+  // 05:30 IST, which on the 1st put a deal in the wrong month.
+  const lockedDeals = deals.filter((d) =>
+    isSameMonth(toDateString(parseLocalDate(d.created_at)), now)
+  )
   const lockedThisMonth: MaskableMoneyBucket = {
     count: lockedDeals.length,
     value: sumRates(lockedDeals),
@@ -147,8 +153,12 @@ export function computeRevenueSummary(deals: DealWithPaymentSummary[]): RevenueS
 
   // Measured against everything billed, settled or not, so a brand sitting on
   // an invoice drags the rate down rather than being quietly excluded.
+  //
+  // Collected counts the TDS a brand withheld. That money was paid, to the tax
+  // department in her name, and treating it as uncollected marked every brand
+  // that follows the law as one that short-pays.
   const billed = rows.reduce((sum, { payment }) => sum + payment.amount, 0)
-  const collectedTotal = settled.reduce((sum, row) => sum + landed(row), 0)
+  const collectedTotal = settled.reduce((sum, { payment }) => sum + grossOf(payment), 0)
 
   const daysToPay = settled
     .filter(({ payment }) => payment.due_date && payment.paid_date)
@@ -161,7 +171,7 @@ export function computeRevenueSummary(deals: DealWithPaymentSummary[]): RevenueS
   const collection =
     billed > 0 && settled.length > 0
       ? {
-          rate: Math.round((collectedTotal / billed) * 100),
+          rate: Math.min(Math.round((collectedTotal / billed) * 100), 100),
           // Relative to the due date, so 0 means "on time" and a negative
           // number means early. Days-since-invoice would flatter long terms.
           averageDays:

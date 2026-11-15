@@ -69,10 +69,19 @@ function trimZero(value: number): string {
   return value.toFixed(1).replace(/\.0$/, '')
 }
 
-/** `12 Sep` */
+/**
+ * `12 Sep`, or `12 Sep 2027` when the date is not in the current year.
+ *
+ * The year is left off only while it is the obvious one. A payment due on
+ * 1 Jan, shown in November, is next year's; an ad-rights term or a brand's
+ * last deal can sit a year either side. Without the year those read as dates
+ * in this one.
+ */
 export function formatDate(dateStr: string | null | undefined): string {
   if (!dateStr) return ''
-  return parseLocalDate(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+  const date = parseLocalDate(dateStr)
+  if (date.getFullYear() !== new Date().getFullYear()) return formatDateLong(dateStr)
+  return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
 }
 
 /** `12 Sep 2026`, for invoices and anything spanning a year boundary. */
@@ -91,6 +100,9 @@ export function formatDateLong(dateStr: string | null | undefined): string {
  * Falls back to an absolute date beyond a week in either direction. Past
  * that, "in 23 days" is harder to act on than "6 Sep", and the creator is
  * checking a calendar at that point anyway.
+ *
+ * The year is added once the date is in a different calendar year. "Ad rights
+ * ended 7 Aug" on a deal from last year read as three months ago.
  */
 export function formatRelativeDay(dateStr: string | null | undefined): string {
   if (!dateStr) return ''
@@ -101,7 +113,23 @@ export function formatRelativeDay(dateStr: string | null | undefined): string {
   if (days === -1) return 'Yesterday'
   if (days > 1 && days <= 7) return `In ${days} days`
   if (days < -1 && days >= -7) return `${Math.abs(days)} days ago`
-  return formatDate(dateStr)
+  return parseLocalDate(dateStr).getFullYear() === new Date().getFullYear()
+    ? formatDate(dateStr)
+    : formatDateLong(dateStr)
+}
+
+/**
+ * `formatRelativeDay` for the middle of a sentence: "due tomorrow", "ended
+ * 3 days ago", "due 7 Aug".
+ *
+ * Only the relative words drop their capital. Lower-casing the whole string
+ * also lower-cased the month once the date was more than a week away, which
+ * is how rows came to read "Ad rights ended 7 aug".
+ */
+export function formatRelativeDayInline(dateStr: string | null | undefined): string {
+  if (!dateStr) return ''
+  const label = formatRelativeDay(dateStr)
+  return Math.abs(daysFromToday(dateStr)) <= 7 ? label.toLowerCase() : label
 }
 
 /** Indian financial year (April–March) containing `date`, as `2026-27`. */

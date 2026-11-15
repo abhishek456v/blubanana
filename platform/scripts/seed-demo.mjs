@@ -2,6 +2,11 @@
 //
 //   node scripts/seed-demo.mjs
 //
+// The first run, when the demo account does not exist yet, also needs the
+// password to give it:
+//
+//   DEMO_PASSWORD='…' node scripts/seed-demo.mjs
+//
 // Why this exists: the website's credibility rests on showing the real product,
 // which means real screenshots of a real workspace with a year of business in
 // it. The obvious workspace to photograph is the founder's own — and that one
@@ -37,7 +42,11 @@ const SERVICE = env.SUPABASE_SERVICE_ROLE_KEY
 if (!URL_ || !SERVICE) throw new Error('Missing Supabase URL or service role key in .env')
 
 const EMAIL = process.env.DEMO_EMAIL ?? 'demo@blubanana.in'
-const PASSWORD = process.env.DEMO_PASSWORD ?? 'BlubananaDemo!2026'
+// No default, on purpose. This repository is public, and a password written
+// here is a working sign-in to a live account for anybody who reads the file.
+// It is only needed to create the account; a re-seed of an existing one never
+// touches the password.
+const PASSWORD = process.env.DEMO_PASSWORD
 
 // Plain fetch rather than supabase-js: the client pulls in realtime, which
 // wants a native WebSocket this Node build does not have. Nothing here needs a
@@ -140,6 +149,12 @@ async function findOrCreateUser() {
   const list = await admin('admin/users?per_page=200')
   const existing = (list.users ?? []).find((u) => u.email === EMAIL)
   if (existing) return existing
+
+  if (!PASSWORD) {
+    throw new Error(
+      `${EMAIL} does not exist yet. Run again with DEMO_PASSWORD set to the password it should have.`
+    )
+  }
 
   // handle_new_user() builds the workspace, membership, profile and trial on
   // this insert. It is a trigger, not a queue, so it has already run when this
@@ -322,8 +337,33 @@ for (const deal of deals) {
     rate: deal.rate,
     due_date: iso(day(publish)),
     published_at: publish < 0 ? iso(day(publish)) : null,
+    // Named on every row because a bulk insert needs matching keys.
+    duration_months: null,
+    starts_on: null,
+    expires_on: null,
     sort_order: 0,
   })
+
+  // Ad rights are a line item of their own in the app, which mirrors them onto
+  // the deal's ad_rights_* columns. Seeding only the columns left a deal whose
+  // fee showed in every list but nowhere on the deal itself.
+  if (deal.row.ad_rights_fee) {
+    deliverables.push({
+      workspace_id,
+      deal_id: deal.id,
+      kind: 'ad_rights',
+      platform: null,
+      quantity: 1,
+      description: 'Paid amplification / whitelisting rights',
+      rate: deal.row.ad_rights_fee,
+      due_date: null,
+      published_at: null,
+      duration_months: deal.row.ad_rights_duration_months,
+      starts_on: deal.row.ad_rights_start_date,
+      expires_on: deal.row.ad_rights_expires_date,
+      sort_order: 1,
+    })
+  }
 
   // Half the deals are 50/50 advance and balance, which is the most common
   // arrangement in Indian creator work and the reason 021 dropped the unique
@@ -354,12 +394,17 @@ for (const deal of deals) {
     }
   }
 
+  // What the brand owes is the content plus the ad-rights fee, which is what
+  // the app schedules (dealValue in lib/deals.ts). Seeding the rate alone left
+  // every demo deal with ad rights showing an unscheduled remainder.
+  const owed = deal.rate + (deal.row.ad_rights_fee ?? 0)
+
   if (split) {
-    const advance = Math.round(deal.rate / 2 / 500) * 500
+    const advance = Math.round(owed / 2 / 500) * 500
     payments.push(settle(advance, publish - 10, 'Advance', 0))
-    payments.push(settle(deal.rate - advance, dueOffset, 'Balance', 1))
+    payments.push(settle(owed - advance, dueOffset, 'Balance', 1))
   } else {
-    payments.push(settle(deal.rate, dueOffset, null, 0))
+    payments.push(settle(owed, dueOffset, null, 0))
   }
 }
 
@@ -416,7 +461,9 @@ invoiceable.forEach((deal, i) => {
   const brand = brands.find((b) => b.id === deal.row.brand_id)
   const source = BRANDS.find(([name]) => name === brand.name)
   const state = source[4]
-  const amount = deal.rate
+  // The content and, where there is one, the ad-rights fee: the two lines
+  // written below, so the header and its lines cannot disagree.
+  const amount = deal.rate + (deal.row.ad_rights_fee ?? 0)
   const gst = Math.round(amount * 0.18)
   const interState = state !== CREATOR_STATE
   const tds = i === 2 ? Math.round(amount * 0.1) : 0
@@ -453,20 +500,31 @@ invoiceable.forEach((deal, i) => {
 const writtenInvoices = await insert('invoices', invoices)
 await insert(
   'invoice_line_items',
-  writtenInvoices.map((invoice, i) => ({
-    workspace_id,
-    invoice_id: invoice.id,
-    deal_id: invoiceable[i].id,
-    description: invoiceable[i].row.deliverable_description,
-    // 998397 — "sponsorship services". The default the app uses.
-    hsn_sac: '998397',
-    quantity: 1,
-    unit_amount: invoiceable[i].rate,
-    amount: invoiceable[i].rate,
-    sort_order: 0,
-  }))
+  writtenInvoices.flatMap((invoice, i) => {
+    const deal = invoiceable[i]
+    const line = (description, amount, sort_order) => ({
+      workspace_id,
+      invoice_id: invoice.id,
+      deal_id: deal.id,
+      description,
+      // 998397 — "sponsorship services". The default the app uses.
+      hsn_sac: '998397',
+      quantity: 1,
+      unit_amount: amount,
+      amount,
+      sort_order,
+    })
+    const months = deal.row.ad_rights_duration_months
+    return [
+      line(deal.row.deliverable_description, deal.rate, 0),
+      // Itemised the way the app's own invoice form writes it.
+      ...(deal.row.ad_rights_fee
+        ? [line(`Ad rights · ${months} ${months === 1 ? 'month' : 'months'}`, deal.row.ad_rights_fee, 1)]
+        : []),
+    ]
+  })
 )
 console.log(`invoices  ${writtenInvoices.length}`)
 console.log(`  preview: /invoice/${writtenInvoices[0]?.id ?? ''}`)
 
-console.log(`\nSigned in as ${EMAIL} / ${PASSWORD}`)
+console.log(`\nDemo account: ${EMAIL}`)

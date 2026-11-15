@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import { addMonths } from './format'
+import { addMonths, toDateString } from './format'
 import { getStages, replaceStages } from './dealStages'
 import { getDeliverables, replaceDeliverables } from './deliverables'
 import { getWorkspaceId } from './workspace'
@@ -230,7 +230,11 @@ export async function createDeal(input: CreateDealInput): Promise<Deal> {
       // lets its RLS policy drop that per-row join.
       workspace_id: workspaceId,
       deal_id: deal.id,
-      amount: input.rate,
+      // What the brand owes, which is the content plus any ad-rights fee. The
+      // fee is kept out of `deals.rate` (see syncDealFromDeliverables), but it
+      // is still money owed: leaving it off the payment meant it was never
+      // chased, never counted as outstanding and never counted as income.
+      amount: input.rate + (adRights?.ad_rights_granted ? (adRights.ad_rights_fee ?? 0) : 0),
       payment_terms: input.payment_terms ?? null,
       due_date: dueDate,
       status: 'pending',
@@ -441,7 +445,7 @@ export async function updatePerformance(
 // from publish_date + payment_terms whenever either value changes, and
 // reschedules the due-soon/due-today local reminders to match.
 /**
- * Updates one payment row.
+ * Updates the terms on one payment row.
  *
  * Targets the payment by id, not the deal. It used to update by `deal_id`,
  * which was correct while a deal could only have one payment and would now
@@ -450,28 +454,44 @@ export async function updatePerformance(
  *
  * Null payment is a no-op: a deal with no payment row has nothing to update,
  * and inventing one here would hide the fact that createDeal did not make it.
+ *
+ * The amount is not written here. It belongs to the schedule, which
+ * `rebalanceSchedule` keeps in step with the deal's value.
  */
 export async function updatePaymentRecord(
   deal: Pick<Deal, 'id' | 'brand'>,
-  payment: Pick<Payment, 'id' | 'due_soon_notification_id' | 'due_today_notification_id'> | null,
+  payment: Pick<
+    Payment,
+    'id' | 'status' | 'due_date' | 'due_soon_notification_id' | 'due_today_notification_id'
+  > | null,
   {
-    amount,
     paymentTerms,
     publishDate,
+    keepDueDate = false,
   }: {
-    /**
-     * Omit to leave the existing amount untouched.
-     *
-     * Used when the caller cannot see the deal's rate (see `Deal.rate`): they
-     * may still edit the terms and the publish date, and must not be able to
-     * overwrite an amount they were never shown.
-     */
-    amount?: number
     paymentTerms: string | null
     publishDate: string | null
+    /**
+     * Writes the terms but leaves the due date alone. For an instalment whose
+     * date was set by hand: "30 days from publish" describes the balance, and
+     * must not drag the advance's date along with it.
+     */
+    keepDueDate?: boolean
   }
 ): Promise<void> {
   if (!payment) return
+
+  // Money that has landed has no due date left to move and nothing to remind
+  // about. Recalculating it used to schedule "payment due" notifications for a
+  // payment already in the bank whenever a paid deal was edited.
+  if (payment.status === 'paid' || keepDueDate) {
+    const { error } = await supabase
+      .from('payments')
+      .update({ payment_terms: paymentTerms })
+      .eq('id', payment.id)
+    if (error) throw error
+    return
+  }
 
   const dueDate = calculateDueDate(publishDate, paymentTerms)
   const reminderFields = await reschedulePaymentReminders({ ...payment, due_date: dueDate }, deal)
@@ -479,7 +499,6 @@ export async function updatePaymentRecord(
   const { error } = await supabase
     .from('payments')
     .update({
-      ...(amount === undefined ? {} : { amount }),
       payment_terms: paymentTerms,
       due_date: dueDate,
       ...reminderFields,
@@ -553,16 +572,21 @@ export async function respondToReminder(
 // Lazily enforces the pending/reminder_sent → overdue transition on load,
 // since there's no reliable background execution to do it the moment the
 // due date actually passes (see lib/paymentReminders.ts isPaymentOverdue).
+//
+// Targets the payment by id. It used to update by `deal_id`, which on a deal
+// with an advance and a balance turned the advance that had already been
+// received back into "overdue" the moment the balance ran late, and took its
+// money out of every "received" total with it.
 export async function syncPaymentStatus(
-  dealId: string,
-  payment: Pick<Payment, 'due_date' | 'status'>
+  payment: Pick<Payment, 'id' | 'due_date' | 'status'>
 ): Promise<PaymentStatus> {
   if (!isPaymentOverdue(payment)) return payment.status
 
   const { error } = await supabase
     .from('payments')
     .update({ status: 'overdue' })
-    .eq('deal_id', dealId)
+    .eq('id', payment.id)
+    .neq('status', 'paid')
   if (error) throw error
 
   return 'overdue'
@@ -571,16 +595,18 @@ export async function syncPaymentStatus(
 // Called when the creator taps "Send WhatsApp reminder" on the due-soon
 // card. Only moves status forward the first time (pending → reminder_sent);
 // a resend while already reminder_sent/overdue is a no-op status-wise.
+//
+// By payment id, for the same reason as syncPaymentStatus above.
 export async function markPaymentReminderSent(
-  dealId: string,
-  currentStatus: PaymentStatus
+  payment: Pick<Payment, 'id' | 'status'>
 ): Promise<PaymentStatus> {
-  if (currentStatus !== 'pending') return currentStatus
+  if (payment.status !== 'pending') return payment.status
 
   const { error } = await supabase
     .from('payments')
     .update({ status: 'reminder_sent' })
-    .eq('deal_id', dealId)
+    .eq('id', payment.id)
+    .eq('status', 'pending')
   if (error) throw error
 
   return 'reminder_sent'
@@ -642,6 +668,21 @@ export function receivedOn(deal: { payments?: PaymentSummary[] | null }): number
     .reduce((sum, payment) => sum + (payment.amount_received ?? payment.amount), 0)
 }
 
+/**
+ * What a settled payment was worth before the brand withheld TDS.
+ *
+ * The figure income tax is charged on. TDS is tax already paid on the
+ * creator's behalf, not money she failed to earn, so the year's income is what
+ * landed plus what was withheld. Where the split was never recorded
+ * (`amount_received` null) the invoiced amount is the gross.
+ */
+export function grossOf(
+  payment: Pick<PaymentSummary, 'amount' | 'amount_received' | 'tds_amount'>
+): number {
+  if (payment.amount_received == null) return payment.amount
+  return payment.amount_received + (payment.tds_amount ?? 0)
+}
+
 /** True only when every payment on the deal is settled. */
 export function isFullyPaid(deal: { payments?: PaymentSummary[] | null }): boolean {
   const all = paymentsInOrder(deal)
@@ -660,50 +701,271 @@ export function isFullyPaid(deal: { payments?: PaymentSummary[] | null }): boole
 export async function settlePayment(
   payment: Pick<Payment, 'id' | 'due_soon_notification_id' | 'due_today_notification_id'>,
   { received, tds }: { received: number; tds: number }
-): Promise<void> {
+) {
   const reminderFields = await cancelPaymentReminders(payment)
 
-  const { error } = await supabase
-    .from('payments')
-    .update({
-      status: 'paid',
-      paid_date: new Date().toISOString().split('T')[0],
-      amount_received: received,
-      tds_amount: tds,
-      ...reminderFields,
-    })
-    .eq('id', payment.id)
+  const fields = {
+    status: 'paid' as const satisfies PaymentStatus,
+    paid_date: toDateString(new Date()),
+    amount_received: received,
+    tds_amount: tds,
+    ...reminderFields,
+  }
+  const { error } = await supabase.from('payments').update(fields).eq('id', payment.id)
   if (error) throw error
+
+  // Handed back so a screen that stays open can show the row as settled
+  // without reading the deal again.
+  return fields
 }
 
-/** Adds an instalment to a deal: an advance, a milestone, a balance. */
-export async function addPayment(
-  dealId: string,
-  input: { amount: number; due_date: string | null; label: string | null; sort_order: number }
-): Promise<Payment> {
+/**
+ * What the brand owes for a deal: the content plus any ad-rights fee.
+ *
+ * `deals.rate` is the content alone (see syncDealFromDeliverables), so this is
+ * the figure the payment schedule has to add up to. Null when the rate is
+ * withheld from this reader — see `Deal.rate`.
+ */
+export function dealValue(
+  deal: Pick<Deal, 'rate' | 'ad_rights_granted' | 'ad_rights_fee'>
+): number | null {
+  if (deal.rate === null) return null
+  return deal.rate + (deal.ad_rights_granted ? (deal.ad_rights_fee ?? 0) : 0)
+}
+
+type ScheduleDeal = Pick<Deal, 'id' | 'brand'> & { payments: Payment[] }
+
+/**
+ * Puts dated instalments in date order, leaving undated ones where they sit.
+ *
+ * `sort_order` is what every screen reads to decide which payment is next, so
+ * an advance added after the balance has to move ahead of it or the app chases
+ * the wrong one. Undated rows keep their slot: an advance with no date yet is
+ * still the advance.
+ */
+function inScheduleOrder(rows: Payment[]): Payment[] {
+  const current = paymentsInOrder({ payments: rows })
+  const dated = current
+    .filter((row) => row.due_date)
+    .sort((a, b) => a.due_date!.localeCompare(b.due_date!))
+  let next = 0
+  return current.map((row) => (row.due_date ? dated[next++] : row))
+}
+
+/** Writes `sort_order` for any row whose place in the schedule changed. */
+async function renumberSchedule(rows: Payment[]): Promise<Payment[]> {
+  const ordered = inScheduleOrder(rows)
+  const out: Payment[] = []
+  for (const [index, row] of ordered.entries()) {
+    if (row.sort_order !== index) {
+      const { error } = await supabase.from('payments').update({ sort_order: index }).eq('id', row.id)
+      if (error) throw error
+    }
+    out.push(row.sort_order === index ? row : { ...row, sort_order: index })
+  }
+  return out
+}
+
+/** The last instalment still owed: the balance, on any ordinary schedule. */
+function balanceRow(rows: Payment[], except?: string): Payment | null {
+  return (
+    paymentsInOrder({ payments: rows })
+      .filter((row) => row.status !== 'paid' && row.id !== except)
+      .at(-1) ?? null
+  )
+}
+
+async function writeAmount(payment: Payment, amount: number): Promise<Payment> {
+  const { error } = await supabase.from('payments').update({ amount }).eq('id', payment.id)
+  if (error) throw error
+  return { ...payment, amount }
+}
+
+/**
+ * Adds an instalment to a deal: an advance, a milestone, a balance.
+ *
+ * When the schedule already adds up to the deal, the new instalment is carved
+ * out of the balance rather than stacked on top of it. "₹40,000 advance" on a
+ * ₹1,00,000 deal means ₹40,000 now and ₹60,000 later; adding it as a second
+ * full-size row left the deal owing ₹1,40,000 with no way to correct it.
+ *
+ * Returns the deal's whole schedule, in order.
+ */
+export async function addInstalment(
+  deal: ScheduleDeal & Pick<Deal, 'rate' | 'ad_rights_granted' | 'ad_rights_fee'>,
+  input: { amount: number; due_date: string | null; label: string | null }
+): Promise<Payment[]> {
   const workspaceId = await getWorkspaceId()
+  let rows = paymentsInOrder(deal)
+
+  const scheduled = rows.reduce((sum, row) => sum + row.amount, 0)
+  // The latest instalment still owed that is big enough to give the amount up.
+  // Usually the balance; on a schedule that ends in a small row (an ad-rights
+  // fee billed last) it is the one before, and skipping the carve there left
+  // the deal owing more than was agreed.
+  const balance = rows.filter((row) => row.status !== 'paid' && row.amount > input.amount).at(-1)
+  if (scheduled === dealValue(deal) && balance) {
+    const reduced = await writeAmount(balance, balance.amount - input.amount)
+    rows = rows.map((row) => (row.id === reduced.id ? reduced : row))
+  }
 
   const { data, error } = await supabase
     .from('payments')
     .insert({
       workspace_id: workspaceId,
-      deal_id: dealId,
+      deal_id: deal.id,
       amount: input.amount,
       due_date: input.due_date,
       label: input.label,
-      sort_order: input.sort_order,
+      sort_order: rows.length,
       status: 'pending' satisfies PaymentStatus,
     })
     .select()
     .single()
-
   if (error) throw error
-  return data as Payment
+
+  let created = data as Payment
+  // Best-effort, as in createDeal: the row exists, and a notification that
+  // failed to schedule must not fail the save.
+  try {
+    const reminderFields = await reschedulePaymentReminders(created, deal)
+    const { error: reminderError } = await supabase
+      .from('payments')
+      .update(reminderFields)
+      .eq('id', created.id)
+    if (!reminderError) created = { ...created, ...reminderFields }
+  } catch {
+    // Swallowed: see above.
+  }
+
+  return renumberSchedule([...rows, created])
 }
 
-export async function deletePayment(paymentId: string): Promise<void> {
-  const { error } = await supabase.from('payments').delete().eq('id', paymentId)
+/**
+ * Edits an instalment that has not been paid yet.
+ *
+ * A settled row is refused: its amount is what the year's income is built
+ * from, and changing it after the fact rewrites figures already reported.
+ *
+ * A changed amount is taken from, or given to, the last other instalment still
+ * owed, the same way adding and removing one are: an advance corrected from
+ * ₹40,000 to ₹50,000 on a ₹1,00,000 deal leaves ₹50,000 to come, not ₹60,000.
+ * Left alone when the schedule did not add up beforehand, when no other row is
+ * owed, or when the change is more than that row holds; the card states the
+ * difference in those cases.
+ */
+export async function updateInstalment(
+  deal: ScheduleDeal & Pick<Deal, 'rate' | 'ad_rights_granted' | 'ad_rights_fee'>,
+  paymentId: string,
+  input: { amount: number; due_date: string | null; label: string | null }
+): Promise<Payment[]> {
+  let rows = paymentsInOrder(deal)
+  const payment = rows.find((row) => row.id === paymentId)
+  if (!payment) throw new Error('No such instalment')
+  if (payment.status === 'paid') throw new Error('A received payment cannot be edited')
+
+  const reminderFields = await reschedulePaymentReminders(
+    { ...payment, due_date: input.due_date },
+    deal
+  )
+  // A date moved forward takes the row out of "overdue"; the lazy sync on the
+  // next load puts it back if the new date has passed as well.
+  const status: PaymentStatus =
+    payment.status === 'overdue' && !isPaymentOverdue({ due_date: input.due_date, status: 'pending' })
+      ? 'pending'
+      : payment.status
+
+  const fields = {
+    amount: input.amount,
+    due_date: input.due_date,
+    label: input.label,
+    status,
+    ...reminderFields,
+  }
+  const { error } = await supabase.from('payments').update(fields).eq('id', payment.id)
   if (error) throw error
+
+  const scheduled = rows.reduce((sum, row) => sum + row.amount, 0)
+  rows = rows.map((row) => (row.id === payment.id ? { ...row, ...fields } : row))
+
+  const other = balanceRow(rows, payment.id)
+  const change = input.amount - payment.amount
+  if (change !== 0 && scheduled === dealValue(deal) && other && other.amount > change) {
+    const adjusted = await writeAmount(other, other.amount - change)
+    rows = rows.map((row) => (row.id === adjusted.id ? adjusted : row))
+  }
+
+  return renumberSchedule(rows)
+}
+
+/**
+ * Removes an unpaid instalment and hands its amount back to the balance.
+ *
+ * The mirror of `addInstalment`: a schedule that added up before the removal
+ * still adds up after it.
+ */
+export async function removeInstalment(
+  deal: ScheduleDeal & Pick<Deal, 'rate' | 'ad_rights_granted' | 'ad_rights_fee'>,
+  paymentId: string
+): Promise<Payment[]> {
+  let rows = paymentsInOrder(deal)
+  const payment = rows.find((row) => row.id === paymentId)
+  if (!payment) return rows
+  if (payment.status === 'paid') throw new Error('A received payment cannot be removed')
+  if (rows.length === 1) throw new Error('A deal keeps at least one payment')
+
+  await cancelPaymentReminders(payment)
+  const { error } = await supabase.from('payments').delete().eq('id', payment.id)
+  if (error) throw error
+
+  const scheduled = rows.reduce((sum, row) => sum + row.amount, 0)
+  rows = rows.filter((row) => row.id !== payment.id)
+  const balance = balanceRow(rows)
+  if (scheduled === dealValue(deal) && balance) {
+    const raised = await writeAmount(balance, balance.amount + payment.amount)
+    rows = rows.map((row) => (row.id === raised.id ? raised : row))
+  }
+
+  return renumberSchedule(rows)
+}
+
+/**
+ * Keeps the schedule adding up when the deal's value changes.
+ *
+ * The difference goes on the balance: the last instalment still owed. Nothing
+ * is touched when the schedule did not add up to the old value in the first
+ * place (it was set by hand, and the card says so), when everything is already
+ * paid, or when the change would take the balance to zero or below. Money that
+ * has landed is never rewritten.
+ */
+export async function rebalanceSchedule(
+  deal: { payments: Payment[] },
+  previousValue: number | null,
+  nextValue: number | null
+): Promise<Payment[]> {
+  const rows = paymentsInOrder(deal)
+  if (previousValue === null || nextValue === null || previousValue === nextValue) return rows
+
+  const scheduled = rows.reduce((sum, row) => sum + row.amount, 0)
+  const balance = balanceRow(rows)
+  if (scheduled !== previousValue || !balance) return rows
+
+  const amount = balance.amount + (nextValue - previousValue)
+  if (amount <= 0) return rows
+
+  const changed = await writeAmount(balance, amount)
+  return rows.map((row) => (row.id === changed.id ? changed : row))
+}
+
+/**
+ * The due date `terms` gives for a publish date, or null when it gives none.
+ * Exposed so a screen can tell a derived due date from one set by hand.
+ */
+export function dueDateFromTerms(
+  publishDate: string | null | undefined,
+  paymentTerms: string | null | undefined
+): string | null {
+  return calculateDueDate(publishDate, paymentTerms)
 }
 
 /**
@@ -765,7 +1027,7 @@ export async function advanceDealStatus(deal: DealWithPayments): Promise<DealSta
   await updateDeal(deal.id, { status: next })
 
   if (next === 'paid') {
-    const today = new Date().toISOString().split('T')[0]
+    const today = toDateString(new Date())
 
     // Settles every outstanding payment on the deal, not just one. A deal on
     // an advance has two, and marking the deal paid while a row still reads
@@ -806,8 +1068,9 @@ function calculateDueDate(
 
   const days = parseInt(match[1], 10)
   const [year, month, day] = publishDate.split('-').map(Number)
-  const date = new Date(year, month - 1, day + days)
-  return date.toISOString().split('T')[0]
+  // toDateString, not toISOString: local midnight is still the previous day in
+  // UTC for anyone ahead of it, which stored every due date a day early.
+  return toDateString(new Date(year, month - 1, day + days))
 }
 
 

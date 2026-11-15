@@ -1,12 +1,12 @@
 import { StyleSheet, Text, View } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
-import { stagesInOrder, type DealWithPaymentSummary } from '@/lib/deals'
+import { dealValue, stagesInOrder, type DealWithPaymentSummary } from '@/lib/deals'
 import { FontFamily, Radius, Spacing, Typography } from '@/constants/design'
 import { Duration, staggerDelay } from '@/constants/motion'
 import { PLATFORM_LABELS } from '@/constants/labels'
 import { useTheme } from '@/hooks/useTheme'
 import { getAdRightsStatus } from '@/lib/adRights'
-import { formatCurrency, formatRelativeDay } from '@/lib/format'
+import { formatCurrency, formatRelativeDayInline } from '@/lib/format'
 import { PressableScale } from '@/components/ui'
 import { BrandAvatar } from './BrandAvatar'
 import { StatusPill } from './StatusPill'
@@ -37,6 +37,12 @@ interface DealRowProps {
    */
   reason?: string
   reasonColor?: string
+  /**
+   * The figure to show instead of the deal's value. Set alongside `reason`
+   * when the row is about one instalment ("Payment 8 days late"), so the
+   * amount on the row is the amount that is late.
+   */
+  amount?: number
   /** Position in the list, for the staggered entrance. */
   index?: number
   /**
@@ -71,6 +77,7 @@ export function DealRow({
   onPress,
   reason,
   reasonColor,
+  amount,
   index = 0,
   surface = 'surface',
   stretch = false,
@@ -82,6 +89,7 @@ export function DealRow({
   const brandName = deal.brand?.name ?? 'Unknown brand'
   const platformLabel = PLATFORM_LABELS[deal.platform] ?? deal.platform
   const adRightsStatus = getAdRightsStatus(deal)
+  const shownAmount = formatCurrency(amount ?? dealValue(deal))
 
   const adRightsColor =
     adRightsStatus === 'expired'
@@ -109,7 +117,7 @@ export function DealRow({
         onPress={onPress}
         disabled={!onPress}
         accessibilityRole="button"
-        accessibilityLabel={`${brandName}, ${formatCurrency(deal.rate)}`}
+        accessibilityLabel={`${brandName}, ${shownAmount}`}
       >
         <BrandAvatar name={brandName} size={38} />
 
@@ -127,7 +135,7 @@ export function DealRow({
             </Text>
           ) : deadlineDate ? (
             <Text style={[styles.meta, { color: c.textMuted }]} numberOfLines={1}>
-              {deadlineLabel} {formatRelativeDay(deadlineDate).toLowerCase()}
+              {deadlineLabel} {formatRelativeDayInline(deadlineDate)}
             </Text>
           ) : null}
 
@@ -137,15 +145,15 @@ export function DealRow({
             <Text style={[styles.meta, { color: adRightsColor }]} numberOfLines={1}>
               Ad rights{' '}
               {adRightsStatus === 'expired'
-                ? `ended ${formatRelativeDay(deal.ad_rights_expires_date).toLowerCase()}`
-                : `end ${formatRelativeDay(deal.ad_rights_expires_date).toLowerCase()}`}
+                ? `ended ${formatRelativeDayInline(deal.ad_rights_expires_date)}`
+                : `end ${formatRelativeDayInline(deal.ad_rights_expires_date)}`}
             </Text>
           ) : null}
         </View>
 
         <View style={styles.trailing}>
           <Text style={[styles.rate, { color: c.textPrimary }]} numberOfLines={1}>
-            {formatCurrency(deal.rate)}
+            {shownAmount}
           </Text>
           <StatusPill status={deal.status} />
         </View>

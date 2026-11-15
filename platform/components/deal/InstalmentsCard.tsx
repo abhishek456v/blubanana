@@ -18,6 +18,11 @@ export interface InstalmentsCardProps {
    *  line below is then omitted rather than computed against a missing total. */
   dealRate: number | null
   onAdd: (input: { amount: number; due_date: string | null; label: string }) => Promise<void>
+  /** Edits an instalment that has not been received yet. */
+  onUpdate: (
+    paymentId: string,
+    input: { amount: number; due_date: string | null; label: string }
+  ) => Promise<void>
   onRemove: (paymentId: string) => void
   onMarkReceived: (payment: Payment) => void
   busy?: boolean
@@ -39,12 +44,15 @@ export function InstalmentsCard({
   payments,
   dealRate,
   onAdd,
+  onUpdate,
   onRemove,
   onMarkReceived,
   busy = false,
 }: InstalmentsCardProps) {
   const { c } = useTheme()
   const [adding, setAdding] = useState(false)
+  /** The instalment open in the form, when it is an edit rather than a new one. */
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [amount, setAmount] = useState('')
   const [label, setLabel] = useState('')
   const [dueDate, setDueDate] = useState<string | null>(null)
@@ -56,17 +64,35 @@ export function InstalmentsCard({
 
   const reset = () => {
     setAdding(false)
+    setEditingId(null)
     setAmount('')
     setLabel('')
     setDueDate(null)
   }
 
+  const edit = (payment: Payment) => {
+    setAdding(false)
+    setEditingId(payment.id)
+    setAmount(String(payment.amount))
+    setLabel(payment.label ?? '')
+    setDueDate(payment.due_date)
+  }
+
   const submit = async () => {
     const value = Number(amount.replace(/[^0-9]/g, '')) || 0
     if (value <= 0) return
-    await onAdd({ amount: value, due_date: dueDate, label: label.trim() })
+    const input = { amount: value, due_date: dueDate, label: label.trim() }
+    if (editingId) await onUpdate(editingId, input)
+    else await onAdd(input)
     reset()
   }
+
+  const formOpen = adding || editingId !== null
+  // Nothing more to add once every instalment has landed and they add up to
+  // the deal. Another row there could only take the schedule past what was
+  // agreed. Kept when the total is withheld, since the gap cannot be judged.
+  const complete =
+    gap !== null && gap <= 0 && payments.length > 0 && payments.every((p) => p.status === 'paid')
 
   return (
     <View style={[styles.card, { backgroundColor: c.bgSurface }]}>
@@ -94,7 +120,20 @@ export function InstalmentsCard({
               layout={Layout.duration(Duration.base)}
               style={[styles.row, { borderColor: c.border }]}
             >
-              <View style={styles.rowMain}>
+              {/* An instalment still owed opens for editing: the amount, what it
+                  is for and when it is due. One that has landed does not; that
+                  figure is already part of the year's income. */}
+              <PressableScale
+                onPress={() => edit(payment)}
+                disabled={settled || busy}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  settled
+                    ? `${formatCurrency(payment.amount)}, received`
+                    : `Edit the ${formatCurrency(payment.amount)} instalment`
+                }
+                style={styles.rowMain}
+              >
                 <View style={styles.rowTop}>
                   <Figure
                     value={formatCurrency(payment.amount)}
@@ -119,7 +158,7 @@ export function InstalmentsCard({
                     .filter(Boolean)
                     .join(' · ')}
                 </Text>
-              </View>
+              </PressableScale>
 
               {settled ? null : (
                 <View style={styles.rowActions}>
@@ -154,7 +193,7 @@ export function InstalmentsCard({
         })}
       </View>
 
-      {adding ? (
+      {formOpen ? (
         <Animated.View entering={FadeIn.duration(Duration.fast)} style={styles.form}>
           <TextField
             label="Amount"
@@ -170,10 +209,15 @@ export function InstalmentsCard({
             placeholder="Advance"
           />
           <DateField label="Due" value={dueDate} onChange={setDueDate} />
-          <Button label="Add instalment" onPress={submit} disabled={busy} fullWidth />
+          <Button
+            label={editingId ? 'Save instalment' : 'Add instalment'}
+            onPress={submit}
+            disabled={busy}
+            fullWidth
+          />
           <Button label="Cancel" variant="ghost" onPress={reset} fullWidth />
         </Animated.View>
-      ) : (
+      ) : complete ? null : (
         <PressableScale
           onPress={() => setAdding(true)}
           disabled={busy}

@@ -3,7 +3,7 @@ import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useFocusEffect } from 'expo-router/react-navigation'
-import { getDeals, nextDuePayment, type DealWithPaymentSummary } from '@/lib/deals'
+import { dealValue, getDeals, nextDuePayment, type DealWithPaymentSummary } from '@/lib/deals'
 import { getAttentionItems } from '@/lib/insights'
 import { formatCurrency, formatDate } from '@/lib/format'
 import type { DealStatus } from '@/types'
@@ -117,7 +117,7 @@ export default function DealsScreen() {
   }, [deals, filter, query, attentionIds])
 
   const total = useMemo(
-    () => visible.reduce((sum, deal) => sum + (deal.rate ?? 0), 0),
+    () => visible.reduce((sum, deal) => sum + (dealValue(deal) ?? 0), 0),
     [visible]
   )
 
@@ -155,7 +155,7 @@ export default function DealsScreen() {
       align: 'right',
       render: (deal) => (
         <Text style={[styles.cellAmount, { color: c.textPrimary }]} numberOfLines={1}>
-          {formatCurrency(deal.rate)}
+          {formatCurrency(dealValue(deal))}
         </Text>
       ),
     },

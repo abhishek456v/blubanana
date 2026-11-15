@@ -18,7 +18,7 @@ import {
   type SocialPlatform,
 } from '@/lib/social'
 import { formatCount } from '@/lib/performance'
-import { formatRelativeDay } from '@/lib/format'
+import { formatRelativeDayInline } from '@/lib/format'
 import { FontFamily, Radius, Spacing, Typography } from '@/constants/design'
 import { useTheme } from '@/hooks/useTheme'
 import { useFeatureFlag } from '@/hooks/useFeatureFlags'
@@ -218,7 +218,7 @@ export function ConnectedAccounts() {
                         ? ` · ${summary.growthPercent >= 0 ? '+' : ''}${summary.growthPercent.toFixed(1)}%`
                         : ''}
                       {account.last_synced_at
-                        ? ` · ${formatRelativeDay(account.last_synced_at.slice(0, 10)).toLowerCase()}`
+                        ? ` · ${formatRelativeDayInline(account.last_synced_at.slice(0, 10))}`
                         : ''}
                     </Text>
                   ) : (

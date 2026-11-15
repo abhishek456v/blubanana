@@ -5,18 +5,26 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated'
 import {
+  dealValue,
   getDeal,
   getDealsForBrand,
   nextDuePayment,
   type DealWithPaymentSummary,
 } from '@/lib/deals'
-import { createInvoice, type LineItemInput } from '@/lib/invoices'
-import { brandContact } from '@/lib/brands'
+import { createInvoice, getInvoicedDealIds, type LineItemInput } from '@/lib/invoices'
+import { brandContact, getBrands } from '@/lib/brands'
 import { getProfile } from '@/lib/profile'
 import { GST_STATE_OPTIONS, stateCodeFromGstin } from '@/constants/gst'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { amountInWords } from '@/lib/invoiceHtml'
-import { ContentMaxWidth, FontFamily, Radius, Spacing, Typography } from '@/constants/design'
+import {
+  ContentMaxWidth,
+  FontFamily,
+  HitSlop,
+  Radius,
+  Spacing,
+  Typography,
+} from '@/constants/design'
 import { useIsWideScreen } from '@/hooks/useIsWideScreen'
 import { useTheme } from '@/hooks/useTheme'
 import { ModalSheet } from '@/components/ModalSheet'
@@ -34,9 +42,56 @@ import {
 const GST_RATE = 18
 
 interface DraftLine {
+  /** Stable identity, so removing a line does not reshuffle the ones below. */
+  key: string
   dealId: string | null
   description: string
   amount: string
+}
+
+let lineSeq = 0
+
+function draftLine(dealId: string | null, description = '', amount = ''): DraftLine {
+  lineSeq += 1
+  return { key: `line-${lineSeq}`, dealId, description, amount }
+}
+
+/**
+ * The lines one deal puts on an invoice.
+ *
+ * The content and the ad-rights fee are separate lines because they are
+ * separate charges: `deals.rate` is the content alone, and a brand's finance
+ * team wants the licence fee itemised. Billing only the rate left every deal
+ * with ad rights under-invoiced by exactly that fee.
+ *
+ * A withheld rate (null to this reader) leaves the amount blank rather than
+ * printing the word "null" into the field.
+ */
+function linesForDeal(
+  deal: Pick<
+    Deal,
+    | 'id'
+    | 'deliverable_description'
+    | 'rate'
+    | 'ad_rights_granted'
+    | 'ad_rights_fee'
+    | 'ad_rights_duration_months'
+  >
+): DraftLine[] {
+  const rows = [
+    draftLine(deal.id, deal.deliverable_description, deal.rate === null ? '' : String(deal.rate)),
+  ]
+  if (deal.ad_rights_granted && (deal.ad_rights_fee ?? 0) > 0) {
+    const months = deal.ad_rights_duration_months
+    rows.push(
+      draftLine(
+        deal.id,
+        months ? `Ad rights · ${months} ${months === 1 ? 'month' : 'months'}` : 'Ad rights',
+        String(deal.ad_rights_fee)
+      )
+    )
+  }
+  return rows
 }
 
 /**
@@ -51,7 +106,7 @@ interface DraftLine {
  * three invoices. And the totals are shown as they will print (including the
  * amount in words), so the document is checked before it exists, not after.
  */
-import type { DealStatus } from '@/types'
+import type { Brand, Deal, DealStatus } from '@/types'
 
 /** A deal can only be invoiced once the work is out the door. */
 const BILLABLE_STATUSES: DealStatus[] = ['live', 'unpaid', 'paid']
@@ -87,100 +142,167 @@ export default function NewInvoiceScreen() {
   const [candidates, setCandidates] = useState<DealWithPaymentSummary[]>([])
   const [included, setIncluded] = useState<Set<string>>(new Set())
 
+  /**
+   * The creator's brands, for an invoice not started from a deal.
+   *
+   * Opened from a "+", the form knows nothing, and typing a brand's name used
+   * to leave its contact, GSTIN, address and place of supply to be typed again
+   * from memory. Picking the brand fills all of it and offers its delivered
+   * work, the same as starting from one of its deals.
+   */
+  const [brands, setBrands] = useState<Brand[]>([])
+  const [pickedBrandId, setPickedBrandId] = useState<string | null>(null)
+
+  /** Fills the bill-to block from a brand record. */
+  const fillFromBrand = useCallback((brand: Brand) => {
+    setBrandName(brand.name)
+    // The brand carries its contacts, so the invoice header prefills from the
+    // primary one. It used to read three columns that migration 022 dropped,
+    // so every invoice raised since then went out with a blank contact.
+    const poc = brandContact(brand)
+    setContactPerson(poc?.name ?? '')
+    setContactEmail(poc?.email ?? '')
+    setBrandGstin(brand.gstin ?? '')
+    setBrandAddress(brand.address ?? '')
+    // The place of supply for a creator's services is the recipient's
+    // location, which the brand's own GSTIN already encodes.
+    setPlaceOfSupply(brand.state_code ?? stateCodeFromGstin(brand.gstin))
+  }, [])
+
+  /**
+   * Delivered deals for a brand that could go on this invoice.
+   *
+   * Deals already on an invoice are left out. Offering them again is how the
+   * same reel ends up billed twice, on two invoice numbers.
+   */
+  const loadCandidates = useCallback((brandId: string, exceptDealId: string | null) => {
+    getDealsForBrand(brandId)
+      .then(async (all) => {
+        const delivered = all.filter(
+          (other) =>
+            other.id !== exceptDealId &&
+            // Typed, not a bare string array: an untyped one silently
+            // matched nothing after migration 020 renamed these, with no
+            // compiler error and no runtime error either.
+            BILLABLE_STATUSES.includes(other.status)
+        )
+        const billed = await getInvoicedDealIds(delivered.map((other) => other.id))
+        setCandidates(delivered.filter((other) => !billed.has(other.id)))
+      })
+      .catch(() => {})
+  }, [])
+
   const load = useCallback(async () => {
-    // Opened from a header "+" rather than from a deal, so there is nothing to
-    // prefill. Clearing the flag matters: returning early while `loading` was
-    // still true left the screen on its skeletons forever.
+    // Only a GST-registered creator may charge GST, so default the switch
+    // from the profile instead of asking a question they can get wrong. Read
+    // for every invoice, not only one raised from a deal: an ad hoc invoice
+    // still has to print the creator's own GSTIN and address.
+    getProfile()
+      .then((profile) => {
+        setGstApplicable(Boolean(profile.gstin))
+        setSupplierGstin(profile.gstin)
+        setSupplierAddress(profile.address)
+      })
+      .catch(() => {})
+
+    // Opened from a "+" rather than from a deal, so there is no deal to
+    // prefill from. The form starts with one empty line to type into, and the
+    // creator's brands to pick the bill-to from.
     if (!dealId) {
+      setLines([draftLine(null)])
+      getBrands()
+        .then(setBrands)
+        .catch(() => {})
       setLoading(false)
       return
     }
     try {
       const deal = await getDeal(dealId)
-      setBrandName(deal.brand?.name ?? '')
-      // The brand embedded on a deal carries its contacts, so the invoice
-      // header prefills from the primary one. It used to read three columns
-      // that migration 022 dropped, so every invoice raised since then went
-      // out with a blank contact.
-      const poc = deal.brand ? brandContact(deal.brand) : null
-      setContactPerson(poc?.name ?? '')
-      setContactEmail(poc?.email ?? '')
-      setBrandGstin(deal.brand?.gstin ?? '')
-      setBrandAddress(deal.brand?.address ?? '')
-      // The place of supply for a creator's services is the recipient's
-      // location, which the brand's own GSTIN already encodes.
-      setPlaceOfSupply(deal.brand?.state_code ?? stateCodeFromGstin(deal.brand?.gstin))
+      if (deal.brand) fillFromBrand(deal.brand)
       setDueDate(nextDuePayment(deal)?.due_date ?? null)
-      setLines([
-        {
-          dealId: deal.id,
-          description: deal.deliverable_description,
-          amount: String(deal.rate),
-        },
-      ])
+      setLines(linesForDeal(deal))
       setIncluded(new Set([deal.id]))
 
-      // Only a GST-registered creator may charge GST, so default the switch
-      // from the profile instead of asking a question they can get wrong.
-      getProfile()
-        .then((profile) => {
-          setGstApplicable(Boolean(profile.gstin))
-          setSupplierGstin(profile.gstin)
-          setSupplierAddress(profile.address)
-        })
-        .catch(() => {})
-
       // Deals for the same brand that are delivered but not yet billed.
-      if (deal.brand_id) {
-        getDealsForBrand(deal.brand_id)
-          .then((all) =>
-            setCandidates(
-              all.filter(
-                (other) =>
-                  other.id !== deal.id &&
-                  // Typed, not a bare string array: an untyped one silently
-                  // matched nothing after migration 020 renamed these, with no
-                  // compiler error and no runtime error either.
-                  BILLABLE_STATUSES.includes(other.status)
-              )
-            )
-          )
-          .catch(() => {})
-      }
+      if (deal.brand_id) loadCandidates(deal.brand_id, deal.id)
     } catch {
       toast('Could not load this deal', { tone: 'error' })
     } finally {
       setLoading(false)
     }
-  }, [dealId, toast])
+  }, [dealId, toast, fillFromBrand, loadCandidates])
 
   useEffect(() => {
     load()
   }, [load])
 
+  function pickBrand(brand: Brand) {
+    fillFromBrand(brand)
+    setPickedBrandId(brand.id)
+    // Lines brought in from another brand's deals do not belong on this one.
+    // Lines typed by hand stay: they are the creator's own words.
+    setIncluded(new Set())
+    setLines((rows) => {
+      const kept = rows.filter((row) => row.dealId === null)
+      return kept.length > 0 ? kept : [draftLine(null)]
+    })
+    setCandidates([])
+    loadCandidates(brand.id, null)
+  }
+
+  /** Brands matching what has been typed, while none has been picked. */
+  const brandSuggestions = useMemo(() => {
+    if (dealId || brands.length === 0) return []
+    const needle = brandName.trim().toLowerCase()
+    const picked = brands.find((brand) => brand.id === pickedBrandId)
+    // Once a brand is picked and its name is still in the field, the question
+    // is answered; the chips come back as soon as the name is edited.
+    if (picked && picked.name.toLowerCase() === needle) return []
+    return brands
+      .filter((brand) => !needle || brand.name.toLowerCase().includes(needle))
+      .slice(0, 8)
+  }, [dealId, brands, brandName, pickedBrandId])
+
   function toggleCandidate(deal: DealWithPaymentSummary) {
+    const on = included.has(deal.id)
     setIncluded((current) => {
       const next = new Set(current)
-      if (next.has(deal.id)) {
-        next.delete(deal.id)
-        setLines((rows) => rows.filter((row) => row.dealId !== deal.id))
-      } else {
-        next.add(deal.id)
-        setLines((rows) => [
-          ...rows,
-          {
-            dealId: deal.id,
-            description: deal.deliverable_description,
-            amount: String(deal.rate),
-          },
-        ])
-      }
+      if (on) next.delete(deal.id)
+      else next.add(deal.id)
       return next
+    })
+    setLines((rows) => {
+      if (on) {
+        const kept = rows.filter((row) => row.dealId !== deal.id)
+        return kept.length > 0 ? kept : [draftLine(null)]
+      }
+      // A single untouched blank line is the form's starting state, not
+      // something the creator wrote, so the deal's lines take its place.
+      const typed = rows.filter((row) => row.dealId !== null || row.description.trim() || row.amount)
+      return [...typed, ...linesForDeal(deal)]
     })
   }
 
-  function updateLine(index: number, patch: Partial<DraftLine>) {
-    setLines((rows) => rows.map((row, i) => (i === index ? { ...row, ...patch } : row)))
+  function updateLine(key: string, patch: Partial<DraftLine>) {
+    setLines((rows) => rows.map((row) => (row.key === key ? { ...row, ...patch } : row)))
+  }
+
+  function addLine() {
+    setLines((rows) => [...rows, draftLine(null)])
+  }
+
+  function removeLine(line: DraftLine) {
+    const rest = lines.filter((row) => row.key !== line.key)
+    setLines(rest)
+    // A deal with none of its lines left is no longer on the invoice, so its
+    // tick under "Also bill these?" has to clear with it.
+    if (line.dealId && !rest.some((row) => row.dealId === line.dealId)) {
+      setIncluded((current) => {
+        const next = new Set(current)
+        next.delete(line.dealId as string)
+        return next
+      })
+    }
   }
 
   const subtotal = useMemo(
@@ -205,12 +327,26 @@ export default function NewInvoiceScreen() {
         unit_amount: parseInt(line.amount, 10) || 0,
       }))
 
+    // The one thing that is required: something to bill. With no line at all
+    // the result is a numbered invoice for nothing, addressed to no one, which
+    // uses up an invoice number and has to be deleted.
+    if (items.length === 0) {
+      toast('Add what you are billing for, or an amount', { tone: 'error' })
+      return
+    }
+
+    // The deal this invoice belongs to, when every deal line is for the same
+    // one. Counting lines stopped being the test once a deal with ad rights
+    // put two lines on its own invoice: that invoice was saved against no
+    // deal, so the deal went on offering to create it again.
+    const dealIds = new Set(items.map((item) => item.deal_id).filter(Boolean) as string[])
+
     setSaving(true)
     try {
       const invoice = await createInvoice({
         // A consolidated invoice belongs to no single deal; the deals travel
         // on the line items instead.
-        deal_id: items.length === 1 ? items[0].deal_id : null,
+        deal_id: dealIds.size === 1 ? [...dealIds][0] : null,
         brand_name: brandName.trim(),
         brand_contact_person: contactPerson.trim() || null,
         brand_contact_email: contactEmail.trim() || null,
@@ -262,6 +398,18 @@ export default function NewInvoiceScreen() {
             showsVerticalScrollIndicator={false}
           >
             <TextField label="Bill to" value={brandName} onChangeText={setBrandName} />
+            {brandSuggestions.length > 0 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={styles.brandScroll}
+              >
+                {brandSuggestions.map((brand) => (
+                  <Chip key={brand.id} label={brand.name} onPress={() => pickBrand(brand)} />
+                ))}
+              </ScrollView>
+            ) : null}
             <TextField
               label="POC"
               placeholder="Who to address it to"
@@ -282,12 +430,13 @@ export default function NewInvoiceScreen() {
             <Text style={[styles.sectionTitle, { color: c.textPrimary }]}>What you're billing</Text>
             <Animated.View layout={LinearTransition.duration(200)} style={styles.lines}>
               {lines.map((line, index) => (
-                <Animated.View key={`${line.dealId ?? 'adhoc'}-${index}`} entering={FadeIn.duration(160)}>
+                <Animated.View key={line.key} entering={FadeIn.duration(160)}>
                   <Card variant="outlined" style={styles.lineCard}>
                     <TextField
                       label={`Line ${index + 1}`}
+                      placeholder="What this line is for"
                       value={line.description}
-                      onChangeText={(value) => updateLine(index, { description: value })}
+                      onChangeText={(value) => updateLine(line.key, { description: value })}
                       multiline
                     />
                     <TextField
@@ -296,22 +445,45 @@ export default function NewInvoiceScreen() {
                       keyboardType="number-pad"
                       value={line.amount}
                       onChangeText={(value) =>
-                        updateLine(index, { amount: value.replace(/[^0-9]/g, '') })
+                        updateLine(line.key, { amount: value.replace(/[^0-9]/g, '') })
                       }
                     />
+                    {/* Offered only while another line exists: an invoice
+                        with no line has nothing to bill. */}
+                    {lines.length > 1 ? (
+                      <PressableScale
+                        onPress={() => removeLine(line)}
+                        hitSlop={HitSlop}
+                        style={styles.lineRemove}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Remove line ${index + 1}`}
+                      >
+                        <Ionicons name="close" size={17} color={c.textMuted} />
+                      </PressableScale>
+                    ) : null}
                   </Card>
                 </Animated.View>
               ))}
             </Animated.View>
+            <Button
+              label="Add a line"
+              icon="add"
+              variant="secondary"
+              size="sm"
+              onPress={addLine}
+              style={styles.addLine}
+            />
 
             {/* Consolidation */}
             {candidates.length > 0 ? (
               <Card>
                 <Text style={[styles.cardTitle, { color: c.textPrimary }]}>
-                  Also bill these?
+                  {dealId ? 'Also bill these?' : 'Bill delivered work?'}
                 </Text>
                 <Text style={[styles.cardHint, { color: c.textSecondary }]}>
-                  Other delivered work for {brandName}. One invoice beats three.
+                  {dealId
+                    ? `Other delivered work for ${brandName} with no invoice yet. One invoice beats three.`
+                    : `Delivered work for ${brandName} with no invoice yet.`}
                 </Text>
                 <View style={styles.candidates}>
                   {candidates.map((deal) => {
@@ -343,7 +515,7 @@ export default function NewInvoiceScreen() {
                           </Text>
                         </View>
                         <Text style={[styles.candidateAmount, { color: c.textPrimary }]}>
-                          {formatCurrency(deal.rate)}
+                          {formatCurrency(dealValue(deal))}
                         </Text>
                       </PressableScale>
                     )
@@ -546,8 +718,18 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.display,
     marginTop: Spacing.sm,
   },
+  brandScroll: {
+    gap: Spacing.sm,
+    paddingRight: Spacing.md,
+  },
   lines: { gap: Spacing.sm },
   lineCard: { gap: Spacing.sm },
+  lineRemove: {
+    position: 'absolute',
+    top: Spacing.sm + 2,
+    right: Spacing.sm + 2,
+  },
+  addLine: { alignSelf: 'flex-start' },
   cardTitle: {
     ...Typography.heading,
     fontFamily: FontFamily.semiBold,

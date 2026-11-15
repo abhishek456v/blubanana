@@ -14,6 +14,7 @@ import {
   type AlertFeed,
   type ReminderAlert,
 } from '@/lib/alerts'
+import { dealValue, paymentsInOrder } from '@/lib/deals'
 import { respondToChainReminder, type ReminderResponse } from '@/lib/reminderChains'
 import { formatCurrency } from '@/lib/format'
 import { REMINDER_STAGE_LABELS } from '@/constants/labels'
@@ -244,6 +245,17 @@ export default function RemindersScreen() {
       deal?.brand?.name ??
       (isReminder && alert.reminder.type === 'tax' ? 'Tax' : 'Unknown brand')
 
+    // The figure beside the row is the money the row is about. A reminder or
+    // a late-payment line on a split deal is chasing one instalment, so it
+    // shows that instalment; only a row about the deal as a whole (a shoot
+    // date, a missing link) shows what the deal is worth.
+    const chased = isReminder
+      ? deal && alert.reminder.payment_id
+        ? paymentsInOrder(deal).find((payment) => payment.id === alert.reminder.payment_id)?.amount
+        : undefined
+      : alert.item.amount
+    const amount = deal ? (chased ?? dealValue(deal)) : null
+
     const tone = isReminder
       ? alert.at.getTime() <= Date.now()
         ? c.warning
@@ -291,7 +303,7 @@ export default function RemindersScreen() {
               </Text>
               {deal ? (
                 <Text style={[styles.cardMeta, { color: c.textMuted }]} numberOfLines={1}>
-                  {formatCurrency(deal.rate)}
+                  {formatCurrency(amount)}
                   {isReminder && alert.reminder.snooze_count > 0
                     ? ` · snoozed ${alert.reminder.snooze_count}×`
                     : ''}

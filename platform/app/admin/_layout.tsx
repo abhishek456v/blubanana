@@ -1,10 +1,11 @@
 import { useEffect } from 'react'
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, StyleSheet, View } from 'react-native'
 import { Stack, useRouter } from 'expo-router'
 import { useAuth } from '@/hooks/useAuth'
 import { usePlatformRole } from '@/hooks/usePlatformRole'
-import { FontFamily, Spacing, Typography } from '@/constants/design'
+import { Spacing } from '@/constants/design'
 import { useTheme } from '@/hooks/useTheme'
+import { NotFound } from '@/components/NotFound'
 
 /**
  * The admin area's door.
@@ -51,14 +52,10 @@ export default function AdminLayout() {
     // Deliberately says nothing about what is here or who may reach it. The
     // wording is what a mistyped URL would produce, because for almost
     // everybody who reaches it, that is what happened.
-    return (
-      <View style={[styles.centre, { backgroundColor: c.bgPage }]}>
-        <Text style={[styles.title, { color: c.textPrimary }]}>Nothing here</Text>
-        <Text style={[styles.body, { color: c.textSecondary }]}>
-          This page does not exist. Check the address, or go back to your dashboard.
-        </Text>
-      </View>
-    )
+    //
+    // It is the same component a mistyped URL renders, not a copy of it, so
+    // the two cannot drift apart.
+    return <NotFound />
   }
 
   return <Stack screenOptions={{ headerShown: false }} />
@@ -71,16 +68,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: Spacing.xl,
     gap: Spacing.xs,
-  },
-  title: {
-    ...Typography.title,
-    fontFamily: FontFamily.display,
-  },
-  body: {
-    ...Typography.body,
-    fontFamily: FontFamily.regular,
-    textAlign: 'center',
-    maxWidth: 340,
-    lineHeight: 22,
   },
 })

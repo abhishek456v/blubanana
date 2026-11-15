@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from 'expo-router/react-navigation'
-import { getDeals, paymentsInOrder, type DealWithPaymentSummary } from '@/lib/deals'
+import { getDeals, grossOf, paymentsInOrder, type DealWithPaymentSummary } from '@/lib/deals'
 import { getExpenses, type Expense } from '@/lib/expenses'
 import { advanceTaxSchedule, estimateTax, financialYearStart } from '@/lib/tax'
 import { formatCurrency, formatDate, toDateString } from '@/lib/format'
@@ -68,7 +68,7 @@ export default function TaxScreen() {
   const figures = useMemo(() => {
     // Received, not invoiced. Advance tax is due on income actually earned,
     // and an invoice a brand is sitting on is not income yet.
-    const received = deals
+    const settled = deals
       .flatMap((deal) => paymentsInOrder(deal))
       .filter(
         (payment) =>
@@ -77,21 +77,28 @@ export default function TaxScreen() {
           payment.paid_date >= fyFrom &&
           payment.paid_date <= fyTo
       )
-      .reduce((sum, payment) => sum + (payment.amount_received ?? payment.amount), 0)
+    // Before TDS: what a brand withheld is still her income, and it is tax
+    // already paid in her name. Counting only what reached the bank understated
+    // the income and then asked her to pay the withheld tax a second time.
+    const received = settled.reduce((sum, payment) => sum + grossOf(payment), 0)
+    const tds = settled.reduce((sum, payment) => sum + (payment.tds_amount ?? 0), 0)
 
     const spent = expenses
       .filter((expense) => expense.spent_on >= fyFrom && expense.spent_on <= fyTo)
       .reduce((sum, expense) => sum + expense.amount, 0)
 
     const other = Number(otherIncome.replace(/[^0-9]/g, '')) || 0
-    return { received, spent, other, net: Math.max(received + other - spent, 0) }
+    return { received, tds, spent, other, net: Math.max(received + other - spent, 0) }
   }, [deals, expenses, otherIncome, fyFrom, fyTo])
 
   const ratePercent = Math.min(Math.max(Number(rate.replace(/[^0-9.]/g, '')) || 0, 0), 100)
   const expectedTax = estimateTax(figures.net, ratePercent)
+  // Advance tax is the year's tax less what has already been deducted at
+  // source (section 209), so the instalments are worked out on the remainder.
+  const leftToPay = Math.max(expectedTax - figures.tds, 0)
   const schedule = useMemo(
-    () => advanceTaxSchedule(expectedTax, fyStart),
-    [expectedTax, fyStart]
+    () => advanceTaxSchedule(leftToPay, fyStart),
+    [leftToPay, fyStart]
   )
 
   // The first instalment still ahead of her. It is the only row that carries a
@@ -105,7 +112,7 @@ export default function TaxScreen() {
       </Text>
       <Figure value={formatCurrency(figures.net)} size="hero" color={c.textPrimary} bold />
       <View style={styles.breakdown}>
-        <Row label="Received through Blubanana" value={figures.received} c={c} />
+        <Row label="Earned through Blubanana, before TDS" value={figures.received} c={c} />
         {figures.other > 0 ? (
           <Row label="Other income you added" value={figures.other} c={c} />
         ) : null}
@@ -139,6 +146,12 @@ export default function TaxScreen() {
     <View style={[styles.card, styles.expected, { backgroundColor: c.accentLight }]}>
       <Text style={[styles.label, { color: c.accentText }]}>Expected tax</Text>
       <Figure value={formatCurrency(expectedTax)} size="lg" color={c.accentText} bold />
+      {figures.tds > 0 ? (
+        <View style={styles.breakdown}>
+          <Row label="TDS brands already deducted" value={-figures.tds} c={c} />
+          <Row label="Left for you to pay" value={leftToPay} c={c} />
+        </View>
+      ) : null}
     </View>
   )
 
@@ -181,7 +194,7 @@ export default function TaxScreen() {
                     ? 'Passed'
                     : `Due ${formatDate(toDateString(instalment.dueOn))}`}
                   {' · '}
-                  {Math.round((instalment.cumulative / Math.max(expectedTax, 1)) * 100)}%
+                  {Math.round((instalment.cumulative / Math.max(leftToPay, 1)) * 100)}%
                   cumulative
                 </Text>
               </View>

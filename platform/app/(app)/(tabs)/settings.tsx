@@ -51,6 +51,7 @@ const THEME_OPTIONS: { key: ThemeMode; label: string }[] = [
   { key: 'dark', label: 'Night' },
   { key: 'system', label: 'System' },
 ]
+import { toDateString } from '@/lib/format'
 import type { Creator } from '@/types'
 
 export default function YouScreen() {
@@ -188,7 +189,7 @@ export default function YouScreen() {
     try {
       const bundle = await buildExport()
       const json = JSON.stringify(bundle, null, 2)
-      const name = `blubanana-export-${new Date().toISOString().slice(0, 10)}.json`
+      const name = `blubanana-export-${toDateString(new Date())}.json`
 
       if (Platform.OS === 'web') {
         // No filesystem to share from; hand it to the browser directly.

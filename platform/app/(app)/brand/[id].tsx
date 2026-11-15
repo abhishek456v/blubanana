@@ -268,7 +268,15 @@ export default function BrandDetailScreen() {
 
   return (
     <ModalSheet title={brand?.name ?? 'Brand'} headerRight={menu} wide>
-      <Stack.Screen options={{ title: brand?.name ?? 'Brand', headerRight: () => menu }} />
+      {/* The native header gives its right-hand slot no inset of its own, so a
+          bare menu sat flush against the screen edge with its last dot cut
+          off. The sheet's own header (wide screens) already pads its slot. */}
+      <Stack.Screen
+        options={{
+          title: brand?.name ?? 'Brand',
+          headerRight: () => <View style={styles.headerMenu}>{menu}</View>,
+        }}
+      />
       <SafeAreaView style={[styles.safe, { backgroundColor: c.bgPage }]} edges={['bottom']}>
         <KeyboardAvoidingView
           style={styles.flex}
@@ -309,6 +317,7 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
   },
+  headerMenu: { marginRight: Spacing.md },
   flex: {
     flex: 1,
   },

@@ -211,7 +211,40 @@ export async function getInvoiceForDeal(dealId: string): Promise<Invoice | null>
     .limit(1)
     .maybeSingle()
   if (error) throw error
-  return data as Invoice | null
+  if (data) return data as Invoice
+
+  // An invoice covering several deals carries no deal of its own; the deals
+  // are on its lines. Without this second look, a deal billed that way went on
+  // offering "Create invoice" and could be billed twice.
+  const { data: line, error: lineError } = await supabase
+    .from('invoice_line_items')
+    .select('invoice_id')
+    .eq('deal_id', dealId)
+    .limit(1)
+    .maybeSingle()
+  if (lineError) throw lineError
+  return line ? getInvoice(line.invoice_id as string) : null
+}
+
+/**
+ * Which of these deals are already on an invoice, by either route: as the
+ * invoice's own deal, or as a line on one that covers several.
+ */
+export async function getInvoicedDealIds(dealIds: string[]): Promise<Set<string>> {
+  const billed = new Set<string>()
+  if (dealIds.length === 0) return billed
+
+  const [headers, lines] = await Promise.all([
+    supabase.from('invoices').select('deal_id').in('deal_id', dealIds),
+    supabase.from('invoice_line_items').select('deal_id').in('deal_id', dealIds),
+  ])
+  if (headers.error) throw headers.error
+  if (lines.error) throw lines.error
+
+  for (const row of [...(headers.data ?? []), ...(lines.data ?? [])]) {
+    if (row.deal_id) billed.add(row.deal_id as string)
+  }
+  return billed
 }
 
 

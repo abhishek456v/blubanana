@@ -3,11 +3,30 @@
 Two lists. The first is things only you can do, because they need a login, a
 bank account, a legal identity or a decision. The second is building work.
 
-Updated 23 October 2026.
+Updated 15 November 2026.
 
 ---
 
 ## Your list
+
+### 0. Change the demo account's password  ·  do this first, two minutes
+
+The password for `demo@blubanana.in` was written inside a file in the code,
+and the code is public on GitHub. I checked on 15 November: that password
+still signs in to the live demo account. Anybody who reads the old file can
+get in and change or delete what a visitor sees in the demo. No creator's data
+is at risk, only the demo.
+
+The file no longer contains it, but GitHub keeps old versions, so the password
+itself has to change. In **Terminal**, paste this and press Return:
+
+```
+cd ~/Projects/crm-app/platform && node scripts/rotate-demo-password.mjs
+```
+
+It makes a new random password, signs out anybody using the old one, and
+saves the new password in your Mac's Keychain. It never shows it on screen;
+the last line it prints is the command to read it back.
 
 ### 1. Razorpay  ·  can start now
 
@@ -136,6 +155,69 @@ next time somebody opens the app.
 ---
 
 ## My list
+
+### The November test pass  ·  15 November, still running
+
+You said a lot still felt broken or unbuilt. I tested the app the way a tester
+would: a throwaway account with a year of deals in it, every screen opened in
+a real browser at phone and desktop width, and every figure checked against
+the database. What follows is what was wrong and is now fixed. Each one was
+tried again in the browser after the fix.
+
+**Money that did not add up**
+
+- A deal with a fee for ad rights showed one amount on its own page and a
+  different one in lists. Now every screen shows the full value: the content
+  plus the ad-rights fee.
+- The payment schedule ignored the ad-rights fee, so a ₹36,000 deal asked for
+  ₹27,500. The schedule now covers the whole deal. Adding, changing or
+  removing a part payment keeps the parts adding up to the deal.
+- Marking one part payment as received threw you back to Home, as if the deal
+  were finished. You now stay on the deal and it stays open until the last
+  part is paid.
+- Reminders and the Home "needs attention" list showed the whole deal's value
+  where they meant the one payment being chased.
+- The year report and the tax page counted what reached your bank, not what
+  you earned. They now add back the TDS the brand held, which is what the tax
+  office counts.
+- Dates saved before 5:30 in the morning landed a day early. Fixed
+  everywhere; one payment of yours that had been saved this way was moved
+  from 16 to 17 September 2026. That is the only real data I changed.
+- A date in another year showed with no year, so 1 January 2027 looked like
+  it had passed.
+- Counters on a few tiles flickered through numbers like 1.3333 on their way
+  up.
+
+**Things that were not built**
+
+- An invoice could only be made from a deal. You can now start a blank one,
+  pick the brand, add any lines you like, and tick delivered work to pull it
+  in. Invoices has a "New invoice" button.
+- Ad rights were a tick box with a fee, invisible on the deal's list of work.
+  They are now a line of their own, with the months they run for, and they
+  flow onto the invoice as their own line.
+- The invoice on screen left out what a GST invoice needs: both addresses,
+  both GSTINs, place of supply, the CGST and SGST split, and the IFSC. The
+  PDF had them; the screen now does too.
+- A mistyped address showed a blank page with no way out. There is now a
+  "Nothing here" page with a button back to the dashboard.
+
+**Smaller faults**
+
+- A deal billed on a shared invoice still offered "Create invoice", and
+  delivered work already billed was offered for billing again.
+- A fully paid deal still offered "Put on hold" and "Add instalment".
+- The "•••" menus on Deals, Invoices and Expenses were cut off at the edge.
+- Home did not refresh when you came back to it from another screen.
+
+**What this did to the demo account.** Its ten deals with ad-rights fees now
+show the fee as a line item. Their payment schedules were made before the
+rule changed, so each shows a line saying part of the deal is not scheduled
+yet. That is accurate, and running the demo seed again clears it.
+
+**Still to test in this pass:** a brand-new account from sign-up onwards, the
+admin dashboard, the website, and whether one account can reach another's
+data.
 
 ### The iPhone app would not open, fixed 19 October
 

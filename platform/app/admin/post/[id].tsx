@@ -14,6 +14,7 @@ import { FontFamily, Radius, Spacing, Typography } from '@/constants/design'
 import { useTheme } from '@/hooks/useTheme'
 import { AdminScreen } from '@/components/admin/AdminScreen'
 import { MediaPickerField } from '@/components/admin/MediaPickerField'
+import { toDateString } from '@/lib/format'
 import { Button, Card, Chip, DateField, TextField, useConfirm, useToast } from '@/components/ui'
 
 type Draft = Partial<BlogPost>
@@ -21,7 +22,7 @@ type Draft = Partial<BlogPost>
 const EMPTY: Draft = {
   slug: '',
   title: '',
-  date: new Date().toISOString().slice(0, 10),
+  date: toDateString(new Date()),
   read_minutes: 5,
   description: '',
   lede: '',
@@ -254,7 +255,7 @@ export default function PostEditor() {
             <DateField
               label="Date on the post"
               value={draft.date ?? ''}
-              onChange={(value) => set('date', value ?? new Date().toISOString().slice(0, 10))}
+              onChange={(value) => set('date', value ?? toDateString(new Date()))}
             />
           </View>
           <View style={styles.half}>

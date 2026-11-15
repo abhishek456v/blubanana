@@ -15,7 +15,7 @@ import {
 } from '@/lib/support'
 import { formatDateLong, formatRelativeDay } from '@/lib/format'
 import {
-  DesktopContentMaxWidth,
+  ContentMaxWidth,
   FontFamily,
   Radius,
   Spacing,
@@ -254,9 +254,12 @@ export default function HelpScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   content: { padding: Spacing.md, paddingBottom: Spacing.xl, gap: Spacing.md },
+  // A form and a thread, so the reading column the other forms use. At the
+  // dashboard's width the subject field and the Send button each ran the
+  // whole 1,400px of a desktop window.
   contentWide: {
     padding: Spacing.lg,
-    maxWidth: DesktopContentMaxWidth,
+    maxWidth: ContentMaxWidth,
     width: '100%',
     alignSelf: 'center',
   },

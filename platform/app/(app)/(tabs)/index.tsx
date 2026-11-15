@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { FlatList, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useFocusEffect } from 'expo-router/react-navigation'
 import Animated, { FadeIn } from 'react-native-reanimated'
-import { getDeals, paymentsInOrder, type DealWithPaymentSummary } from '@/lib/deals'
+import { dealValue, getDeals, paymentsInOrder, type DealWithPaymentSummary } from '@/lib/deals'
 import { describeNudge, getRateBenchmarkNudge } from '@/lib/rateBenchmark'
 import { getStatHistory, type StatSnapshot } from '@/lib/social'
 import { computeRevenueSummary } from '@/lib/revenue'
@@ -110,8 +110,13 @@ export default function HomeScreen() {
   const [nudgeDismissed, setNudgeDismissed] = useState(false)
   const [reach, setReach] = useState<StatSnapshot[]>([])
 
+  /** True while a load is on its way, so mount and focus share one fetch. */
+  const inFlight = useRef(false)
+
   const load = useCallback(
     async (mode: 'initial' | 'refresh') => {
+      if (inFlight.current) return
+      inFlight.current = true
       if (mode === 'refresh') setRefreshing(true)
       try {
         // The profile only supplies the greeting, so a failure there must not
@@ -140,6 +145,7 @@ export default function HomeScreen() {
         // in page.
         if (session) toast('Could not load your deals', { tone: 'error' })
       } finally {
+        inFlight.current = false
         setLoading(false)
         setRefreshing(false)
       }
@@ -152,6 +158,14 @@ export default function HomeScreen() {
       load('initial')
     }, [load])
   )
+
+  // On mount as well as on focus. Opening the app straight onto a deal or an
+  // invoice on a desktop draws that screen as a sheet over this one, and a
+  // screen under a sheet is never focused: Home sat behind it on its loading
+  // skeletons until the sheet was closed.
+  useEffect(() => {
+    load('initial')
+  }, [load])
 
   // The onboarding gate lives here, not in a route guard: both auth redirects
   // land on this tab, so it is the one place every fresh sign-up passes.
@@ -494,7 +508,7 @@ export default function HomeScreen() {
       align: 'right',
       render: (deal) => (
         <Text style={[styles.cellAmount, { color: c.textPrimary }]} numberOfLines={1}>
-          {formatCurrency(deal.rate)}
+          {formatCurrency(dealValue(deal))}
         </Text>
       ),
     },
@@ -683,6 +697,7 @@ export default function HomeScreen() {
         deal={item.deal}
         reason={item.reason}
         reasonColor={tone}
+        amount={item.amount}
         index={index}
         dense={isDesktop}
         variant="plain"
