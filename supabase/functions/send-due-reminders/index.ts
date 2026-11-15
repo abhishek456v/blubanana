@@ -28,7 +28,31 @@ interface DueReminder {
 
 interface PushToken {
   workspace_id: string
+  user_id: string
   token: string
+}
+
+interface Member {
+  workspace_id: string
+  user_id: string
+  role: string
+  can_see_deals: boolean | null
+  can_see_money: boolean | null
+}
+
+/**
+ * Which of a member's switches decides whether they may be told about a
+ * reminder of this kind (PRODUCT.md section 7: every switch is a database
+ * boundary, and a notification is a read).
+ *
+ * Deadlines, ad-rights windows and surveys are about deals. Payments and tax
+ * are about money. A type this does not know is treated as money, the stricter
+ * of the two, so a new kind never reaches people it should not.
+ */
+function areaFor(type: string): 'can_see_deals' | 'can_see_money' {
+  return type === 'workflow' || type === 'ad_rights' || type === 'survey'
+    ? 'can_see_deals'
+    : 'can_see_money'
 }
 
 Deno.serve(async (req) => {
@@ -120,17 +144,40 @@ Deno.serve(async (req) => {
 
   const { data: tokenRows, error: tokenError } = await supabase
     .from('push_tokens')
-    .select('workspace_id, token')
+    .select('workspace_id, user_id, token')
     .in('workspace_id', workspaceIds)
 
   if (tokenError) {
     return Response.json({ error: tokenError.message }, { status: 500 })
   }
 
-  const tokensByWorkspace = new Map<string, string[]>()
+  // Who may hear about this workspace right now. A token row records where a
+  // device registered, not whether its owner still belongs there: a manager
+  // who was removed, or whose access to money was switched off, kept getting
+  // that workspace's reminders until their phone happened to register again.
+  const { data: memberRows, error: memberError } = await supabase
+    .from('memberships')
+    .select('workspace_id, user_id, role, can_see_deals, can_see_money')
+    .eq('status', 'active')
+    .in('workspace_id', workspaceIds)
+
+  if (memberError) {
+    return Response.json({ error: memberError.message }, { status: 500 })
+  }
+
+  const memberOf = new Map<string, Member>()
+  for (const m of (memberRows ?? []) as Member[]) memberOf.set(`${m.workspace_id}:${m.user_id}`, m)
+
+  const mayHear = (workspaceId: string, userId: string, type: string): boolean => {
+    const member = memberOf.get(`${workspaceId}:${userId}`)
+    if (!member) return false
+    return member.role === 'owner' || member[areaFor(type)] === true
+  }
+
+  const tokensByWorkspace = new Map<string, PushToken[]>()
   for (const row of (tokenRows ?? []) as PushToken[]) {
     const list = tokensByWorkspace.get(row.workspace_id) ?? []
-    list.push(row.token)
+    list.push(row)
     tokensByWorkspace.set(row.workspace_id, list)
   }
 
@@ -142,9 +189,10 @@ Deno.serve(async (req) => {
 
   for (const reminder of reminders) {
     sentIds.push(reminder.id)
-    for (const token of tokensByWorkspace.get(reminder.workspace_id) ?? []) {
+    for (const device of tokensByWorkspace.get(reminder.workspace_id) ?? []) {
+      if (!mayHear(reminder.workspace_id, device.user_id, reminder.type)) continue
       messages.push({
-        to: token,
+        to: device.token,
         title: reminder.title,
         // Amounts are deliberately absent from every notification body the app
         // creates (see PRODUCT.md 8.9). Lock-screen previews are visible to
